@@ -6134,8 +6134,9 @@ function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=
   const at=(dt0,fn)=>{ let k=0; Game.fxUpd.push(dt=>{ k+=dt; if(k>=dt0){ fn(); return false; } return true; }); };
   // the slam: the Full Counter's crescent, torn into the screen like Judgement Cut (tall + ground sweep)
   at(.16,()=>{ JC.flash=Math.max(JC.flash||0,.55);
-    twGash({life:.75,rev:.09,fade:.35,w:46,sparks:60,pts:()=>twArcPts(x,gy+1.5,z,ux,uz,4.4,-1.35,1.35,9)});
-    twGash({life:.7,rev:.11,fade:.35,w:30,sparks:40,pts:()=>twArcPts(x,gy+.9,z,ux,uz,5.2,-1.5,1.5,9,true)});
+    // centred ahead of him with a narrower sweep, so the tear (and its distortion) stays out in front of the swing, never over Shayan
+    twGash({life:.75,rev:.09,fade:.35,w:46,sparks:60,pts:()=>twArcPts(x+ux*1.7,gy+1.5,z+uz*1.7,ux,uz,4.2,-1.1,1.1,9)});
+    twGash({life:.7,rev:.11,fade:.35,w:30,sparks:40,pts:()=>twArcPts(x+ux*1.5,gy+.9,z+uz*1.5,ux,uz,5,-1.2,1.2,9,true)});
     FX.hitstop=Math.max(FX.hitstop,.1); shake(1.2); Sound.sfx('crossboom'); }); }
 
 // ---------- Getsuga projectiles: one crescent, not two crossed planes. A single camera-facing plane, turned to the travel direction on screen ----------
