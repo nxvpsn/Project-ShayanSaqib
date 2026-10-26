@@ -1471,8 +1471,7 @@ function updatePlayer(dt){
   let [mx,mz]=ctl?inputVec():[0,0]; if(P.hurt>0){ P.hurt-=dt; mx=mz=0; }
   if(P.scripted){ mx=mz=0; }
   // block
-  if(ALI()){ if(ctl&&consume('block')) P.blockT=0; P.block=ctl&&held.block&&P.dash<=0&&!P.atk; } else { P.block=false; if(typeof shFire==='function') shFire(dt,ctl); } P.aliCd=(P.aliCd||0)-dt;
-  if(ALI()&&P.block) aliBlockStorm(dt);
+  if(ALI()){ P.block=false; } else { P.block=false; if(typeof shFire==='function') shFire(dt,ctl); } P.aliCd=(P.aliCd||0)-dt;
   // dash
   if(ALI()&&ctl&&consume('dash')&&P.hurt<=0) aliTeleport(mx,mz);
   else if(ctl&&consume('dash')&&P.dashCd<=0&&P.hurt<=0){ if(mx||mz) P.ang=Math.atan2(mz,mx); P.dash=.18; P.dashCd=.45; P.atk=null; P.charge=0; Sound.sfx('dash'); }
@@ -1492,12 +1491,12 @@ function updatePlayer(dt){
   }
   // attack / charge
   if(ctl&&P.hurt<=0){
-    if(ALI()){ if(consume('attack')&&!P.block) aliGetsuga(false); }
+    if(ALI()) aliInput(dt);
     else if(consume('attack')&&!P.block){ if(!P.atk) startAtk(P.comboT>0?(P.combo+1)%3:0); else if(P.atk.t>.08) P.atk.q=true; }
-    if(held.attack&&!P.atk&&!P.block&&P.dash<=0){ const before=P.charge; P.charge+=dt; if(before<.25&&P.charge>=.25) Sound.sfx('charge'); if(before<.75&&P.charge>=.75){ Sound.sfx('ready'); FX.burst(P.x,P.y+1,P.z,16,0xff4a6a,3,.25); } if(before<1.5&&P.charge>=1.5){ Sound.sfx('ready'); FX.ring(P.x,P.y,P.z,'#ff4a6a',2,.4); }
+    if(!ALI()&&held.attack&&!P.atk&&!P.block&&P.dash<=0){ const before=P.charge; P.charge+=dt; if(before<.25&&P.charge>=.25) Sound.sfx('charge'); if(before<.75&&P.charge>=.75){ Sound.sfx('ready'); FX.burst(P.x,P.y+1,P.z,16,0xff4a6a,3,.25); } if(before<1.5&&P.charge>=1.5){ Sound.sfx('ready'); FX.ring(P.x,P.y,P.z,'#ff4a6a',2,.4); }
       if(P.charge>.25&&Math.random()<.7){ const a=rnd(0,6.28); FX.spawn(P.x+Math.cos(a)*1.2,P.y+rnd(.2,1.8),P.z+Math.sin(a)*1.2,-Math.cos(a)*3,rnd(-.5,1),-Math.sin(a)*3,.35,P.charge>.75?0xff3a5a:0xbfe8ff,.2,0,true); } }
-    if(!held.attack){ if(P.charge>=.75){ if(ALI()) aliGetsuga(true); else fireBeam(P.charge>=1.5); } P.charge=0; }
-  } else if(!held.attack) P.charge=0;
+    if(!ALI()&&!held.attack){ if(P.charge>=.75) fireBeam(P.charge>=1.5); P.charge=0; }
+  } else if(!held.attack&&!(ALI()&&held.block)) P.charge=0;
   if(ctl&&consume('special')){ if(P.sp>=20&&P.hurt<=0&&!Game.script) run(ALI()?aliUltimate:specialAttack); else if(P.sp<20){ Sound.sfx('block'); Game.dmgNums.push({x:P.x,y:P.y+2.2,z:P.z,n:Math.floor(P.sp)+' / 20',t:0,col:'#8fc8ff'}); } }
   P.atkGrace=P.atk?.2:Math.max(0,(P.atkGrace||0)-dt);
   if(P.atk){ const a=P.atk; a.t+=dt; if(a.t>.05&&a.t<.16) meleeHits(P.x,P.z,P.y,a.big?5.7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);
@@ -3389,9 +3388,8 @@ NAMES.ali='Ali the Wanderer'; NAMES.aliold='Ali, Twenty Years Later'; NAMES.mira
 function aliTeleport(mx,mz){ const P=Player; let a=(mx||mz)?Math.atan2(mz,mx):P.ang; P.ang=a; const ox=P.x, oz=P.z, oy=P.y;
   let tx=ox, tz=oz; for(let d=5;d>=.5;d-=.25){ const x=ox+Math.cos(a)*d, z=oz+Math.sin(a)*d, h=supportH(x,z,.3); if(h>500||h<-50) continue; if(h>P.y+1.6) continue;
     if(Game.arena&&Game.arena.lock){ const b=Game.arena.lock; if(x<b.x0||x>b.x1||z<b.z0||z>b.z1) continue; } tx=x; tz=z; break; }
-  FX.burst(ox,oy+1,oz,22,0x0c0814,3,.35,false); FX.burst(ox,oy+1,oz,10,0xb0182a,3,.25); aliGhost(ox,oy,oz);
   P.x=tx; P.z=tz; P.y=Math.max(P.y,groundY(tx,tz)); P.vx=Math.cos(a)*3; P.vz=Math.sin(a)*3; P.inv=Math.max(P.inv,.22); P.atk=null;
-  FX.burst(tx,P.y+1,tz,16,0x0c0814,3,.3,false); FX.ring(tx,P.y+.05,tz,'#b0182a',1.2,.2); Sound.sfx('dash'); }
+  Sound.sfx('dash'); }
 function aliGhost(x,y,z){ const s=new Sprite3D(64,64); s.draw((c,cx,by)=>ALI()?drawAliHD(c,cx,by,Player.f,{t:Player.t,anim:'dash'}):drawShayanHD(c,cx,by,Player.f,{t:Player.t,anim:'dash'}),false); s.mesh.material.color.setHex(0x40142a); s.mesh.material.transparent=true; s.mesh.material.opacity=.6; s.place(x,y,z,y); s.shadow.visible=false;
   const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; s.mesh.material.opacity=Math.max(0,.6-k.t*2.5); if(k.t>.25){ s.dispose(); return false; } return true; }); }
 function aliQuietReflect(bo){ const sl=Game.slowT, sp=Player.sp; reflectProj(bo,'deflect'); Game.slowT=sl; Player.sp=sp; Game.dmgNums.pop(); }
@@ -3419,13 +3417,13 @@ function* aliUltimate(){ const P=Player; P.sp=0; P.inv=99; P.hp=P.maxHp; Game.dm
   const hung=[]; const N=8;
   for(let i=0;i<N;i++){ const a=i/N*6.283+rnd(-.2,.2), r=rnd(4.5,6.5), x=cx+Math.cos(a)*r, z=cz+Math.sin(a)*r*.75, y=groundY(x,z)+rnd(.8,2.6);
     aliGhost(P.x,P.y,P.z); P.x=x; P.z=z; P.y=y; P.f=cx>x?1:-1; P.cineAnim='beam'; FX.burst(x,y+1,z,10,0x0c0814,3,.25,false); Sound.sfx('swing');
-    const m=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.MeshBasicMaterial({map:CRESC,transparent:true,depthWrite:false,side:THREE.DoubleSide,color:0xff3a4a,fog:false})); m.position.set(x,y+1.1,z); m.rotation.y=-Math.atan2(cz-z,cx-x); m.userData.temp=1; scene.add(m);
+    const m=aliHungJJ(x,y+1.1,z,cx,cz);
     hung.push({m,x,y:y+1.1,z,tgt:tg.length?tg[i%tg.length]:null}); yield wait(.11); }
   // back to the start, judgement cut x20 in frozen time
   P.x=ox; P.z=oz; P.y=oy; P.cineAnim='charge'; P.f=cx>ox?1:-1; FX.burst(ox,oy+1,oz,16,0x0c0814,3,.3,false); yield wait(.2);
   JC.lines=[]; for(let i=0;i<20;i++){ const a=rnd(0,Math.PI), L0=rnd(500,900), mx=UW/2+rnd(-260,260), my=UH/2+rnd(-150,150);
     JC.lines.push({x0:mx-Math.cos(a)*L0/2,y0:my-Math.sin(a)*L0/2,x1:mx+Math.cos(a)*L0/2,y1:my+Math.sin(a)*L0/2,t:0}); Sound.sfx(i%2?'swing':'hit'); shake(.08); yield wait(.045); }
-  yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); yield wait(.7);
+  yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); yield wait(.35); yield* aliFinalCut(); yield wait(.2);
   // time resumes
   zwEnd(); JC.flash=1; impactFrame([[3,2],[1,1],[2,2]]); Sound.sfx('crossboom'); shake(.8); FX.flash=.6;
   let dealt=new Map(); const give=(T,d)=>{ if(!T) return; dealt.set(T,(dealt.get(T)||0)+d); aliHit(T,d); };
@@ -3566,7 +3564,7 @@ function* aliLanding(fl,aff,kills,H){ const P=Player;
     yield say('ali',"...I will greet her myself."); Cam.cine=null; }
   Game.letterTo=0; Sound.play('village'); Game.aliHintT=14; }
 function drawAliHint(){ if(!(Game.aliHintT>0)||Game.state!=='play'||Game.dlg) return; Game.aliHintT-=1/60; const a=Math.min(1,Game.aliHintT*1.5), T=IS_TOUCH();
-  const rows=[['ATTACK','Getsuga Tenshou. Spam it.'],['HOLD ATTACK','Black Getsuga'],['JUMP','Twice as high. Hold to float in place.'],['BLOCK','Blade storm. Deflects every projectile.'],['DASH','Teleport. No cooldown.'],['SPECIAL',T?'Full meter: Za Warudo + Judgement Cut':'Full meter (Q): Za Warudo + Judgement Cut']];
+  const rows=[['ATTACK','Three cuts: a slash, a double cut, a spin.'],[T?'GETSUGA BUTTON':'RIGHT CLICK','Getsuga Tenshou. Hold: Black Getsuga.'],['JUMP','Twice as high. Hold to ride a Getsuga.'],['PARRY','Attack right before a hit lands.'],['DASH','Teleport. No cooldown.'],['SPECIAL',T?'Full meter: Za Warudo + Judgement Cut':'Full meter (Q): Za Warudo + Judgement Cut']];
   const w=430, h=40+rows.length*26, x=T?18:UW-w-18, y=T?128:86; D.globalAlpha=a; frame(x,y,w,h,.82);
   D.font=`900 20px ${FD}`; D.fillStyle='#ff8a9a'; D.fillText('ALI THE WANDERER',x+20,y+30);
   rows.forEach(([k,v],i)=>{ D.font=`800 14px ${FB}`; D.fillStyle='#f6dfa6'; D.fillText(k,x+20,y+56+i*26); D.font=`500 14px ${FB}`; D.fillStyle='#e9e2cf'; D.fillText(v,x+140,y+56+i*26); }); D.globalAlpha=1; }
@@ -5288,6 +5286,11 @@ function cPose(k,t,u){ u=u||0; const Pz={b:0,lean:0,F:[[-2,0],[2,0]],ua:[.1,-.08
     case 'attack': { const e=cE(u*1.15); Pz.F=[[-5,0],[5,0]]; Pz.b=1+Math.round(e); Pz.lean=Math.round(-1+e*4); Pz.ua=[-.6+e*.5,-2.7+e*4.1]; Pz.el=[.6,.25-e*.2]; Pz.tw=e; break; }
     case 'charge': Pz.F=[[-6,0],[5,0]]; Pz.b=3; Pz.lean=-1; Pz.ua=[-.5,-.9]; Pz.el=[.9,1.2]; break;
     case 'beam': Pz.F=[[-6,0],[5,0]]; Pz.b=2; Pz.lean=3; Pz.ua=[-.7,1.5]; Pz.el=[.4,0]; Pz.tw=1; break;
+    // Ali's combo: a big diagonal cut, a down-then-up double cut, a crouched spin with the blade out; and riding a Getsuga
+    case 'aliS1': { const e=cE(Math.min(1,u*1.4)); Pz.F=[[-6,0],[6,0]]; Pz.b=1+Math.round(e*2); Pz.lean=Math.round(-2+e*6); Pz.ua=[-.6+e*.4,-2.9+e*4.6]; Pz.el=[.6,.2]; Pz.tw=e; break; }
+    case 'aliS2': { const h=u<.5, e=cE(Math.min(1,(h?u:u-.5)*2.6)); Pz.F=[[-6,0],[6,0]]; Pz.b=2; Pz.lean=h?Math.round(-1+e*5):Math.round(4-e*5); Pz.ua=h?[-.6,-2.6+e*4.2]:[-.4,1.6-e*4.4]; Pz.el=[.6,.2]; Pz.tw=h?e:1-e; break; }
+    case 'aliSpin': Pz.F=[[-7,0],[7,0]]; Pz.b=3; Pz.lean=0; Pz.ua=[-1.6,1.55]; Pz.el=[0,.05]; Pz.tw=1; break;
+    case 'aliSurf': Pz.F=[[-4,0],[4,0]]; Pz.b=1; Pz.lean=1; Pz.ua=[-.5,.7]; Pz.el=[.4,.5]; break;
     case 'block': Pz.F=[[-5,0],[4,0]]; Pz.b=2; Pz.lean=1; Pz.ua=[.5,.9]; Pz.el=[1.4,1.6]; break;
     case 'cast': Pz.F=[[-4,0],[4,0]]; Pz.b=br; Pz.lean=-1; Pz.ua=[-.5,2.5+Math.sin(t*9)*.08]; Pz.el=[.4,.1]; Pz.hd=-1; break;
     case 'pray': Pz.b=br; Pz.ua=[.65,.7]; Pz.el=[1.7,1.7]; Pz.hd=1; break;
@@ -5312,12 +5315,12 @@ function cSword(p,A,len,ang,cols){ const a=A.a+(ang||0), ex=A.ex+Math.sin(a)*len
 // ================= ALI =================
 const AC2=Object.assign({},AC,{hakS:'#1e1a2a',haoriS:'#100e18',innerS:'#5a0e1a',skinH:'#daa074',hatS:'#a88a48',scarfH:'#e0303e',hair2:'#2a2434'});
 function drawAliCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim||'idle', C=cFlash(AC2,s.flash>0), old=s.old;
-  const tk=cTalk('ali'), ap=s.ap!=null?s.ap:(a==='attack'?(t*4)%1:0);
+  const tk=cTalk('ali'), ap=s.ap!=null?s.ap:(a==='attack'?(t*4)%1:/^aliS/.test(a)&&Player.aliAtk?Player.aliAtk.u:0);
   const k=tk&&a==='idle'?'talk':a==='dead'?'down':a; const P=cPose(k,t,ap); if(a==='glide'){ P.ua=[2.5,2.6]; P.el=[.5,.5]; }
   const D={hip:14,torso:13,thigh:7,shin:8,uarm:6,farm:6,sep:2,ssep:4,neck:1};
   const J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy;
   // scarf trailing from the neck, longer when moving fast
-  const sl=a==='run'||a==='dash'||a==='glide'||a==='beam'?14:8;
+  const sl=a==='run'||a==='dash'||a==='glide'||a==='beam'||a==='aliSurf'||a==='aliSpin'?14:8;
   for(let i=0;i<sl;i++){ const wy=Math.round(Math.sin(t*10-i*.55)*(i/3.2)), x=sx-4-i, y=sy+1+wy+Math.round(i*(a==='run'||a==='dash'?.05:.35)); p(x,y,1,3,i>sl-4?C.scarfD:i%3?C.scarf:C.scarfH); if(i%4===3) p(x,y+3,1,1,C.scarfD); }
   // ponytail
   const pt=Math.round(Math.sin(t*6)*1.5); p(J.headX-7,J.headY-6,3,4,C.hair); p(J.headX-9,J.headY-3+pt,3,5,C.hair); p(J.headX-9,J.headY+2+pt,2,2,C.hair2);
@@ -5326,7 +5329,7 @@ function drawAliCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim||'i
   // far leg (wide hakama)
   cLeg(p,J.L[0],6,C.hakS,C.hakS,C.sandal);
   // daisho at the hip unless a blade is out
-  const out=a==='attack'||a==='beam'||a==='block'||a==='charge';
+  const out=a==='attack'||a==='beam'||a==='block'||a==='charge'||a==='aliS1'||a==='aliS2'||a==='aliSpin';
   const saya=(x0,y0,x1,y1)=>{ cSeg(p,x0,y0,x1,y1,1,'#3a3048'); cSeg(p,x0,y0+1,x1,y1+1,1,'#0c0a10'); };
   saya(J.hx-2,hy-4,J.hx-15,hy+2); if(!out){ saya(J.hx,hy-6,J.hx-17,hy-1); p(J.hx,hy-7,2,2,C.tsuba); p(J.hx+2,hy-7,3,1,'#e8e4dc'); } p(J.hx-2,hy-5,2,2,C.tsuba);
   // near leg
@@ -5881,7 +5884,7 @@ function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2
 
 // ----- 04p_pxv_atlas.js -----
 // Generated by dev/vfx/build_vfx.py from dev/vfx/recipes: pixel VFX sprite sheets in img/vfx (frame size, count, fps, impact frame, pivot).
-const PXV_ATLAS={"blast":{"cols":12,"fps":24,"h":96,"impact":2,"loop":false,"n":12,"pivot":[0.5,0.5],"w":96},"boom":{"cols":12,"fps":24,"h":56,"impact":2,"loop":false,"n":12,"pivot":[0.5,0.5],"w":56},"boom_big":{"cols":12,"fps":24,"h":80,"impact":1,"loop":false,"n":12,"pivot":[0.5,0.5],"w":80},"cresc":{"cols":4,"fps":12,"h":128,"impact":0,"loop":true,"n":4,"pivot":[0.5,0.5],"w":128},"cut":{"cols":8,"fps":30,"h":64,"impact":1,"loop":false,"n":8,"pivot":[0.5,0.5],"w":64},"drill_aura":{"cols":12,"fps":24,"h":128,"impact":0,"loop":true,"n":12,"pivot":[0.5,0.5],"w":64},"drill_bolt":{"cols":8,"fps":20,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":96},"drill_boom":{"cols":18,"fps":24,"h":128,"impact":0,"loop":false,"n":18,"pivot":[0.5,0.5],"w":128},"drill_crater":{"cols":16,"fps":16,"h":96,"impact":0,"loop":false,"n":16,"pivot":[0.5,0.5],"w":96},"fireball_burn":{"cols":8,"fps":16,"h":64,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":64},"getsuga":{"cols":8,"fps":18,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":128},"getsuga_jj":{"cols":8,"fps":18,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":128},"getsuga_omar":{"cols":8,"fps":18,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":128},"parry":{"cols":10,"fps":24,"h":72,"impact":1,"loop":false,"n":10,"pivot":[0.5,0.5],"w":72},"parry_ali":{"cols":10,"fps":24,"h":72,"impact":1,"loop":false,"n":10,"pivot":[0.5,0.5],"w":72},"pee_splash":{"cols":6,"fps":18,"h":48,"impact":0,"loop":true,"n":6,"pivot":[0.5,0.5],"w":48},"pee_stream":{"cols":6,"fps":18,"h":32,"impact":0,"loop":true,"n":6,"pivot":[0.5,0.5],"w":64},"ring":{"cols":12,"fps":24,"h":96,"impact":1,"loop":false,"n":12,"pivot":[0.5,0.5],"w":96},"sh_fslash":{"cols":8,"fps":30,"h":64,"impact":1,"loop":false,"n":8,"pivot":[0.5,0.5],"w":64},"sh_slash":{"cols":8,"fps":30,"h":64,"impact":1,"loop":false,"n":8,"pivot":[0.5,0.5],"w":64},"spark":{"cols":9,"fps":24,"h":48,"impact":1,"loop":false,"n":9,"pivot":[0.5,0.5],"w":48},"swordfire":{"cols":8,"fps":16,"h":48,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.8],"w":32},"tp_in":{"cols":10,"fps":24,"h":96,"impact":1,"loop":false,"n":10,"pivot":[0.5,0.75],"w":64},"tp_out":{"cols":10,"fps":24,"h":96,"impact":3,"loop":false,"n":10,"pivot":[0.5,0.75],"w":64}};
+const PXV_ATLAS={"blast":{"cols":12,"fps":24,"h":96,"impact":2,"loop":false,"n":12,"pivot":[0.5,0.5],"w":96},"boom":{"cols":12,"fps":24,"h":56,"impact":2,"loop":false,"n":12,"pivot":[0.5,0.5],"w":56},"boom_big":{"cols":12,"fps":24,"h":80,"impact":1,"loop":false,"n":12,"pivot":[0.5,0.5],"w":80},"cresc":{"cols":4,"fps":12,"h":128,"impact":0,"loop":true,"n":4,"pivot":[0.5,0.5],"w":128},"cut":{"cols":8,"fps":30,"h":64,"impact":1,"loop":false,"n":8,"pivot":[0.5,0.5],"w":64},"drill_aura":{"cols":12,"fps":24,"h":128,"impact":0,"loop":true,"n":12,"pivot":[0.5,0.5],"w":64},"drill_bolt":{"cols":8,"fps":20,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":96},"drill_boom":{"cols":18,"fps":24,"h":128,"impact":0,"loop":false,"n":18,"pivot":[0.5,0.5],"w":128},"drill_crater":{"cols":16,"fps":16,"h":96,"impact":0,"loop":false,"n":16,"pivot":[0.5,0.5],"w":96},"fireball_burn":{"cols":8,"fps":16,"h":64,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":64},"getsuga":{"cols":8,"fps":18,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":128},"getsuga_jj":{"cols":8,"fps":18,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":128},"getsuga_omar":{"cols":8,"fps":18,"h":128,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.5],"w":128},"parry":{"cols":10,"fps":24,"h":72,"impact":1,"loop":false,"n":10,"pivot":[0.5,0.5],"w":72},"parry_ali":{"cols":10,"fps":24,"h":72,"impact":1,"loop":false,"n":10,"pivot":[0.5,0.5],"w":72},"pee_splash":{"cols":6,"fps":18,"h":48,"impact":0,"loop":true,"n":6,"pivot":[0.5,0.5],"w":48},"pee_stream":{"cols":6,"fps":18,"h":32,"impact":0,"loop":true,"n":6,"pivot":[0.5,0.5],"w":64},"ring":{"cols":12,"fps":24,"h":96,"impact":1,"loop":false,"n":12,"pivot":[0.5,0.5],"w":96},"sh_fslash":{"cols":8,"fps":30,"h":64,"impact":1,"loop":false,"n":8,"pivot":[0.5,0.5],"w":64},"sh_slash":{"cols":8,"fps":30,"h":64,"impact":1,"loop":false,"n":8,"pivot":[0.5,0.5],"w":64},"spark":{"cols":9,"fps":24,"h":48,"impact":1,"loop":false,"n":9,"pivot":[0.5,0.5],"w":48},"swordfire":{"cols":8,"fps":16,"h":48,"impact":0,"loop":true,"n":8,"pivot":[0.5,0.8],"w":32}};
 
 // ----- 05_fixes.js -----
 // ---------- cleanup: nothing from a cutscene may outlive its scene ----------
@@ -5931,7 +5934,7 @@ function hzgHurtGod(d,src){ return (TW.otk&&!TW._ally&&src!=='ally'&&src!=='test
 
 // ---------- the swing clock (parry window) + Full Counter / mini Judgement Cut ----------
 (function(){ const sa=startAtk; startAtk=function(n){ const P=Player; P.swingT=Game.time; if(!ALI()&&!Game.paulLock&&(P.counter||0)>=5){ twCounterSlash(); return; } return sa(n); };
-  const ag=aliGetsuga; aliGetsuga=function(big){ const P=Player; P.swingT=Game.time; if(!big&&!Game.paulLock&&(P.counter||0)>=5){ twMiniJC(); return; } return ag(big); }; })();
+  const ag=aliGetsuga; aliGetsuga=function(big){ const P=Player; P.swingT=Game.time; if(!big&&!Game.paulLock&&!TW._aliRC&&(P.counter||0)>=5){ twMiniJC(); return; } /* Ali's Judgement Cut comes from his attack, not his Getsuga */ return ag(big); }; })();
 function twCounterSlash(){ const P=Player; P.counter=0; const tg=nearestFoe(7); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1;
   P.atk={t:0,n:2,hit:new Set(),q:false,big:1}; P.combo=2; P.charge=0; Sound.sfx('swing'); Sound.sfx('beam'); Sound.sfx('counter'); shake(.5);
   // the huge crescent itself is drawn as a Judgement Cut gash in 06b_shayan.js (shFullCounterFX)
@@ -6179,7 +6182,7 @@ function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=
 // Replaced: Shayan's basic slash (a silver arc on the original swing's plane and size; burning, with flames
 // riding the sword, while ignited) and, as the same silver slash, every parryable melee attack (FX.arc swings,
 // and melee hits without a swing: rushes, dashes, lunges), Shayan's Getsuga Tenshou (black blade, red border), hit sparks (FX.spark), ground shockwaves (FX.ring), quick cuts (FX.cut),
-// the shared crescent texture (CRESC), parries (blue, red for Ali's guard), Ali's teleport, fireball explosions.
+// the shared crescent texture (CRESC), parries (blue, red for Ali), fireball explosions.
 // Hits, clashes and the basic slash are kept small on purpose: readability first.
 // Untouched on purpose: Judgement Cut (the slash pass and twGash), the black hole, Shayan's dash trail,
 // and everything Grimmaw does (while Game.boss, his fight, is on the field the old effects play).
@@ -6259,17 +6262,13 @@ function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new T
   e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
-      if((jj||!b.ali)&&pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); b.pxv=pxvAttach(k,b.g,jj?4.2:big?4.4:3.6); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25) */ } }
+      if(pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); if(b.bolt&&!jj) b.bolt.visible=false; b.pxv=pxvAttach(k,b.g,jj?4.2:(big||b.ali)?4.4:3.6); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25); Ali's plain Getsuga looks like Shayan's charged one */ } }
     return r; }; })();
 (function(){ const gm=twGetsugaMesh; twGetsugaMesh=function(s,col){ const g=gm.apply(this,arguments); try{ const k=(col==null||col===0x9a4aff)?'getsuga_omar':'getsuga';
     if(pxvOk(k)){ const mats=g.userData.mats; g.children.forEach(c=>c.visible=false); const e=pxvAttach(k,g,s*1.2); if(e&&mats) mats.push(e.m.material); } }catch(e){ console.error('pxv getsugaMesh',e); } return g; }; })();
 
-// ---------- parries: a clash star (blue; red for Ali's guard) ----------
+// ---------- parries: a clash star (blue; red for Ali) ----------
 (function(){ const ph=playerHit; playerHit=function(){ const r=ph.apply(this,arguments); if(r==='parry'){ const P=Player; pxvPlay(ALI()?'parry_ali':'parry',{x:P.x+Math.cos(P.ang||0)*.6,y:P.y+1.3,z:P.z+Math.sin(P.ang||0)*.6,size:1.6}); } return r; }; })();
-
-// ---------- Ali's teleport: he folds into a red-black seam, then bursts out where he lands ----------
-(function(){ const at=aliTeleport; aliTeleport=function(){ const P=Player, ox=P.x, oy=P.y, oz=P.z, r=at.apply(this,arguments);
-    if(pxvOk('tp_out')){ pxvPlay('tp_out',{x:ox,y:oy+1.4,z:oz,size:3.4,depth:true}); pxvPlay('tp_in',{x:P.x,y:P.y+1.4,z:P.z,size:3.4,depth:true}); } return r; }; })();
 
 // ---------- the charged fireball burns: crimson flames lick around the ball as it flies (depth-tested, so the ball shows in the middle) ----------
 (function(){ const tf=twFireball; twFireball=function(big){ const n0=TW.fb.length, r=tf.apply(this,arguments); try{ const f=TW.fb[TW.fb.length-1];
@@ -6434,6 +6433,73 @@ function twAimed(fn,snapR){ return function(){ const a0=twAimAng(); if(a0==null)
     const tg=nf(snapR); if(tg){ const ta=Math.atan2(tg.z-P.z,tg.x-P.x); if(angDiff(ta,a0)<.55) a=ta; } // small aim assist toward a foe near the cursor
     P.ang=a; P.f=Math.cos(a)>=0?1:-1; nearestFoe=function(){ return null; }; try{ return fn.apply(this,arguments); } finally{ nearestFoe=nf; } }; }
 (function(){ startAtk=twAimed(startAtk,3.2); fireBeam=twAimed(fireBeam,14); twFireball=twAimed(twFireball,18); aliGetsuga=twAimed(aliGetsuga,14); })();
+
+// ----- 08b_ali.js -----
+// =====================================================================
+// ALI, REWORKED (the player's Ali; the AI and co-op Ali keep their own code)
+// - Left click (attack): his own 3-hit combo, every cut drawn with the Judgement Cut tear (twGash):
+//   1) one slash, twice Shayan's reach; 2) a double cut (two hits, a vertical and a horizontal tear);
+//   3) a spin that hits all around him with the same reach. 5 banked parries: the next attack is a Judgement Cut.
+// - Right click (block): Getsuga Tenshou (the same black-and-red crescent as Shayan's charged one); hold, release: Black Getsuga.
+// - No guard / blade storm (no auto-parry): he parries like Shayan, by attacking right before a hit lands.
+// - Teleport has no VFX (patched in build.py). Gliding: he rides a small Getsuga.
+// - Ultimate: the Getsugas hung in the frozen air are small Getsuga Jujishous (aliHungJJ), and before time resumes he
+//   makes one long Judgement Cut across half the screen (aliFinalCut).
+// Base-game hooks are patched in build.py (aliInput is called from updatePlayer).
+// =====================================================================
+const ALI_R=3.8; // reach: double Shayan's swing
+const ALI_COMBO=[{dur:.32,hits:[[.06,.15]],dmg:1.3,arc:1.25,anim:'aliS1'},{dur:.38,hits:[[.05,.12],[.18,.25]],dmg:1,arc:1.25,anim:'aliS2'},{dur:.44,hits:[[.08,.24]],dmg:2,arc:3.3,anim:'aliSpin'}];
+function aliCombo(n){ const P=Player, tg=nearestFoe(ALI_R+1); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1; P.combo=n; P.swingT=Game.time;
+  P.aliAtk={n,t:0,u:0,q:false,f0:P.f,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0;
+  if(P.onGround&&n<2&&!(Game.twins&&Game.twins.active)){ P.vx+=Math.cos(P.ang)*3; P.vz+=Math.sin(P.ang)*3; } }
+// each cut is a Judgement Cut tear placed out in front (or around, for the spin), never over Ali
+function aliSlashFX(n,i){ const P=Player, gy=P.y, ux=Math.cos(P.ang), uz=Math.sin(P.ang), x=P.x, z=P.z; JC.flash=Math.max(JC.flash||0,.12);
+  if(n===0) twGash({life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
+  else if(n===1){ if(i===0) twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
+    else twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
+  else twGash({life:.48,rev:.15,fade:.24,w:22,sparks:26,pts:()=>twArcPts(x,gy+1,z,ux,uz,ALI_R*.85,-Math.PI,Math.PI,12,true)});
+  Sound.sfx(n===2?'whoosh':'swing'); if(n===2) shake(.15); }
+function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=ALI_COMBO[a.n]; a.t+=dt; a.u=Math.min(1,a.t/C.dur);
+  C.hits.forEach(([t0,t1],i)=>{ if(a.t>=t0&&!(a.fx>>i&1)){ a.fx|=1<<i; aliSlashFX(a.n,i); } if(a.t>=t0&&a.t<t1) meleeHits(P.x,P.z,P.y,ALI_R,P.ang,C.arc,C.dmg,a.sets[i]); });
+  if(a.t>=C.dur){ P.aliAtk=null; P.f=a.f0; if(a.q) aliCombo((a.n+1)%3); else P.comboT=.38; } }
+function aliInput(dt){ const P=Player;
+  if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
+  if(consume('block')){ TW._aliRC=1; try{ aliGetsuga(false); }finally{ TW._aliRC=0; } }
+  if(held.block&&!P.aliAtk&&P.dash<=0){ const before=P.charge; P.charge+=dt; if(before<.25&&P.charge>=.25) Sound.sfx('charge'); if(before<.75&&P.charge>=.75){ Sound.sfx('ready'); FX.burst(P.x,P.y+1,P.z,16,0xff4a6a,3,.25); }
+    if(P.charge>.25&&Math.random()<.7){ const a=rnd(0,6.28); FX.spawn(P.x+Math.cos(a)*1.2,P.y+rnd(.2,1.8),P.z+Math.sin(a)*1.2,-Math.cos(a)*3,rnd(-.5,1),-Math.sin(a)*3,.35,P.charge>.75?0xff3a5a:0xbfe8ff,.2,0,true); } }
+  if(!held.block){ if(P.charge>=.75) aliGetsuga(true); P.charge=0; } }
+// aim the combo where the mouse points, like Shayan's swings
+aliCombo=twAimed(aliCombo,ALI_R);
+// his own animations, and riding a Getsuga while he glides
+(function(){ const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments); try{ const P=Player;
+    if(!ALI()){ if(P.aliAtk) P.aliAtk=null; aliSurf(false); return r; }
+    if(!P.hidden&&!P.cineFly) aliAtkUpdate(dt); else P.aliAtk=null; /* runs even while he is hit, like Shayan's swing */
+    const A=P.aliAtk; if(A&&A.n===2) P.f=Math.floor(A.t/.055)%2?-A.f0:A.f0; /* the spin: he whips around */
+    if(A&&P.anim!=='hurt'&&P.anim!=='dash') P.anim=ALI_COMBO[A.n].anim; else if(P.gliding&&P.anim==='glide') P.anim='aliSurf';
+    aliSurf(P.gliding&&!P.hidden&&Game.state!=='title'); }catch(e){ console.error('ali',e); } return r; }; })();
+function aliSurf(on){ const P=Player; if(!on){ if(P.surf){ pxvStop(P.surf); P.surf=null; } return; }
+  if(!P.surf) P.surf=pxvPlay('getsuga',{any:true,x:P.x,y:P.y,z:P.z,size:1.5,op:.78,depth:true,ro:9});
+  const e=P.surf; if(!e) return; e.m.position.set(P.x,P.y+.12,P.z+.12); e.m.material.rotation=-Math.PI/2+Math.sin(P.t*3)*.06; e.m.scale.set(1.5*(e.A.w/e.A.h),1.5,1);
+  if(Math.random()<.35) FX.spawn(P.x+rnd(-.5,.5),P.y+.05,P.z,0,-rnd(.3,.8),0,.35,Math.random()<.5?0xff2a3a:0x1a0008,.18,0,true); }
+// the ultimate: small Getsuga Jujishous hung in the frozen air (a gold crescent riding a little Judgement Cut tear)
+function aliHungJJ(x,y,z,cx,cz){ const g=new THREE.Group(); g.position.set(x,y,z); g.userData.temp=1; scene.add(g); const dx=cx-x, dz=cz-z, d=Math.hypot(dx,dz)||1, ux=dx/d, uz=dz/d;
+  const e=pxvPlay('getsuga_jj',{any:true,x:0,y:0,z:0,size:2.3}); if(e){ g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=2.3; e.dir={dx:ux,dz:uz}; }
+  else { const m=new THREE.Mesh(new THREE.PlaneGeometry(2.2,2.2),new THREE.MeshBasicMaterial({map:CRESC,transparent:true,depthWrite:false,side:THREE.DoubleSide,color:0xffc838,fog:false})); m.rotation.y=-Math.atan2(dz,dx); g.add(m); }
+  twGash({life:8,rev:.06,fade:.15,w:12,op:.75,sparks:6,alive:()=>!!g.parent,pts:()=>twArcPts(g.position.x-ux*.5,g.position.y,g.position.z-uz*.5,ux,uz,1.25,-1.1,1.1,3)});
+  return g; }
+// the final hit before time resumes: one long Judgement Cut, nearly level, across half the screen
+function* aliFinalCut(){ const P=Player; P.cineAnim='beam'; Sound.sfx('swing'); Sound.sfx('beam'); aliGhost(P.x,P.y,P.z);
+  const a=-.13, L=UW*.5, cx=UW/2, cy=UH*.5, x0=cx-Math.cos(a)*L/2, y0=cy-Math.sin(a)*L/2, x1=cx+Math.cos(a)*L/2, y1=cy+Math.sin(a)*L/2;
+  JC.lines.push({x0,y0,x1,y1,t:0,w:46,seed:.61}); try{ twGashSparks([[x0,y0],[x1,y1]],110); }catch(e){}
+  yield wait(.08); impactFrame([[3,2],[1,2],[2,2],[1,1]]); shake(1.5); FX.hitstop=Math.max(FX.hitstop,.12); Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.sfx('tear');
+  JC.flash=Math.max(JC.flash||0,.9); FX.flash=.45; grade.uniforms.flashCol.value.set(1,.3,.4); if(typeof twClashWarp==='function') twClashWarp(P.x+Math.cos(P.ang||0)*4,P.y+1.2,P.z+Math.sin(P.ang||0)*4,.8);
+  yield wait(.45); }
+
+// ---------- the words: controls, tips, labels ----------
+(function(){ try{ const g=document.getElementById('tbGuard'); if(!g) return; let was=null;
+  const du=drawUI; drawUI=function(){ du(); try{ const ali=ALI()&&!document.body.classList.contains('mech'); if(ali===was) return; was=ali;
+      if(ali){ if(!g.dataset.sh) g.dataset.sh=g.innerHTML; g.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 4c8 2 12 8 10 16M6 4c4 4 5 10 3 16"/></svg>'; g.setAttribute('aria-label','Getsuga Tenshou, hold to charge a Black Getsuga'); }
+      else if(g.dataset.sh){ g.innerHTML=g.dataset.sh; g.setAttribute('aria-label','Fireball, hold to charge'); } }catch(e){} }; }catch(e){} })();
 
 // ----- 09_parry.js -----
 // =====================================================================
@@ -8155,7 +8221,7 @@ twSetScr('twinsGate',function*(){ const P=Player; yield fadeOut(); loadLevel('tw
   if(ALI()){ yield say('ali',"You call yourself the Edge?"); yield say('omar',"I... yes. I do."); yield say('ali',"I am the edge. You are a butter knife in a coat."); yield say('omar',"...Brother. I think he's edgier than me.",'angry'); }
   else { yield say('shayan',"Wait. Are you two twins? You look nothing alike."); yield say('caotan',"We don't talk about it."); yield say('omar',"We do not talk about it."); }
   yield say('caotan',ALI()?"Nobody is edgier than my brother! Get him!":"Enough talk! Prepare to be... OVERWHELMED.",'angry');
-  if(Game.hamza) yield say('hamza',ALI()?"Oink oink! Ali, just stand there and hold block. Everything bounces off you anyway.":"Oink oink! Shayan, swing at their projectiles! Send everything right back at them!",'happy');
+  if(Game.hamza) yield say('hamza',ALI()?"Oink oink! Ali, slice their projectiles right before they hit! Send them back!":"Oink oink! Shayan, swing at their projectiles! Send everything right back at them!",'happy');
   evaCard(['THE GATEKEEPER TWINS','CAOTAN & OMAR'],2,1); Sound.sfx('slam'); yield wait(2);
   Game.banner={name:'Caotan Cummaster & Omar the Edge',sub:ALI()?'The Gatekeeper Twins (outmatched)':'The Gatekeeper Twins',t:0};
   yield cineTo([10,7.2,25],[10,1.2,9],1.1); TWL.forEach(T=>{ T.noAttack=0; T.inv=false; }); TW.fight.frame=true; Cam.cine=null; Game.letterTo=0; Game.state='play'; Sound.play('battle'); });
@@ -12168,7 +12234,7 @@ function twFreshStart(){ for(const k of Object.keys(TWS)) delete TWS[k]; TWS.don
 
 // ---------- pause screen: the current controls ----------
 drawPause=function(){ D.fillStyle='rgba(6,6,18,.7)'; D.fillRect(0,0,UW,UH); frame(UW/2-360,60,720,560,.92); cText([['Paused',`900 44px ${FD}`,'#f3dfae',122]]);
-  const T=IS_TOUCH(), rows=ALI()?[['Move','WASD or arrow keys'],['Jump',K('jump')+' (twice as high; hold to float)'],['Attack',K('attack')+': Getsuga Tenshou (aim with the mouse)'],['Black Getsuga','Hold attack, then release'],['Guard',K('block')+': parries everything in front of you'],['Parry','Attack right before a hit lands (5 parries = Judgement Cut)'],['Teleport',K('dash')],['Special',K('special')+' when the blue gauge is full'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')+' during dialogue'],['Timeline / warps',K('menu')+' (rebind keys under Controls)'],['Pause · Voices · Mute',K('pause')+' · '+K('voices')+' · '+K('mute')+' (toggle)']]
+  const T=IS_TOUCH(), rows=ALI()?[['Move','WASD or arrow keys'],['Jump',K('jump')+' (twice as high; hold to ride a Getsuga)'],['Attack',K('attack')+': 3-cut combo, slash · double cut · spin (aim with the mouse)'],['Getsuga Tenshou',K('block')+' (hold, release: Black Getsuga)'],['Parry','Attack right before a hit lands (5 parries = Judgement Cut)'],['Teleport',K('dash')],['Special',K('special')+' when the blue gauge is full'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')+' during dialogue'],['Timeline / warps',K('menu')+' (rebind keys under Controls)'],['Pause · Voices · Mute',K('pause')+' · '+K('voices')+' · '+K('mute')+' (toggle)']]
     :[['Move','WASD or arrow keys'],['Jump',K('jump')+' (again in the air to double jump)'],['Glide','Hold jump after the double jump'],['Attack',K('attack')+': three-hit combo (aim with the mouse)'],['Getsuga Tenshou','Hold attack, then release'],['Fireball',K('block')+' (hold until full: big fireball + flaming sword)'],['Parry','Attack right before a hit lands (5 parries = Full Counter)'],['Dash',K('dash')],['Special',K('special')+' when the blue gauge is full'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')+' during dialogue'],['Timeline / warps',K('menu')+' (rebind keys under Controls)'],['Pause · Voices · Mute',K('pause')+' · '+K('voices')+' · '+K('mute')+' (toggle)']];
   rows.forEach(([a,b],i)=>{ D.font=`700 19px ${FB}`; D.fillStyle='#d8b46a'; D.textAlign='right'; D.fillText(a,UW/2-110,170+i*31); D.textAlign='left'; D.font=`500 18px ${FB}`; D.fillStyle='#efe8d6'; D.fillText(b,UW/2-90,170+i*31); });
   cText([[T?'Tap to resume':K('pause')+' to resume',`italic 500 20px ${FB}`,'#b8a888',598]]); };
@@ -12225,7 +12291,7 @@ const TUT_LOOK={cloth:'#2a2f4a',clothS:'#1c2036',skin:'#d8a882',hair:'#1a1410',h
     G.anim.push(()=>{ if(!m.parent) return; const n=NPCS.find(o=>o.who==='trainer'); if(n){ m.position.set(n.x+.45,n.y+1.6,n.z+.05); return; }
       if(L===G){ m.parent.remove(m); FX.burst(m.position.x,m.position.y,m.position.z,26,0xa8743e,5,.4,false); Sound.sfx('crash'); } });
     return G; }; })();
-SCR.trainer=function*(){ if(ALI()){ yield say('trainer',"Whoa. You already parry everything by just... existing. My demo can't handle you, man."); return; }
+SCR.trainer=function*(){ if(ALI()){ yield say('trainer',"Whoa, a samurai. You already know the trick, right? Swing right before the hit lands. My demo is for blacksmiths, man."); return; }
   yield say('trainer',"Yo! You look like someone who gets hit a lot. Want to practice parrying?");
   yield say('trainer',"Put on this VR headset. Ali's hologram runs the class. Infinite health, zero consequences.");
   const c=yield choose([{t:"Put on the headset."},{t:"Maybe later."}]);
@@ -12575,8 +12641,8 @@ const CT={open:false,fromMenu:false,rects:[],listen:null,focus:null,drop:null,dr
 function twControlsShow(fromMenu){ CT.open=true; CT.fromMenu=!!fromMenu; CT.listen=null; CT.drop=null; CT.focus='mode:'+PAD.mode; }
 function twControlsHide(){ CT.open=false; CT.fromMenu=false; CT.listen=null; CT.drop=null; }
 function twControlsRows(){ const ali=ALI();
-  const keys=[['Move',null,'WASD or arrow keys (aim with the mouse)'],['Jump','jump',''],['Attack','attack',''],[ali?'Guard':'Fireball','block',''],[ali?'Teleport':'Dash','dash',''],['Special','special',''],['Talk / advance','confirm',''],['Fast-forward','ff',' (hold in dialogue)'],['Pause','pause',' (toggle)'],['Voices','voices',' (toggle)'],['Mute','mute',' (toggle)'],['Menu / timeline','menu','']];
-  const mech=ali?[['High Jump','Ali jumps twice as high. Hold '+K('jump')+' to float down'],['Getsuga Tenshou',K('attack')+' fires a Getsuga where you aim'],['Black Getsuga','Hold '+K('attack')+' to charge. Release when it turns red to fire it, or wait until it is full and release for a stronger one'],['Guard','Hold '+K('block')+' to block and parry everything in front of you'],['Parry','Attack right before a melee hit lands'],['Judgement Cut','Land 5 parries, then attack to unleash it'],['Teleport',K('dash')+' blinks you through attacks'],['Special',K('special')+' when the blue gauge is full'],['Auto-mantle','In town, run into a roof, tree, stall, fence or fountain to climb it']]
+  const keys=[['Move',null,'WASD or arrow keys (aim with the mouse)'],['Jump','jump',''],['Attack','attack',''],[ali?'Getsuga Tenshou':'Fireball','block',''],[ali?'Teleport':'Dash','dash',''],['Special','special',''],['Talk / advance','confirm',''],['Fast-forward','ff',' (hold in dialogue)'],['Pause','pause',' (toggle)'],['Voices','voices',' (toggle)'],['Mute','mute',' (toggle)'],['Menu / timeline','menu','']];
+  const mech=ali?[['High Jump','Ali jumps twice as high. Hold '+K('jump')+' to ride a Getsuga down'],['Combo','Press '+K('attack')+' three times: a long slash, a double cut, then a spin that hits all around you'],['Getsuga Tenshou',K('block')+' fires a Getsuga where you aim'],['Black Getsuga','Hold '+K('block')+' to charge. Release when it turns red to fire it'],['Parry','Attack right before a melee hit lands'],['Judgement Cut','Land 5 parries, then attack to unleash it'],['Teleport',K('dash')+' blinks you through attacks'],['Special',K('special')+' when the blue gauge is full'],['Auto-mantle','In town, run into a roof, tree, stall, fence or fountain to climb it']]
     :[['Double Jump','Press '+K('jump')+' twice'],['Glide','Hold '+K('jump')+' after the double jump'],['Combo','Press '+K('attack')+' three times for a 3-hit combo'],['Getsuga Tenshou','Hold '+K('attack')+' to charge. Release when it turns red to fire it, or wait until it is full and release for a stronger one'],['Charged Fireball','Hold '+K('block')+' until it is fully charged, then release: a huge fireball, and your sword catches fire. Basic attacks do double damage while it burns'],['Parry','Attack right before a melee hit lands'],['Ranged Parry','Attack an incoming projectile to send it back'],['Full Counter','Land 5 parries, then attack to unleash it'],['Dash',K('dash')+' dashes through attacks (you can\'t be hit mid-dash)'],['Special',K('special')+' when the blue gauge is full'],['Auto-mantle','In town, run into a roof, tree, stall, fence or fountain to climb it']];
   return {keys,mech}; }
 // the frame, the title and the close X (shared with the controller view in 99b_gamepad.js)
@@ -12674,7 +12740,7 @@ function twPadOn(){ return PAD.mode==='pad'; }
 // glyphs: the toggle wins; until it is used, Xbox pads get Xbox names and everything else PlayStation ones
 function twPadSet(){ return PAD.glyph||(/xbox|xinput|045e/i.test(PAD.id)?'xb':'ps'); }
 function twPadName(i){ return PAD_GLYPH[twPadSet()][i]; }
-function twPadLabel(a){ const ali=ALI(); return {'':'Nothing',jump:'Jump / confirm',attack:'Attack',block:(ali?'Guard':'Fireball')+' (magic)',dash:ali?'Teleport':'Dash',special:'Special',confirm:'Talk / advance',ff:'Fast-forward (hold)',pause:'Pause',menu:'Menu / timeline',voices:'Voices on / off',mute:'Mute'}[a]; }
+function twPadLabel(a){ const ali=ALI(); return {'':'Nothing',jump:'Jump / confirm',attack:'Attack',block:ali?'Getsuga Tenshou':'Fireball (magic)',dash:ali?'Teleport':'Dash',special:'Special',confirm:'Talk / advance',ff:'Fast-forward (hold)',pause:'Pause',menu:'Menu / timeline',voices:'Voices on / off',mute:'Mute'}[a]; }
 function twPadShort(id){ id=String(id||''); if(/dualsense/i.test(id)||/054c.*0ce6/i.test(id)) return 'DualSense (PS5)'; if(/054c/i.test(id)||/wireless controller/i.test(id)) return 'DualShock 4 (PS4)';
   if(/xbox|xinput|045e/i.test(id)) return 'Xbox controller'; return id.replace(/\s*\(.*$/,'').slice(0,40)||'Controller'; }
 // K('act') names the pad button while the controller is on (Jump also talks, so Talk falls back to it)
@@ -12971,7 +13037,7 @@ TM.sel=saveHas()?1:0;
 // ---------- pause screen ----------
 drawPause=function(){ D.fillStyle='rgba(4,5,12,.78)'; D.fillRect(0,0,UW,UH); if(IS_TOUCH()) return twDrawPauseTouch(); const w=820, h=470, x=(UW-w)/2, y=(UH-h)/2; uPanel(x,y,w,h,UIC.panel,UIC.line2,14);
   uText('Paused',x+36,y+58,`900 32px ${FD}`,UIC.accL); uText('Controls at a glance',x+36,y+84,`500 15px ${FB}`,UIC.mut);
-  const ali=ALI(), rows=ali?[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (hold to float)'],['Getsuga Tenshou',K('attack')+'  (aim with the mouse)'],['Black Getsuga','Hold '+K('attack')+', release'],['Guard',K('block')],['Parry','Attack just before a hit'],['Teleport',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu',K('menu')],['Voices · Mute',K('voices')+' · '+K('mute')]]
+  const ali=ALI(), rows=ali?[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (hold: ride a Getsuga)'],['Attack',K('attack')+'  (3-cut combo)'],['Getsuga Tenshou',K('block')],['Black Getsuga','Hold '+K('block')+', release'],['Parry','Attack just before a hit'],['Teleport',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu',K('menu')],['Voices · Mute',K('voices')+' · '+K('mute')]]
     :[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (twice: double jump)'],['Glide','Hold '+K('jump')+' after the double jump'],['Attack',K('attack')+'  (3-hit combo)'],['Getsuga Tenshou','Hold '+K('attack')+', release'],['Fireball',K('block')+'  (hold for a big one)'],['Parry','Attack just before a hit'],['Dash',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu · Voices · Mute',K('menu')+' · '+K('voices')+' · '+K('mute')]];
   const half=Math.ceil(rows.length/2); rows.forEach(([a,b],i)=>{ const col=i<half?0:1, r=i%half, cx=x+36+col*384, cy=y+130+r*44; uRR(cx,cy-24,364,36,8); D.fillStyle='rgba(255,255,255,.035)'; D.fill();
     uText(a,cx+14,cy,`700 15px ${FB}`,UIC.mut); uText(b,cx+350,cy,`700 15px ${FB}`,UIC.text,'right'); });
@@ -13331,8 +13397,8 @@ ui.addEventListener('pointermove',e=>{ if(!DBG.on) return; const [x,y]=tlPt(e), 
 const MOB={k:2,cheats:false,dbgBtn:null,sx:[0,0,0],sy:[0,0],ct:0,drag:null,fade:0,ghost:0,prects:[],full:false,lastSel:null,strip:null,list:null,bgPaused:false};
 function mobRects(list,k){ for(const r of list){ r.x*=k; r.y*=k; r.w*=k; r.h*=k; } }
 function mobTouchRows(){ const ali=ALI();
-  return [['◎','Left thumb','Drag anywhere on the left half to move'],['⚔','Sword',ali?'Tap: Getsuga Tenshou · hold, release: Black Getsuga':'Tap: 3-hit combo · hold, release: Getsuga'],
-    ['↑','Jump',ali?'Jumps high · hold to float down':'Again in the air: double jump · hold: glide'],['⛨',ali?'Guard':'Fireball',ali?'Hold to guard and parry':'Tap: fireball · hold until full: huge fireball + flaming sword'],
+  return [['◎','Left thumb','Drag anywhere on the left half to move'],['⚔','Sword',ali?'Tap: 3-cut combo (slash, double cut, spin)':'Tap: 3-hit combo · hold, release: Getsuga'],
+    ['↑','Jump',ali?'Jumps high · hold: ride a Getsuga':'Again in the air: double jump · hold: glide'],['☾',ali?'Getsuga':'Fireball',ali?'Tap: Getsuga Tenshou · hold, release: Black Getsuga':'Tap: fireball · hold until full: huge fireball + flaming sword'],
     ['»',ali?'Teleport':'Dash','Dodge through attacks'],['✦','Special','When the blue gauge is full'],['!','Parry','Attack right before a hit lands (5 = '+(ali?'Judgement Cut':'Full Counter')+'). A silver slash can always be parried'],
     ['…','Talk / Next','Talk to people, advance dialogue'],['☰','Menu','Top right: timeline, controls, options, cheats']]; }
 const mobIn=(r,x,y)=>!!r&&x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;

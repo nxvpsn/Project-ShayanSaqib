@@ -30,7 +30,7 @@ function hzgHurtGod(d,src){ return (TW.otk&&!TW._ally&&src!=='ally'&&src!=='test
 
 // ---------- the swing clock (parry window) + Full Counter / mini Judgement Cut ----------
 (function(){ const sa=startAtk; startAtk=function(n){ const P=Player; P.swingT=Game.time; if(!ALI()&&!Game.paulLock&&(P.counter||0)>=5){ twCounterSlash(); return; } return sa(n); };
-  const ag=aliGetsuga; aliGetsuga=function(big){ const P=Player; P.swingT=Game.time; if(!big&&!Game.paulLock&&(P.counter||0)>=5){ twMiniJC(); return; } return ag(big); }; })();
+  const ag=aliGetsuga; aliGetsuga=function(big){ const P=Player; P.swingT=Game.time; if(!big&&!Game.paulLock&&!TW._aliRC&&(P.counter||0)>=5){ twMiniJC(); return; } /* Ali's Judgement Cut comes from his attack, not his Getsuga */ return ag(big); }; })();
 function twCounterSlash(){ const P=Player; P.counter=0; const tg=nearestFoe(7); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1;
   P.atk={t:0,n:2,hit:new Set(),q:false,big:1}; P.combo=2; P.charge=0; Sound.sfx('swing'); Sound.sfx('beam'); Sound.sfx('counter'); shake(.5);
   // the huge crescent itself is drawn as a Judgement Cut gash in 06b_shayan.js (shFullCounterFX)

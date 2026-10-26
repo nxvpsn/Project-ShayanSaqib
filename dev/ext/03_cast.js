@@ -45,6 +45,11 @@ function cPose(k,t,u){ u=u||0; const Pz={b:0,lean:0,F:[[-2,0],[2,0]],ua:[.1,-.08
     case 'attack': { const e=cE(u*1.15); Pz.F=[[-5,0],[5,0]]; Pz.b=1+Math.round(e); Pz.lean=Math.round(-1+e*4); Pz.ua=[-.6+e*.5,-2.7+e*4.1]; Pz.el=[.6,.25-e*.2]; Pz.tw=e; break; }
     case 'charge': Pz.F=[[-6,0],[5,0]]; Pz.b=3; Pz.lean=-1; Pz.ua=[-.5,-.9]; Pz.el=[.9,1.2]; break;
     case 'beam': Pz.F=[[-6,0],[5,0]]; Pz.b=2; Pz.lean=3; Pz.ua=[-.7,1.5]; Pz.el=[.4,0]; Pz.tw=1; break;
+    // Ali's combo: a big diagonal cut, a down-then-up double cut, a crouched spin with the blade out; and riding a Getsuga
+    case 'aliS1': { const e=cE(Math.min(1,u*1.4)); Pz.F=[[-6,0],[6,0]]; Pz.b=1+Math.round(e*2); Pz.lean=Math.round(-2+e*6); Pz.ua=[-.6+e*.4,-2.9+e*4.6]; Pz.el=[.6,.2]; Pz.tw=e; break; }
+    case 'aliS2': { const h=u<.5, e=cE(Math.min(1,(h?u:u-.5)*2.6)); Pz.F=[[-6,0],[6,0]]; Pz.b=2; Pz.lean=h?Math.round(-1+e*5):Math.round(4-e*5); Pz.ua=h?[-.6,-2.6+e*4.2]:[-.4,1.6-e*4.4]; Pz.el=[.6,.2]; Pz.tw=h?e:1-e; break; }
+    case 'aliSpin': Pz.F=[[-7,0],[7,0]]; Pz.b=3; Pz.lean=0; Pz.ua=[-1.6,1.55]; Pz.el=[0,.05]; Pz.tw=1; break;
+    case 'aliSurf': Pz.F=[[-4,0],[4,0]]; Pz.b=1; Pz.lean=1; Pz.ua=[-.5,.7]; Pz.el=[.4,.5]; break;
     case 'block': Pz.F=[[-5,0],[4,0]]; Pz.b=2; Pz.lean=1; Pz.ua=[.5,.9]; Pz.el=[1.4,1.6]; break;
     case 'cast': Pz.F=[[-4,0],[4,0]]; Pz.b=br; Pz.lean=-1; Pz.ua=[-.5,2.5+Math.sin(t*9)*.08]; Pz.el=[.4,.1]; Pz.hd=-1; break;
     case 'pray': Pz.b=br; Pz.ua=[.65,.7]; Pz.el=[1.7,1.7]; Pz.hd=1; break;
@@ -69,12 +74,12 @@ function cSword(p,A,len,ang,cols){ const a=A.a+(ang||0), ex=A.ex+Math.sin(a)*len
 // ================= ALI =================
 const AC2=Object.assign({},AC,{hakS:'#1e1a2a',haoriS:'#100e18',innerS:'#5a0e1a',skinH:'#daa074',hatS:'#a88a48',scarfH:'#e0303e',hair2:'#2a2434'});
 function drawAliCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim||'idle', C=cFlash(AC2,s.flash>0), old=s.old;
-  const tk=cTalk('ali'), ap=s.ap!=null?s.ap:(a==='attack'?(t*4)%1:0);
+  const tk=cTalk('ali'), ap=s.ap!=null?s.ap:(a==='attack'?(t*4)%1:/^aliS/.test(a)&&Player.aliAtk?Player.aliAtk.u:0);
   const k=tk&&a==='idle'?'talk':a==='dead'?'down':a; const P=cPose(k,t,ap); if(a==='glide'){ P.ua=[2.5,2.6]; P.el=[.5,.5]; }
   const D={hip:14,torso:13,thigh:7,shin:8,uarm:6,farm:6,sep:2,ssep:4,neck:1};
   const J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy;
   // scarf trailing from the neck, longer when moving fast
-  const sl=a==='run'||a==='dash'||a==='glide'||a==='beam'?14:8;
+  const sl=a==='run'||a==='dash'||a==='glide'||a==='beam'||a==='aliSurf'||a==='aliSpin'?14:8;
   for(let i=0;i<sl;i++){ const wy=Math.round(Math.sin(t*10-i*.55)*(i/3.2)), x=sx-4-i, y=sy+1+wy+Math.round(i*(a==='run'||a==='dash'?.05:.35)); p(x,y,1,3,i>sl-4?C.scarfD:i%3?C.scarf:C.scarfH); if(i%4===3) p(x,y+3,1,1,C.scarfD); }
   // ponytail
   const pt=Math.round(Math.sin(t*6)*1.5); p(J.headX-7,J.headY-6,3,4,C.hair); p(J.headX-9,J.headY-3+pt,3,5,C.hair); p(J.headX-9,J.headY+2+pt,2,2,C.hair2);
@@ -83,7 +88,7 @@ function drawAliCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim||'i
   // far leg (wide hakama)
   cLeg(p,J.L[0],6,C.hakS,C.hakS,C.sandal);
   // daisho at the hip unless a blade is out
-  const out=a==='attack'||a==='beam'||a==='block'||a==='charge';
+  const out=a==='attack'||a==='beam'||a==='block'||a==='charge'||a==='aliS1'||a==='aliS2'||a==='aliSpin';
   const saya=(x0,y0,x1,y1)=>{ cSeg(p,x0,y0,x1,y1,1,'#3a3048'); cSeg(p,x0,y0+1,x1,y1+1,1,'#0c0a10'); };
   saya(J.hx-2,hy-4,J.hx-15,hy+2); if(!out){ saya(J.hx,hy-6,J.hx-17,hy-1); p(J.hx,hy-7,2,2,C.tsuba); p(J.hx+2,hy-7,3,1,'#e8e4dc'); } p(J.hx-2,hy-5,2,2,C.tsuba);
   // near leg

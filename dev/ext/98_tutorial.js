@@ -17,7 +17,7 @@ const TUT_LOOK={cloth:'#2a2f4a',clothS:'#1c2036',skin:'#d8a882',hair:'#1a1410',h
     G.anim.push(()=>{ if(!m.parent) return; const n=NPCS.find(o=>o.who==='trainer'); if(n){ m.position.set(n.x+.45,n.y+1.6,n.z+.05); return; }
       if(L===G){ m.parent.remove(m); FX.burst(m.position.x,m.position.y,m.position.z,26,0xa8743e,5,.4,false); Sound.sfx('crash'); } });
     return G; }; })();
-SCR.trainer=function*(){ if(ALI()){ yield say('trainer',"Whoa. You already parry everything by just... existing. My demo can't handle you, man."); return; }
+SCR.trainer=function*(){ if(ALI()){ yield say('trainer',"Whoa, a samurai. You already know the trick, right? Swing right before the hit lands. My demo is for blacksmiths, man."); return; }
   yield say('trainer',"Yo! You look like someone who gets hit a lot. Want to practice parrying?");
   yield say('trainer',"Put on this VR headset. Ali's hologram runs the class. Infinite health, zero consequences.");
   const c=yield choose([{t:"Put on the headset."},{t:"Maybe later."}]);

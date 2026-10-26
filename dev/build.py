@@ -102,6 +102,20 @@ s = patch(s, "  // the wanderer returns to earth\n  yield fadeOut(); fol.on=0; a
 s = patch(s, "if(!pSprite) pSprite=new Sprite3D(64,64);", "if(!pSprite){ pSprite=new Sprite3D(96,96); pSprite.shadow.geometry=new THREE.PlaneGeometry(.88,.44); }")
 # Nathan rests less between patterns (ext/59o_nathan3.js makes him harder)
 s = patch(s, "NB.cd=[0,.8,.6,.45,.35][NB.phase];", "NB.cd=[0,.5,.38,.28,.2][NB.phase];")
+# ---------- Ali, reworked (dev/ext/08b_ali.js): left click = his own 3-hit combo, right click = Getsuga (hold: Black Getsuga),
+# no guard / blade storm, a teleport with no VFX, small Getsuga Jujishous hung in the frozen air, and a final cut in his ultimate
+s = patch(s, "if(ALI()){ if(ctl&&consume('block')) P.blockT=0; P.block=ctl&&held.block&&P.dash<=0&&!P.atk; } else {", "if(ALI()){ P.block=false; } else {")
+s = patch(s, "  if(ALI()&&P.block) aliBlockStorm(dt);\n", "")
+s = patch(s, "    if(ALI()){ if(consume('attack')&&!P.block) aliGetsuga(false); }", "    if(ALI()) aliInput(dt);")
+s = patch(s, "    if(held.attack&&!P.atk&&!P.block&&P.dash<=0){ const before=P.charge;", "    if(!ALI()&&held.attack&&!P.atk&&!P.block&&P.dash<=0){ const before=P.charge;")
+s = patch(s, "    if(!held.attack){ if(P.charge>=.75){ if(ALI()) aliGetsuga(true); else fireBeam(P.charge>=1.5); } P.charge=0; }", "    if(!ALI()&&!held.attack){ if(P.charge>=.75) fireBeam(P.charge>=1.5); P.charge=0; }")
+s = patch(s, "  } else if(!held.attack) P.charge=0;", "  } else if(!held.attack&&!(ALI()&&held.block)) P.charge=0;")
+s = patch(s, "  FX.burst(ox,oy+1,oz,22,0x0c0814,3,.35,false); FX.burst(ox,oy+1,oz,10,0xb0182a,3,.25); aliGhost(ox,oy,oz);\n", "")
+s = patch(s, "  FX.burst(tx,P.y+1,tz,16,0x0c0814,3,.3,false); FX.ring(tx,P.y+.05,tz,'#b0182a',1.2,.2); Sound.sfx('dash'); }", "  Sound.sfx('dash'); }")
+s = patch(s, "const m=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.MeshBasicMaterial({map:CRESC,transparent:true,depthWrite:false,side:THREE.DoubleSide,color:0xff3a4a,fog:false})); m.position.set(x,y+1.1,z); m.rotation.y=-Math.atan2(cz-z,cx-x); m.userData.temp=1; scene.add(m);", "const m=aliHungJJ(x,y+1.1,z,cx,cz);")
+s = patch(s, "yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); yield wait(.7);", "yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); yield wait(.35); yield* aliFinalCut(); yield wait(.2);")
+s = patch(s, "['ATTACK','Getsuga Tenshou. Spam it.'],['HOLD ATTACK','Black Getsuga'],['JUMP','Twice as high. Hold to float in place.'],['BLOCK','Blade storm. Deflects every projectile.'],['DASH','Teleport. No cooldown.']",
+  "['ATTACK','Three cuts: a slash, a double cut, a spin.'],[T?'GETSUGA BUTTON':'RIGHT CLICK','Getsuga Tenshou. Hold: Black Getsuga.'],['JUMP','Twice as high. Hold to ride a Getsuga.'],['PARRY','Attack right before a hit lands.'],['DASH','Teleport. No cooldown.']")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

@@ -22,7 +22,7 @@ function twPadOn(){ return PAD.mode==='pad'; }
 // glyphs: the toggle wins; until it is used, Xbox pads get Xbox names and everything else PlayStation ones
 function twPadSet(){ return PAD.glyph||(/xbox|xinput|045e/i.test(PAD.id)?'xb':'ps'); }
 function twPadName(i){ return PAD_GLYPH[twPadSet()][i]; }
-function twPadLabel(a){ const ali=ALI(); return {'':'Nothing',jump:'Jump / confirm',attack:'Attack',block:(ali?'Guard':'Fireball')+' (magic)',dash:ali?'Teleport':'Dash',special:'Special',confirm:'Talk / advance',ff:'Fast-forward (hold)',pause:'Pause',menu:'Menu / timeline',voices:'Voices on / off',mute:'Mute'}[a]; }
+function twPadLabel(a){ const ali=ALI(); return {'':'Nothing',jump:'Jump / confirm',attack:'Attack',block:ali?'Getsuga Tenshou':'Fireball (magic)',dash:ali?'Teleport':'Dash',special:'Special',confirm:'Talk / advance',ff:'Fast-forward (hold)',pause:'Pause',menu:'Menu / timeline',voices:'Voices on / off',mute:'Mute'}[a]; }
 function twPadShort(id){ id=String(id||''); if(/dualsense/i.test(id)||/054c.*0ce6/i.test(id)) return 'DualSense (PS5)'; if(/054c/i.test(id)||/wireless controller/i.test(id)) return 'DualShock 4 (PS4)';
   if(/xbox|xinput|045e/i.test(id)) return 'Xbox controller'; return id.replace(/\s*\(.*$/,'').slice(0,40)||'Controller'; }
 // K('act') names the pad button while the controller is on (Jump also talks, so Talk falls back to it)

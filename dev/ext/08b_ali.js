@@ -1,0 +1,65 @@
+// =====================================================================
+// ALI, REWORKED (the player's Ali; the AI and co-op Ali keep their own code)
+// - Left click (attack): his own 3-hit combo, every cut drawn with the Judgement Cut tear (twGash):
+//   1) one slash, twice Shayan's reach; 2) a double cut (two hits, a vertical and a horizontal tear);
+//   3) a spin that hits all around him with the same reach. 5 banked parries: the next attack is a Judgement Cut.
+// - Right click (block): Getsuga Tenshou (the same black-and-red crescent as Shayan's charged one); hold, release: Black Getsuga.
+// - No guard / blade storm (no auto-parry): he parries like Shayan, by attacking right before a hit lands.
+// - Teleport has no VFX (patched in build.py). Gliding: he rides a small Getsuga.
+// - Ultimate: the Getsugas hung in the frozen air are small Getsuga Jujishous (aliHungJJ), and before time resumes he
+//   makes one long Judgement Cut across half the screen (aliFinalCut).
+// Base-game hooks are patched in build.py (aliInput is called from updatePlayer).
+// =====================================================================
+const ALI_R=3.8; // reach: double Shayan's swing
+const ALI_COMBO=[{dur:.32,hits:[[.06,.15]],dmg:1.3,arc:1.25,anim:'aliS1'},{dur:.38,hits:[[.05,.12],[.18,.25]],dmg:1,arc:1.25,anim:'aliS2'},{dur:.44,hits:[[.08,.24]],dmg:2,arc:3.3,anim:'aliSpin'}];
+function aliCombo(n){ const P=Player, tg=nearestFoe(ALI_R+1); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1; P.combo=n; P.swingT=Game.time;
+  P.aliAtk={n,t:0,u:0,q:false,f0:P.f,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0;
+  if(P.onGround&&n<2&&!(Game.twins&&Game.twins.active)){ P.vx+=Math.cos(P.ang)*3; P.vz+=Math.sin(P.ang)*3; } }
+// each cut is a Judgement Cut tear placed out in front (or around, for the spin), never over Ali
+function aliSlashFX(n,i){ const P=Player, gy=P.y, ux=Math.cos(P.ang), uz=Math.sin(P.ang), x=P.x, z=P.z; JC.flash=Math.max(JC.flash||0,.12);
+  if(n===0) twGash({life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
+  else if(n===1){ if(i===0) twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
+    else twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
+  else twGash({life:.48,rev:.15,fade:.24,w:22,sparks:26,pts:()=>twArcPts(x,gy+1,z,ux,uz,ALI_R*.85,-Math.PI,Math.PI,12,true)});
+  Sound.sfx(n===2?'whoosh':'swing'); if(n===2) shake(.15); }
+function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=ALI_COMBO[a.n]; a.t+=dt; a.u=Math.min(1,a.t/C.dur);
+  C.hits.forEach(([t0,t1],i)=>{ if(a.t>=t0&&!(a.fx>>i&1)){ a.fx|=1<<i; aliSlashFX(a.n,i); } if(a.t>=t0&&a.t<t1) meleeHits(P.x,P.z,P.y,ALI_R,P.ang,C.arc,C.dmg,a.sets[i]); });
+  if(a.t>=C.dur){ P.aliAtk=null; P.f=a.f0; if(a.q) aliCombo((a.n+1)%3); else P.comboT=.38; } }
+function aliInput(dt){ const P=Player;
+  if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
+  if(consume('block')){ TW._aliRC=1; try{ aliGetsuga(false); }finally{ TW._aliRC=0; } }
+  if(held.block&&!P.aliAtk&&P.dash<=0){ const before=P.charge; P.charge+=dt; if(before<.25&&P.charge>=.25) Sound.sfx('charge'); if(before<.75&&P.charge>=.75){ Sound.sfx('ready'); FX.burst(P.x,P.y+1,P.z,16,0xff4a6a,3,.25); }
+    if(P.charge>.25&&Math.random()<.7){ const a=rnd(0,6.28); FX.spawn(P.x+Math.cos(a)*1.2,P.y+rnd(.2,1.8),P.z+Math.sin(a)*1.2,-Math.cos(a)*3,rnd(-.5,1),-Math.sin(a)*3,.35,P.charge>.75?0xff3a5a:0xbfe8ff,.2,0,true); } }
+  if(!held.block){ if(P.charge>=.75) aliGetsuga(true); P.charge=0; } }
+// aim the combo where the mouse points, like Shayan's swings
+aliCombo=twAimed(aliCombo,ALI_R);
+// his own animations, and riding a Getsuga while he glides
+(function(){ const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments); try{ const P=Player;
+    if(!ALI()){ if(P.aliAtk) P.aliAtk=null; aliSurf(false); return r; }
+    if(!P.hidden&&!P.cineFly) aliAtkUpdate(dt); else P.aliAtk=null; /* runs even while he is hit, like Shayan's swing */
+    const A=P.aliAtk; if(A&&A.n===2) P.f=Math.floor(A.t/.055)%2?-A.f0:A.f0; /* the spin: he whips around */
+    if(A&&P.anim!=='hurt'&&P.anim!=='dash') P.anim=ALI_COMBO[A.n].anim; else if(P.gliding&&P.anim==='glide') P.anim='aliSurf';
+    aliSurf(P.gliding&&!P.hidden&&Game.state!=='title'); }catch(e){ console.error('ali',e); } return r; }; })();
+function aliSurf(on){ const P=Player; if(!on){ if(P.surf){ pxvStop(P.surf); P.surf=null; } return; }
+  if(!P.surf) P.surf=pxvPlay('getsuga',{any:true,x:P.x,y:P.y,z:P.z,size:1.5,op:.78,depth:true,ro:9});
+  const e=P.surf; if(!e) return; e.m.position.set(P.x,P.y+.12,P.z+.12); e.m.material.rotation=-Math.PI/2+Math.sin(P.t*3)*.06; e.m.scale.set(1.5*(e.A.w/e.A.h),1.5,1);
+  if(Math.random()<.35) FX.spawn(P.x+rnd(-.5,.5),P.y+.05,P.z,0,-rnd(.3,.8),0,.35,Math.random()<.5?0xff2a3a:0x1a0008,.18,0,true); }
+// the ultimate: small Getsuga Jujishous hung in the frozen air (a gold crescent riding a little Judgement Cut tear)
+function aliHungJJ(x,y,z,cx,cz){ const g=new THREE.Group(); g.position.set(x,y,z); g.userData.temp=1; scene.add(g); const dx=cx-x, dz=cz-z, d=Math.hypot(dx,dz)||1, ux=dx/d, uz=dz/d;
+  const e=pxvPlay('getsuga_jj',{any:true,x:0,y:0,z:0,size:2.3}); if(e){ g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=2.3; e.dir={dx:ux,dz:uz}; }
+  else { const m=new THREE.Mesh(new THREE.PlaneGeometry(2.2,2.2),new THREE.MeshBasicMaterial({map:CRESC,transparent:true,depthWrite:false,side:THREE.DoubleSide,color:0xffc838,fog:false})); m.rotation.y=-Math.atan2(dz,dx); g.add(m); }
+  twGash({life:8,rev:.06,fade:.15,w:12,op:.75,sparks:6,alive:()=>!!g.parent,pts:()=>twArcPts(g.position.x-ux*.5,g.position.y,g.position.z-uz*.5,ux,uz,1.25,-1.1,1.1,3)});
+  return g; }
+// the final hit before time resumes: one long Judgement Cut, nearly level, across half the screen
+function* aliFinalCut(){ const P=Player; P.cineAnim='beam'; Sound.sfx('swing'); Sound.sfx('beam'); aliGhost(P.x,P.y,P.z);
+  const a=-.13, L=UW*.5, cx=UW/2, cy=UH*.5, x0=cx-Math.cos(a)*L/2, y0=cy-Math.sin(a)*L/2, x1=cx+Math.cos(a)*L/2, y1=cy+Math.sin(a)*L/2;
+  JC.lines.push({x0,y0,x1,y1,t:0,w:46,seed:.61}); try{ twGashSparks([[x0,y0],[x1,y1]],110); }catch(e){}
+  yield wait(.08); impactFrame([[3,2],[1,2],[2,2],[1,1]]); shake(1.5); FX.hitstop=Math.max(FX.hitstop,.12); Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.sfx('tear');
+  JC.flash=Math.max(JC.flash||0,.9); FX.flash=.45; grade.uniforms.flashCol.value.set(1,.3,.4); if(typeof twClashWarp==='function') twClashWarp(P.x+Math.cos(P.ang||0)*4,P.y+1.2,P.z+Math.sin(P.ang||0)*4,.8);
+  yield wait(.45); }
+
+// ---------- the words: controls, tips, labels ----------
+(function(){ try{ const g=document.getElementById('tbGuard'); if(!g) return; let was=null;
+  const du=drawUI; drawUI=function(){ du(); try{ const ali=ALI()&&!document.body.classList.contains('mech'); if(ali===was) return; was=ali;
+      if(ali){ if(!g.dataset.sh) g.dataset.sh=g.innerHTML; g.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 4c8 2 12 8 10 16M6 4c4 4 5 10 3 16"/></svg>'; g.setAttribute('aria-label','Getsuga Tenshou, hold to charge a Black Getsuga'); }
+      else if(g.dataset.sh){ g.innerHTML=g.dataset.sh; g.setAttribute('aria-label','Fireball, hold to charge'); } }catch(e){} }; }catch(e){} })();

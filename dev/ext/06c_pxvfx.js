@@ -5,7 +5,7 @@
 // Replaced: Shayan's basic slash (a silver arc on the original swing's plane and size; burning, with flames
 // riding the sword, while ignited) and, as the same silver slash, every parryable melee attack (FX.arc swings,
 // and melee hits without a swing: rushes, dashes, lunges), Shayan's Getsuga Tenshou (black blade, red border), hit sparks (FX.spark), ground shockwaves (FX.ring), quick cuts (FX.cut),
-// the shared crescent texture (CRESC), parries (blue, red for Ali's guard), Ali's teleport, fireball explosions.
+// the shared crescent texture (CRESC), parries (blue, red for Ali), fireball explosions.
 // Hits, clashes and the basic slash are kept small on purpose: readability first.
 // Untouched on purpose: Judgement Cut (the slash pass and twGash), the black hole, Shayan's dash trail,
 // and everything Grimmaw does (while Game.boss, his fight, is on the field the old effects play).
@@ -85,17 +85,13 @@ function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new T
   e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
-      if((jj||!b.ali)&&pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); b.pxv=pxvAttach(k,b.g,jj?4.2:big?4.4:3.6); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25) */ } }
+      if(pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); if(b.bolt&&!jj) b.bolt.visible=false; b.pxv=pxvAttach(k,b.g,jj?4.2:(big||b.ali)?4.4:3.6); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25); Ali's plain Getsuga looks like Shayan's charged one */ } }
     return r; }; })();
 (function(){ const gm=twGetsugaMesh; twGetsugaMesh=function(s,col){ const g=gm.apply(this,arguments); try{ const k=(col==null||col===0x9a4aff)?'getsuga_omar':'getsuga';
     if(pxvOk(k)){ const mats=g.userData.mats; g.children.forEach(c=>c.visible=false); const e=pxvAttach(k,g,s*1.2); if(e&&mats) mats.push(e.m.material); } }catch(e){ console.error('pxv getsugaMesh',e); } return g; }; })();
 
-// ---------- parries: a clash star (blue; red for Ali's guard) ----------
+// ---------- parries: a clash star (blue; red for Ali) ----------
 (function(){ const ph=playerHit; playerHit=function(){ const r=ph.apply(this,arguments); if(r==='parry'){ const P=Player; pxvPlay(ALI()?'parry_ali':'parry',{x:P.x+Math.cos(P.ang||0)*.6,y:P.y+1.3,z:P.z+Math.sin(P.ang||0)*.6,size:1.6}); } return r; }; })();
-
-// ---------- Ali's teleport: he folds into a red-black seam, then bursts out where he lands ----------
-(function(){ const at=aliTeleport; aliTeleport=function(){ const P=Player, ox=P.x, oy=P.y, oz=P.z, r=at.apply(this,arguments);
-    if(pxvOk('tp_out')){ pxvPlay('tp_out',{x:ox,y:oy+1.4,z:oz,size:3.4,depth:true}); pxvPlay('tp_in',{x:P.x,y:P.y+1.4,z:P.z,size:3.4,depth:true}); } return r; }; })();
 
 // ---------- the charged fireball burns: crimson flames lick around the ball as it flies (depth-tested, so the ball shows in the middle) ----------
 (function(){ const tf=twFireball; twFireball=function(big){ const n0=TW.fb.length, r=tf.apply(this,arguments); try{ const f=TW.fb[TW.fb.length-1];

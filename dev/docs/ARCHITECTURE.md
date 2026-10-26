@@ -35,7 +35,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 - **Combat:**
   - `playerHit(dmg,sx,sz,opt)` returns 'none', 'parry', 'block' or 'hit'. `opt` takes `melee`, `heavy`, `pierce`, `unblockable` and `onParry`.
   - Also `hurtPlayer`, `startAtk(n)`, `meleeHits(...)`, `fireBeam(big,quiet,o)`, and `spawnProj(o)` (projectiles go in `BOLTS`).
-  - Ali has `aliGetsuga`, `aliUltimate` (Q, a time-stop cutscene) and `aliTeleport`. Shayan's Q is `specialAttack` (Heavenly Drill chant).
+  - Ali (reworked, `ext/08b_ali.js` + patches in build.py): left click = his 3-cut combo (`aliCombo`, `ALI_COMBO`: slash with twice Shayan's reach, double cut, spin all around; Judgement Cut tears via `twGash`), right click = `aliGetsuga` (hold: Black Getsuga), no guard, `aliTeleport` without VFX, `aliUltimate` (Q, time stop: hung `aliHungJJ` Jujishous + `aliFinalCut`). Shayan's Q is `specialAttack` (Heavenly Drill chant).
 - **Bosses:**
   - **Grimmaw:** a state machine; see `updateBoss`, `damageBoss`, `stagger(b,t)` and `Game.boss`.
   - **Nathan:** `NB`, `nbPattern(k)`, `NB_POOL`, `nbDamage`, `nbBoost`, `nbLaser`, `NB_PHASES`, `NB_CINE`, `nbFinale`.
@@ -65,6 +65,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 | 06d_drillfx | Heavenly Drill pixel pass over `makeDrill` (`drxAttach`): spinning fire sheath `drill_aura` (speed follows `d.spin`), black/red lightning `drill_bolt`, a fire helix, motion smears, Hamza's `pee_stream`/`pee_splash` while `Game.chant.pee`, impact `drill_boom` + `drill_crater` (impact read from `d.spin>=90` or the drill dying). Plays during Grimmaw too (`any`) |
 | 07_allies | AI allies: Caotan, Omar, AI Ali (movement, hits, down and revive, bars) |
 | 08_aim | mouse aim for swings, beams, Getsugas and fireballs |
+| 08b_ali | the player's Ali kit: `aliInput` (called from updatePlayer via a build.py patch), combo `aliCombo`/`aliAtkUpdate`/`aliSlashFX` (`ALI_R` 3.8 reach), poses `aliS1`/`aliS2`/`aliSpin`/`aliSurf` in `03_cast` cPose, riding a Getsuga while gliding (`aliSurf`), `aliHungJJ`, `aliFinalCut`, the touch Getsuga button icon. The AI and co-op Ali keep their own code |
 | 09_parry | `twComboStart/Hit/End`, `twSlash`, `twBlinkTo`; glint counters only show when `T.showN` is set |
 | 10/11_caotan | Caotan's kit: `TWK.caotan.*` (11 overrides glint1, glint2, tsun and letters), the dating-sim limit cut (wrong answer means death), Megane Supernova (×10: mixed lasers, `twCaoPillowShot`, `twCaoNose`; 2.2s hide window). Dashes use `TW_DASH_R`/`TW_DASH_WIN`. Laser rule (`TW_CAO_COLS` wrapper on `twBeam`): jumpable = blue and low, not jumpable = pink with a `wall` (knee-high during the warning, tall while firing) |
 | 12_strict | timed parries: `TW.presses` (every fresh attack press), `twStrictDo(from,fn)` makes melee parries inside `fn` count only if the FIRST press after `from` (tell start + `TW_STRICT.grace` 0.2s) lands in the window; `twRealAhead` converts world seconds to real ones (parry slow-mo/hitstop). Used by Caotan's Triple Rush (two short blinks then a blink to 9 units before rush 1, a blink out before rushes 2-3; an early press in the arrow = `twTsunPunish`, point-blank pillow), Omar's reap, Shadow Step, clones and black-hole rushes. Ali's guard is untouched |

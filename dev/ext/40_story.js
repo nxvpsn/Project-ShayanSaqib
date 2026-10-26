@@ -38,7 +38,7 @@ twSetScr('twinsGate',function*(){ const P=Player; yield fadeOut(); loadLevel('tw
   if(ALI()){ yield say('ali',"You call yourself the Edge?"); yield say('omar',"I... yes. I do."); yield say('ali',"I am the edge. You are a butter knife in a coat."); yield say('omar',"...Brother. I think he's edgier than me.",'angry'); }
   else { yield say('shayan',"Wait. Are you two twins? You look nothing alike."); yield say('caotan',"We don't talk about it."); yield say('omar',"We do not talk about it."); }
   yield say('caotan',ALI()?"Nobody is edgier than my brother! Get him!":"Enough talk! Prepare to be... OVERWHELMED.",'angry');
-  if(Game.hamza) yield say('hamza',ALI()?"Oink oink! Ali, just stand there and hold block. Everything bounces off you anyway.":"Oink oink! Shayan, swing at their projectiles! Send everything right back at them!",'happy');
+  if(Game.hamza) yield say('hamza',ALI()?"Oink oink! Ali, slice their projectiles right before they hit! Send them back!":"Oink oink! Shayan, swing at their projectiles! Send everything right back at them!",'happy');
   evaCard(['THE GATEKEEPER TWINS','CAOTAN & OMAR'],2,1); Sound.sfx('slam'); yield wait(2);
   Game.banner={name:'Caotan Cummaster & Omar the Edge',sub:ALI()?'The Gatekeeper Twins (outmatched)':'The Gatekeeper Twins',t:0};
   yield cineTo([10,7.2,25],[10,1.2,9],1.1); TWL.forEach(T=>{ T.noAttack=0; T.inv=false; }); TW.fight.frame=true; Cam.cine=null; Game.letterTo=0; Game.state='play'; Sound.play('battle'); });
