@@ -1,0 +1,169 @@
+# Architecture reference
+
+Read only the section you need. Line numbers drift, so `grep -n` for names.
+
+## 1. How the page is built
+
+```
+dev/base/original.html        (original game, commit 6c09a24, its voice data stripped)
+   → build.py patch() edits    (small text replacements in the base script; each anchor must match once)
+   → + <script>"use strict"; dev/ext/*.js concatenated in filename order</script>
+   → const VOICES = the list in audio/v/manifest.json (clips are audio/v/<key>.mp3, fetched on first use by ext/00a_voices.js)
+   → ../index.html (--write), plus dev/game.js (patched base script, voices stripped) and dev/ext.js for the harness
+```
+- `build.py` patches cover:
+  - the Grimmaw victory split for the twin betrayal;
+  - pact-route hooks;
+  - `twPlayerHitHook` in `playerHit`;
+  - Shayan's block becoming a fireball;
+  - Full Counter numbers and `melee:true` tags on base melee attacks;
+  - HP constants, hint text and the parry no-blink;
+  - the mech phase III cut and the 2× chant timing.
+- Base-game globals are plain functions or `const` objects; the extension reassigns functions to wrap them.
+
+## 2. Base game (dev/game.js), the names you will need
+
+- **State:**
+  - `Game` holds the current state: `state` ('title','play','cut','paused','dead','end'), `flags`, `script`, `dlg`, `wait`, `banner`, `subtitle`, `letterTo`, `timeScale`, `slowT`, `fxUpd[]`, `dmgNums[]`, `arena`, `boss`, `mech`, `mira`, `hamza`.
+  - `Player` is the player object (x, y, z, vx, vz, f, ang, anim, hp, maxHp, inv, hurt, dash, atk, sp, counter, …).
+  - `ALI()` means the player is Ali (`Game.flags.ali`).
+- **Levels:** `LEVELDEF[key]()` builds a level and `L` is the current one. Use `loadLevel(key,opts)`, `resetPlayer({x,z},keepHP)`, `newGame()`, `toTitle()`, `respawn()`, `unstuck()`.
+- **Story:** `SCR` (Shayan) and `SCRA` (Ali) hold named generator scenes; `SCR_BASE` is the original. Cutscene helpers:
+  - `run(gen)`, `step()`, `say(who,text,ex)`, `choose([{t}])`, `wait(s)`;
+  - `tween(obj,props,dur,ease)`, `cineSet(px,py,pz,lx,ly,lz)`, `cineTo([p],[l],dur)`;
+  - `fadeOut()`, `fadeIn()`, `evaCard(lines,dur,style)`, `card(title,sub)`.
+- **Combat:**
+  - `playerHit(dmg,sx,sz,opt)` returns 'none', 'parry', 'block' or 'hit'. `opt` takes `melee`, `heavy`, `pierce`, `unblockable` and `onParry`.
+  - Also `hurtPlayer`, `startAtk(n)`, `meleeHits(...)`, `fireBeam(big,quiet,o)`, and `spawnProj(o)` (projectiles go in `BOLTS`).
+  - Ali has `aliGetsuga`, `aliUltimate` (Q, a time-stop cutscene) and `aliTeleport`. Shayan's Q is `specialAttack` (Heavenly Drill chant).
+- **Bosses:**
+  - **Grimmaw:** a state machine; see `updateBoss`, `damageBoss`, `stagger(b,t)` and `Game.boss`.
+  - **Nathan:** `NB`, `nbPattern(k)`, `NB_POOL`, `nbDamage`, `nbBoost`, `nbLaser`, `NB_PHASES`, `NB_CINE`, `nbFinale`.
+  - **Hamza mech fight:** `Game.mech`, `NAT`, `startMechPhase`, `mechDamage`, `mechPhaseEnd`, `soulburn`, `cosmicBlade`, `blackHoleFinale`, `HZ_HP`.
+- **Rendering:**
+  - `Sprite3D(w,h)` holds a canvas texture redrawn every frame with `draw(fn)`; all instances are in `SPRITES`.
+  - Character draw functions: `drawShayanHD`, `drawAliHD`, `drawMiraHD`, `drawHamzaFairy`, `drawGrimmawHD`, `drawCaotanHD`, `drawOmarHD`, `drawNathanPilot`, `drawVillagerHD`, called as `fn(c,cx,by,f,state)`.
+  - Portraits come from `portrait(who,ex)`, a 56×56 canvas.
+  - Other: `drawSprites`, `drawUI`, `drawHUD`, `updateCamera`, `Cam` (`cine`, `focus`, `look`, `zoom`), and `grade.uniforms` (`flash`, `flashCol`, `tint`, `imp`, `ab`).
+- **Effects:** `FX` (`spawn`, `burst`, `spark`, `ring`, `arc`, `cut`, `marker`, `line`, `ash`, `flash`, `hitstop`), `shake(n)`, `impactFrame(seq)`, `Sound.sfx(name)`, `Sound.play(music)`, `Voice.play(who,text)`, `Voice.bark(key)`.
+- **Input:** `KEYMAP` maps key codes to actions; `press(a)` / `release(a)` update `held[a]`, `hit[a]` is a per-frame edge, and `consume(a)` reads it. Left click is attack, right click is block.
+
+## 3. Extension files (dev/ext)
+
+| File | Contents |
+|---|---|
+| 00_core | `TW` state: `TW.fight` (current fight: `kind`, `lock`, `pre()`, `onHurt()`, `respawn()`, `pool()`), `TW.foes` (`twMake`), `TW.allies`, `TW.hz` (hazards via `twHz({upd(dt,play),kill})`). Hazards: `twBlast`, `twBeam` (a function `ang` makes it a jumpable spinning beam), `twWave`, `twZone`, `twPull`, `twThrow`, `twBolt`/`twAimBolt`. Also `twHitP(dmg,x,z,{ub,melee,heavy,pierce,onParry})`, `twHurt(T,d,src)`, `twBark`, `twGlint`, `twSp(T)` (speed multiplier), `twUpdateFoe` (AI loop), `drawCaotanBoss` (glasses push-up, `noGlasses`), `drawOmarBoss` |
+| 01_hud | boss bars (`twBarFor`, `twDrawBars`), overlays (dark, spotlight, dating sim, sentence, hourglass), cut-ins, `twBig(text,opts)` |
+| 02_shsprite | new Shayan sprite: 8-direction atlas and portrait. The old drawing is the fallback until images load; world sprites are scaled to 0.8. Regenerate with `assets/shayan/make_sprite_module.py` |
+| 03_cast | cast overhaul: every character but Shayan redrawn as articulated, shaded pixel art (`drawAliCast`, `drawMiraCast`, `drawVillagerCast` (villagers, Paul, Kenji), `drawNathanCast`, `drawCaotanCast`, `drawOmarCast`, `drawCaomarCast`, `drawGrimmawCast`, `drawFairyCast`, `drawGiantPigCast`), assigned to the old names at the end. Rig: `cPose(kind,t,u)` -> `cRig(D,P)` (feet by IK `cIK`, arms by angle), painters `cSeg`/`cPoly`/`cLeg`/`cArm`/`cSword`; `cTalk(who)` moves mouths while a line types or is voiced; `cFollow` smooths on/off flags (Omar's swing). Preview offline: `node preview_cast.js ext.js out.png` (cells in `preview_cells.js` or `CELLS` env) |
+| 04_vfx | true-crescent Getsuga texture (`twCrescFrame`, 4 flicker frames into `CRESC`), ember trails on `BEAMS`, boss laser dressing for `twBeam` (`twBeamExtra`/`twBeamFlare`/`twBeamSparks`; hit test unchanged), Judgement Cut gashes in any shape (`twGash` chains overlapping JC tears along a screen polyline: Full Counter crescent, Getsuga Jujishou), `twArcPts`, `twClearCutFX` (the JC ×100 counter and gashes are cleared on warp/title), skinned ground blasts `twBlast(...,{skin:'goop'|'frosting'|'crater'})` + `twDecal` |
+| 05_fixes | `twSweep`, which clears leftover cutscene meshes on retry, title or new game |
+| 06_combat | secret numpad keys (capture listener, works in menus): 0 infinite HP (`TW.god`), 1 infinite Full Counter (`TW.infFC`), 2 one-hit kill (`TW.otk`, skips limit cuts via `twOtkSkipLC`), 3 timeline unlock checkboxes (`TW.unlockMode`), 5 debug mode; `twCheatToast`; the melee parry hook (window 0.26s from `twParryClock()`, or `opt.win`; Ali's guard always parries); melee hits on Shayan leave only 0.12s of i-frames; Full Counter, mini Judgement Cut, fireballs (0.2 dmg; holding `TW_FB_FULL`=3s fires the big one and ignites the sword: `P.ignite`, 8s of double melee damage, red numbers, red swing arc, clock icon); `twSyncMouse` fixes chorded left+right clicks |
+| 06b_shayan | Shayan extras over the atlas: 3 different combo swings by `P.atk.n` (diagonal cut, rising upper-cut, leaping slam; no spin); the basic slash is the base arc re-textured as a Getsuga (`shArc`, `shArcTex`; one VFX), double-jump front flip (`P.djT`), meditation glide (`shMeditate`) with pixie dust, Full Counter animation (`P.fcT`) + `shFullCounterFX` (a JC-gash crescent). Hitboxes stay the base game's |
+| 07_allies | AI allies: Caotan, Omar, AI Ali (movement, hits, down and revive, bars) |
+| 08_aim | mouse aim for swings, beams, Getsugas and fireballs |
+| 09_parry | `twComboStart/Hit/End`, `twSlash`, `twBlinkTo`; glint counters only show when `T.showN` is set |
+| 10/11_caotan | Caotan's kit: `TWK.caotan.*` (11 overrides glint1, glint2, tsun and letters), the dating-sim limit cut (wrong answer means death), Megane Supernova (×10: mixed lasers, `twCaoPillowShot`, `twCaoNose`; 2.2s hide window). Dashes use `TW_DASH_R`/`TW_DASH_WIN`. Laser rule (`TW_CAO_COLS` wrapper on `twBeam`): jumpable = blue and low, not jumpable = pink with a `wall` (knee-high during the warning, tall while firing) |
+| 12_strict | timed parries: `TW.presses` (every fresh attack press), `twStrictDo(from,fn)` makes melee parries inside `fn` count only if the FIRST press after `from` (tell start + `TW_STRICT.grace` 0.2s) lands in the window; `twRealAhead` converts world seconds to real ones (parry slow-mo/hitstop). Used by Caotan's Triple Rush (two short blinks then a blink to 9 units before rush 1, a blink out before rushes 2-3; an early press in the arrow = `twTsunPunish`, point-blank pillow), Omar's reap, Shadow Step, clones and black-hole rushes. Ali's guard is untouched |
+| 20/21_omar | Omar's kit: `TWK.omar.*`; `blinkcut` is the front and back combo; `sekiro` stance (auto-parries every hit, 3 parries = `twFullmoonCounter`: `TW.bound` locks movement, swings, charging and fireballs, then an unparryable giant Getsuga); 21 replaces `lc2` with BLACK CRESCENT: moon match (the ground flashes on each flood, `twMoonFlood`; moon scythes never leave the camera's view, `twViewBox`, swirling and bouncing off its edges; the Death Sentence loops the whole time, `twSentenceLoop`; waves 2 and 3 are identical 3.8s rounds (`OM_WAVE23`), each with 2 wrong-colour scythes (`twMoonWrongs`; each also gets a second right-colour one, `twMoonRight`), his colour flipping between them; afterwards the black crescent swells and the dark spreads over the screen, `TW.blackout`, straight into the Iai; white or blue moons; a scythe that has not touched you after 3s explodes for 1 heart and dyes nothing; 8s, then two 3.8s floods; `TW.moon`, `twMoonRound`/`twMoonScythe`/`twMoonFlood`; a scythe that touches you, parried or not, dyes your moon), a double flood, then the Iai in the dark (`TW.iai`, patterns `IAI_PAT`, one steady beat `IAI_GAP` 0.5s: small glints preview a combo of up to 5 in the 4 directions N/S/E/W, the large glint (brighter, 8 rays) fires it and Omar plays every beat back in the dark with only a tick; slash toward the white beats (`twSwingDir`), swinging on a red beat is death; never two reds in a row, combos end on a large white, a large red only appears alone; 15 parries, a death restarts the Iai from 0) and a Getsuga clash mash (`twOmarClash`, two crescents grinding; Omar is stunned 2s afterwards). Overlays only draw while Omar is in the LC (`twOmarLCLive`) and are cleared on fight end, warp, new game and title. Dying in the Iai retries straight into it (`TW.iaiCk`). The bot in bot2.js matches moons and strikes Iai glints on the beat |
+| 22_omar3 | Omar round three: scythes (he blinks away first; two curving, one fast that flies home, red rally scythes `twRallySpawn`: deflect, he returns it, 3 returns then your deflect flies back at him at 30/s and hurts him; phase III adds a faster second red scythe and the slow one's 3rd return is fast), deflected scythes do half damage everywhere, timed reaps (2 hits, 3 in phase II+, one steady rhythm), hand spirals (phase II: second spiral in the gaps, same centre, 2s root that never extends; phase III adds the chasing hands), no Void Orbs in phase I, Collapse (`TW_BH`: opens 8 units away, distance-based pull, none while dashing or right after an Ali teleport; `twBHSuck` eats every enemy projectile, rally scythe, harvest soul and hovering sentence scythe; 3 rushes `twBHRush` that ignore dash i-frames; eaten = 3 hearts and a launch), the hovering Death Sentence (`twHoverScythe`, `TW.hovers`), Shadow Requiem (clones 13 out on a 0.7s beat, eyes flash 0.17s before arrival; an early press in a clone's line = `twCloneGrabStart`: grabbed, lifted, every undashed clone flies through for half a heart), Lights Out (fakes explode for 3 hearts; 3s stun or none), Harvest (runs on its own so Omar keeps attacking; dodge souls, dodged ones hit Omar; Collapse eats every soul at once). Purple scythes that fly past you turn and keep chasing you (25s cap) until deflected or they hit you, except during Lights Out (`TW.dark`). Planted scythes: in Omar's solo fight a deflected purple scythe bounces up and sticks in the ground (`twPlantFly`, `TW.planted`) instead of flying back, and stay through limit cuts (`TW._lcPrep`); at 12, `twPick` forces `storm` (they rise above you and dive one after another; only those deflected from the air, by jumping, fly back into Omar) |
+| 23_tear | phase III Tear: sky rift + orb (`TW.tear`, `TW_TEAR`: 6.5 up, the orb drifts 2.4 units out of the rift, lasers every 2s with a thin red aim, 14s), six ground scars (entry radius 1.4, never overlapping, you enter the nearest; after the rift they ignore you until you land (`P.riftFall`); one leads to the rift and glows dull red while the orb aims; five are fakes: `twTearTrap` is a scripted catch with its own camera (`twCamRig`/`twCamAt`): three screens up, fall, Omar catches you halfway, a black hole opens below (camera pans down and back), he throws you in: 3 hearts and a launch three times Collapse's), `twTearEnter` sends you out of the rift toward the orb at 11/s or more with the rest of your dash, and refreshes the double jump; auto-aim targets the orb while you are up there; orb has 2 HP (slashes or fireballs); during Collapse its lasers fire into the black hole |
+| 30_solo | solo betrayal fights, phase HP `TW_HP` (`twHPFor(ph,who)`: Omar's phase III is 1.4x), phase cutscenes |
+| 32_omar_music | Omar's and Caotan's songs (`audio/omar.mp3`: one song for Omar's whole fight, continuing across phases; `audio/caotan.mp3`; loudness-normalised, `TW_SONG_VOL` 0.5; Caotan: phase I 0s, II 12s, III 50s, Megane Supernova 12s) played through `Sound.master` (`MP3`, `twMp3Play`); a track name `mp3:<song>:<sec>` starts a song at that point. Phase III spiral barks at 85/70/60/40/28/15/6% HP (`twOmarSpiral`) |
+| 33_gate | the gate fight (both twins, before Grimmaw) uses gentler moves (`TWPOOL.*.gate`: `gooG`/`glintG`/`lettersG`, `scythesG`/`reapG`/`handsG`; no phase II upgrades when one falls), 1.35x longer gaps and half damage (`twGate`) |
+| 40_story | gate fight, the DECISION, party setup, ally lines during Grimmaw |
+| 50_hamza | Giant Hamza fight (`HZG`, `HZG_POOL`) and `twTwinsTurn` (Ali arrives; the co-op choice is here) |
+| 51_duo + 56_duo2 | duo fight base (`twDuoStart`, `DUO`, `twDuoRestart`) and the Getsuga clash mash (`twGetsugaClash`, reused by 57b's phase I→II). The old pool, limit cuts, Domain QTE and ending are replaced by 57/57b |
+| 55_combos | combos for Grimmaw (`grimRush`), Nathan (`nbSaberCombo`, `nbQuickdraw`), Giant Hamza (`HZG.combo`) and the duo (`DUO.tagTeam`); shared duo HP (`DUO_SHARED_HP`) |
+| 57_duo3 + 57b_duo3cine | the duo remaster (replaces 51's director, pool, limit cuts, transitions and ending). `DUO3` (shared HP, gaps, `rain` 50), `DUO3_POOL`, `twDuo3Begin` (one choreographed move at a time; hazards and bolts of a move are tagged `mid` via `twMidGen`). Moves on `DUO.*`: `glompReap`, `crossfire`, `cage` (Senpai Cage `twCage`), `volley` (plants scythes), `sentenceSnipe`, `prism` (Hikari Refraction), `horizon`, `getsugaLaser`, `ricochet`, `hikariGetsuga`, `tearRift`, `scytheRain` (forced at 50 planted, phase II+; phase III opens with 50 if none fell yet). Toolkit: `twGetsuga` (dash through / sidestep), `twHoleVis`/`twMiniHole`/`twHoleEat`, `twHikari`, `twPink`/`twBlue`, `twAnim`, `twCamFollow`, `A.hold`/`A.air`/`A.face` for allies in cutscenes. Planted scythes persist through the duo (`TW._wipe` on retry/end); `twDrawGraveyard` counter. Grab: `twTwinExecution` (glomp hit). LCs: `DUO.waltz` = EVENT HORIZON, `DUO.fusion` = HIKARI PRISM. Transitions `twDuo3Trans1`/`twDuo3Trans2`; at 0% in phase III `twBurnoutIntro` then `DUO.burnout` (20s, `TW.hg`, retry restarts it via `F.burnCk`), then `twDuoEnding` |
+| 57c_duo4 | duo round 3: 1.5x HP, Ali 1.1x (`twHurt` wrapper on `TW._ally`), endless AI revives (`twAliRevive`, onDeath wrapper installed at `twDuoStart`), co-op assists for the friend's Ali (`twAliAssister`, `assist` message, `P.assistLock` on the guest), new moves `laserStorm`/`scytheCyclone`/`getsugaGauntlet`/`pillowHoles`/`doubleCage`, Scythe Rain at 100 with no counter or cutscene, `twGetsugaClash` (crescents + `twDrawDuoMash`), LCs `DUO.waltz` (EVENT HORIZON: 5 holes, 21 Getsugas, 200 scythes) and `DUO.fusion` (MEGANE APOCALYPSE: 20 glints). Camera: `twCamTrack`/`twGenCam`/`twCamFree`, cleanup via `TW.lcCleanup` (`twLcCleanupRun` on retry/end) |
+| 58_aliassist | AI Ali in the duo (`twAliAI`, never the co-op friend): revive x3 per try (`Game.onDeath` wrapper, `twAliRevive`, queued as `F.revQ` while a script runs), 25% guard per move (`F.guard`, `playerHit` wrapper, up to 3 hits), 25% kick on ranged moves (`DUO3_RANGED`, `twAliKick`: kills that move's tagged hazards/bolts with `twTinyJC`). JC lines with `ttl` fade and are removed (`updateSlashPass` wrapper); the mini Judgement Cut uses it |
+| 59_hamza2 | Giant Hamza remaster: `HZG.bounce/roll/wind/bacon/vacuum` (grab `hzgSwallow`), LC `hzgBuffet` at 50% of phase II, new `hzgPhase2` cutscene, `hzgFrenzy` (15s) before `hzgFinale` (`G.frCk` retry) |
+| 59h_hamza3 | Hamza round 3: pools `bounce/flop/stampede/babies/quake/roll/meteor/babyRain/belly` (`hzgLeap` with crater shadows, `hzgLand`), piglet baby mobs in `MOBS` (`hzgBaby`, type `piglet`, `updateMob`/`drawHoundHD` wrappers, `hzgSnack` heals 4% after 9s, `hzgClearBabies`), LC `hzgBuffet` (meteor flops, baby boom with `TW.hg` timer, belly quake), `hzgFrenzy` with the new moves |
+| 59n_nathan2 | Nathan remaster (Ali route; Shayan's Oddities too): `nbRailgun`, `nbFunnels`, `nbStarDash`, `nbMemoryRain`, `nbSingularity`, `nbGrapple` (grab `nbGrabCine`); LCs `nbStorm` (phase II ≤600) and `nbHeaven` (phase III ≤250); `nbOverdrive` (15s) before `nbFinale` (`NB.overCk` retry). Temp meshes in `NB2.m`, cleared by `nbClear` |
+| 59o_nathan3 | Nathan round 3: `carousel`, `bitWall`, `hexagram`, `afterimage`, `swarm`, `phantom` added to every pool; `nbSp` +0.08; build.py trims `NB.cd` |
+| 60_coop | co-op lobby (two links), video mode (the host streams the canvas; the guest sends inputs), remote Ali, revives (10 hits), both-down Ready, guest boot |
+| 62_coopsync | low-latency mode: `NS`. Covers the host snapshot every 50ms, mirroring of scene objects, forwarded FX/sfx/voice/screen events, guest hits sent to the host, and the guest's Q ultimate freezing the twins on the host |
+| 70/71_mech | the old 3D phases of the mech fight (unused: 73_touhou disables `m3Enter`); 71 halves `HZ_HP` |
+| 72_mechanim | Nathan's mech PNG animated: split once into wing / glow / head / base layers (`maInit`), recomposed each frame into the canvas MECHTEX now shows (`maDraw`): breathing, head bob, wing flicker, lights pulse, lean + blade flare on `NAT.atk` |
+| 84_save | the save: one versioned localStorage entry `msSave` = `SAVE` `{v,progress,settings}` (`saveWrite`, `saveHas`, `savePersist` asks `navigator.storage.persist`). Old keys (msTimeline, msVol, msBinds, msPad*) are folded in once and removed. A layout change bumps `SAVE_V` and adds a step to `SAVE_MIG` |
+| 85_progress | timeline progress `TWS` (= `SAVE.progress`: `done`, `unl` cheat unlocks, `last` checkpoint for Continue, `paulDone`), `TL` nodes, `twMark(id)`, `twWarp(id)` (`al_root` = `aliLanding`, Ali falling from the moon; split out of `aliAwaken` by build.py), `twUnlockAll(on)` for tests |
+| 86/87 | timeline data/keys (86) and Esc opening it (87). Its drawing is replaced by 99d_ui.js |
+| 90/91_paul | Paul fight. 90 is the base (arena, party `pfMember`, telegraphs `pfCircle`/`pfLine`, AI solver `pfSolve`, `pfPlayer`, UI). 91 is the current raid: phases `pfQ1..pfQ4`, mechanics (`pfInOut`, `pfStackWith`, `pfSpreadOnMe`, `pfPassage`, `pfFirewalls`, `pfGaze`, `pfTowers`, `pfBugs`, `pfDoomStart`, `pfForcePush`, `pfExaflares`, memes), raises ×3, white punch ring, `pfPar` to run mechanics in parallel |
+| 95_finale | Paul intro and finale cutscenes |
+| 96_menu | title options `TM_OPTS` (New Game / Continue; drawn in 99d), `twFreshStart`, Exit to Title, hold F (`ff`) to fast-forward dialogue |
+| 97_mantle | town only: houses (per-cell roof heights), walkable trees, stalls, fences and the fountain (rim, then bowl) become climbable (`twVillageClimb`); pushing into them auto-mantles (`P.mantle`); smashing one flattens it again |
+| 98_tutorial | PARRY.EXE: the `trainer` NPC by the first house, VR boot glitch (`TW.vrGlitch`), `vrtut` arena, Ali hologram lessons in `twTutFlow` (3 ranged parries, 2x five melee parries into a Full Counter, 3 teleport parries), infinite HP, Leave Tutorial button (`twTutLeave`), returns you to where you stood |
+| 99_controls | rebindable keys: `BIND` (one key or `Mouse<n>` per action, saved in localStorage `msBinds`), `twApplyBinds` rebuilds `KEYMAP` (WASD/arrows + Enter fixed), `twMouse` (base mouse handler patched in build.py), `twBound(act,code)` (voices key, Esc-menu key), `K(act)` for on-screen key names. Controls card `CT` (centered from the Esc menu, far right after the intro's Hamza drop; click a key row to rebind, `CT.listen`). Esc left panel: Controls + Unstuck row, then the volume slider, laid out below Paul's description (the longest). Hides the old top-right `#volBtn`/`#unstuck` |
+| 99b_gamepad | controller (Gamepad API, USB/Bluetooth): `PAD` (`mode` 'kbm'/'pad' from the Controls card's top toggle, `map[12]` button index -> action or '' saved in `msPadMap`, `glyph` 'ps'/'xb'), `twPadPoll` (wraps `loop`, runs first each frame; `twPadCtx` routes to game / timeline / card / drop-down / HTML panel), Jump doubles as confirm (pause, death, end, next to an NPC), left stick -> `Stick`, right stick -> `twAimAng` only while pushed (reticle), `K()` returns pad glyphs, `twPadTx` rewrites key text in `D.fillText` while the pad is on, controller card view `twDrawPadControls` + drop-down, `twRumble` (stun edges via `twPadStuns`, Full Counter, `twMiniJC`) |
+| 73_touhou | the Hamza mech fight (`sh_hamza`) as a vertical bullet hell: `TH` field (u,v) -> world (`thW`), rolled camera (`thCam`), `thSetup`/`thPhaseOut` (camera keyframes zoom into Nathan and roll into the cutscene's first shot), spell cards `TH_SPELLS`/`TH_PAT` run by `thBossLoop`, minions (`thMinion`: piglets, eldritch eyes; shield spell), bits, graze, items, power shot, `thDrill` (Q), side panels `thHUD`. Hooks: startMechPhase, mechPhaseEnd, updateMech, mechCam, drawMechHUD, natDrill, mechRespawn |
+| 99d_ui | the UI look: title screen + modals (`twModal`), pause screen, the Esc menu hub (rail + tabs: 3 roads, Controls, Options; `HUB`, `hubGo`, unlock checkboxes), the Controls page/card (`twCtPage`), `UIC` colours and the `u*` drawing kit, cheat toasts |
+| 99e_debug | Debug Mode (numpad 5): flower-field sandbox, boss spawn/idle/loop/phase/HP/limit cuts/mechanics (`DBG`, `dbgSpawn`, `dbgRun`, `dbgLC`); `DBG_PATCH` + `DBG_NEW` tag what the latest patch changed |
+| 98b_portraits | portraits redrawn for every speaker but Shayan (`PT_DRAW`, `ptEyes`/`ptMouth`/`ptHead` kit), open-mouth variants chosen by `cTalk(who)` while a line types or plays; Shayan gets an open mouth painted over his art |
+
+## 4. Story routes and timeline node ids
+
+- **Shayan:** `sh_twins` → `sh_dec` (THE DECISION), then one of three branches:
+  - `sh_omar` → `sh_omar_g` (Grimmaw with Omar) → `sh_omar_f` (Omar betrays you, solo) → `sh_hamza` (mech fight);
+  - `sh_cao` → `sh_cao_g` → `sh_cao_f` → `sh_hamza`;
+  - `sh_both` → `sh_both_g` → `sh_both_f` (Giant Hamza) → `sh_duo` (duo fight).
+- **Ali:** `al_twins` → `al_dec`, then:
+  - `al_omar` or `al_cao` → its Grimmaw node → its betrayal node → `al_nathan`;
+  - `al_both` → `al_both_g` → `al_nathan_both`.
+- **Other:** `sh_nathan` (Oddities tab) and `paul` (Paul's raid; opens once everything is cleared, or tick it with the numpad 3 checkboxes).
+- Paul stands in the village and opens the timeline. Esc opens it from anywhere in gameplay.
+
+## 5. Co-op in one paragraph
+
+- **Lobby:** the host chooses "Yes" at Ali's arrival in the duo fight. The lobby creates a PeerJS id `msbell-coop-CODE` and shows two links: `?join=CODE` (low-latency) and `?join=CODE&mode=video`.
+- **Messages:**
+  - Guest to host: `hello{mode}`, `gs` (Ali state, 30 Hz), `p` (button presses for revive and mash), `hit{id,d}`, `ult{on}`, `ready`, `leave`.
+  - Host to guest: `init`, `sn` (snapshot), `hurt`, `parry`, `tp`, `st` (revive/ready status), `end`.
+- **Host:**
+  - The host owns damage, HP, cutscenes and the twins. Remote Ali on the host is `TW.allies` with `remote:true`.
+  - If the friend leaves, AI Ali takes over and the room stays open for a rejoin until the duo fight ends.
+- **Tests:** two harness instances are joined by an in-memory pipe in `t_sync.js`.
+
+## 6. Voices
+
+- `build_voices.py` scans `say(...)`, `twBark(...)`, `choose` options, `[who,text]` pairs, `CAO_VN`, `ALLY_BARK`/`ALLY_HURT`, Omar's monologue `lines` and Paul's `rant`.
+- The speaker must be a literal, or one of `H`/`HERO()`/`A.who`/`T.who`, which map to known casts.
+- The voice table is the `CAST` dict; pronunciations are in `FIXES`; `FORCE` re-renders a line with a filter (Shayan's chant at `atempo=2`).
+- Rendering speed is about 4 lines a minute with `--jobs 4`.
+- Setup is in `KOKORO_TTS_HANDOFF.md`.
+
+## 7. Testing (from dev/, after `python3 build.py`)
+
+| Test | What it checks | Time |
+|---|---|---|
+| `REAL=1 ROUTE=shayan\|ali CH=0\|1\|2 node t_full2.js ext.js` | full story route with a bot (god mode); prints `ERRORS n` and the timeline marks | 5–9 min |
+| `REAL=1 node t_warp.js ext.js` | every timeline node warps into gameplay | 3 min |
+| `REAL=1 node t_paul10.js ext.js` (`IDLE=1`, `GOD=1`, `ROUTE=ali`) | Paul raid with a human-speed bot; deaths, raises, finish | 3–4 min |
+| `REAL=1 node t_tw3.js ext.js` (`ONLY=name`) | the reworked Caotan/Omar mechanics: mash vs timed parries, rally scythe, black hole, sentence, tear, moon match, Iai, and a smoke run of every Omar move in every phase | 15 min |
+| `PARRY=1 REAL=1 node t_atk.js ext.js` | every new boss attack and combo, and whether perfect parries stun | 3 min |
+| `REAL=1 node t_duo3.js ext.js` (`ONLY=moves\|rain\|grab\|assist\|lc\|trans`) | the duo remaster: every move, rain, grab, Ali's kick/guard/revives, both LCs, transitions, Burnout and the ending | 2 min (fake THREE: 20s) |
+| `REAL=1 node t_boss2.js ext.js` (`ONLY=hamza\|nathan`) | Giant Hamza and Nathan remasters: every new move, the grabs, LCs, frenzy/overdrive, finales | 3 min |
+| `REAL=1 node t_coop.js ext.js` | video-mode host logic: remote Ali, revives, ready, leave | 1 min |
+| `NOHOST=1 SECS=40 ULT=1 node t_sync.js ext.js` | low-latency co-op between two game instances | 2 min |
+| `t_sha`, `t_esc`, `t_esc2`, `t_aim`, `t_ui` | save keys, sprite paths, Esc timeline, mouse aim, timeline UI | <1 min each |
+| `t_pad` | controller: fake pad drives gameplay, timeline, Controls card + drop-down, aim, glyphs, rumble | <1 min |
+| `t_cast` | every cast draw in every pose, Shayan's slashes / flip / glide / Full Counter, Getsuga trails, lasers, mech layers | <1 min |
+
+- `REAL=1` uses real three.js objects; without it, a faster fake THREE is used.
+- The harness drives the game with fake timers: `setTimeout` is a no-op, `Image` never loads, and DOM calls are mocks.
+
+**Release check** (both page scripts must parse):
+```bash
+python3 - <<'EOF'
+import re,subprocess; s=open('../index.html',encoding='utf8').read()
+for i,c in enumerate(re.findall(r'<script>(.*?)</script>',s,re.S)):
+    open(f'/tmp/chk{i}.js','w').write(c); print(i, subprocess.run(['node','--check',f'/tmp/chk{i}.js']).returncode)
+EOF
+```
+
+## 8. Known limits and open ideas
+
+- Co-op has only been tested in the two-instance harness, not over real networks. Peers use the public PeerJS broker plus STUN, with no TURN server.
+- In low-latency co-op, short-lived `Sprite3D` effects (afterimages) are not mirrored; meshes, FX, sounds and screen state are.
+- The new Shayan art is about 60px tall in a 64px cell and is drawn at 0.8 scale in the world. Unused animations in `assets/shayan/sheets`: walk, Basic2 and Basic3 kicks.
+- The page is about 2.4 MB; voice clips are separate files in audio/v (about 23 MB, loaded on demand).
