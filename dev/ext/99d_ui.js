@@ -71,7 +71,7 @@ drawTitle=function(){ const t=performance.now()/1000, k=IS_TOUCH()?1.3:1, W=UW/k
 function twModal(title,msg,btns,def){ HUB.modal={title,msg,btns,sel:def||0,rects:[],t:0}; TM.busy=true; Sound.sfx('blip'); }
 function twModalClose(){ HUB.modal=null; TM.busy=false; clearHits(); }
 function twModalPick(i){ const M=HUB.modal; if(!M) return; const b=M.btns[i]; twModalClose(); Sound.sfx('select'); if(b&&b.go) b.go(); }
-function twDrawModal(){ const M=HUB.modal; if(!M) return; M.t+=1/60; const k=IS_TOUCH()?1.4:1; D.save(); D.globalAlpha=Math.min(1,M.t*8); D.fillStyle='rgba(3,4,10,.7)'; D.fillRect(0,0,UW,UH); D.scale(k,k);
+function twDrawModal(){ const M=HUB.modal; if(!M) return; M.t+=1/60; const k=IS_TOUCH()?1.8:1; D.save(); D.globalAlpha=Math.min(1,M.t*8); D.fillStyle='rgba(3,4,10,.7)'; D.fillRect(0,0,UW,UH); D.scale(k,k);
   const w=500, h=214, x=(UW/k-w)/2, y=(UH/k-h)/2; uPanel(x,y,w,h,UIC.panel2,UIC.line2,14); D.fillStyle=UIC.acc; D.fillRect(x+28,y+28,28,2);
   uText(M.title,x+28,y+62,`800 24px ${FD}`,UIC.accL); uWrap(M.msg,x+28,y+96,w-56,21,`500 16px ${FB}`,UIC.text);
   M.rects=[]; let bx=x+w-28; for(let i=M.btns.length-1;i>=0;i--){ const b=M.btns[i]; D.font=`700 15px ${FB}`; const bw=Math.max(110,D.measureText(b.t).width+36); bx-=bw;
