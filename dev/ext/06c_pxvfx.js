@@ -76,12 +76,12 @@ function pxvCresc(){ try{ const img=PXV.tex.cresc&&PXV.tex.cresc.image, A=PXV_AT
 // (violet; twGetsugaMesh, also used by the 2v2 clash). The sprite is a child of the projectile's group, so it moves, fades and
 // disappears with it; it twitches in size and angle every frame.
 function pxvAttach(n,g,size){ const e=pxvPlay(n,{x:0,y:0,z:0,size}); if(!e) return null; g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=size; return e; }
-function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld), p1=g.localToWorld(new THREE.Vector3(1,0,0));
+function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld), p1=e.dir?p0.clone().add(new THREE.Vector3(e.dir.dx,0,e.dir.dz)):g.localToWorld(new THREE.Vector3(1,0,0)); /* e.dir: the travel direction, for groups that don't turn (Shayan's Getsuga resets its group's rotation) */
   const a=toScreen(p0.x,p0.y,p0.z), b=toScreen(p1.x,p1.y,p1.z), dx=b[0]-a[0], dy=b[1]-a[1], fl=dx<0, jt=1+rnd(-.06,.06);
   e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
-      if((jj||!b.ali)&&pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); b.pxv=pxvAttach(k,b.g,jj?4.2:big?4.4:3.6); /* the group grows over its flight (and Jujishou's is x1.25) */ } }
+      if((jj||!b.ali)&&pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); b.pxv=pxvAttach(k,b.g,jj?4.2:big?4.4:3.6); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25) */ } }
     return r; }; })();
 (function(){ const gm=twGetsugaMesh; twGetsugaMesh=function(s,col){ const g=gm.apply(this,arguments); try{ const k=(col==null||col===0x9a4aff)?'getsuga_omar':'getsuga';
     if(pxvOk(k)){ const mats=g.userData.mats; g.children.forEach(c=>c.visible=false); const e=pxvAttach(k,g,s*1.2); if(e&&mats) mats.push(e.m.material); } }catch(e){ console.error('pxv getsugaMesh',e); } return g; }; })();
