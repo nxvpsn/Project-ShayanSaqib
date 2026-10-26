@@ -1,7 +1,7 @@
 {
  "name": "boom",
- "w": 72,
- "h": 72,
+ "w": 56,
+ "h": 56,
  "frames": 12,
  "fps": 24,
  "seed": 21,
@@ -28,7 +28,7 @@
     "#ffffff"
    ],
    "r0": 0.1,
-   "r1": 0.62,
+   "r1": 0.55,
    "grow": 0.35,
    "erode": 1,
    "cool": 0.6
@@ -44,9 +44,10 @@
     "#ffffff"
    ],
    "r0": 0.1,
-   "r1": 0.98,
+   "r1": 0.8,
    "th": 0.14,
-   "breakup": 0.6
+   "breakup": 0.6,
+   "t1": 0.6
   },
   {
    "type": "particles",
@@ -61,10 +62,10 @@
    "mode": "burst",
    "count": 12,
    "speed": [
-    1.8,
-    3
+    1,
+    1.8
    ],
-   "drag": 2.2,
+   "drag": 3,
    "shape": "streak",
    "size": 2
   },

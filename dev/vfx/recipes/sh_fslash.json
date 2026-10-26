@@ -1,0 +1,103 @@
+{
+ "name": "sh_fslash",
+ "note": "Shayan's basic slash, laid flat on the original swing plane (06c_pxvfx shArc). Arc centred on +x.",
+ "w": 64,
+ "h": 64,
+ "frames": 8,
+ "fps": 30,
+ "loop": false,
+ "seed": 11,
+ "outline": "outside",
+ "outlineColor": "#7a1a00",
+ "pivot": [
+  0.5,
+  0.5
+ ],
+ "layers": [
+  {
+   "type": "slash",
+   "ramp": [
+    "#5a1000",
+    "#a02a00",
+    "#e05a10",
+    "#ff9a30",
+    "#ffd070"
+   ],
+   "r": 0.8,
+   "th": 0.34,
+   "a0": 66,
+   "a1": -66,
+   "sweep": 0.44,
+   "trail": 1,
+   "erode": 0.9,
+   "t0": 0.02,
+   "t1": 0.92,
+   "gain": 0.85,
+   "blend": "under",
+   "note": "flame wreath outside the blade"
+  },
+  {
+   "type": "slash",
+   "ramp": [
+    "#4a5464",
+    "#7c889a",
+    "#aab6c6",
+    "#d4dde8",
+    "#f2f6fb"
+   ],
+   "r": 0.76,
+   "th": 0.22,
+   "a0": 66,
+   "a1": -66,
+   "sweep": 0.42,
+   "trail": 1,
+   "erode": 0.7,
+   "t0": -0.06,
+   "t1": 0.9
+  },
+  {
+   "type": "slash",
+   "ramp": [
+    "#c8d4e2",
+    "#eef4fa",
+    "#ffffff"
+   ],
+   "r": 0.86,
+   "th": 0.05,
+   "a0": 66,
+   "a1": -66,
+   "sweep": 0.4,
+   "trail": 1,
+   "erode": 0.4,
+   "t0": -0.04,
+   "t1": 0.8,
+   "gain": 1.1,
+   "note": "bright leading edge"
+  },
+  {
+   "type": "particles",
+   "ramp": "fire",
+   "mode": "rise",
+   "count": 16,
+   "x": 0.35,
+   "y": 0,
+   "areaX": 0.35,
+   "areaY": 0.55,
+   "speed": [
+    0.5,
+    1.1
+   ],
+   "life": [
+    0.3,
+    0.6
+   ],
+   "shape": "drop",
+   "size": [
+    2,
+    1
+   ],
+   "t0": 0.1,
+   "t1": 0.9
+  }
+ ]
+}

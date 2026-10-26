@@ -1,100 +1,92 @@
 {
  "name": "boom_big",
- "w": 128,
- "h": 128,
- "frames": 16,
+ "note": "charged fireball hit: compact, deep crimson",
+ "w": 80,
+ "h": 80,
+ "frames": 12,
  "fps": 24,
  "seed": 21,
  "outline": "outside",
- "outlineColor": "#1a0004",
+ "outlineColor": "#12000a",
  "layers": [
   {
    "type": "puffs",
-   "ramp": "smoke",
-   "count": 7,
+   "ramp": [
+    "#12000a",
+    "#2a0410",
+    "#4a0a1a"
+   ],
+   "count": 5,
    "r0": 0.12,
-   "r1": 0.32,
-   "t0": 0.2,
-   "rise": 0.5
+   "r1": 0.28,
+   "t0": 0.25,
+   "rise": 0.3,
+   "spread": 0.25
   },
   {
    "type": "burst",
    "ramp": [
-    "#2a0008",
-    "#8a0014",
-    "#ff0830",
-    "#ff5a70",
-    "#ffd0d8",
-    "#ffffff"
+    "#12000a",
+    "#3a0010",
+    "#7a0018",
+    "#b00a26",
+    "#ff1a3a",
+    "#ff4a5a"
    ],
-   "r0": 0.1,
-   "r1": 0.72,
-   "grow": 0.35,
+   "r0": 0.12,
+   "r1": 0.6,
+   "grow": 0.3,
    "erode": 1,
-   "cool": 0.6
-  },
-  {
-   "type": "rays",
-   "ramp": [
-    "#2a0008",
-    "#8a0014",
-    "#ff0830",
-    "#ff5a70",
-    "#ffd0d8",
-    "#ffffff"
-   ],
-   "count": 10,
-   "r": 0.95,
-   "t1": 0.5,
-   "gain": 0.7
+   "cool": 0.7
   },
   {
    "type": "ring",
    "ramp": [
-    "#2a0008",
-    "#8a0014",
-    "#ff0830",
-    "#ff5a70",
-    "#ffd0d8",
-    "#ffffff"
+    "#12000a",
+    "#3a0010",
+    "#7a0018",
+    "#b00a26",
+    "#ff1a3a",
+    "#ff4a5a"
    ],
-   "r0": 0.1,
-   "r1": 0.98,
-   "th": 0.14,
-   "breakup": 0.6
+   "r0": 0.15,
+   "r1": 0.8,
+   "th": 0.12,
+   "breakup": 0.5,
+   "t1": 0.6
   },
   {
    "type": "particles",
    "ramp": [
-    "#2a0008",
-    "#8a0014",
-    "#ff0830",
-    "#ff5a70",
-    "#ffd0d8",
-    "#ffffff"
+    "#12000a",
+    "#3a0010",
+    "#7a0018",
+    "#b00a26",
+    "#ff1a3a",
+    "#ff4a5a"
    ],
    "mode": "burst",
-   "count": 18,
+   "count": 10,
    "speed": [
-    1.8,
-    3
+    1.2,
+    2
    ],
-   "drag": 2.2,
+   "drag": 3,
    "shape": "streak",
    "size": 2
   },
   {
    "type": "flash",
    "ramp": [
-    "#2a0008",
-    "#8a0014",
-    "#ff0830",
-    "#ff5a70",
-    "#ffd0d8",
-    "#ffffff"
+    "#12000a",
+    "#3a0010",
+    "#7a0018",
+    "#b00a26",
+    "#ff1a3a",
+    "#ff4a5a"
    ],
-   "r": 0.5,
-   "dur": 0.12
+   "r": 0.4,
+   "dur": 0.1
   }
  ]
 }
