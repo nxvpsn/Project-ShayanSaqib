@@ -32,7 +32,7 @@ Setup once per container: `bash dev/setup.sh` (runs automatically at session sta
 - **Boss / mechanic change:** grep ARCHITECTURE.md for the boss's ext file, grep that file for the move, edit. Test with the boss's test (`t_boss2.js ONLY=hamza|nathan`, `t_duo3.js ONLY=...`, `t_full2.js` route) or a short scratch harness script. **Update the Debug Mode NEW tags** (below).
 - **New dialogue:** write it voice-ready: a literal speaker and literal text, e.g. `say('caotan',"…")` / `twBark('omar',"…")`, never `twBark(someVar,…)`. Voice it only when the owner asks; `python3 build_voices.py ../index.html --dry-run` lists unvoiced lines.
 - **Art / sprites / VFX:** edit the drawing code in its ext file (cast: `03_cast.js`, portraits: `98b_portraits.js`, VFX: `04_vfx.js`). Check with `t_cast.js` / `t_sha.js`; a preview PNG can be made with `preview_cast.js` into the scratchpad.
-- **UI / menus:** `99d_ui.js` (title, pause, Esc hub, Controls), `99_controls.js` / `99b_gamepad.js` (bindings, pad). Test `t_ui.js t_esc.js t_esc2.js t_pad.js`.
+- **UI / menus:** `99d_ui.js` (title, pause, Esc hub, Controls), `99f_mobile.js` (phone layouts, touch Menu/Debug buttons, Cheats pop-up), `99_controls.js` / `99b_gamepad.js` (bindings, pad). Test `t_ui.js t_esc.js t_esc2.js t_pad.js`; run the touch paths too with `TOUCH=1` (the harness is desktop by default). Every menu change must work on both.
 - **Save data:** `84_save.js` (`SAVE`, versioned; add a `SAVE_MIG` step when the layout changes).
 - Always: `t_warp.js` before pushing.
 
@@ -77,4 +77,4 @@ Debug Mode (numpad 5, `dev/ext/99e_debug.js`) shows **NEW** next to mechanics th
 - **No bugs that block completion**: test what you touch with the harness, plus `t_warp`.
 - A question ("can you…?", "answer and ask for approval") gets an answer and a wait. A work request gets done, tested and pushed live.
 - Never ask the owner to run a server or commands. Final report: the outcome first, then a short list of what to check on the live site (and the Debug Mode NEW items).
-- Keys: `Esc` menu (timeline, Controls, Options), `P` pause, `V` voices, `M` mute, hold `F` fast-forward. Secret numpad keys (never in on-screen key lists): `0` infinite HP, `1` infinite Full Counter, `2` one-hit kill (skips limit cuts), `3` timeline unlock checkboxes, `5` Debug Mode. Name rebindable keys on screen with `K('action')`.
+- Keys: `Esc` menu (timeline, Controls, Options), `P` pause, `V` voices, `M` mute, hold `F` fast-forward. Secret numpad keys (never in on-screen key lists; on touch devices the same toggles are in Esc menu → Options → Cheats, and Debug Mode is a button there): `0` infinite HP, `1` infinite Full Counter, `2` one-hit kill (skips limit cuts), `3` timeline unlock checkboxes, `5` Debug Mode. Name rebindable keys on screen with `K('action')`.

@@ -51,8 +51,8 @@ function uCheck(x,y,on,label,id){ uRR(x,y,16,16,4); D.fillStyle=on?UIC.acc:'rgba
 // ---------- title screen: New Game / Continue ----------
 function twTitleSub(o){ if(o.id==='new') return 'Start the story from the beginning';
   if(!saveHas()) return 'No save on this device'; const n=TL_BY[TWS.last]; return n?'Resume at: '+(n.root?n.name:n.name):'Resume from the start of the story'; }
-drawTitle=function(){ const t=performance.now()/1000, x=96;
-  const g=D.createLinearGradient(0,0,UW*.7,0); g.addColorStop(0,'rgba(4,5,12,.9)'); g.addColorStop(.6,'rgba(4,5,12,.5)'); g.addColorStop(1,'rgba(4,5,12,0)'); D.fillStyle=g; D.fillRect(0,0,UW,UH);
+drawTitle=function(){ const t=performance.now()/1000, k=IS_TOUCH()?1.3:1, W=UW/k, H=UH/k, x=IS_TOUCH()?64:96; D.save(); D.scale(k,k);
+  const g=D.createLinearGradient(0,0,W*.7,0); g.addColorStop(0,'rgba(4,5,12,.9)'); g.addColorStop(.6,'rgba(4,5,12,.5)'); g.addColorStop(1,'rgba(4,5,12,0)'); D.fillStyle=g; D.fillRect(0,0,W,H);
   uCaps('A SHAYAN SAQIB TALE',x,150,UIC.acc,13);
   D.save(); D.shadowColor='rgba(0,0,0,.7)'; D.shadowBlur=20; const tg=D.createLinearGradient(0,170,0,300); tg.addColorStop(0,'#fff1c8'); tg.addColorStop(1,'#d9a64a'); D.font=`900 58px ${FD}`; D.fillStyle=tg;
   D.fillText("The Moonsinger's",x-3,218); D.fillText('Bell',x-3,284); D.restore();
@@ -63,19 +63,20 @@ drawTitle=function(){ const t=performance.now()/1000, x=96;
     if(on){ uRR(x-30,y-38,440,66,10); D.fillStyle='rgba(227,182,90,.08)'; D.fill(); D.fillStyle=UIC.acc; D.fillRect(x-30,y-30,3,50); }
     uText(o.t,x+dx,y,`800 30px ${FD}`,on?UIC.accL:(o.id==='cont'&&!saveHas()?UIC.dim:'#d9d6e4'));
     uText(twTitleSub(o),x+dx,y+22,`500 14px ${FB}`,on?'#d9cfb4':UIC.mut); });
-  const T=IS_TOUCH(); D.globalAlpha=.75; uText(T?'Tap an option':twPadOn()?'D-pad to choose  ·  '+twPadName(0)+' to select':'↑ ↓ or mouse to choose  ·  Enter or click to select',x,UH-40,`600 14px ${FB}`,UIC.mut);
-  uText('About 25 minutes  ·  Fully voiced  ·  Sound on',UW-40,UH-40,`600 14px ${FB}`,UIC.mut,'right'); D.globalAlpha=1;
+  const T=IS_TOUCH(); D.globalAlpha=.75; uText(T?'Tap an option':twPadOn()?'D-pad to choose  ·  '+twPadName(0)+' to select':'↑ ↓ or mouse to choose  ·  Enter or click to select',x,H-30,`600 14px ${FB}`,UIC.mut);
+  uText('About 25 minutes  ·  Fully voiced  ·  Sound on',W-30,H-30,`600 14px ${FB}`,UIC.mut,'right'); D.globalAlpha=1; D.restore();
+  for(const r of TM.rows){ r.x*=k; r.y*=k; r.w*=k; r.h*=k; }
   twDrawModal(); };
 // the modal box (title screen confirmations)
 function twModal(title,msg,btns,def){ HUB.modal={title,msg,btns,sel:def||0,rects:[],t:0}; TM.busy=true; Sound.sfx('blip'); }
 function twModalClose(){ HUB.modal=null; TM.busy=false; clearHits(); }
 function twModalPick(i){ const M=HUB.modal; if(!M) return; const b=M.btns[i]; twModalClose(); Sound.sfx('select'); if(b&&b.go) b.go(); }
-function twDrawModal(){ const M=HUB.modal; if(!M) return; M.t+=1/60; D.save(); D.globalAlpha=Math.min(1,M.t*8); D.fillStyle='rgba(3,4,10,.7)'; D.fillRect(0,0,UW,UH);
-  const w=500, h=214, x=(UW-w)/2, y=(UH-h)/2; uPanel(x,y,w,h,UIC.panel2,UIC.line2,14); D.fillStyle=UIC.acc; D.fillRect(x+28,y+28,28,2);
+function twDrawModal(){ const M=HUB.modal; if(!M) return; M.t+=1/60; const k=IS_TOUCH()?1.4:1; D.save(); D.globalAlpha=Math.min(1,M.t*8); D.fillStyle='rgba(3,4,10,.7)'; D.fillRect(0,0,UW,UH); D.scale(k,k);
+  const w=500, h=214, x=(UW/k-w)/2, y=(UH/k-h)/2; uPanel(x,y,w,h,UIC.panel2,UIC.line2,14); D.fillStyle=UIC.acc; D.fillRect(x+28,y+28,28,2);
   uText(M.title,x+28,y+62,`800 24px ${FD}`,UIC.accL); uWrap(M.msg,x+28,y+96,w-56,21,`500 16px ${FB}`,UIC.text);
   M.rects=[]; let bx=x+w-28; for(let i=M.btns.length-1;i>=0;i--){ const b=M.btns[i]; D.font=`700 15px ${FB}`; const bw=Math.max(110,D.measureText(b.t).width+36); bx-=bw;
     uBtn(bx,y+h-66,bw,42,b.t,{kind:b.kind||'ghost',focus:M.sel===i,rects:M.rects,id:'m'+i}); bx-=10; }
-  D.restore(); }
+  D.restore(); for(const r of M.rects){ r.x*=k; r.y*=k; r.w*=k; r.h*=k; } }
 ui.addEventListener('pointerdown',e=>{ if(Game.state!=='title'||!HUB.modal) return; e.preventDefault(); e.stopImmediatePropagation(); const [x,y]=tlPt(e), r=HUB.modal.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h); if(r) twModalPick(+r.id.slice(1)); },true);
 ui.addEventListener('pointermove',e=>{ if(Game.state!=='title'||!HUB.modal) return; const [x,y]=tlPt(e), r=HUB.modal.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h); HUB.hov=r?r.id:null; if(r) HUB.modal.sel=+r.id.slice(1); });
 twTitleMenu=function(dt){ const M=HUB.modal;
@@ -97,7 +98,7 @@ function twTitleContinue(){ if(!saveHas()){ twModal('Save file corrupted','Save 
 TM.sel=saveHas()?1:0;
 
 // ---------- pause screen ----------
-drawPause=function(){ D.fillStyle='rgba(4,5,12,.78)'; D.fillRect(0,0,UW,UH); const w=820, h=470, x=(UW-w)/2, y=(UH-h)/2; uPanel(x,y,w,h,UIC.panel,UIC.line2,14);
+drawPause=function(){ D.fillStyle='rgba(4,5,12,.78)'; D.fillRect(0,0,UW,UH); if(IS_TOUCH()) return twDrawPauseTouch(); const w=820, h=470, x=(UW-w)/2, y=(UH-h)/2; uPanel(x,y,w,h,UIC.panel,UIC.line2,14);
   uText('Paused',x+36,y+58,`900 32px ${FD}`,UIC.accL); uText('Controls at a glance',x+36,y+84,`500 15px ${FB}`,UIC.mut);
   const ali=ALI(), rows=ali?[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (hold to float)'],['Getsuga Tenshou',K('attack')+'  (aim with the mouse)'],['Black Getsuga','Hold '+K('attack')+', release'],['Guard',K('block')],['Parry','Attack just before a hit'],['Teleport',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu',K('menu')],['Voices · Mute',K('voices')+' · '+K('mute')]]
     :[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (twice: double jump)'],['Glide','Hold '+K('jump')+' after the double jump'],['Attack',K('attack')+'  (3-hit combo)'],['Getsuga Tenshou','Hold '+K('attack')+', release'],['Fireball',K('block')+'  (hold for a big one)'],['Parry','Attack just before a hit'],['Dash',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu · Voices · Mute',K('menu')+' · '+K('voices')+' · '+K('mute')]];

@@ -24,12 +24,13 @@ const ctxObj={ console, Math, JSON, Date, Array, Object, Float32Array, Uint8Arra
   matchMedia:()=>({matches:false, addEventListener(){}}),
   addEventListener(){}, removeEventListener(){}, dispatchEvent(){},
   innerWidth:1280, innerHeight:720, devicePixelRatio:1,
-  navigator:{ userAgent:'node' },
+  navigator:{ userAgent:'node' }, getComputedStyle:()=>({display:'none'}),
   Event:function(){}, Image:function(){ return mock('img'); }, AudioContext:undefined, webkitAudioContext:undefined,
 };
 const doc=mock('document');
 const realDoc={ getElementById:(id)=>{ const m=mock('#'+id), g=m.getContext; m.getContext=(t,...a)=>t==='2d'?ctx2d():g(t,...a); return m; }, createElement:(t)=>{ const m=mock('el:'+t); if(t==='canvas'){ m.getContext=()=>ctx2d(); m.width=64; m.height=64; } return m; },
-  querySelectorAll:()=>[], querySelector:()=>mock('qs'), addEventListener(){}, body:mock('body'), head:mock('head'), documentElement:mock('docEl'), fullscreenElement:null };
+  querySelectorAll:()=>[], querySelector:()=>mock('qs'), addEventListener(){}, body:(()=>{ const b=mock('body'); b.classList={contains:c=>process.env.TOUCH==='1'&&c==='touch',add(){},remove(){},toggle(){}}; return b; })(), // TOUCH=1 runs the phone layouts
+   head:mock('head'), documentElement:mock('docEl'), fullscreenElement:null };
 ctxObj.document=realDoc;
 { const real=require('./node_modules/three/build/three.cjs'); const T=Object.assign({},real); for(const k of ['WebGLRenderer','EffectComposer','RenderPass','UnrealBloomPass','ShaderPass','Reflector','CopyShader','LuminosityHighPassShader','Pass','MaskPass']) T[k]=mock(k); ctxObj.THREE=T; }
 ctxObj.window=ctxObj; ctxObj.self=ctxObj; ctxObj.globalThis=ctxObj;

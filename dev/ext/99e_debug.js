@@ -160,5 +160,6 @@ function dbgAct(id){ Sound.sfx('blip'); const [a,v,w]=id.split(':');
   if(a==='mode'){ DBG.mode=v; dbgApplyMode(); return; } if(a==='phase'){ dbgSetPhase(+v); return; } if(a==='hp'){ dbgSetHP(+v); return; } if(a==='kill'){ dbgKill(); return; }
   if(a==='lc'){ dbgLC(v,+w); return; } if(a==='move'){ dbgRun(v); return; } }
 ui.addEventListener('pointerdown',e=>{ if(!DBG.on||TLM.open||Game.state==='title') return; const [x,y]=tlPt(e), r=DBG.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h);
-  const inL=!DBG.hide&&x<DBP.L.x+DBP.L.w&&y<UH-12, inR=!DBG.hide&&dbgMoves().length&&x>DBP.R.x&&y<UH-12; if(!r&&!inL&&!inR) return; e.preventDefault(); e.stopImmediatePropagation(); if(r) dbgAct(r.id); },true);
+  // phones: the panel is a paused pop-up (99f_mobile.js) and takes every tap while it is open
+  const tch=IS_TOUCH(); if(tch&&!DBG.topen) return; const inL=!tch&&!DBG.hide&&x<DBP.L.x+DBP.L.w&&y<UH-12, inR=!tch&&!DBG.hide&&dbgMoves().length&&x>DBP.R.x&&y<UH-12; if(!r&&!inL&&!inR&&!tch) return; e.preventDefault(); e.stopImmediatePropagation(); if(r) dbgAct(r.id); },true);
 ui.addEventListener('pointermove',e=>{ if(!DBG.on) return; const [x,y]=tlPt(e), r=DBG.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h); DBG.hov=r?r.id:null; },true);
