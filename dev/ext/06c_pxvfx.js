@@ -23,10 +23,12 @@ function pxvPlay(n,o){ if(!(o&&o.any?pxvRdy(n):pxvOk(n))) return null; const A=P
   let m; const sz=o.size||2, ar=A.w/A.h;
   if(o.plane){ m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial(Object.assign(mo,{side:THREE.DoubleSide}))); m.scale.set(sz*ar,sz,1); }
   else if(o.ground){ m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial(Object.assign(mo,{side:THREE.DoubleSide}))); m.rotation.set(-Math.PI/2,0,o.groundRot||0); m.scale.set(sz*ar,sz,1); }
-  else { m=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign(mo,{rotation:o.rot||0}))); m.scale.set(sz*ar*(o.flip?-1:1),sz,1); if(A.pivot) m.center.set(A.pivot[0],1-A.pivot[1]); }
+  else { m=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign(mo,{rotation:o.rot||0}))); m.scale.set(sz*ar,sz,1); if(A.pivot) m.center.set(A.pivot[0],1-A.pivot[1]); }
   m.position.set(o.x,o.y,o.z); m.renderOrder=o.ro||8; scene.add(m);
-  const e={m,t,A,f:-1,time:0,sp:(o.dur?(A.n/A.fps)/o.dur:1)*(o.speed||1),op:o.op==null?1:o.op}; if(o.fade){ e.fade=o.fade; e.age=0; e.sp=0; e.time=(o.frame||0)/A.fps; } pxvFrame(e,Math.floor(e.time*A.fps)%A.n); PXV.list.push(e); return e; }
-function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols)/e.A.cols,0); }
+  const e={m,t,A,f:-1,time:0,sp:(o.dur?(A.n/A.fps)/o.dur:1)*(o.speed||1),op:o.op==null?1:o.op}; if(o.fade){ e.fade=o.fade; e.age=0; e.sp=0; e.time=(o.frame||0)/A.fps; } if(o.flip) pxvFlip(e,true); pxvFrame(e,Math.floor(e.time*A.fps)%A.n); PXV.list.push(e); return e; }
+function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols+(e.flip?1:0))/e.A.cols,0); }
+// mirror a sheet left-right through its texture (a sprite's negative scale is ignored by three.js)
+function pxvFlip(e,f){ f=!!f; if(!!e.flip===f) return; e.flip=f; e.t.repeat.x=(f?-1:1)/e.A.cols; const i=e.f; e.f=-1; pxvFrame(e,i<0?0:i); }
 function pxvKill(e){ if(e.m.parent) e.m.parent.remove(e.m); try{ e.m.material.dispose(); e.t.dispose(); if(e.m.geometry&&e.m.isMesh) e.m.geometry.dispose(); }catch(x){} }
 function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
 function pxvStop(e){ const i=PXV.list.indexOf(e); if(i<0) return; PXV.list.splice(i,1); pxvKill(e); }
@@ -76,7 +78,7 @@ function pxvCresc(){ try{ const img=PXV.tex.cresc&&PXV.tex.cresc.image, A=PXV_AT
 function pxvAttach(n,g,size){ const e=pxvPlay(n,{x:0,y:0,z:0,size}); if(!e) return null; g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=size; return e; }
 function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld), p1=g.localToWorld(new THREE.Vector3(1,0,0));
   const a=toScreen(p0.x,p0.y,p0.z), b=toScreen(p1.x,p1.y,p1.z), dx=b[0]-a[0], dy=b[1]-a[1], fl=dx<0, jt=1+rnd(-.06,.06);
-  e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); e.m.scale.set(e.sz*jt*(A.w/A.h)*(fl?-1:1),e.sz*jt,1); }
+  e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
       if((jj||!b.ali)&&pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); b.pxv=pxvAttach(k,b.g,jj?4.2:big?4.4:3.6); /* the group grows over its flight (and Jujishou's is x1.25) */ } }

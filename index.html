@@ -5820,10 +5820,26 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;
     const x=cx+ux*f+(flatY?-uz*s:0), y=cy+(flatY?0:s), z=cz+uz*f+(flatY?ux*s:0), q=toScreen(x,y,z); if(q[2]>=1) return null; P.push([q[0],q[1]]); } return P; }
-// Getsuga clash distortion (Full Counter style): two Judgement Cut tears crossing where the crescents grind (cx() follows the
-// contact point; they last while alive() holds), and twClashRip: one big crescent tear ripping the winner's way
-function twClashTear(cx,y,z,alive,s){ s=s||1; for(const d of [1,-1]) twGash({life:8,rev:.08,fade:.25,w:28*s,op:.85,sparks:30,alive,pts:()=>twArcPts(cx()-d*2.6*s,y,z,d,0,2.8*s,-.95,.95,7)}); JC.flash=Math.max(JC.flash||0,.25); }
-function twClashRip(x,y,z,dir,s){ s=s||1; twGash({life:.8,rev:.08,fade:.35,w:46*s,sparks:60,pts:()=>twArcPts(x-dir*1.5,y,z,dir,0,4.2*s,-1.1,1.1,9)}); JC.flash=Math.max(JC.flash||0,.4); }
+// Getsuga clash shockwave: when two crescents hit, the screen ripples out from the contact point (a ring that pushes the
+// image outward, heat haze, a red/blue colour split, film grain) and settles over ~1.2s. twClashWarp(x,y,z,strength)
+const TW_WARP={k:0,t:0,x:.5,y:.5};
+const TwWarpShader={uniforms:{tDiffuse:{value:null},c:{value:new THREE.Vector2(.5,.5)},k:{value:0},r:{value:0},t:{value:0},asp:{value:16/9}},
+  vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+  fragmentShader:`uniform sampler2D tDiffuse; uniform vec2 c; uniform float k,r,t,asp; varying vec2 vUv;
+  float h(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+  void main(){ vec2 d=vUv-c; d.x*=asp; float L=length(d); vec2 n=L>1e-4?d/L:vec2(0.); n.x/=asp;
+    float ring=exp(-pow((L-r)/.07,2.)), near=exp(-L*2.2);
+    vec2 off=n*ring*.045*k + vec2(sin(vUv.y*90.+t*34.),cos(vUv.x*80.+t*29.))*.0045*k*near;
+    float ca=.007*k*(ring+near*.6);
+    vec3 col=vec3(texture2D(tDiffuse,vUv-off+n*ca).r,texture2D(tDiffuse,vUv-off).g,texture2D(tDiffuse,vUv-off-n*ca).b);
+    col+=(h(vUv*vec2(611.,347.)+fract(t*7.))-.5)*.16*k; col+=vec3(1.,.85,.9)*ring*.12*k;
+    gl_FragColor=vec4(col,1.); }`};
+const twWarpPass=new THREE.ShaderPass(TwWarpShader); twWarpPass.enabled=false; composer.addPass(twWarpPass);
+function twClashWarp(x,y,z,s){ const q=toScreen(x,y,z); TW_WARP.x=clamp(q[0]/UW,0,1); TW_WARP.y=clamp(1-q[1]/UH,0,1); TW_WARP.k=s||1; TW_WARP.t=0; }
+(function(){ const us=updateSlashPass; updateSlashPass=function(dt){ us(dt); try{ const W=TW_WARP, U=twWarpPass.uniforms; if(W.k<=0){ twWarpPass.enabled=false; return; }
+    W.t+=dt; const k=W.k*Math.max(0,1-W.t/1.2); if(k<=.002){ W.k=0; twWarpPass.enabled=false; return; } twWarpPass.enabled=true;
+    U.c.value.set(W.x,W.y); U.k.value=k*k*(3-2*k); U.r.value=W.t*.9; U.t.value=W.t; U.asp.value=UW/UH; }catch(e){ console.error('clash warp',e); twWarpPass.enabled=false; } }; })();
+(function(){ const cc=twClearCine; twClearCine=function(){ TW_WARP.k=0; twWarpPass.enabled=false; return cc.apply(this,arguments); }; })();
 // Getsuga Jujishou: the gold crescent + black lightning become a travelling Judgement Cut crescent
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length; const r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(o&&o.ali&&big&&b&&BEAMS.length>n0){ b.g.visible=false; if(b.bolt) b.bolt.visible=false; b.jj=1;
@@ -6181,10 +6197,12 @@ function pxvPlay(n,o){ if(!(o&&o.any?pxvRdy(n):pxvOk(n))) return null; const A=P
   let m; const sz=o.size||2, ar=A.w/A.h;
   if(o.plane){ m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial(Object.assign(mo,{side:THREE.DoubleSide}))); m.scale.set(sz*ar,sz,1); }
   else if(o.ground){ m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial(Object.assign(mo,{side:THREE.DoubleSide}))); m.rotation.set(-Math.PI/2,0,o.groundRot||0); m.scale.set(sz*ar,sz,1); }
-  else { m=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign(mo,{rotation:o.rot||0}))); m.scale.set(sz*ar*(o.flip?-1:1),sz,1); if(A.pivot) m.center.set(A.pivot[0],1-A.pivot[1]); }
+  else { m=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign(mo,{rotation:o.rot||0}))); m.scale.set(sz*ar,sz,1); if(A.pivot) m.center.set(A.pivot[0],1-A.pivot[1]); }
   m.position.set(o.x,o.y,o.z); m.renderOrder=o.ro||8; scene.add(m);
-  const e={m,t,A,f:-1,time:0,sp:(o.dur?(A.n/A.fps)/o.dur:1)*(o.speed||1),op:o.op==null?1:o.op}; if(o.fade){ e.fade=o.fade; e.age=0; e.sp=0; e.time=(o.frame||0)/A.fps; } pxvFrame(e,Math.floor(e.time*A.fps)%A.n); PXV.list.push(e); return e; }
-function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols)/e.A.cols,0); }
+  const e={m,t,A,f:-1,time:0,sp:(o.dur?(A.n/A.fps)/o.dur:1)*(o.speed||1),op:o.op==null?1:o.op}; if(o.fade){ e.fade=o.fade; e.age=0; e.sp=0; e.time=(o.frame||0)/A.fps; } if(o.flip) pxvFlip(e,true); pxvFrame(e,Math.floor(e.time*A.fps)%A.n); PXV.list.push(e); return e; }
+function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols+(e.flip?1:0))/e.A.cols,0); }
+// mirror a sheet left-right through its texture (a sprite's negative scale is ignored by three.js)
+function pxvFlip(e,f){ f=!!f; if(!!e.flip===f) return; e.flip=f; e.t.repeat.x=(f?-1:1)/e.A.cols; const i=e.f; e.f=-1; pxvFrame(e,i<0?0:i); }
 function pxvKill(e){ if(e.m.parent) e.m.parent.remove(e.m); try{ e.m.material.dispose(); e.t.dispose(); if(e.m.geometry&&e.m.isMesh) e.m.geometry.dispose(); }catch(x){} }
 function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
 function pxvStop(e){ const i=PXV.list.indexOf(e); if(i<0) return; PXV.list.splice(i,1); pxvKill(e); }
@@ -6234,7 +6252,7 @@ function pxvCresc(){ try{ const img=PXV.tex.cresc&&PXV.tex.cresc.image, A=PXV_AT
 function pxvAttach(n,g,size){ const e=pxvPlay(n,{x:0,y:0,z:0,size}); if(!e) return null; g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=size; return e; }
 function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld), p1=g.localToWorld(new THREE.Vector3(1,0,0));
   const a=toScreen(p0.x,p0.y,p0.z), b=toScreen(p1.x,p1.y,p1.z), dx=b[0]-a[0], dy=b[1]-a[1], fl=dx<0, jt=1+rnd(-.06,.06);
-  e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); e.m.scale.set(e.sz*jt*(A.w/A.h)*(fl?-1:1),e.sz*jt,1); }
+  e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
       if((jj||!b.ali)&&pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); b.pxv=pxvAttach(k,b.g,jj?4.2:big?4.4:3.6); /* the group grows over its flight (and Jujishou's is x1.25) */ } }
@@ -6288,7 +6306,7 @@ function drxAttach(d){ if(!d||!pxvRdy('drill_aura')) return; const o={any:true,x
     if(au){ au.m.position.copy(mid); au.m.material.rotation=rot; au.m.scale.set(hgt*.5*(1+rnd(-.02,.02)),hgt,1); au.sp=clamp(d.spin/22,.5,4); au.m.material.opacity=.8*Math.min(1,d.fire*2+.3); }
     // lightning: two layers, turning and twitching, stronger as the fire builds
     const lk=clamp((d.fire-.3)*1.6,0,1), bs=L*1.35;
-    for(const [b,k] of [[b1,1],[b2,-1]]) if(b){ b.m.position.copy(mid); b.m.material.rotation=rot+k*(Game.time*2.3%6.283)+rnd(-.15,.15); b.m.scale.set(bs*.75*(Math.random()<.5?-1:1),bs,1); b.m.material.opacity=lk*(.75+Math.random()*.25); }
+    for(const [b,k] of [[b1,1],[b2,-1]]) if(b){ b.m.position.copy(mid); b.m.material.rotation=rot+k*(Game.time*2.3%6.283)+rnd(-.15,.15); b.m.scale.set(bs*.75,bs,1); b.m.material.opacity=lk*(.75+Math.random()*.25); }
     // a helix of fire winding down to the tip with the spin
     ph+=d.spin*dt*.35; if(Math.abs(dn.y)<.95) e1.set(0,1,0).cross(dn).normalize(); else e1.set(1,0,0).cross(dn).normalize(); e2.copy(dn).cross(e1);
     const nh=Math.min(8,Math.ceil(2+d.fire*3)); for(let k=0;k<nh;k++){ const u=Math.random(), a=ph+(k%3)*2.094+u*7, r=(1-u)*d.s*1.18+.05, c=Math.cos(a), s=Math.sin(a);
@@ -6302,7 +6320,7 @@ function drxAttach(d){ if(!d||!pxvRdy('drill_aura')) return; const o={any:true,x
     if(on&&!pee){ pee=pxvPlay('pee_stream',{any:true,x:h.x,y:h.y,z:h.z,size:1,ro:9}); spl=pxvPlay('pee_splash',{any:true,x:d.x,y:d.y,z:d.z,size:1.3,ro:9}); }
     if(!on&&pee){ pxvStop(pee); if(spl) pxvStop(spl); pee=spl=null; }
     if(pee){ const a=new THREE.Vector3(h.x+.25,h.y-.35,h.z), b=new THREE.Vector3().copy(dn).multiplyScalar(L*.3).add(base).add(new THREE.Vector3(-.45*d.s,0,0)), [qx,qy]=drxScreenLen(a,b), len=Math.hypot(qx,qy)/drxPxPerUnit(a), fl=qx<0;
-      pee.m.position.set((a.x+b.x)/2,(a.y+b.y)/2+len*.12,(a.z+b.z)/2); pee.m.material.rotation=fl?Math.atan2(qy,-qx):Math.atan2(-qy,qx); pee.m.scale.set(len*1.15*(fl?-1:1),len*.58,1);
+      pee.m.position.set((a.x+b.x)/2,(a.y+b.y)/2+len*.12,(a.z+b.z)/2); pee.m.material.rotation=fl?Math.atan2(qy,-qx):Math.atan2(-qy,qx); pxvFlip(pee,fl); pee.m.scale.set(len*1.15,len*.58,1);
       if(spl){ spl.m.position.copy(b); } }
     return true; }catch(er){ console.error('drill fx',er); kill(); return false; } }); }
 
@@ -7129,13 +7147,13 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
   // they fly at each other
   yield* (function*(){ const a0=st.a, b0=st.b; for(let t=0;t<.45;t+=1/30){ const u=t/.45; st.a=lerp(a0,st.cx-1.1,u); st.b=lerp(b0,st.cx+1.1,u); yield 1/30; } })();
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4); FX.hitstop=.12;
-  const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; twClashTear(()=>st.cx,by,pz,()=>!!TW.mash&&!st.dead); hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
+  const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; twClashWarp(st.cx,by,pz); hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
   while(M.t<M.dur){ const dt=1/30; yield dt; M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.09-dt*.25,-1,1); st.cx=lerp(st.cx,lerp(lo,hi,(M.v+1)/2),.25); st.a=st.cx-1.1; st.b=st.cx+1.1;
     P.vx=P.vz=0; if(pushes){ Sound.sfx('hit'); shake(.15); } if(Math.random()<.15) Sound.sfx('slam'); FX.flash=Math.max(FX.flash,.06); }
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner's crescent bursts through the other and keeps going
   const loser=win?his:mine; for(let i=0;i<40;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-2,2),pz,rnd(-8,8),rnd(-4,6),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.4,8,true); loser.visible=false;
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,pz,win?1:-1);
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,T.x,.3); else st.b=lerp(st.b,P.x,.3); yield 1/30; }
   st.dead=1; const hx=win?T.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,pz,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,pz,90,win?0xff3a5a:0x9a4aff,10,.5); FX.burst(hx,by,pz,50,0x1a0626,8,.5,false);
   P.cineAnim=null; Cam.cine=null;
@@ -9235,7 +9253,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   yield say('shayan',"They're wide open! Ali, you thinking what I'm thinking?"); yield say('ali',"I'm thinking you talk too much.");
   cineSet(P.x+1,gy+2.2,P.z+8,P.x+3,gy+1.6,P.z); P.charge=2; Sound.sfx('charge'); yield say('shayan',"GETSUGA...",'angry'); yield say('ali',"...TENSHOU.");
   // two red crescents fly, merge into one, and stop dead in the air
-  const S=7.5, by=gy+S*.42, mine=twGetsugaMesh(S*.7,0xff3a5a), ali=twGetsugaMesh(S*.7,0xff1a2a), his=twGetsugaMesh(S*1.15,0x9a4aff); his.rotation.y=Math.PI; his.visible=false;
+  const S=7.5, by=gy+S*.42, mine=twGetsugaMesh(S*.7,0xff3a5a), ali=twGetsugaMesh(S*.7,0xff1a2a), his=twGetsugaMesh(S*1.15,0x9a4aff); his.rotation.y=Math.PI; his.visible=false; ali.visible=false; /* Shayan's and Ali's fly as one crescent (two looked like a repeat) */
   const st={a:P.x+1,b:O.x-1,cx:c.x+2.4,t:0,ph:'fly',merge:0,dead:0}; P.charge=0; P.cineAnim='beam'; Sound.sfx('beam'); Sound.sfx('crossboom'); FX.flash=.6; grade.uniforms.flashCol.value.set(1,.4,.5); shake(.6);
   Game.fxUpd.push(dt=>{ if(st.dead){ scene.remove(mine); scene.remove(ali); scene.remove(his); return false; } st.t+=dt; const j=st.ph==='grind'?Math.sin(st.t*60)*.1:0, z0=c.z;
     const mz=lerp(P.z,z0,st.merge), az=lerp(A?A.z:P.z,z0,st.merge); mine.position.set(st.a+j,by,mz+.05); ali.position.set(st.a+j-.2,by+.15,az); const k=1+st.merge*.55+(st.ph==='grind'?Math.sin(st.t*40)*.05:0); mine.scale.setScalar(k); ali.scale.setScalar(k*.98);
@@ -9254,7 +9272,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   his.visible=true; O.swing=1; Sound.sfx('crossboom'); Sound.sfx('beam'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[3,2],[1,2]]); shake(1);
   for(let t=0;t<.4;t+=1/60){ const u=t/.4; st.a=lerp(c.x-.5,st.cx-2.4,u); st.b=lerp(O.x-1,st.cx+2.6,u); yield wait(1/60); }
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4);
-  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z); twClashTear(()=>st.cx,by,c.z,()=>!!TW.mash&&!st.dead,1.3);
+  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z); twClashWarp(st.cx,by,c.z);
   // ---------- the mash ----------
   const M=TW.mash={v:0,n:0,t:0,dur:4.6,shown:0,duoClash:1}; hit.attack=false; const lo=P.x+3.5, hi=O.x-3.5;
   while(M.t<M.dur){ const dt=1/30; yield wait(dt); M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.08-dt*.5,-1,1); M.shown+=pushes;
@@ -9262,7 +9280,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner tears through
   (win?his:mine).visible=false; if(win) ali.visible=false; for(let i=0;i<60;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-3,3),c.z,rnd(-9,9),rnd(-4,7),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.45,8,true);
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,c.z,win?1:-1,1.3);
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,O.x,.3); else st.b=lerp(st.b,P.x,.3); yield wait(1/30); }
   st.dead=1; const hx=win?O.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,c.z,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,c.z,90,win?0xff3a5a:0x9a4aff,10,.5);
   if(win) O.flash=.6; else { P.hp=Math.max(1,P.hp-3); }

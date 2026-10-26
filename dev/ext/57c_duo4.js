@@ -137,7 +137,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   yield say('shayan',"They're wide open! Ali, you thinking what I'm thinking?"); yield say('ali',"I'm thinking you talk too much.");
   cineSet(P.x+1,gy+2.2,P.z+8,P.x+3,gy+1.6,P.z); P.charge=2; Sound.sfx('charge'); yield say('shayan',"GETSUGA...",'angry'); yield say('ali',"...TENSHOU.");
   // two red crescents fly, merge into one, and stop dead in the air
-  const S=7.5, by=gy+S*.42, mine=twGetsugaMesh(S*.7,0xff3a5a), ali=twGetsugaMesh(S*.7,0xff1a2a), his=twGetsugaMesh(S*1.15,0x9a4aff); his.rotation.y=Math.PI; his.visible=false;
+  const S=7.5, by=gy+S*.42, mine=twGetsugaMesh(S*.7,0xff3a5a), ali=twGetsugaMesh(S*.7,0xff1a2a), his=twGetsugaMesh(S*1.15,0x9a4aff); his.rotation.y=Math.PI; his.visible=false; ali.visible=false; /* Shayan's and Ali's fly as one crescent (two looked like a repeat) */
   const st={a:P.x+1,b:O.x-1,cx:c.x+2.4,t:0,ph:'fly',merge:0,dead:0}; P.charge=0; P.cineAnim='beam'; Sound.sfx('beam'); Sound.sfx('crossboom'); FX.flash=.6; grade.uniforms.flashCol.value.set(1,.4,.5); shake(.6);
   Game.fxUpd.push(dt=>{ if(st.dead){ scene.remove(mine); scene.remove(ali); scene.remove(his); return false; } st.t+=dt; const j=st.ph==='grind'?Math.sin(st.t*60)*.1:0, z0=c.z;
     const mz=lerp(P.z,z0,st.merge), az=lerp(A?A.z:P.z,z0,st.merge); mine.position.set(st.a+j,by,mz+.05); ali.position.set(st.a+j-.2,by+.15,az); const k=1+st.merge*.55+(st.ph==='grind'?Math.sin(st.t*40)*.05:0); mine.scale.setScalar(k); ali.scale.setScalar(k*.98);
@@ -156,7 +156,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   his.visible=true; O.swing=1; Sound.sfx('crossboom'); Sound.sfx('beam'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[3,2],[1,2]]); shake(1);
   for(let t=0;t<.4;t+=1/60){ const u=t/.4; st.a=lerp(c.x-.5,st.cx-2.4,u); st.b=lerp(O.x-1,st.cx+2.6,u); yield wait(1/60); }
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4);
-  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z); twClashTear(()=>st.cx,by,c.z,()=>!!TW.mash&&!st.dead,1.3);
+  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z); twClashWarp(st.cx,by,c.z);
   // ---------- the mash ----------
   const M=TW.mash={v:0,n:0,t:0,dur:4.6,shown:0,duoClash:1}; hit.attack=false; const lo=P.x+3.5, hi=O.x-3.5;
   while(M.t<M.dur){ const dt=1/30; yield wait(dt); M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.08-dt*.5,-1,1); M.shown+=pushes;
@@ -164,7 +164,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner tears through
   (win?his:mine).visible=false; if(win) ali.visible=false; for(let i=0;i<60;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-3,3),c.z,rnd(-9,9),rnd(-4,7),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.45,8,true);
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,c.z,win?1:-1,1.3);
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,O.x,.3); else st.b=lerp(st.b,P.x,.3); yield wait(1/30); }
   st.dead=1; const hx=win?O.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,c.z,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,c.z,90,win?0xff3a5a:0x9a4aff,10,.5);
   if(win) O.flash=.6; else { P.hp=Math.max(1,P.hp-3); }

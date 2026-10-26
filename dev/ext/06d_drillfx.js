@@ -27,7 +27,7 @@ function drxAttach(d){ if(!d||!pxvRdy('drill_aura')) return; const o={any:true,x
     if(au){ au.m.position.copy(mid); au.m.material.rotation=rot; au.m.scale.set(hgt*.5*(1+rnd(-.02,.02)),hgt,1); au.sp=clamp(d.spin/22,.5,4); au.m.material.opacity=.8*Math.min(1,d.fire*2+.3); }
     // lightning: two layers, turning and twitching, stronger as the fire builds
     const lk=clamp((d.fire-.3)*1.6,0,1), bs=L*1.35;
-    for(const [b,k] of [[b1,1],[b2,-1]]) if(b){ b.m.position.copy(mid); b.m.material.rotation=rot+k*(Game.time*2.3%6.283)+rnd(-.15,.15); b.m.scale.set(bs*.75*(Math.random()<.5?-1:1),bs,1); b.m.material.opacity=lk*(.75+Math.random()*.25); }
+    for(const [b,k] of [[b1,1],[b2,-1]]) if(b){ b.m.position.copy(mid); b.m.material.rotation=rot+k*(Game.time*2.3%6.283)+rnd(-.15,.15); b.m.scale.set(bs*.75,bs,1); b.m.material.opacity=lk*(.75+Math.random()*.25); }
     // a helix of fire winding down to the tip with the spin
     ph+=d.spin*dt*.35; if(Math.abs(dn.y)<.95) e1.set(0,1,0).cross(dn).normalize(); else e1.set(1,0,0).cross(dn).normalize(); e2.copy(dn).cross(e1);
     const nh=Math.min(8,Math.ceil(2+d.fire*3)); for(let k=0;k<nh;k++){ const u=Math.random(), a=ph+(k%3)*2.094+u*7, r=(1-u)*d.s*1.18+.05, c=Math.cos(a), s=Math.sin(a);
@@ -41,6 +41,6 @@ function drxAttach(d){ if(!d||!pxvRdy('drill_aura')) return; const o={any:true,x
     if(on&&!pee){ pee=pxvPlay('pee_stream',{any:true,x:h.x,y:h.y,z:h.z,size:1,ro:9}); spl=pxvPlay('pee_splash',{any:true,x:d.x,y:d.y,z:d.z,size:1.3,ro:9}); }
     if(!on&&pee){ pxvStop(pee); if(spl) pxvStop(spl); pee=spl=null; }
     if(pee){ const a=new THREE.Vector3(h.x+.25,h.y-.35,h.z), b=new THREE.Vector3().copy(dn).multiplyScalar(L*.3).add(base).add(new THREE.Vector3(-.45*d.s,0,0)), [qx,qy]=drxScreenLen(a,b), len=Math.hypot(qx,qy)/drxPxPerUnit(a), fl=qx<0;
-      pee.m.position.set((a.x+b.x)/2,(a.y+b.y)/2+len*.12,(a.z+b.z)/2); pee.m.material.rotation=fl?Math.atan2(qy,-qx):Math.atan2(-qy,qx); pee.m.scale.set(len*1.15*(fl?-1:1),len*.58,1);
+      pee.m.position.set((a.x+b.x)/2,(a.y+b.y)/2+len*.12,(a.z+b.z)/2); pee.m.material.rotation=fl?Math.atan2(qy,-qx):Math.atan2(-qy,qx); pxvFlip(pee,fl); pee.m.scale.set(len*1.15,len*.58,1);
       if(spl){ spl.m.position.copy(b); } }
     return true; }catch(er){ console.error('drill fx',er); kill(); return false; } }); }

@@ -73,10 +73,26 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;
     const x=cx+ux*f+(flatY?-uz*s:0), y=cy+(flatY?0:s), z=cz+uz*f+(flatY?ux*s:0), q=toScreen(x,y,z); if(q[2]>=1) return null; P.push([q[0],q[1]]); } return P; }
-// Getsuga clash distortion (Full Counter style): two Judgement Cut tears crossing where the crescents grind (cx() follows the
-// contact point; they last while alive() holds), and twClashRip: one big crescent tear ripping the winner's way
-function twClashTear(cx,y,z,alive,s){ s=s||1; for(const d of [1,-1]) twGash({life:8,rev:.08,fade:.25,w:28*s,op:.85,sparks:30,alive,pts:()=>twArcPts(cx()-d*2.6*s,y,z,d,0,2.8*s,-.95,.95,7)}); JC.flash=Math.max(JC.flash||0,.25); }
-function twClashRip(x,y,z,dir,s){ s=s||1; twGash({life:.8,rev:.08,fade:.35,w:46*s,sparks:60,pts:()=>twArcPts(x-dir*1.5,y,z,dir,0,4.2*s,-1.1,1.1,9)}); JC.flash=Math.max(JC.flash||0,.4); }
+// Getsuga clash shockwave: when two crescents hit, the screen ripples out from the contact point (a ring that pushes the
+// image outward, heat haze, a red/blue colour split, film grain) and settles over ~1.2s. twClashWarp(x,y,z,strength)
+const TW_WARP={k:0,t:0,x:.5,y:.5};
+const TwWarpShader={uniforms:{tDiffuse:{value:null},c:{value:new THREE.Vector2(.5,.5)},k:{value:0},r:{value:0},t:{value:0},asp:{value:16/9}},
+  vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+  fragmentShader:`uniform sampler2D tDiffuse; uniform vec2 c; uniform float k,r,t,asp; varying vec2 vUv;
+  float h(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+  void main(){ vec2 d=vUv-c; d.x*=asp; float L=length(d); vec2 n=L>1e-4?d/L:vec2(0.); n.x/=asp;
+    float ring=exp(-pow((L-r)/.07,2.)), near=exp(-L*2.2);
+    vec2 off=n*ring*.045*k + vec2(sin(vUv.y*90.+t*34.),cos(vUv.x*80.+t*29.))*.0045*k*near;
+    float ca=.007*k*(ring+near*.6);
+    vec3 col=vec3(texture2D(tDiffuse,vUv-off+n*ca).r,texture2D(tDiffuse,vUv-off).g,texture2D(tDiffuse,vUv-off-n*ca).b);
+    col+=(h(vUv*vec2(611.,347.)+fract(t*7.))-.5)*.16*k; col+=vec3(1.,.85,.9)*ring*.12*k;
+    gl_FragColor=vec4(col,1.); }`};
+const twWarpPass=new THREE.ShaderPass(TwWarpShader); twWarpPass.enabled=false; composer.addPass(twWarpPass);
+function twClashWarp(x,y,z,s){ const q=toScreen(x,y,z); TW_WARP.x=clamp(q[0]/UW,0,1); TW_WARP.y=clamp(1-q[1]/UH,0,1); TW_WARP.k=s||1; TW_WARP.t=0; }
+(function(){ const us=updateSlashPass; updateSlashPass=function(dt){ us(dt); try{ const W=TW_WARP, U=twWarpPass.uniforms; if(W.k<=0){ twWarpPass.enabled=false; return; }
+    W.t+=dt; const k=W.k*Math.max(0,1-W.t/1.2); if(k<=.002){ W.k=0; twWarpPass.enabled=false; return; } twWarpPass.enabled=true;
+    U.c.value.set(W.x,W.y); U.k.value=k*k*(3-2*k); U.r.value=W.t*.9; U.t.value=W.t; U.asp.value=UW/UH; }catch(e){ console.error('clash warp',e); twWarpPass.enabled=false; } }; })();
+(function(){ const cc=twClearCine; twClearCine=function(){ TW_WARP.k=0; twWarpPass.enabled=false; return cc.apply(this,arguments); }; })();
 // Getsuga Jujishou: the gold crescent + black lightning become a travelling Judgement Cut crescent
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length; const r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(o&&o.ali&&big&&b&&BEAMS.length>n0){ b.g.visible=false; if(b.bolt) b.bolt.visible=false; b.jj=1;
