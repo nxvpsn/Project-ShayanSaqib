@@ -116,35 +116,38 @@ function dbgBtn(x,y,w,h,label,id,o){ o=o||{}; const hov=DBG.hov===id; uRR(x,y,w,
   DBG.rects.push({x,y,w,h,id}); }
 function dbgChk(x,y,on,label,id){ uRR(x,y,14,14,3); D.fillStyle=on?UIC.acc:'rgba(0,0,0,.4)'; D.fill(); D.strokeStyle=UIC.line2; D.stroke(); if(on){ D.strokeStyle='#1a1408'; D.lineWidth=2; D.beginPath(); D.moveTo(x+3,y+7.5); D.lineTo(x+6,y+10.5); D.lineTo(x+11,y+4); D.stroke(); }
   uText(label,x+20,y+11,`600 12px ${FB}`,on?UIC.text:UIC.mut); DBG.rects.push({x:x-2,y:y-3,w:140,h:20,id}); }
-function dbgDraw(){ if(!DBG.on||Game.state==='title'||TLM.open) return; DBG.rects=[]; D.save();
-  if(DBG.hide){ dbgBtn(12,12,128,26,'DEBUG ▸ show','show'); D.restore(); return; }
-  // ----- left: player + boss controls
-  const Lp=DBP.L; let y=Lp.y; const x=Lp.x+14, w=Lp.w-28; const top=y; uPanel(Lp.x,Lp.y,Lp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
-  y+=26; uText('DEBUG MODE',x,y,`900 16px ${FB}`,'#ff8aa8'); dbgBtn(x+w-62,y-16,28,22,'–','hide'); dbgBtn(x+w-30,y-16,30,22,'✕','off');
-  y+=16; uText(DBG_PATCH,x,y,`600 11px ${FB}`,UIC.mut); uRR(x+w-38,y-11,32,15,7); D.fillStyle='#ff4a7a'; D.fill(); uText('NEW',x+w-22,y,`900 9px ${FB}`,'#fff','center');
-  y+=20; uCaps('PLAYER',x,y,UIC.dim,10); y+=8; dbgBtn(x,y,w/2-3,24,'Shayan','ali:0',{on:!DBG.ali}); dbgBtn(x+w/2+3,y,w/2-3,24,'Ali','ali:1',{on:DBG.ali}); y+=32;
+// the sections: the desktop shows two side panels (setup + boss on the left, moves on the right); phones show one paged panel (99f_mobile.js)
+function dbgHead(x,y,w,closeId){ uText('DEBUG MODE',x,y,`900 16px ${FB}`,'#ff8aa8'); if(closeId) dbgBtn(x+w-62,y-16,28,22,'–','hide'); dbgBtn(x+w-30,y-16,30,22,'✕',closeId||'off');
+  y+=16; uText(DBG_PATCH,x,y,`600 11px ${FB}`,UIC.mut); uRR(x+w-38,y-11,32,15,7); D.fillStyle='#ff4a7a'; D.fill(); uText('NEW',x+w-22,y,`900 9px ${FB}`,'#fff','center'); return y+20; }
+function dbgSecSetup(x,y,w){ uCaps('PLAYER',x,y,UIC.dim,10); y+=8; dbgBtn(x,y,w/2-3,24,'Shayan','ali:0',{on:!DBG.ali}); dbgBtn(x+w/2+3,y,w/2-3,24,'Ali','ali:1',{on:DBG.ali}); y+=32;
   dbgChk(x,y,!!TW.god,'Infinite HP','t:god'); dbgChk(x+w/2,y,!!TW.otk,'One-hit kill','t:otk'); y+=22; dbgChk(x,y,!!TW.infFC,ALI()?'Infinite JC':'Infinite Full Counter','t:fc'); dbgChk(x+w/2,y,DBG.slow,'Slow-mo ½','t:slow'); y+=22;
   if(!ALI()){ dbgChk(x,y,!!Game.flags.aliSword,"Ali's blade (10× Nathan)",'t:blade'); y+=22; }
   dbgBtn(x,y,(w-12)/3,24,'Heal','heal'); dbgBtn(x+(w-12)/3+6,y,(w-12)/3,24,'Full meter','meter'); dbgBtn(x+2*(w-12)/3+12,y,(w-12)/3,24,'Clear hazards','clear'); y+=34;
-  uCaps('SPAWN A BOSS',x,y,UIC.dim,10); y+=8; DBG_BOSSES.forEach(([id,nm],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,nm,'boss:'+id,{on:DBG.boss===id,nw:dbgNew(id)}); if(col) y+=28; }); y+=6;
-  const b=DBG.boss, ctl=b&&b!=='grimmaw'&&b!=='paul';
-  if(ctl){ const ph=dbgPhase(), hp=dbgHP(); uText(DBG_BOSSES.find(q=>q[0]===b)[1]+(ph?'  ·  phase '+['','I','II','III','IV'][ph]:'  ·  not on the field'),x,y+4,`700 13px ${FB}`,UIC.accL); if(hp!=null) uText(Math.round(hp*100)+'%',x+w,y+4,`700 13px ${FB}`,UIC.text,'right'); y+=12;
-    if(hp!=null){ uRR(x,y,w,5,2); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(x,y,Math.max(3,w*hp),5,2); D.fillStyle='#ff4a7a'; D.fill(); } y+=14;
-    uCaps('AI',x,y,UIC.dim,10); y+=8; [['idle','Idle'],['active','Active'],['loop','Loop move']].forEach(([m,l],i)=>dbgBtn(x+i*(w/3+1),y,w/3-3,24,l,'mode:'+m,{on:DBG.mode===m})); y+=30;
-    if(DBG.mode==='loop') { uText(DBG.move?'Looping: '+dbgName(DBG.move):'Pick a mechanic on the right to loop it',x,y+4,`italic 600 11px ${FB}`,UIC.mut); y+=16; }
-    uCaps('PHASE',x,y,UIC.dim,10); y+=8; const n=dbgPhases(); for(let i=1;i<=n;i++) dbgBtn(x+(i-1)*(w/n),y,w/n-4,24,['','I','II','III','IV'][i],'phase:'+i,{on:ph===i}); y+=30;
-    uCaps('BOSS HP',x,y,UIC.dim,10); y+=8; [['100%',1],['50%',.5],['10%',.1]].forEach(([l,k],i)=>dbgBtn(x+i*(w/4),y,w/4-4,24,l,'hp:'+k)); dbgBtn(x+3*(w/4),y,w/4,24,'Kill bar','kill'); y+=30;
-    const lcs=dbgLCs(); if(lcs.length){ uCaps('LIMIT CUTS',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,l,'lc:'+k+':'+p,{nw:dbgNew(b,k)}); if(col||i===lcs.length-1) y+=28; }); y+=2; }
-    dbgBtn(x,y,w,24,'Despawn boss','despawn'); y+=30; }
-  else if(b){ uText('Warped to the real fight (intro included).',x,y+4,`italic 600 12px ${FB}`,UIC.mut); y+=20; }
+  uCaps('SPAWN A BOSS',x,y,UIC.dim,10); y+=8; DBG_BOSSES.forEach(([id,nm],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,nm,'boss:'+id,{on:DBG.boss===id,nw:dbgNew(id)}); if(col) y+=28; }); return y+6; }
+function dbgCtl(){ const b=DBG.boss; return b&&b!=='grimmaw'&&b!=='paul'; }
+function dbgSecBoss(x,y,w){ const b=DBG.boss;
+  if(!b){ uText('Spawn a boss first.',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y+20; }
+  if(!dbgCtl()){ uText('Warped to the real fight (intro included).',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y+20; }
+  const ph=dbgPhase(), hp=dbgHP(); uText(DBG_BOSSES.find(q=>q[0]===b)[1]+(ph?'  ·  phase '+['','I','II','III','IV'][ph]:'  ·  not on the field'),x,y+4,`700 13px ${FB}`,UIC.accL); if(hp!=null) uText(Math.round(hp*100)+'%',x+w,y+4,`700 13px ${FB}`,UIC.text,'right'); y+=12;
+  if(hp!=null){ uRR(x,y,w,5,2); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(x,y,Math.max(3,w*hp),5,2); D.fillStyle='#ff4a7a'; D.fill(); } y+=14;
+  uCaps('AI',x,y,UIC.dim,10); y+=8; [['idle','Idle'],['active','Active'],['loop','Loop move']].forEach(([m,l],i)=>dbgBtn(x+i*(w/3+1),y,w/3-3,24,l,'mode:'+m,{on:DBG.mode===m})); y+=30;
+  if(DBG.mode==='loop') { uText(DBG.move?'Looping: '+dbgName(DBG.move):'Pick a mechanic to loop it',x,y+4,`italic 600 11px ${FB}`,UIC.mut); y+=16; }
+  uCaps('PHASE',x,y,UIC.dim,10); y+=8; const n=dbgPhases(); for(let i=1;i<=n;i++) dbgBtn(x+(i-1)*(w/n),y,w/n-4,24,['','I','II','III','IV'][i],'phase:'+i,{on:ph===i}); y+=30;
+  uCaps('BOSS HP',x,y,UIC.dim,10); y+=8; [['100%',1],['50%',.5],['10%',.1]].forEach(([l,k],i)=>dbgBtn(x+i*(w/4),y,w/4-4,24,l,'hp:'+k)); dbgBtn(x+3*(w/4),y,w/4,24,'Kill bar','kill'); y+=30;
+  const lcs=dbgLCs(); if(lcs.length){ uCaps('LIMIT CUTS',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,l,'lc:'+k+':'+p,{nw:dbgNew(b,k)}); if(col||i===lcs.length-1) y+=28; }); y+=2; }
+  dbgBtn(x,y,w,24,'Despawn boss','despawn'); return y+30; }
+function dbgSecMoves(x,y,w,cols){ const b=DBG.boss, moves=dbgMoves(); if(!moves.length){ uText(dbgCtl()?'':'Spawn a boss first.',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y; }
+  uText(DBG.mode==='loop'?'tap one to loop it':'tap one to run it now',x,y,`600 11px ${FB}`,UIC.mut); y+=12;
+  const ph=dbgPhase(), inPool=k=>{ if(b==='caotan'||b==='omar') return (TWPOOL[b][ph]||[]).includes(k); if(b==='duo') return (DUO3_POOL[ph]||[]).includes(k)||k==='scytheRain'; if(b==='hamza') return (HZG_POOL[ph]||[]).includes(k); if(b==='nathan') return (NB_POOL[ph]||[]).includes(k); if(b==='mech') return (TH_SPELLS[ph]||[]).some(s=>s[2]===k); return true; };
+  const nc=cols||(moves.length>22?2:1), cw=(w-(nc-1)*6)/nc, rh=nc>1?24:26; moves.forEach((k,i)=>{ const col=i%nc, row=Math.floor(i/nc); dbgBtn(x+col*(cw+6),y+row*(rh+3),cw,rh,dbgName(k),'move:'+k,{on:DBG.move===k,nw:dbgNew(b,k),dim:!inPool(k)}); });
+  const rows=Math.ceil(moves.length/nc); y+=rows*(rh+3)+16; uText('Dimmed = not in this phase\'s pool (still runnable)',x,y,`500 11px ${FB}`,UIC.dim); return y; }
+function dbgDraw(){ if(!DBG.on||Game.state==='title'||TLM.open) return; DBG.rects=[]; D.save();
+  if(DBG.hide){ dbgBtn(12,12,128,26,'DEBUG ▸ show','show'); D.restore(); return; }
+  const Lp=DBP.L, x=Lp.x+14, w=Lp.w-28; uPanel(Lp.x,Lp.y,Lp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
+  let y=dbgHead(x,Lp.y+26,w,null); y=dbgSecSetup(x,y,w); dbgSecBoss(x,y,w);
   y=UH-12-58; uText(DBG.msg&&DBG.msg.t&&performance.now()-DBG.msg.at<4000?DBG.msg.t:'',x,y,`700 12px ${FB}`,'#9ff8ff');
   uText('Numpad 5 leaves debug mode · Esc menu still works',x,y+22,`500 11px ${FB}`,UIC.dim); uText('Hidden numpad: 0 HP · 1 FC · 2 OHK · 3 timeline',x,y+38,`500 11px ${FB}`,UIC.dim);
-  // ----- right: the mechanics of this boss
-  if(ctl){ const Rp=DBP.R, rx=Rp.x+12, rw=Rp.w-24, moves=dbgMoves(); uPanel(Rp.x,Rp.y,Rp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
-    let ry=Rp.y+26; uText('Mechanics',rx,ry,`900 16px ${FB}`,UIC.accL); ry+=16; uText(DBG.mode==='loop'?'click one to loop it':'click one to run it now',rx,ry,`600 11px ${FB}`,UIC.mut); ry+=12;
-    const ph=dbgPhase(), inPool=k=>{ if(b==='caotan'||b==='omar') return (TWPOOL[b][ph]||[]).includes(k); if(b==='duo') return (DUO3_POOL[ph]||[]).includes(k)||k==='scytheRain'; if(b==='hamza') return (HZG_POOL[ph]||[]).includes(k); if(b==='nathan') return (NB_POOL[ph]||[]).includes(k); if(b==='mech') return (TH_SPELLS[ph]||[]).some(s=>s[2]===k); return true; };
-    const one=moves.length>22, cw=one?rw/2-3:rw, rh=one?24:26; moves.forEach((k,i)=>{ const col=one?i%2:0, row=one?Math.floor(i/2):i; dbgBtn(rx+col*(cw+6),ry+row*(rh+3),cw,rh,dbgName(k),'move:'+k,{on:DBG.move===k,nw:dbgNew(b,k),dim:!inPool(k)}); });
-    const rows=one?Math.ceil(moves.length/2):moves.length; uText('Dimmed = not in this phase\'s pool (still runnable)',rx,ry+rows*(rh+3)+16,`500 11px ${FB}`,UIC.dim); }
+  if(dbgCtl()){ const Rp=DBP.R, rx=Rp.x+12, rw=Rp.w-24; uPanel(Rp.x,Rp.y,Rp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10); uText('Mechanics',rx,Rp.y+26,`900 16px ${FB}`,UIC.accL); dbgSecMoves(rx,Rp.y+42,rw); }
   D.restore(); }
 (function(){ const du=drawUI; drawUI=function(){ du(); try{ dbgDraw(); }catch(e){ console.error('debug ui',e); } }; })();
 function dbgAct(id){ Sound.sfx('blip'); const [a,v,w]=id.split(':');

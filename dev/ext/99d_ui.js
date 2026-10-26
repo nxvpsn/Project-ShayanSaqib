@@ -14,7 +14,7 @@ const HUB={sec:'road',of:0,hov:null,modal:null};
 const RAIL={x:24,y:24,w:232,h:627}, MAIN={x:272,y:24,w:904,h:627}, CONT={x:272,y:80,w:904,h:571}, MAP={x:272,y:80,w:904,h:378}, DET={x:272,y:470,w:904,h:181};
 
 // ---------- drawing kit ----------
-function uRR(x,y,w,h,r){ r=Math.min(r,w/2,h/2); D.beginPath(); D.moveTo(x+r,y); D.arcTo(x+w,y,x+w,y+h,r); D.arcTo(x+w,y+h,x,y+h,r); D.arcTo(x,y+h,x,y,r); D.arcTo(x,y,x+w,y,r); D.closePath(); }
+function uRR(x,y,w,h,r){ if(w<0){ x+=w; w=-w; } if(h<0){ y+=h; h=-h; } r=Math.max(0,Math.min(r,w/2,h/2)); D.beginPath(); D.moveTo(x+r,y); D.arcTo(x+w,y,x+w,y+h,r); D.arcTo(x+w,y+h,x,y+h,r); D.arcTo(x,y+h,x,y,r); D.arcTo(x,y,x+w,y,r); D.closePath(); }
 function uPanel(x,y,w,h,fill,stroke,r){ uRR(x,y,w,h,r==null?10:r); D.fillStyle=fill||UIC.panel; D.fill(); D.strokeStyle=stroke||UIC.line; D.lineWidth=1; D.stroke(); }
 function uText(t,x,y,font,col,al){ D.font=font; D.fillStyle=col; D.textAlign=al||'left'; D.fillText(t,x,y); D.textAlign='left'; }
 function uCaps(t,x,y,col,size){ D.save(); try{ D.letterSpacing='2px'; }catch(e){} uText(t,x,y,`800 ${size||11}px ${FB}`,col||UIC.mut); D.restore(); }

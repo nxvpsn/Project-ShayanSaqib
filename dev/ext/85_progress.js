@@ -150,3 +150,11 @@ const ART={
 function twArt(id){ if(TL_ART[id]) return TL_ART[id]; const [cv,c]=mkCanvas(ART_W,ART_H); c.imageSmoothingEnabled=false; try{ (ART[id]||ART.sh_root)(c); }catch(e){ console.error('art',id,e); } TL_ART[id]=cv; return cv; }
 function twArtLocked(){ if(TL_ART.__lock) return TL_ART.__lock; const [cv,c]=mkCanvas(ART_W,ART_H); const g=c.createLinearGradient(0,0,0,ART_H); g.addColorStop(0,'#1a1620'); g.addColorStop(1,'#0a080e'); c.fillStyle=g; c.fillRect(0,0,ART_W,ART_H);
   c.font='bold 40px serif'; c.fillStyle='rgba(216,180,106,.35)'; c.textAlign='center'; c.fillText('???',ART_W/2,ART_H/2+14); TL_ART.__lock=cv; return cv; }
+
+// ---------- leaving a cutscene midway (warp, title) never leaves its overlays behind ----------
+// the "GG." glass card, cracks, shards, fist, white flashes, title cards, captions, the chant, letterbox, slow-mo, JC lines
+function twClearCine(){ Object.assign(OV,{cr:null,sh:[],card:null,fist:null,white:0,wfade:0,meter:0,cap:null});
+  Object.assign(Game,{evaCard:null,caption:null,chant:null,impSeq:null,split:null,moonCut:null,cineMark:null,card:null,banner:null,subtitle:null,eclipse:0,letterTo:0,letter:0,timeScale:1,slowT:0,mechTip:0});
+  if(Game.zw) zwEnd(); JC.lines=[]; FX.flash=0; FX.hitstop=0; }
+(function(){ const wr=twWarpReset; twWarpReset=function(){ twClearCine(); return wr.apply(this,arguments); };
+  const tt=toTitle; toTitle=function(){ twClearCine(); return tt.apply(this,arguments); }; })();

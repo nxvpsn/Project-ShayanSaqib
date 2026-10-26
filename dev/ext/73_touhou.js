@@ -198,6 +198,7 @@ function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const 
   T.items=T.items.filter(i=>!i.dead);
   G.thScore=T.score; G.thPower=T.power; G.thGraze=T.graze; if(T.score>(SAVE.settings.thHi||0)){ SAVE.settings.thHi=T.score; if(T.t%2<dt) saveWrite(); }
   thPlace(); MB.layE&&MB.layE.write(T.eb); if(MB.layP){ for(const p of T.pb){ [p.x,p.y]=thW(p.u,p.v); p.z=.1; } MB.layP.write(T.pb); } }
+function thGhosts(dt){ if(!MB.gh||!MB.gh.length) return; for(const g of MB.gh){ g.t+=dt; g.m.material.opacity=Math.max(0,.45-g.t*2.2); if(g.t>.22){ scene.remove(g.m); g.m.geometry.dispose(); g.m.material.dispose(); g.dead=1; } } MB.gh=MB.gh.filter(g=>!g.dead); }
 function thPlace(){ const N=NAT, T=Game.mech.th; if(!N||!N.mesh) return; if(MECHTEX&&!N.mat.map){ N.mat.map=MECHTEX; N.mat.needsUpdate=true; }
   const blink=N.inv>0&&N.inv<2.4&&T.ready&&Math.floor(N.inv*16)%2===0; const s=T.pk; N.mesh.visible=!!N.show&&!blink&&!!MECHTEX; N.mesh.scale.set(s,s,1);
   N.mesh.position.set(N.x-.75*s,N.y-.6*s,0); N.mesh.rotation.z=0; N.mat.color.setRGB(1,N.flash>0?.45:1,N.flash>0?.5:1);
@@ -224,7 +225,7 @@ function* thPhaseOut(ph){ const G=Game.mech, T=G.th, N=NAT, B=G.boss; if(!T) ret
 
 // ---------- HUD: the side panels and the field furniture ----------
 function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T.panel; if(a<=0.01) return;
-  const [lx,ty]=toScreen(TH.CX+TH.H,TH.W,0), [rx,by]=toScreen(TH.CX-TH.H,-TH.W,0), fx=Math.round(Math.min(lx,rx)), fw=Math.round(Math.abs(rx-lx)), fy=Math.round(Math.min(ty,by)), fh=Math.round(Math.abs(by-ty));
+  const F=thField(), fx=F.x, fw=F.w, fy=F.y, fh=F.h;
   D.save(); D.globalAlpha=a;
   // side panels
   const pg=D.createLinearGradient(0,0,0,UH); pg.addColorStop(0,'#160a24'); pg.addColorStop(1,'#08040e'); D.fillStyle=pg; D.fillRect(0,0,fx,UH); D.fillRect(fx+fw,0,UW-fx-fw,UH);
@@ -265,6 +266,8 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
       D.strokeStyle='rgba(255,255,255,.35)'; D.beginPath(); D.arc(sx,sy,gr,0,7); D.stroke(); }
     const r=T.focus?5:3.5; D.fillStyle='#ff2a4a'; D.beginPath(); D.arc(sx,sy,r+1.6,0,7); D.fill(); D.fillStyle='#fff'; D.beginPath(); D.arc(sx,sy,r,0,7); D.fill(); }
   D.restore(); }
+// the play field on the UI canvas, from the play camera's fixed geometry (during camera moves the live projection is meaningless)
+function thField(){ const ppu=(UH/2)/(TH.CZ*Math.tan(camera.fov*Math.PI/360)), w=Math.round(TH.W*2*ppu), h=Math.round(Math.min(UH,TH.H*2*ppu)); return {x:Math.round((UW-w)/2),y:Math.round((UH-h)/2),w,h}; }
 function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r; D.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr); } D.closePath(); D.fill(); }
 
 // ---------- hooks into the mech fight ----------
@@ -273,9 +276,9 @@ function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++
   m3Enter=function(){};
   const smp=startMechPhase; startMechPhase=function(ph){ const G=Game.mech, resp=!!(G&&G._resp); smp(ph); if(!Game.mech) return; thSetup(Math.min(ph,2),!resp); };
   const mpe=mechPhaseEnd; mechPhaseEnd=function*(ph){ if(thOn()){ yield* thPhaseOut(ph); return; } yield* mpe(ph); };
-  const um=updateMech; updateMech=function(dt){ const G=Game.mech; if(G&&G.th&&L.vd){ for(const f of L.anim) f(dt); thUpdate(dt); return; } return um(dt); };
+  const um=updateMech; updateMech=function(dt){ const G=Game.mech; thGhosts(dt); if(G&&G.th&&L.vd){ for(const f of L.anim) f(dt); try{ thUpdate(dt); }catch(e){ console.error('touhou update',e); } return; } return um(dt); };
   const mc=mechCam; mechCam=function(dt){ if(thOn()) return thCam(); return mc(dt); };
-  const dh=drawMechHUD; drawMechHUD=function(){ if(thOn()) return thHUD(); return dh(); };
+  const dh=drawMechHUD; drawMechHUD=function(){ if(thOn()){ try{ thHUD(); }catch(e){ console.error('touhou hud',e); } return; } return dh(); };
   const nd=natDrill; natDrill=function*(){ if(thOn()){ yield* thDrill(); return; } yield* nd(); };
   const em=exitMech; exitMech=function(q){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; camera.up.set(0,1,0); } return em(q); };
   // the drill and the death-retry may clear temp scene objects: rebuild on respawn

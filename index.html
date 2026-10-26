@@ -10615,6 +10615,7 @@ function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const 
   T.items=T.items.filter(i=>!i.dead);
   G.thScore=T.score; G.thPower=T.power; G.thGraze=T.graze; if(T.score>(SAVE.settings.thHi||0)){ SAVE.settings.thHi=T.score; if(T.t%2<dt) saveWrite(); }
   thPlace(); MB.layE&&MB.layE.write(T.eb); if(MB.layP){ for(const p of T.pb){ [p.x,p.y]=thW(p.u,p.v); p.z=.1; } MB.layP.write(T.pb); } }
+function thGhosts(dt){ if(!MB.gh||!MB.gh.length) return; for(const g of MB.gh){ g.t+=dt; g.m.material.opacity=Math.max(0,.45-g.t*2.2); if(g.t>.22){ scene.remove(g.m); g.m.geometry.dispose(); g.m.material.dispose(); g.dead=1; } } MB.gh=MB.gh.filter(g=>!g.dead); }
 function thPlace(){ const N=NAT, T=Game.mech.th; if(!N||!N.mesh) return; if(MECHTEX&&!N.mat.map){ N.mat.map=MECHTEX; N.mat.needsUpdate=true; }
   const blink=N.inv>0&&N.inv<2.4&&T.ready&&Math.floor(N.inv*16)%2===0; const s=T.pk; N.mesh.visible=!!N.show&&!blink&&!!MECHTEX; N.mesh.scale.set(s,s,1);
   N.mesh.position.set(N.x-.75*s,N.y-.6*s,0); N.mesh.rotation.z=0; N.mat.color.setRGB(1,N.flash>0?.45:1,N.flash>0?.5:1);
@@ -10641,7 +10642,7 @@ function* thPhaseOut(ph){ const G=Game.mech, T=G.th, N=NAT, B=G.boss; if(!T) ret
 
 // ---------- HUD: the side panels and the field furniture ----------
 function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T.panel; if(a<=0.01) return;
-  const [lx,ty]=toScreen(TH.CX+TH.H,TH.W,0), [rx,by]=toScreen(TH.CX-TH.H,-TH.W,0), fx=Math.round(Math.min(lx,rx)), fw=Math.round(Math.abs(rx-lx)), fy=Math.round(Math.min(ty,by)), fh=Math.round(Math.abs(by-ty));
+  const F=thField(), fx=F.x, fw=F.w, fy=F.y, fh=F.h;
   D.save(); D.globalAlpha=a;
   // side panels
   const pg=D.createLinearGradient(0,0,0,UH); pg.addColorStop(0,'#160a24'); pg.addColorStop(1,'#08040e'); D.fillStyle=pg; D.fillRect(0,0,fx,UH); D.fillRect(fx+fw,0,UW-fx-fw,UH);
@@ -10682,6 +10683,8 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
       D.strokeStyle='rgba(255,255,255,.35)'; D.beginPath(); D.arc(sx,sy,gr,0,7); D.stroke(); }
     const r=T.focus?5:3.5; D.fillStyle='#ff2a4a'; D.beginPath(); D.arc(sx,sy,r+1.6,0,7); D.fill(); D.fillStyle='#fff'; D.beginPath(); D.arc(sx,sy,r,0,7); D.fill(); }
   D.restore(); }
+// the play field on the UI canvas, from the play camera's fixed geometry (during camera moves the live projection is meaningless)
+function thField(){ const ppu=(UH/2)/(TH.CZ*Math.tan(camera.fov*Math.PI/360)), w=Math.round(TH.W*2*ppu), h=Math.round(Math.min(UH,TH.H*2*ppu)); return {x:Math.round((UW-w)/2),y:Math.round((UH-h)/2),w,h}; }
 function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r; D.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr); } D.closePath(); D.fill(); }
 
 // ---------- hooks into the mech fight ----------
@@ -10690,9 +10693,9 @@ function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++
   m3Enter=function(){};
   const smp=startMechPhase; startMechPhase=function(ph){ const G=Game.mech, resp=!!(G&&G._resp); smp(ph); if(!Game.mech) return; thSetup(Math.min(ph,2),!resp); };
   const mpe=mechPhaseEnd; mechPhaseEnd=function*(ph){ if(thOn()){ yield* thPhaseOut(ph); return; } yield* mpe(ph); };
-  const um=updateMech; updateMech=function(dt){ const G=Game.mech; if(G&&G.th&&L.vd){ for(const f of L.anim) f(dt); thUpdate(dt); return; } return um(dt); };
+  const um=updateMech; updateMech=function(dt){ const G=Game.mech; thGhosts(dt); if(G&&G.th&&L.vd){ for(const f of L.anim) f(dt); try{ thUpdate(dt); }catch(e){ console.error('touhou update',e); } return; } return um(dt); };
   const mc=mechCam; mechCam=function(dt){ if(thOn()) return thCam(); return mc(dt); };
-  const dh=drawMechHUD; drawMechHUD=function(){ if(thOn()) return thHUD(); return dh(); };
+  const dh=drawMechHUD; drawMechHUD=function(){ if(thOn()){ try{ thHUD(); }catch(e){ console.error('touhou hud',e); } return; } return dh(); };
   const nd=natDrill; natDrill=function*(){ if(thOn()){ yield* thDrill(); return; } yield* nd(); };
   const em=exitMech; exitMech=function(q){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; camera.up.set(0,1,0); } return em(q); };
   // the drill and the death-retry may clear temp scene objects: rebuild on respawn
@@ -10899,6 +10902,14 @@ const ART={
 function twArt(id){ if(TL_ART[id]) return TL_ART[id]; const [cv,c]=mkCanvas(ART_W,ART_H); c.imageSmoothingEnabled=false; try{ (ART[id]||ART.sh_root)(c); }catch(e){ console.error('art',id,e); } TL_ART[id]=cv; return cv; }
 function twArtLocked(){ if(TL_ART.__lock) return TL_ART.__lock; const [cv,c]=mkCanvas(ART_W,ART_H); const g=c.createLinearGradient(0,0,0,ART_H); g.addColorStop(0,'#1a1620'); g.addColorStop(1,'#0a080e'); c.fillStyle=g; c.fillRect(0,0,ART_W,ART_H);
   c.font='bold 40px serif'; c.fillStyle='rgba(216,180,106,.35)'; c.textAlign='center'; c.fillText('???',ART_W/2,ART_H/2+14); TL_ART.__lock=cv; return cv; }
+
+// ---------- leaving a cutscene midway (warp, title) never leaves its overlays behind ----------
+// the "GG." glass card, cracks, shards, fist, white flashes, title cards, captions, the chant, letterbox, slow-mo, JC lines
+function twClearCine(){ Object.assign(OV,{cr:null,sh:[],card:null,fist:null,white:0,wfade:0,meter:0,cap:null});
+  Object.assign(Game,{evaCard:null,caption:null,chant:null,impSeq:null,split:null,moonCut:null,cineMark:null,card:null,banner:null,subtitle:null,eclipse:0,letterTo:0,letter:0,timeScale:1,slowT:0,mechTip:0});
+  if(Game.zw) zwEnd(); JC.lines=[]; FX.flash=0; FX.hitstop=0; }
+(function(){ const wr=twWarpReset; twWarpReset=function(){ twClearCine(); return wr.apply(this,arguments); };
+  const tt=toTitle; toTitle=function(){ twClearCine(); return tt.apply(this,arguments); }; })();
 
 // ----- 86_timeline_ui.js -----
 // ---------- the timeline menu (drawn on the UI canvas, mouse + keyboard + touch) ----------
@@ -12444,7 +12455,7 @@ const HUB={sec:'road',of:0,hov:null,modal:null};
 const RAIL={x:24,y:24,w:232,h:627}, MAIN={x:272,y:24,w:904,h:627}, CONT={x:272,y:80,w:904,h:571}, MAP={x:272,y:80,w:904,h:378}, DET={x:272,y:470,w:904,h:181};
 
 // ---------- drawing kit ----------
-function uRR(x,y,w,h,r){ r=Math.min(r,w/2,h/2); D.beginPath(); D.moveTo(x+r,y); D.arcTo(x+w,y,x+w,y+h,r); D.arcTo(x+w,y+h,x,y+h,r); D.arcTo(x,y+h,x,y,r); D.arcTo(x,y,x+w,y,r); D.closePath(); }
+function uRR(x,y,w,h,r){ if(w<0){ x+=w; w=-w; } if(h<0){ y+=h; h=-h; } r=Math.max(0,Math.min(r,w/2,h/2)); D.beginPath(); D.moveTo(x+r,y); D.arcTo(x+w,y,x+w,y+h,r); D.arcTo(x+w,y+h,x,y+h,r); D.arcTo(x,y+h,x,y,r); D.arcTo(x,y,x+w,y,r); D.closePath(); }
 function uPanel(x,y,w,h,fill,stroke,r){ uRR(x,y,w,h,r==null?10:r); D.fillStyle=fill||UIC.panel; D.fill(); D.strokeStyle=stroke||UIC.line; D.lineWidth=1; D.stroke(); }
 function uText(t,x,y,font,col,al){ D.font=font; D.fillStyle=col; D.textAlign=al||'left'; D.fillText(t,x,y); D.textAlign='left'; }
 function uCaps(t,x,y,col,size){ D.save(); try{ D.letterSpacing='2px'; }catch(e){} uText(t,x,y,`800 ${size||11}px ${FB}`,col||UIC.mut); D.restore(); }
@@ -12823,35 +12834,38 @@ function dbgBtn(x,y,w,h,label,id,o){ o=o||{}; const hov=DBG.hov===id; uRR(x,y,w,
   DBG.rects.push({x,y,w,h,id}); }
 function dbgChk(x,y,on,label,id){ uRR(x,y,14,14,3); D.fillStyle=on?UIC.acc:'rgba(0,0,0,.4)'; D.fill(); D.strokeStyle=UIC.line2; D.stroke(); if(on){ D.strokeStyle='#1a1408'; D.lineWidth=2; D.beginPath(); D.moveTo(x+3,y+7.5); D.lineTo(x+6,y+10.5); D.lineTo(x+11,y+4); D.stroke(); }
   uText(label,x+20,y+11,`600 12px ${FB}`,on?UIC.text:UIC.mut); DBG.rects.push({x:x-2,y:y-3,w:140,h:20,id}); }
-function dbgDraw(){ if(!DBG.on||Game.state==='title'||TLM.open) return; DBG.rects=[]; D.save();
-  if(DBG.hide){ dbgBtn(12,12,128,26,'DEBUG ▸ show','show'); D.restore(); return; }
-  // ----- left: player + boss controls
-  const Lp=DBP.L; let y=Lp.y; const x=Lp.x+14, w=Lp.w-28; const top=y; uPanel(Lp.x,Lp.y,Lp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
-  y+=26; uText('DEBUG MODE',x,y,`900 16px ${FB}`,'#ff8aa8'); dbgBtn(x+w-62,y-16,28,22,'–','hide'); dbgBtn(x+w-30,y-16,30,22,'✕','off');
-  y+=16; uText(DBG_PATCH,x,y,`600 11px ${FB}`,UIC.mut); uRR(x+w-38,y-11,32,15,7); D.fillStyle='#ff4a7a'; D.fill(); uText('NEW',x+w-22,y,`900 9px ${FB}`,'#fff','center');
-  y+=20; uCaps('PLAYER',x,y,UIC.dim,10); y+=8; dbgBtn(x,y,w/2-3,24,'Shayan','ali:0',{on:!DBG.ali}); dbgBtn(x+w/2+3,y,w/2-3,24,'Ali','ali:1',{on:DBG.ali}); y+=32;
+// the sections: the desktop shows two side panels (setup + boss on the left, moves on the right); phones show one paged panel (99f_mobile.js)
+function dbgHead(x,y,w,closeId){ uText('DEBUG MODE',x,y,`900 16px ${FB}`,'#ff8aa8'); if(closeId) dbgBtn(x+w-62,y-16,28,22,'–','hide'); dbgBtn(x+w-30,y-16,30,22,'✕',closeId||'off');
+  y+=16; uText(DBG_PATCH,x,y,`600 11px ${FB}`,UIC.mut); uRR(x+w-38,y-11,32,15,7); D.fillStyle='#ff4a7a'; D.fill(); uText('NEW',x+w-22,y,`900 9px ${FB}`,'#fff','center'); return y+20; }
+function dbgSecSetup(x,y,w){ uCaps('PLAYER',x,y,UIC.dim,10); y+=8; dbgBtn(x,y,w/2-3,24,'Shayan','ali:0',{on:!DBG.ali}); dbgBtn(x+w/2+3,y,w/2-3,24,'Ali','ali:1',{on:DBG.ali}); y+=32;
   dbgChk(x,y,!!TW.god,'Infinite HP','t:god'); dbgChk(x+w/2,y,!!TW.otk,'One-hit kill','t:otk'); y+=22; dbgChk(x,y,!!TW.infFC,ALI()?'Infinite JC':'Infinite Full Counter','t:fc'); dbgChk(x+w/2,y,DBG.slow,'Slow-mo ½','t:slow'); y+=22;
   if(!ALI()){ dbgChk(x,y,!!Game.flags.aliSword,"Ali's blade (10× Nathan)",'t:blade'); y+=22; }
   dbgBtn(x,y,(w-12)/3,24,'Heal','heal'); dbgBtn(x+(w-12)/3+6,y,(w-12)/3,24,'Full meter','meter'); dbgBtn(x+2*(w-12)/3+12,y,(w-12)/3,24,'Clear hazards','clear'); y+=34;
-  uCaps('SPAWN A BOSS',x,y,UIC.dim,10); y+=8; DBG_BOSSES.forEach(([id,nm],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,nm,'boss:'+id,{on:DBG.boss===id,nw:dbgNew(id)}); if(col) y+=28; }); y+=6;
-  const b=DBG.boss, ctl=b&&b!=='grimmaw'&&b!=='paul';
-  if(ctl){ const ph=dbgPhase(), hp=dbgHP(); uText(DBG_BOSSES.find(q=>q[0]===b)[1]+(ph?'  ·  phase '+['','I','II','III','IV'][ph]:'  ·  not on the field'),x,y+4,`700 13px ${FB}`,UIC.accL); if(hp!=null) uText(Math.round(hp*100)+'%',x+w,y+4,`700 13px ${FB}`,UIC.text,'right'); y+=12;
-    if(hp!=null){ uRR(x,y,w,5,2); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(x,y,Math.max(3,w*hp),5,2); D.fillStyle='#ff4a7a'; D.fill(); } y+=14;
-    uCaps('AI',x,y,UIC.dim,10); y+=8; [['idle','Idle'],['active','Active'],['loop','Loop move']].forEach(([m,l],i)=>dbgBtn(x+i*(w/3+1),y,w/3-3,24,l,'mode:'+m,{on:DBG.mode===m})); y+=30;
-    if(DBG.mode==='loop') { uText(DBG.move?'Looping: '+dbgName(DBG.move):'Pick a mechanic on the right to loop it',x,y+4,`italic 600 11px ${FB}`,UIC.mut); y+=16; }
-    uCaps('PHASE',x,y,UIC.dim,10); y+=8; const n=dbgPhases(); for(let i=1;i<=n;i++) dbgBtn(x+(i-1)*(w/n),y,w/n-4,24,['','I','II','III','IV'][i],'phase:'+i,{on:ph===i}); y+=30;
-    uCaps('BOSS HP',x,y,UIC.dim,10); y+=8; [['100%',1],['50%',.5],['10%',.1]].forEach(([l,k],i)=>dbgBtn(x+i*(w/4),y,w/4-4,24,l,'hp:'+k)); dbgBtn(x+3*(w/4),y,w/4,24,'Kill bar','kill'); y+=30;
-    const lcs=dbgLCs(); if(lcs.length){ uCaps('LIMIT CUTS',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,l,'lc:'+k+':'+p,{nw:dbgNew(b,k)}); if(col||i===lcs.length-1) y+=28; }); y+=2; }
-    dbgBtn(x,y,w,24,'Despawn boss','despawn'); y+=30; }
-  else if(b){ uText('Warped to the real fight (intro included).',x,y+4,`italic 600 12px ${FB}`,UIC.mut); y+=20; }
+  uCaps('SPAWN A BOSS',x,y,UIC.dim,10); y+=8; DBG_BOSSES.forEach(([id,nm],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,nm,'boss:'+id,{on:DBG.boss===id,nw:dbgNew(id)}); if(col) y+=28; }); return y+6; }
+function dbgCtl(){ const b=DBG.boss; return b&&b!=='grimmaw'&&b!=='paul'; }
+function dbgSecBoss(x,y,w){ const b=DBG.boss;
+  if(!b){ uText('Spawn a boss first.',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y+20; }
+  if(!dbgCtl()){ uText('Warped to the real fight (intro included).',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y+20; }
+  const ph=dbgPhase(), hp=dbgHP(); uText(DBG_BOSSES.find(q=>q[0]===b)[1]+(ph?'  ·  phase '+['','I','II','III','IV'][ph]:'  ·  not on the field'),x,y+4,`700 13px ${FB}`,UIC.accL); if(hp!=null) uText(Math.round(hp*100)+'%',x+w,y+4,`700 13px ${FB}`,UIC.text,'right'); y+=12;
+  if(hp!=null){ uRR(x,y,w,5,2); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(x,y,Math.max(3,w*hp),5,2); D.fillStyle='#ff4a7a'; D.fill(); } y+=14;
+  uCaps('AI',x,y,UIC.dim,10); y+=8; [['idle','Idle'],['active','Active'],['loop','Loop move']].forEach(([m,l],i)=>dbgBtn(x+i*(w/3+1),y,w/3-3,24,l,'mode:'+m,{on:DBG.mode===m})); y+=30;
+  if(DBG.mode==='loop') { uText(DBG.move?'Looping: '+dbgName(DBG.move):'Pick a mechanic to loop it',x,y+4,`italic 600 11px ${FB}`,UIC.mut); y+=16; }
+  uCaps('PHASE',x,y,UIC.dim,10); y+=8; const n=dbgPhases(); for(let i=1;i<=n;i++) dbgBtn(x+(i-1)*(w/n),y,w/n-4,24,['','I','II','III','IV'][i],'phase:'+i,{on:ph===i}); y+=30;
+  uCaps('BOSS HP',x,y,UIC.dim,10); y+=8; [['100%',1],['50%',.5],['10%',.1]].forEach(([l,k],i)=>dbgBtn(x+i*(w/4),y,w/4-4,24,l,'hp:'+k)); dbgBtn(x+3*(w/4),y,w/4,24,'Kill bar','kill'); y+=30;
+  const lcs=dbgLCs(); if(lcs.length){ uCaps('LIMIT CUTS',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,l,'lc:'+k+':'+p,{nw:dbgNew(b,k)}); if(col||i===lcs.length-1) y+=28; }); y+=2; }
+  dbgBtn(x,y,w,24,'Despawn boss','despawn'); return y+30; }
+function dbgSecMoves(x,y,w,cols){ const b=DBG.boss, moves=dbgMoves(); if(!moves.length){ uText(dbgCtl()?'':'Spawn a boss first.',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y; }
+  uText(DBG.mode==='loop'?'tap one to loop it':'tap one to run it now',x,y,`600 11px ${FB}`,UIC.mut); y+=12;
+  const ph=dbgPhase(), inPool=k=>{ if(b==='caotan'||b==='omar') return (TWPOOL[b][ph]||[]).includes(k); if(b==='duo') return (DUO3_POOL[ph]||[]).includes(k)||k==='scytheRain'; if(b==='hamza') return (HZG_POOL[ph]||[]).includes(k); if(b==='nathan') return (NB_POOL[ph]||[]).includes(k); if(b==='mech') return (TH_SPELLS[ph]||[]).some(s=>s[2]===k); return true; };
+  const nc=cols||(moves.length>22?2:1), cw=(w-(nc-1)*6)/nc, rh=nc>1?24:26; moves.forEach((k,i)=>{ const col=i%nc, row=Math.floor(i/nc); dbgBtn(x+col*(cw+6),y+row*(rh+3),cw,rh,dbgName(k),'move:'+k,{on:DBG.move===k,nw:dbgNew(b,k),dim:!inPool(k)}); });
+  const rows=Math.ceil(moves.length/nc); y+=rows*(rh+3)+16; uText('Dimmed = not in this phase\'s pool (still runnable)',x,y,`500 11px ${FB}`,UIC.dim); return y; }
+function dbgDraw(){ if(!DBG.on||Game.state==='title'||TLM.open) return; DBG.rects=[]; D.save();
+  if(DBG.hide){ dbgBtn(12,12,128,26,'DEBUG ▸ show','show'); D.restore(); return; }
+  const Lp=DBP.L, x=Lp.x+14, w=Lp.w-28; uPanel(Lp.x,Lp.y,Lp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
+  let y=dbgHead(x,Lp.y+26,w,null); y=dbgSecSetup(x,y,w); dbgSecBoss(x,y,w);
   y=UH-12-58; uText(DBG.msg&&DBG.msg.t&&performance.now()-DBG.msg.at<4000?DBG.msg.t:'',x,y,`700 12px ${FB}`,'#9ff8ff');
   uText('Numpad 5 leaves debug mode · Esc menu still works',x,y+22,`500 11px ${FB}`,UIC.dim); uText('Hidden numpad: 0 HP · 1 FC · 2 OHK · 3 timeline',x,y+38,`500 11px ${FB}`,UIC.dim);
-  // ----- right: the mechanics of this boss
-  if(ctl){ const Rp=DBP.R, rx=Rp.x+12, rw=Rp.w-24, moves=dbgMoves(); uPanel(Rp.x,Rp.y,Rp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
-    let ry=Rp.y+26; uText('Mechanics',rx,ry,`900 16px ${FB}`,UIC.accL); ry+=16; uText(DBG.mode==='loop'?'click one to loop it':'click one to run it now',rx,ry,`600 11px ${FB}`,UIC.mut); ry+=12;
-    const ph=dbgPhase(), inPool=k=>{ if(b==='caotan'||b==='omar') return (TWPOOL[b][ph]||[]).includes(k); if(b==='duo') return (DUO3_POOL[ph]||[]).includes(k)||k==='scytheRain'; if(b==='hamza') return (HZG_POOL[ph]||[]).includes(k); if(b==='nathan') return (NB_POOL[ph]||[]).includes(k); if(b==='mech') return (TH_SPELLS[ph]||[]).some(s=>s[2]===k); return true; };
-    const one=moves.length>22, cw=one?rw/2-3:rw, rh=one?24:26; moves.forEach((k,i)=>{ const col=one?i%2:0, row=one?Math.floor(i/2):i; dbgBtn(rx+col*(cw+6),ry+row*(rh+3),cw,rh,dbgName(k),'move:'+k,{on:DBG.move===k,nw:dbgNew(b,k),dim:!inPool(k)}); });
-    const rows=one?Math.ceil(moves.length/2):moves.length; uText('Dimmed = not in this phase\'s pool (still runnable)',rx,ry+rows*(rh+3)+16,`500 11px ${FB}`,UIC.dim); }
+  if(dbgCtl()){ const Rp=DBP.R, rx=Rp.x+12, rw=Rp.w-24; uPanel(Rp.x,Rp.y,Rp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10); uText('Mechanics',rx,Rp.y+26,`900 16px ${FB}`,UIC.accL); dbgSecMoves(rx,Rp.y+42,rw); }
   D.restore(); }
 (function(){ const du=drawUI; drawUI=function(){ du(); try{ dbgDraw(); }catch(e){ console.error('debug ui',e); } }; })();
 function dbgAct(id){ Sound.sfx('blip'); const [a,v,w]=id.split(':');
