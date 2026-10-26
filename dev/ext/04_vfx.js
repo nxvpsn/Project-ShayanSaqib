@@ -73,6 +73,10 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;
     const x=cx+ux*f+(flatY?-uz*s:0), y=cy+(flatY?0:s), z=cz+uz*f+(flatY?ux*s:0), q=toScreen(x,y,z); if(q[2]>=1) return null; P.push([q[0],q[1]]); } return P; }
+// Getsuga clash distortion (Full Counter style): two Judgement Cut tears crossing where the crescents grind (cx() follows the
+// contact point; they last while alive() holds), and twClashRip: one big crescent tear ripping the winner's way
+function twClashTear(cx,y,z,alive,s){ s=s||1; for(const d of [1,-1]) twGash({life:8,rev:.08,fade:.25,w:28*s,op:.85,sparks:30,alive,pts:()=>twArcPts(cx()-d*2.6*s,y,z,d,0,2.8*s,-.95,.95,7)}); JC.flash=Math.max(JC.flash||0,.25); }
+function twClashRip(x,y,z,dir,s){ s=s||1; twGash({life:.8,rev:.08,fade:.35,w:46*s,sparks:60,pts:()=>twArcPts(x-dir*1.5,y,z,dir,0,4.2*s,-1.1,1.1,9)}); JC.flash=Math.max(JC.flash||0,.4); }
 // Getsuga Jujishou: the gold crescent + black lightning become a travelling Judgement Cut crescent
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length; const r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(o&&o.ali&&big&&b&&BEAMS.length>n0){ b.g.visible=false; if(b.bolt) b.bolt.visible=false; b.jj=1;

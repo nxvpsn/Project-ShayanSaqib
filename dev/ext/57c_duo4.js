@@ -156,7 +156,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   his.visible=true; O.swing=1; Sound.sfx('crossboom'); Sound.sfx('beam'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[3,2],[1,2]]); shake(1);
   for(let t=0;t<.4;t+=1/60){ const u=t/.4; st.a=lerp(c.x-.5,st.cx-2.4,u); st.b=lerp(O.x-1,st.cx+2.6,u); yield wait(1/60); }
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4);
-  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z);
+  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z); twClashTear(()=>st.cx,by,c.z,()=>!!TW.mash&&!st.dead,1.3);
   // ---------- the mash ----------
   const M=TW.mash={v:0,n:0,t:0,dur:4.6,shown:0,duoClash:1}; hit.attack=false; const lo=P.x+3.5, hi=O.x-3.5;
   while(M.t<M.dur){ const dt=1/30; yield wait(dt); M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.08-dt*.5,-1,1); M.shown+=pushes;
@@ -164,7 +164,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner tears through
   (win?his:mine).visible=false; if(win) ali.visible=false; for(let i=0;i<60;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-3,3),c.z,rnd(-9,9),rnd(-4,7),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.45,8,true);
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,c.z,win?1:-1,1.3);
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,O.x,.3); else st.b=lerp(st.b,P.x,.3); yield wait(1/30); }
   st.dead=1; const hx=win?O.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,c.z,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,c.z,90,win?0xff3a5a:0x9a4aff,10,.5);
   if(win) O.flash=.6; else { P.hp=Math.max(1,P.hp-3); }

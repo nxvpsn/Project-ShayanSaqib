@@ -224,13 +224,13 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
   // they fly at each other
   yield* (function*(){ const a0=st.a, b0=st.b; for(let t=0;t<.45;t+=1/30){ const u=t/.45; st.a=lerp(a0,st.cx-1.1,u); st.b=lerp(b0,st.cx+1.1,u); yield 1/30; } })();
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4); FX.hitstop=.12;
-  const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
+  const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; twClashTear(()=>st.cx,by,pz,()=>!!TW.mash&&!st.dead); hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
   while(M.t<M.dur){ const dt=1/30; yield dt; M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.09-dt*.25,-1,1); st.cx=lerp(st.cx,lerp(lo,hi,(M.v+1)/2),.25); st.a=st.cx-1.1; st.b=st.cx+1.1;
     P.vx=P.vz=0; if(pushes){ Sound.sfx('hit'); shake(.15); } if(Math.random()<.15) Sound.sfx('slam'); FX.flash=Math.max(FX.flash,.06); }
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner's crescent bursts through the other and keeps going
   const loser=win?his:mine; for(let i=0;i<40;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-2,2),pz,rnd(-8,8),rnd(-4,6),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.4,8,true); loser.visible=false;
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,pz,win?1:-1);
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,T.x,.3); else st.b=lerp(st.b,P.x,.3); yield 1/30; }
   st.dead=1; const hx=win?T.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,pz,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,pz,90,win?0xff3a5a:0x9a4aff,10,.5); FX.burst(hx,by,pz,50,0x1a0626,8,.5,false);
   P.cineAnim=null; Cam.cine=null;

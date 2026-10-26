@@ -84,7 +84,7 @@ function* twWarp(id){ const n=TL_BY[id]; if(!n) return; const ali=id.startsWith(
   if(id==='paul'){ yield* twPaulIntro(); return; }
   const step=parts[1], k=parts[1], tail=parts[2];
   if(id==='al_root'){ yield fadeOut(); Game.state='cut'; yield* aliLanding(Game.flags,Game.aff,Game.kills||0,Game.hamza); return; } // Ali's road: he falls from the moon and takes over
-  if(step==='root'){ yield fadeOut(); newGame(); return; } // Shayan's road: the very beginning, the village intro
+  if(step==='root'){ yield fadeOut(); newGame(); run(twIntroSkipped); return; } // Shayan's road: the village, right after the talk with Hamza and Elder Hamid
   if(step==='twins'){ yield* SCR.twinsGate(); return; }
   if(step==='dec'){ yield* twWarpTwinsDown(); yield* SCR.twinsDown(); return; }
   if(['omar','cao','both'].includes(k)&&!tail){ yield* twWarpTwinsDown(); const C=TW.foes.find(T=>T.who==='caotan'), O=TW.foes.find(T=>T.who==='omar'); twMark(twRP()+'_dec');
@@ -95,6 +95,9 @@ function* twWarp(id){ const n=TL_BY[id]; if(!n) return; const ali=id.startsWith(
   if(id==='sh_duo'){ twSetParty('both'); yield* twWarpFlowers({mira:1,noHamza:1}); yield* twTwinsTurn(); return; }
   if(id==='sh_hamza'){ yield fadeOut(); Game.mira=null; yield* nathanIntro(); return; }
   if(id==='al_nathan'||id==='al_nathan_both'){ if(id==='al_nathan_both') twSetParty('both'); yield* twWarpFlowers({mira:1,noHamza:1}); yield* nathanArrives(); return; } }
+
+// warping to the very beginning skips the Hamza / Elder Hamid intro (and the controls card): Hamza is already tagging along
+function* twIntroSkipped(){ const H=Game.hamza, P=Player; if(H){ H.mode='follow'; H.f=-1; H.x=P.x-1.2; H.z=P.z+.4; H.y=P.y; } Cam.focus=null; Game.hintT=0; yield wait(.2); yield fadeIn(); }
 
 // ---------- card art: little painted scenes made from the game's own sprites ----------
 const TL_ART={}; const ART_W=192, ART_H=108;

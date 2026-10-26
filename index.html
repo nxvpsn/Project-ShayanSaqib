@@ -5820,6 +5820,10 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;
     const x=cx+ux*f+(flatY?-uz*s:0), y=cy+(flatY?0:s), z=cz+uz*f+(flatY?ux*s:0), q=toScreen(x,y,z); if(q[2]>=1) return null; P.push([q[0],q[1]]); } return P; }
+// Getsuga clash distortion (Full Counter style): two Judgement Cut tears crossing where the crescents grind (cx() follows the
+// contact point; they last while alive() holds), and twClashRip: one big crescent tear ripping the winner's way
+function twClashTear(cx,y,z,alive,s){ s=s||1; for(const d of [1,-1]) twGash({life:8,rev:.08,fade:.25,w:28*s,op:.85,sparks:30,alive,pts:()=>twArcPts(cx()-d*2.6*s,y,z,d,0,2.8*s,-.95,.95,7)}); JC.flash=Math.max(JC.flash||0,.25); }
+function twClashRip(x,y,z,dir,s){ s=s||1; twGash({life:.8,rev:.08,fade:.35,w:46*s,sparks:60,pts:()=>twArcPts(x-dir*1.5,y,z,dir,0,4.2*s,-1.1,1.1,9)}); JC.flash=Math.max(JC.flash||0,.4); }
 // Getsuga Jujishou: the gold crescent + black lightning become a travelling Judgement Cut crescent
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length; const r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(o&&o.ali&&big&&b&&BEAMS.length>n0){ b.g.visible=false; if(b.bolt) b.bolt.visible=false; b.jj=1;
@@ -5939,7 +5943,7 @@ function shFire(dt,ctl){ const P=Player; P.fbCd=(P.fbCd||0)-dt; if(Game.paulLock
     else { if(P.fbHold>=TW_FB_FULL&&ctl){ twFireball(true); twIgnite(); } P.fbHolding=false; P.fbHold=0; } } }
 function twFireball(big){ const P=Player, tg=nearestFoe(18); let a=P.ang; if(tg) a=Math.atan2(tg.z-P.z,tg.x-P.x); P.ang=a; P.f=Math.cos(a)>=0?1:-1;
   const g=new THREE.Group(), core=new THREE.Mesh(new THREE.SphereGeometry(big?.42:.15,10,8),new THREE.MeshBasicMaterial({color:big?0xff3a5a:0xffd060})), gl=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:big?0xff0828:0xff7a20,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));
-  gl.scale.setScalar(big?3.4:1.1); g.add(core,gl); if(big){ const inner=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshBasicMaterial({color:0xffd0d8})), halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff0030,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); halo.scale.setScalar(5.6); g.add(inner,halo); } /* the charged one is a deep neon red */ g.userData.temp=1; scene.add(g); const sp=big?15:25, y0=P.y+1.1, ty=tg?((tg.y||0)+(tg===Game.boss?2:1.2)):y0, d=tg?Math.hypot(tg.x-P.x,tg.z-P.z):10;
+  gl.scale.setScalar(1.1); g.add(core); if(!big) g.add(gl); if(big){ const inner=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshBasicMaterial({color:0xffd0d8})); g.add(inner); } /* the charged one is a deep neon red ball, no glow around it */ g.userData.temp=1; scene.add(g); const sp=big?15:25, y0=P.y+1.1, ty=tg?((tg.y||0)+(tg===Game.boss?2:1.2)):y0, d=tg?Math.hypot(tg.x-P.x,tg.z-P.z):10;
   TW.fb.push({g,big,x:P.x+Math.cos(a)*.7,y:y0,z:P.z+Math.sin(a)*.7,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp,vy:clamp((ty-y0)/Math.max(.3,d/sp),-6,6),life:big?1.7:.95,dmg:big?4:.2,hit:new Set(),r:big?.75:.35});
   Sound.sfx(big?'bigfire':'fire'); if(big){ shake(.3); P.vx-=Math.cos(a)*3; P.vz-=Math.sin(a)*3; FX.burst(P.x,P.y+1.1,P.z,24,0xff1a3a,5,.3); } P.beamPose=.12; }
 function twFireballHit(f,x,y,z){ FX.burst(x,y,z,f.big?40:8,f.big?0xff1a3a:0xff7a1a,f.big?8:3,f.big?.4:.22); if(f.big){ FX.ring(x,y-.6,z,'#ff2a4a',3,.4); shake(.35); Sound.sfx('slam'); } else Sound.sfx('hit'); }
@@ -7068,13 +7072,13 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
   // they fly at each other
   yield* (function*(){ const a0=st.a, b0=st.b; for(let t=0;t<.45;t+=1/30){ const u=t/.45; st.a=lerp(a0,st.cx-1.1,u); st.b=lerp(b0,st.cx+1.1,u); yield 1/30; } })();
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4); FX.hitstop=.12;
-  const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
+  const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; twClashTear(()=>st.cx,by,pz,()=>!!TW.mash&&!st.dead); hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
   while(M.t<M.dur){ const dt=1/30; yield dt; M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.09-dt*.25,-1,1); st.cx=lerp(st.cx,lerp(lo,hi,(M.v+1)/2),.25); st.a=st.cx-1.1; st.b=st.cx+1.1;
     P.vx=P.vz=0; if(pushes){ Sound.sfx('hit'); shake(.15); } if(Math.random()<.15) Sound.sfx('slam'); FX.flash=Math.max(FX.flash,.06); }
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner's crescent bursts through the other and keeps going
   const loser=win?his:mine; for(let i=0;i<40;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-2,2),pz,rnd(-8,8),rnd(-4,6),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.4,8,true); loser.visible=false;
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,pz,win?1:-1);
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,T.x,.3); else st.b=lerp(st.b,P.x,.3); yield 1/30; }
   st.dead=1; const hx=win?T.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,pz,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,pz,90,win?0xff3a5a:0x9a4aff,10,.5); FX.burst(hx,by,pz,50,0x1a0626,8,.5,false);
   P.cineAnim=null; Cam.cine=null;
@@ -9193,7 +9197,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   his.visible=true; O.swing=1; Sound.sfx('crossboom'); Sound.sfx('beam'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[3,2],[1,2]]); shake(1);
   for(let t=0;t<.4;t+=1/60){ const u=t/.4; st.a=lerp(c.x-.5,st.cx-2.4,u); st.b=lerp(O.x-1,st.cx+2.6,u); yield wait(1/60); }
   st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4);
-  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z);
+  cineSet(st.cx,gy+3.6,c.z+16,st.cx,gy+2.2,c.z); twClashTear(()=>st.cx,by,c.z,()=>!!TW.mash&&!st.dead,1.3);
   // ---------- the mash ----------
   const M=TW.mash={v:0,n:0,t:0,dur:4.6,shown:0,duoClash:1}; hit.attack=false; const lo=P.x+3.5, hi=O.x-3.5;
   while(M.t<M.dur){ const dt=1/30; yield wait(dt); M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.08-dt*.5,-1,1); M.shown+=pushes;
@@ -9201,7 +9205,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   const win=M.v>.15; TW.mash=null; hit.attack=false; st.ph='fly';
   // the winner tears through
   (win?his:mine).visible=false; if(win) ali.visible=false; for(let i=0;i<60;i++) FX.spawn(st.cx+rnd(-1,1),by+rnd(-3,3),c.z,rnd(-9,9),rnd(-4,7),rnd(-3,3),.6,win?0x9a4aff:0xff3a5a,.45,8,true);
-  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15;
+  Sound.sfx('shatter'); Sound.sfx('crossboom'); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,3],[2,2],[3,3]]); shake(1.6); FX.hitstop=.15; twClashRip(st.cx,by,c.z,win?1:-1,1.3);
   for(let t=0;t<.35;t+=1/30){ if(win) st.a=lerp(st.a,O.x,.3); else st.b=lerp(st.b,P.x,.3); yield wait(1/30); }
   st.dead=1; const hx=win?O.x:P.x; for(let i=0;i<5;i++) FX.ring(hx,gy+.3,c.z,i%2?'#b06aff':'#ff3a5a',3+i*2.5,.5+i*.1); FX.burst(hx,by,c.z,90,win?0xff3a5a:0x9a4aff,10,.5);
   if(win) O.flash=.6; else { P.hp=Math.max(1,P.hp-3); }
@@ -10943,7 +10947,7 @@ function* twWarp(id){ const n=TL_BY[id]; if(!n) return; const ali=id.startsWith(
   if(id==='paul'){ yield* twPaulIntro(); return; }
   const step=parts[1], k=parts[1], tail=parts[2];
   if(id==='al_root'){ yield fadeOut(); Game.state='cut'; yield* aliLanding(Game.flags,Game.aff,Game.kills||0,Game.hamza); return; } // Ali's road: he falls from the moon and takes over
-  if(step==='root'){ yield fadeOut(); newGame(); return; } // Shayan's road: the very beginning, the village intro
+  if(step==='root'){ yield fadeOut(); newGame(); run(twIntroSkipped); return; } // Shayan's road: the village, right after the talk with Hamza and Elder Hamid
   if(step==='twins'){ yield* SCR.twinsGate(); return; }
   if(step==='dec'){ yield* twWarpTwinsDown(); yield* SCR.twinsDown(); return; }
   if(['omar','cao','both'].includes(k)&&!tail){ yield* twWarpTwinsDown(); const C=TW.foes.find(T=>T.who==='caotan'), O=TW.foes.find(T=>T.who==='omar'); twMark(twRP()+'_dec');
@@ -10954,6 +10958,9 @@ function* twWarp(id){ const n=TL_BY[id]; if(!n) return; const ali=id.startsWith(
   if(id==='sh_duo'){ twSetParty('both'); yield* twWarpFlowers({mira:1,noHamza:1}); yield* twTwinsTurn(); return; }
   if(id==='sh_hamza'){ yield fadeOut(); Game.mira=null; yield* nathanIntro(); return; }
   if(id==='al_nathan'||id==='al_nathan_both'){ if(id==='al_nathan_both') twSetParty('both'); yield* twWarpFlowers({mira:1,noHamza:1}); yield* nathanArrives(); return; } }
+
+// warping to the very beginning skips the Hamza / Elder Hamid intro (and the controls card): Hamza is already tagging along
+function* twIntroSkipped(){ const H=Game.hamza, P=Player; if(H){ H.mode='follow'; H.f=-1; H.x=P.x-1.2; H.z=P.z+.4; H.y=P.y; } Cam.focus=null; Game.hintT=0; yield wait(.2); yield fadeIn(); }
 
 // ---------- card art: little painted scenes made from the game's own sprites ----------
 const TL_ART={}; const ART_W=192, ART_H=108;
