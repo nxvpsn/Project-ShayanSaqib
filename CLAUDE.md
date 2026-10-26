@@ -67,6 +67,8 @@ Debug Mode (numpad 5, `dev/ext/99e_debug.js`) shows **NEW** next to mechanics th
 - Cutscenes are generators run with `run(gen)` yielding `say`, `choose`, `wait`, `tween`, `cineTo`. Fight patterns are generators that **yield plain numbers (seconds)**. Don't mix them.
 - `pkill -f` / `pgrep -f` match their own command line: wait on a PID or a log file instead.
 - Inline `//` comments inside one-line functions swallow the rest of the line: use `/* */` there.
+- **One exception in a per-frame update or draw freezes the whole game** (the loop stops). Wrap new per-frame hooks in `try{ … }catch(e){ console.error('name',e); }`. The harness's 2D contexts throw on negative radii like a browser; other real-canvas-only errors are not caught, so guard computed sizes (`Math.max(0,…)`).
+- Anything a cutscene puts on screen must be cleared when it is skipped: add new overlay state to `twClearCine()` (`85_progress.js`), which runs on every warp and on Exit to Title.
 
 ## The owner's preferences
 

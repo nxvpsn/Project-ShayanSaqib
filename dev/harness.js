@@ -11,7 +11,10 @@ function mock(name){ const store={}; const f=function(){};
     apply(){ return SHARED||(SHARED=mock('ret')); }, construct(){ return mock('new '+name); } };
   return new Proxy(f,h); }
 let now=0; const rafs=[];
-const ctx2d=()=>mock('ctx2d');
+// 2D contexts throw like a real browser on negative radii (IndexSizeError), which a real canvas turns into a frozen game loop
+const ctx2d=()=>{ const base=mock('ctx2d'), neg=(n,ix)=>(...a)=>{ for(const k of ix) if(typeof a[k]==='number'&&a[k]<0) throw new Error('IndexSizeError: negative radius passed to '+n+'('+a.join(',')+')'); return base[n](...a); };
+  const over={arc:neg('arc',[2]),arcTo:neg('arcTo',[4]),ellipse:neg('ellipse',[2,3]),createRadialGradient:neg('createRadialGradient',[2,5])};
+  return new Proxy(base,{get(t,p){ return over[p]||base[p]; },set(t,p,v){ base[p]=v; return true; }}); };
 const ctxObj={ console, Math, JSON, Date, Array, Object, Float32Array, Uint8Array, Uint8ClampedArray, Uint16Array, Int32Array, Map, Set, WeakMap, Promise, Symbol, Number, String, Boolean, RegExp, Error, TypeError, parseFloat, parseInt, isNaN, isFinite, Proxy, Reflect, Infinity, NaN,
   atob:s=>Buffer.from(s,'base64').toString('binary'),
   setTimeout:(f)=>{ return 0; }, clearTimeout(){}, setInterval:()=>0, clearInterval(){},
@@ -25,7 +28,7 @@ const ctxObj={ console, Math, JSON, Date, Array, Object, Float32Array, Uint8Arra
   Event:function(){}, Image:function(){ return mock('img'); }, AudioContext:undefined, webkitAudioContext:undefined,
 };
 const doc=mock('document');
-const realDoc={ getElementById:(id)=>mock('#'+id), createElement:(t)=>{ const m=mock('el:'+t); if(t==='canvas'){ m.getContext=()=>ctx2d(); m.width=64; m.height=64; } return m; },
+const realDoc={ getElementById:(id)=>{ const m=mock('#'+id), g=m.getContext; m.getContext=(t,...a)=>t==='2d'?ctx2d():g(t,...a); return m; }, createElement:(t)=>{ const m=mock('el:'+t); if(t==='canvas'){ m.getContext=()=>ctx2d(); m.width=64; m.height=64; } return m; },
   querySelectorAll:()=>[], querySelector:()=>mock('qs'), addEventListener(){}, body:mock('body'), head:mock('head'), documentElement:mock('docEl'), fullscreenElement:null };
 ctxObj.document=realDoc;
 ctxObj.THREE=mock('THREE');
