@@ -1,0 +1,72 @@
+{
+ "name": "arc",
+ "w": 96,
+ "h": 96,
+ "frames": 10,
+ "fps": 30,
+ "seed": 3,
+ "outline": "outside",
+ "outlineColor": "#0a1028",
+ "layers": [
+  {
+   "type": "slash",
+   "ramp": [
+    "#0a1430",
+    "#24427a",
+    "#5a8ad0",
+    "#b8dcff",
+    "#ffffff"
+   ],
+   "r": 0.72,
+   "th": 0.2,
+   "a0": -110,
+   "a1": 60,
+   "sweep": 0.3,
+   "trail": 0.9,
+   "x": -0.25
+  },
+  {
+   "type": "slash",
+   "ramp": [
+    "#5a8ad0",
+    "#cfe9ff",
+    "#ffffff"
+   ],
+   "r": 0.76,
+   "th": 0.05,
+   "a0": -100,
+   "a1": 60,
+   "sweep": 0.28,
+   "trail": 0.8,
+   "x": -0.25,
+   "t0": 0.03,
+   "t1": 0.8
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#0a1430",
+    "#24427a",
+    "#5a8ad0",
+    "#b8dcff",
+    "#ffffff"
+   ],
+   "mode": "burst",
+   "count": 6,
+   "x": 0.1,
+   "y": 0.6,
+   "speed": [
+    1,
+    2
+   ],
+   "drag": 3,
+   "life": [
+    0.3,
+    0.5
+   ],
+   "shape": "streak",
+   "size": 2,
+   "t0": 0.2
+  }
+ ]
+}

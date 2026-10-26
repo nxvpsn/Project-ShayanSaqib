@@ -1,0 +1,49 @@
+{
+ "name": "ring",
+ "note": "white, tinted per use (ground shockwave)",
+ "w": 96,
+ "h": 96,
+ "frames": 12,
+ "fps": 24,
+ "seed": 2,
+ "layers": [
+  {
+   "type": "ring",
+   "ramp": [
+    "#3a3a3a",
+    "#7a7a7a",
+    "#bdbdbd",
+    "#ffffff"
+   ],
+   "r0": 0.08,
+   "r1": 0.96,
+   "th": 0.16,
+   "thEnd": 0.04,
+   "breakup": 0.55,
+   "inner": 0.12
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#7a7a7a",
+    "#ffffff"
+   ],
+   "mode": "burst",
+   "count": 12,
+   "speed": [
+    2.2,
+    3
+   ],
+   "drag": 2,
+   "shape": "dot",
+   "size": [
+    2,
+    1
+   ],
+   "life": [
+    0.4,
+    0.8
+   ]
+  }
+ ]
+}

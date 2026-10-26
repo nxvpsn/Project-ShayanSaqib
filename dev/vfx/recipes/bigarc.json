@@ -1,0 +1,93 @@
+{
+ "name": "bigarc",
+ "note": "other fighters' heavy directional swings (FX.arc big)",
+ "w": 112,
+ "h": 112,
+ "frames": 10,
+ "fps": 30,
+ "seed": 15,
+ "outline": "outside",
+ "outlineColor": "#1a0010",
+ "layers": [
+  {
+   "type": "slash",
+   "ramp": [
+    "#2a0418",
+    "#7a0a3a",
+    "#e02a6a",
+    "#ff8ab0",
+    "#ffe0ea"
+   ],
+   "r": 0.8,
+   "th": 0.26,
+   "a0": -140,
+   "a1": 100,
+   "sweep": 0.3,
+   "trail": 0.9,
+   "erode": 0.7,
+   "x": -0.25
+  },
+  {
+   "type": "slash",
+   "ramp": [
+    "#e02a6a",
+    "#ffc0d4",
+    "#ffffff"
+   ],
+   "r": 0.84,
+   "th": 0.06,
+   "a0": -130,
+   "a1": 100,
+   "sweep": 0.28,
+   "trail": 0.8,
+   "x": -0.25,
+   "t0": 0.03,
+   "t1": 0.8
+  },
+  {
+   "type": "slash",
+   "ramp": [
+    "#2a0418",
+    "#7a0a3a",
+    "#e02a6a",
+    "#ff8ab0",
+    "#ffe0ea"
+   ],
+   "r": 0.6,
+   "th": 0.12,
+   "a0": -120,
+   "a1": 80,
+   "sweep": 0.32,
+   "trail": 0.8,
+   "x": -0.25,
+   "t0": 0.06,
+   "gain": 0.7
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#2a0418",
+    "#7a0a3a",
+    "#e02a6a",
+    "#ff8ab0",
+    "#ffe0ea"
+   ],
+   "mode": "burst",
+   "count": 10,
+   "x": -0.1,
+   "y": 0.75,
+   "speed": [
+    1.2,
+    2.4
+   ],
+   "drag": 3,
+   "life": [
+    0.3,
+    0.6
+   ],
+   "shape": "streak",
+   "size": 2,
+   "t0": 0.2
+  }
+ ]
+}

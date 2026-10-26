@@ -1,0 +1,85 @@
+{
+ "name": "boom",
+ "w": 72,
+ "h": 72,
+ "frames": 12,
+ "fps": 24,
+ "seed": 21,
+ "outline": "outside",
+ "outlineColor": "#1a0800",
+ "layers": [
+  {
+   "type": "puffs",
+   "ramp": "smoke",
+   "count": 7,
+   "r0": 0.12,
+   "r1": 0.32,
+   "t0": 0.2,
+   "rise": 0.5
+  },
+  {
+   "type": "burst",
+   "ramp": [
+    "#3a0800",
+    "#a02a00",
+    "#ff6a10",
+    "#ffb040",
+    "#fff0a0",
+    "#ffffff"
+   ],
+   "r0": 0.1,
+   "r1": 0.62,
+   "grow": 0.35,
+   "erode": 1,
+   "cool": 0.6
+  },
+  {
+   "type": "ring",
+   "ramp": [
+    "#3a0800",
+    "#a02a00",
+    "#ff6a10",
+    "#ffb040",
+    "#fff0a0",
+    "#ffffff"
+   ],
+   "r0": 0.1,
+   "r1": 0.98,
+   "th": 0.14,
+   "breakup": 0.6
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#3a0800",
+    "#a02a00",
+    "#ff6a10",
+    "#ffb040",
+    "#fff0a0",
+    "#ffffff"
+   ],
+   "mode": "burst",
+   "count": 12,
+   "speed": [
+    1.8,
+    3
+   ],
+   "drag": 2.2,
+   "shape": "streak",
+   "size": 2
+  },
+  {
+   "type": "flash",
+   "ramp": [
+    "#3a0800",
+    "#a02a00",
+    "#ff6a10",
+    "#ffb040",
+    "#fff0a0",
+    "#ffffff"
+   ],
+   "r": 0.5,
+   "dur": 0.12
+  }
+ ]
+}

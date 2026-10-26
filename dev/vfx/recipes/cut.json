@@ -1,0 +1,46 @@
+{
+ "name": "cut",
+ "w": 64,
+ "h": 64,
+ "frames": 8,
+ "fps": 30,
+ "seed": 6,
+ "outline": "outside",
+ "outlineColor": "#1a0010",
+ "layers": [
+  {
+   "type": "streaks",
+   "mode": "claw",
+   "ramp": [
+    "#7a0a2a",
+    "#ff3a6a",
+    "#ffc0d0",
+    "#ffffff"
+   ],
+   "count": 3,
+   "angle": 50,
+   "len": 1.6,
+   "gap": 0.24,
+   "curve": 0.15,
+   "th": 3,
+   "stagger": 0.05
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#ff3a6a",
+    "#ffffff"
+   ],
+   "mode": "burst",
+   "count": 8,
+   "speed": [
+    1.4,
+    2.4
+   ],
+   "drag": 3,
+   "shape": "streak",
+   "size": 2,
+   "t0": 0.1
+  }
+ ]
+}

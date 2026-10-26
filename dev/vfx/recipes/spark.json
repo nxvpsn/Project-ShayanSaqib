@@ -1,0 +1,72 @@
+{
+ "name": "spark",
+ "w": 48,
+ "h": 48,
+ "frames": 9,
+ "fps": 24,
+ "seed": 9,
+ "outline": "outside",
+ "outlineColor": "#2a1000",
+ "layers": [
+  {
+   "type": "ring",
+   "ramp": [
+    "#4a2000",
+    "#b06008",
+    "#ffb030",
+    "#ffe890",
+    "#ffffff"
+   ],
+   "r0": 0.1,
+   "r1": 0.85,
+   "th": 0.18,
+   "breakup": 0.5
+  },
+  {
+   "type": "star",
+   "ramp": [
+    "#4a2000",
+    "#b06008",
+    "#ffb030",
+    "#ffe890",
+    "#ffffff"
+   ],
+   "points": 6,
+   "r": 0.8,
+   "inner": 0.18,
+   "pop": 0.25,
+   "hollow": 0.9
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#4a2000",
+    "#b06008",
+    "#ffb030",
+    "#ffe890",
+    "#ffffff"
+   ],
+   "mode": "burst",
+   "count": 10,
+   "speed": [
+    1.8,
+    3
+   ],
+   "drag": 2.6,
+   "shape": "streak",
+   "size": 2
+  },
+  {
+   "type": "flash",
+   "ramp": [
+    "#4a2000",
+    "#b06008",
+    "#ffb030",
+    "#ffe890",
+    "#ffffff"
+   ],
+   "r": 0.42,
+   "dur": 0.12
+  }
+ ]
+}
