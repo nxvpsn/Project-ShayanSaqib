@@ -106,20 +106,20 @@ function twDarkTo(k,r){ if(!TW.dark) TW.dark={k:0,r:r||200,eyes:[]}; if(!TW.hz.i
 // one curving scythe of colour col: it sweeps out to one side, then curls in on you. Parried or not, its colour dyes your moon.
 // the part of the arena the camera shows: moon scythes never leave it, so the one you need is always reachable
 function twViewBox(){ const B=twBounds(), x=Cam.look.x, z=Cam.look.z; return {x0:Math.max(B.x0+.5,x-8.5),x1:Math.min(B.x1-.5,x+8.5),z0:Math.max(B.z0+.5,z-5),z1:Math.min(B.z1-.5,z+3.5)}; }
-// a solid pixel crescent (dark outline, shaded body, bright inner edge) instead of a glow, plus a shadow + coloured ring on the ground,
+// a solid pixel crescent (outline a darker shade of its own colour, shaded body, bright inner edge) instead of a glow, plus a shadow + coloured ring on the ground,
 // so you can see which colour it is, that it spins, and where it is in depth
 function twMoonTex(col){ TW._mt=TW._mt||{}; if(TW._mt[col]) return TW._mt[col]; const S=48, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
-  const pal=col==='w'?['#12040a','#7a1020','#ff2a3a','#ffb0b8']:['#06020e','#2a0a50','#6a1fc8','#b07aff'];
+  const pal=col==='w'?['#8a1424','#c01c2c','#ff2a3a','#ffb0b8']:['#2e0c5c','#4a14a0','#6a1fc8','#b07aff'];
   try{ const id=c.getImageData(0,0,S,S), d=id.data; if(d&&d.length===S*S*4){ const R=S*.44, cx=S/2, cy=S/2, ox=S*.2, r2=R*.86;
       for(let y=0;y<S;y++) for(let x=0;x<S;x++){ const a=Math.hypot(x+.5-cx,y+.5-cy), b=Math.hypot(x+.5-cx+ox,y+.5-cy); let k=-1;
         if(a<=R&&b>=r2){ const e=Math.min(R-a,b-r2); k=e<1.6?0:e<3?1:(b-r2<5)?3:2; } else if(a<=R+1.6&&b>=r2-1.6) k=0;
         if(k>=0){ const h=pal[k], i=(y*S+x)*4; d[i]=parseInt(h.slice(1,3),16); d[i+1]=parseInt(h.slice(3,5),16); d[i+2]=parseInt(h.slice(5,7),16); d[i+3]=255; } }
       c.putImageData(id,0,0); } }catch(e){}
   const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW._mt[col]=t; }
-function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THREE.CircleGeometry(.75,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false,fog:false})),
-    rg=new THREE.Mesh(new THREE.RingGeometry(.8,.95,28),new THREE.MeshBasicMaterial({color:OM_MOON_HEX[col],transparent:true,opacity:.7,depthWrite:false,fog:false,side:THREE.DoubleSide}));
+function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false,fog:false})),
+    rg=new THREE.Mesh(new THREE.RingGeometry(.54,.65,28),new THREE.MeshBasicMaterial({color:OM_MOON_HEX[col],transparent:true,opacity:.7,depthWrite:false,fog:false,side:THREE.DoubleSide}));
   sh.rotation.x=rg.rotation.x=-Math.PI/2; g.add(sh,rg); g.userData.tw=1; scene.add(g); return g; }
-function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),2.2,2.2,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
+function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),1.5,1.5,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
   const a=Math.atan2(P.z-T.z,P.x-T.x), px=-Math.sin(a)*side, pz=Math.cos(a)*side, [x0,z0]=cl(T.x+px*1.2,T.z+pz*1.2), d=Math.hypot(P.x-T.x,P.z-T.z), [cx,cz]=cl((T.x+P.x)/2+px*Math.max(5,d*.7),(T.z+P.z)/2+pz*Math.max(5,d*.7));
   const s={col,t:0,done:false,ex:P.x,ez:P.z,px:x0,pz:z0,vx:0,vz:0,turn:(Math.random()<.5?1:-1)*rnd(.6,1.2)}; Sound.sfx('swing'); (TW._moonS=(TW._moonS||[]).filter(o=>!o.done&&o.t<4)).push(s);
   return twHz({upd(dt,play){ if(play) s.t+=dt; const P2=Player, u=Math.min(1,s.t/dur); if(u<.75){ s.ex=P2.x; s.ez=P2.z; }

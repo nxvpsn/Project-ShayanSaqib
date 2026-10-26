@@ -166,7 +166,7 @@ function twBankaiPulse(cx,cz,dur){ const W=L.w||116, Dd=L.d||108, st=2, nx=Math.
   for(let j=0;j<nz;j++) for(let i=0;i<nx;i++){ const x=i*st+st/2, z=j*st+st/2, k=j*nx+i; T.push({x,z,d:Math.hypot(x-cx,z-cz)+rnd(-1.5,1.5),r:Math.floor(Math.random()*4)}); o.position.set(x,.015,z); o.rotation.set(-Math.PI/2,0,0); o.scale.set(0,0,0); o.updateMatrix(); im.setMatrixAt(k,o.matrix); }
   L.root.add(im); const fl=twTufts().filter(m=>m!==im), cols=[]; const c0=new THREE.Color(1,1,1), mtx=new THREE.Matrix4(), p=new THREE.Vector3();
   for(const m of fl){ const lily=m.material&&m.material.emissiveIntensity>0, ps=[]; for(let i=0;i<m.count;i++){ m.getMatrixAt(i,mtx); p.setFromMatrixPosition(mtx); ps.push([p.x,p.z]); m.setColorAt(i,c0); } m.instanceColor.needsUpdate=true; m.material.needsUpdate=true; cols.push({m,ps,lily,done:new Uint8Array(m.count),e0:m.material.emissiveIntensity}); }
-  TWT.ice={im,cols,T,inks:[]}; const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,96),new THREE.MeshBasicMaterial({color:0xbfe8ff,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false})); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.3,cz); L.root.add(ring);
+  TWT.ice={im,cols,T,inks:[],st}; const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,96),new THREE.MeshBasicMaterial({color:0xbfe8ff,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false})); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.3,cz); L.root.add(ring);
   const black=new THREE.Color(.09,.05,.13), frost=new THREE.Color(.6,.68,.8), maxd=Math.hypot(Math.max(cx,W-cx),Math.max(cz,Dd-cz))+3, k={t:0};
   Game.fxUpd.push(dt=>{ try{ if(!im.parent){ ring.parent&&ring.parent.remove(ring); return false; } k.t+=dt; const R=maxd*Math.min(1,k.t/dur); ring.scale.set(R+.01,R+.01,1); ring.material.opacity=.8*(1-Math.min(1,k.t/dur));
       let ch=false; for(let i=0;i<T.length;i++){ const q=T[i]; if(q.on||q.d>R) continue; q.on=1; ch=true; o.position.set(q.x,.015,q.z); o.rotation.set(-Math.PI/2,0,q.r*Math.PI/2); o.scale.set(1,1,1); o.updateMatrix(); im.setMatrixAt(i,o.matrix);
@@ -186,13 +186,17 @@ function* twOmarBankai(T){ const P=Player;
 // snow while the Bankai holds
 (function(){ const uw=updateWorld; updateWorld=function(dt){ uw.apply(this,arguments); if(!TWT.snow||!TW.fight) return; try{ const P=Player; for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-14,14),P.y+rnd(6,10),P.z+rnd(-10,6),rnd(-.4,.4),-rnd(1,2),rnd(-.4,.4),rnd(3,5),0xc8d2e0,.18,0,true); twIceInks(); }catch(e){ console.error('snow',e); } }; })();
 // melting: a circle of the old field comes back through the ice (the Getsuga clash, the orb's laser, the black hole)
-function twIceMelt(x,z,r,dur){ const I=TWT.ice; if(!I||!I.im.parent||!(r>0)) return; const o=new THREE.Object3D(), w=new THREE.Color(1,1,1), k={t:0}; dur=dur||0;
+function twIceMelt(x,z,r,dur){ const I=TWT.ice; if(!I||!I.im.parent||!(r>0)) return; twIceMeltIf(I,(px,pz,R)=>Math.hypot(px-x,pz-z)<=R,r,dur); }
+// whole tiles: n=0 melts the tile under (x,z), n=1 that tile and the 8 around it (3x3)
+function twIceMeltTiles(x,z,n){ const I=TWT.ice; if(!I||!I.im.parent) return; const st=I.st||2, tx=(Math.floor(x/st)+.5)*st, tz=(Math.floor(z/st)+.5)*st, h=(n+.5)*st;
+  twIceMeltIf(I,(px,pz)=>Math.abs(px-tx)<h&&Math.abs(pz-tz)<h,1,0); }
+function twIceMeltIf(I,inside,r,dur){ const o=new THREE.Object3D(), w=new THREE.Color(1,1,1), k={t:0};
   Game.fxUpd.push(dt=>{ try{ if(TWT.ice!==I||!I.im.parent) return false; k.t+=dt; const R=r*(dur>0?Math.min(1,k.t/dur):1); let ch=false;
-    for(let i=0;i<I.T.length;i++){ const q=I.T[i]; if(q.melt||Math.hypot(q.x-x,q.z-z)>R) continue; q.melt=q.on=1; ch=true; o.position.set(q.x,.015,q.z); o.scale.set(0,0,0); o.updateMatrix(); I.im.setMatrixAt(i,o.matrix); if(Math.random()<.3) FX.spawn(q.x,.3,q.z,0,rnd(.8,2),0,.7,0xdfe8f0,.35,0,true); }
+    for(let i=0;i<I.T.length;i++){ const q=I.T[i]; if(q.melt||!inside(q.x,q.z,R)) continue; q.melt=q.on=1; ch=true; o.position.set(q.x,.015,q.z); o.scale.set(0,0,0); o.updateMatrix(); I.im.setMatrixAt(i,o.matrix); if(Math.random()<.3) FX.spawn(q.x,.3,q.z,0,rnd(.8,2),0,.7,0xdfe8f0,.35,0,true); }
     if(ch) I.im.instanceMatrix.needsUpdate=true;
-    for(const C of I.cols){ let cc=false; for(let i=0;i<C.ps.length;i++){ const p=C.ps[i]; if(C.done[i]===2||Math.hypot(p[0]-x,p[1]-z)>R) continue; C.done[i]=2; C.m.setColorAt(i,w); cc=true; } if(cc) C.m.instanceColor.needsUpdate=true; }
+    for(const C of I.cols){ let cc=false; for(let i=0;i<C.ps.length;i++){ const p=C.ps[i]; if(C.done[i]===2||!inside(p[0],p[1],R)) continue; C.done[i]=2; C.m.setColorAt(i,w); cc=true; } if(cc) C.m.instanceColor.needsUpdate=true; }
     return k.t<dur; }catch(e){ console.error('melt',e); return false; } }); }
-(function(){ const tf=twTearFire; twTearFire=function(O,tx,ty,tz,hole){ try{ if(!hole) twIceMelt(tx,tz,3.2,.3); }catch(e){} return tf.apply(this,arguments); }; })();
+(function(){ const tf=twTearFire; twTearFire=function(O,tx,ty,tz,hole){ try{ if(!hole) twIceMeltTiles(tx,tz,0); }catch(e){} return tf.apply(this,arguments); }; })();
 // glowing (additive) ground telegraphs vanish on the ice: while the Bankai holds they turn solid and dark (same hue)
 const TW_HSL={h:0,s:0,l:0};
 function twIceInks(){ const I=TWT.ice; if(!I) return; for(const c of scene.children){ if(!c.userData||c.userData.iceSeen||Math.abs(c.rotation.x+Math.PI/2)>.2) continue; c.userData.iceSeen=1; const lum=c.userData.iceL!=null?c.userData.iceL:.2; /* iceL: a darker ink for one telegraph (Omar's teleport reap) */

@@ -7210,20 +7210,20 @@ function twDarkTo(k,r){ if(!TW.dark) TW.dark={k:0,r:r||200,eyes:[]}; if(!TW.hz.i
 // one curving scythe of colour col: it sweeps out to one side, then curls in on you. Parried or not, its colour dyes your moon.
 // the part of the arena the camera shows: moon scythes never leave it, so the one you need is always reachable
 function twViewBox(){ const B=twBounds(), x=Cam.look.x, z=Cam.look.z; return {x0:Math.max(B.x0+.5,x-8.5),x1:Math.min(B.x1-.5,x+8.5),z0:Math.max(B.z0+.5,z-5),z1:Math.min(B.z1-.5,z+3.5)}; }
-// a solid pixel crescent (dark outline, shaded body, bright inner edge) instead of a glow, plus a shadow + coloured ring on the ground,
+// a solid pixel crescent (outline a darker shade of its own colour, shaded body, bright inner edge) instead of a glow, plus a shadow + coloured ring on the ground,
 // so you can see which colour it is, that it spins, and where it is in depth
 function twMoonTex(col){ TW._mt=TW._mt||{}; if(TW._mt[col]) return TW._mt[col]; const S=48, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
-  const pal=col==='w'?['#12040a','#7a1020','#ff2a3a','#ffb0b8']:['#06020e','#2a0a50','#6a1fc8','#b07aff'];
+  const pal=col==='w'?['#8a1424','#c01c2c','#ff2a3a','#ffb0b8']:['#2e0c5c','#4a14a0','#6a1fc8','#b07aff'];
   try{ const id=c.getImageData(0,0,S,S), d=id.data; if(d&&d.length===S*S*4){ const R=S*.44, cx=S/2, cy=S/2, ox=S*.2, r2=R*.86;
       for(let y=0;y<S;y++) for(let x=0;x<S;x++){ const a=Math.hypot(x+.5-cx,y+.5-cy), b=Math.hypot(x+.5-cx+ox,y+.5-cy); let k=-1;
         if(a<=R&&b>=r2){ const e=Math.min(R-a,b-r2); k=e<1.6?0:e<3?1:(b-r2<5)?3:2; } else if(a<=R+1.6&&b>=r2-1.6) k=0;
         if(k>=0){ const h=pal[k], i=(y*S+x)*4; d[i]=parseInt(h.slice(1,3),16); d[i+1]=parseInt(h.slice(3,5),16); d[i+2]=parseInt(h.slice(5,7),16); d[i+3]=255; } }
       c.putImageData(id,0,0); } }catch(e){}
   const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW._mt[col]=t; }
-function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THREE.CircleGeometry(.75,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false,fog:false})),
-    rg=new THREE.Mesh(new THREE.RingGeometry(.8,.95,28),new THREE.MeshBasicMaterial({color:OM_MOON_HEX[col],transparent:true,opacity:.7,depthWrite:false,fog:false,side:THREE.DoubleSide}));
+function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false,fog:false})),
+    rg=new THREE.Mesh(new THREE.RingGeometry(.54,.65,28),new THREE.MeshBasicMaterial({color:OM_MOON_HEX[col],transparent:true,opacity:.7,depthWrite:false,fog:false,side:THREE.DoubleSide}));
   sh.rotation.x=rg.rotation.x=-Math.PI/2; g.add(sh,rg); g.userData.tw=1; scene.add(g); return g; }
-function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),2.2,2.2,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
+function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),1.5,1.5,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
   const a=Math.atan2(P.z-T.z,P.x-T.x), px=-Math.sin(a)*side, pz=Math.cos(a)*side, [x0,z0]=cl(T.x+px*1.2,T.z+pz*1.2), d=Math.hypot(P.x-T.x,P.z-T.z), [cx,cz]=cl((T.x+P.x)/2+px*Math.max(5,d*.7),(T.z+P.z)/2+pz*Math.max(5,d*.7));
   const s={col,t:0,done:false,ex:P.x,ez:P.z,px:x0,pz:z0,vx:0,vz:0,turn:(Math.random()<.5?1:-1)*rnd(.6,1.2)}; Sound.sfx('swing'); (TW._moonS=(TW._moonS||[]).filter(o=>!o.done&&o.t<4)).push(s);
   return twHz({upd(dt,play){ if(play) s.t+=dt; const P2=Player, u=Math.min(1,s.t/dur); if(u<.75){ s.ex=P2.x; s.ez=P2.z; }
@@ -7484,7 +7484,7 @@ function* twOmarCollapse(T,ph){ const sp=twSp(T), P=Player; twBark('omar',"Colla
     const room=Math.min(ray(-Math.cos(a),-Math.sin(a)),6)-k*.01; if(room>best){ best=room; c={x,z}; } }
   if(!c) c=twClampXZ(P.x+Math.cos((P.ang||0)+Math.PI)*TW_BH.spawn,P.z+Math.sin((P.ang||0)+Math.PI)*TW_BH.spawn,1.5); const gy=groundY(c.x,c.z);
   const core=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0x000000})); core.userData.tw=1; core.scale.setScalar(.01); scene.add(core); const halo=twGlow(0x8a2aff,1);
-  const BH=TW.bh={x:c.x,z:c.z,live:true,t:0}; twIceMelt(c.x,c.z,6,1.5); twBig('DASH!',{size:64,col:'#c08aff',y:UH*.26,dur:1.2,sub:'The black hole pulls you in. Keep dashing away, and parry his rushes.'}); Sound.sfx('void');
+  const BH=TW.bh={x:c.x,z:c.z,live:true,t:0}; twIceMeltTiles(c.x,c.z,1); twBig('DASH!',{size:64,col:'#c08aff',y:UH*.26,dur:1.2,sub:'The black hole pulls you in. Keep dashing away, and parry his rushes.'}); Sound.sfx('void');
   twHz({upd(dt,play){ if(play) BH.t+=dt; const k=Math.min(1,BH.t*2)*(BH.live?1:Math.max(0,1-(BH.t-BH.endT)*4)); core.scale.setScalar(Math.max(.01,1.3*k)); core.position.set(c.x,gy+1.3,c.z); halo.position.copy(core.position); halo.scale.setScalar(5*k+Math.sin(BH.t*20)*.3);
       for(let i=0;i<4;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(c.x+Math.cos(a)*r,gy+1.3+rnd(-1,1),c.z+Math.sin(a)*r,-Math.cos(a)*r*1.6,0,-Math.sin(a)*r*1.6,.5,i%2?0x8a2aff:0x1a0a2a,.3,0,i%2===0); }
       if(BH.live) twBHSuck(c,gy); // nothing else may fly while the hole is open: it all gets eaten
@@ -8153,7 +8153,7 @@ function twBankaiPulse(cx,cz,dur){ const W=L.w||116, Dd=L.d||108, st=2, nx=Math.
   for(let j=0;j<nz;j++) for(let i=0;i<nx;i++){ const x=i*st+st/2, z=j*st+st/2, k=j*nx+i; T.push({x,z,d:Math.hypot(x-cx,z-cz)+rnd(-1.5,1.5),r:Math.floor(Math.random()*4)}); o.position.set(x,.015,z); o.rotation.set(-Math.PI/2,0,0); o.scale.set(0,0,0); o.updateMatrix(); im.setMatrixAt(k,o.matrix); }
   L.root.add(im); const fl=twTufts().filter(m=>m!==im), cols=[]; const c0=new THREE.Color(1,1,1), mtx=new THREE.Matrix4(), p=new THREE.Vector3();
   for(const m of fl){ const lily=m.material&&m.material.emissiveIntensity>0, ps=[]; for(let i=0;i<m.count;i++){ m.getMatrixAt(i,mtx); p.setFromMatrixPosition(mtx); ps.push([p.x,p.z]); m.setColorAt(i,c0); } m.instanceColor.needsUpdate=true; m.material.needsUpdate=true; cols.push({m,ps,lily,done:new Uint8Array(m.count),e0:m.material.emissiveIntensity}); }
-  TWT.ice={im,cols,T,inks:[]}; const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,96),new THREE.MeshBasicMaterial({color:0xbfe8ff,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false})); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.3,cz); L.root.add(ring);
+  TWT.ice={im,cols,T,inks:[],st}; const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,96),new THREE.MeshBasicMaterial({color:0xbfe8ff,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false})); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.3,cz); L.root.add(ring);
   const black=new THREE.Color(.09,.05,.13), frost=new THREE.Color(.6,.68,.8), maxd=Math.hypot(Math.max(cx,W-cx),Math.max(cz,Dd-cz))+3, k={t:0};
   Game.fxUpd.push(dt=>{ try{ if(!im.parent){ ring.parent&&ring.parent.remove(ring); return false; } k.t+=dt; const R=maxd*Math.min(1,k.t/dur); ring.scale.set(R+.01,R+.01,1); ring.material.opacity=.8*(1-Math.min(1,k.t/dur));
       let ch=false; for(let i=0;i<T.length;i++){ const q=T[i]; if(q.on||q.d>R) continue; q.on=1; ch=true; o.position.set(q.x,.015,q.z); o.rotation.set(-Math.PI/2,0,q.r*Math.PI/2); o.scale.set(1,1,1); o.updateMatrix(); im.setMatrixAt(i,o.matrix);
@@ -8173,13 +8173,17 @@ function* twOmarBankai(T){ const P=Player;
 // snow while the Bankai holds
 (function(){ const uw=updateWorld; updateWorld=function(dt){ uw.apply(this,arguments); if(!TWT.snow||!TW.fight) return; try{ const P=Player; for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-14,14),P.y+rnd(6,10),P.z+rnd(-10,6),rnd(-.4,.4),-rnd(1,2),rnd(-.4,.4),rnd(3,5),0xc8d2e0,.18,0,true); twIceInks(); }catch(e){ console.error('snow',e); } }; })();
 // melting: a circle of the old field comes back through the ice (the Getsuga clash, the orb's laser, the black hole)
-function twIceMelt(x,z,r,dur){ const I=TWT.ice; if(!I||!I.im.parent||!(r>0)) return; const o=new THREE.Object3D(), w=new THREE.Color(1,1,1), k={t:0}; dur=dur||0;
+function twIceMelt(x,z,r,dur){ const I=TWT.ice; if(!I||!I.im.parent||!(r>0)) return; twIceMeltIf(I,(px,pz,R)=>Math.hypot(px-x,pz-z)<=R,r,dur); }
+// whole tiles: n=0 melts the tile under (x,z), n=1 that tile and the 8 around it (3x3)
+function twIceMeltTiles(x,z,n){ const I=TWT.ice; if(!I||!I.im.parent) return; const st=I.st||2, tx=(Math.floor(x/st)+.5)*st, tz=(Math.floor(z/st)+.5)*st, h=(n+.5)*st;
+  twIceMeltIf(I,(px,pz)=>Math.abs(px-tx)<h&&Math.abs(pz-tz)<h,1,0); }
+function twIceMeltIf(I,inside,r,dur){ const o=new THREE.Object3D(), w=new THREE.Color(1,1,1), k={t:0};
   Game.fxUpd.push(dt=>{ try{ if(TWT.ice!==I||!I.im.parent) return false; k.t+=dt; const R=r*(dur>0?Math.min(1,k.t/dur):1); let ch=false;
-    for(let i=0;i<I.T.length;i++){ const q=I.T[i]; if(q.melt||Math.hypot(q.x-x,q.z-z)>R) continue; q.melt=q.on=1; ch=true; o.position.set(q.x,.015,q.z); o.scale.set(0,0,0); o.updateMatrix(); I.im.setMatrixAt(i,o.matrix); if(Math.random()<.3) FX.spawn(q.x,.3,q.z,0,rnd(.8,2),0,.7,0xdfe8f0,.35,0,true); }
+    for(let i=0;i<I.T.length;i++){ const q=I.T[i]; if(q.melt||!inside(q.x,q.z,R)) continue; q.melt=q.on=1; ch=true; o.position.set(q.x,.015,q.z); o.scale.set(0,0,0); o.updateMatrix(); I.im.setMatrixAt(i,o.matrix); if(Math.random()<.3) FX.spawn(q.x,.3,q.z,0,rnd(.8,2),0,.7,0xdfe8f0,.35,0,true); }
     if(ch) I.im.instanceMatrix.needsUpdate=true;
-    for(const C of I.cols){ let cc=false; for(let i=0;i<C.ps.length;i++){ const p=C.ps[i]; if(C.done[i]===2||Math.hypot(p[0]-x,p[1]-z)>R) continue; C.done[i]=2; C.m.setColorAt(i,w); cc=true; } if(cc) C.m.instanceColor.needsUpdate=true; }
+    for(const C of I.cols){ let cc=false; for(let i=0;i<C.ps.length;i++){ const p=C.ps[i]; if(C.done[i]===2||!inside(p[0],p[1],R)) continue; C.done[i]=2; C.m.setColorAt(i,w); cc=true; } if(cc) C.m.instanceColor.needsUpdate=true; }
     return k.t<dur; }catch(e){ console.error('melt',e); return false; } }); }
-(function(){ const tf=twTearFire; twTearFire=function(O,tx,ty,tz,hole){ try{ if(!hole) twIceMelt(tx,tz,3.2,.3); }catch(e){} return tf.apply(this,arguments); }; })();
+(function(){ const tf=twTearFire; twTearFire=function(O,tx,ty,tz,hole){ try{ if(!hole) twIceMeltTiles(tx,tz,0); }catch(e){} return tf.apply(this,arguments); }; })();
 // glowing (additive) ground telegraphs vanish on the ice: while the Bankai holds they turn solid and dark (same hue)
 const TW_HSL={h:0,s:0,l:0};
 function twIceInks(){ const I=TWT.ice; if(!I) return; for(const c of scene.children){ if(!c.userData||c.userData.iceSeen||Math.abs(c.rotation.x+Math.PI/2)>.2) continue; c.userData.iceSeen=1; const lum=c.userData.iceL!=null?c.userData.iceL:.2; /* iceL: a darker ink for one telegraph (Omar's teleport reap) */
@@ -13277,8 +13281,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH='Oct 26: darker teleport reap marker on the ice';
-const DBG_NEW=['omar:reap'];
+const DBG_PATCH='Oct 26: smaller moons, laser/black hole melt whole ice tiles';
+const DBG_NEW=['omar:lc2','omar:tear','omar:orbs'];
 const DBG={on:false,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Grimmaw ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
