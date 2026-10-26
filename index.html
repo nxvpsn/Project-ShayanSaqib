@@ -1645,12 +1645,12 @@ function updateBolts(dt){ const P=Player, B=Game.boss;
     b.vy-=b.g*dt; b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt;
     if(b.homing&&!b.friendly){ const gy=groundY(b.x,b.z)+.55; if(b.y<gy){ b.y=gy; b.vy=Math.max(0,b.vy); } }
     b.m.position.set(b.x,b.y,b.z);
-    if(b.kind==='scythe'){ b.spin.rotation.z+=dt*20; b.gl.scale.setScalar(1.6+Math.sin(b.t*20)*.2); if(Math.random()<.6) FX.spawn(b.x,b.y,b.z,0,.2,0,.3,b.friendly?0x9fe0ff:0x7a2aff,.3,0,true); }
+    if(b.kind==='scythe'){ b.spin.rotation.z+=dt*20; b.gl.scale.setScalar(1.6+Math.sin(b.t*20)*.2); if(Math.random()<.6) FX.spawn(b.x,b.y,b.z,0,.2,0,.3,b.rally?0xff2a3a:b.friendly?0x9fe0ff:0x7a2aff,.3,0,true); }
     else if(b.kind==='blade'){ b.spin.rotation.z+=dt*18; b.gl.scale.setScalar(1.5+Math.sin(b.t*20)*.2); if(Math.random()<.6) FX.spawn(b.x,b.y,b.z,0,.2,0,.3,b.friendly?0x9fe0ff:0xff3a4a,.3,0,true); }
     else if(b.kind==='laser'){ b.m.lookAt(b.x+b.vx,b.y+b.vy,b.z+b.vz); if(Math.random()<.8) FX.spawn(b.x,b.y,b.z,0,0,0,.25,b.friendly?0x9fe0ff:b.col,.3,0,true); }
     else if(b.kind==='bone'){ b.m.rotation.y+=dt*14; b.m.rotation.z+=dt*9; } else if(b.kind==='dagger'){ b.m.rotation.y=-Math.atan2(b.vz,b.vx); b.m.rotation.z=Math.atan2(b.vy,Math.hypot(b.vx,b.vz)); }
     else { const s=1.6+Math.sin(b.t*14)*.25; b.gl.scale.set(s,s,1); if(b.kind==='goo'){ b.core.scale.set(1.3+Math.sin(b.t*18)*.15,1.1-Math.sin(b.t*18)*.12,1.3); if(Math.random()<.5) FX.spawn(b.x,b.y,b.z,rnd(-.3,.3),0,rnd(-.3,.3),.5,b.friendly?0x9fe0ff:0xffffff,.16,9,false); } if(Math.random()<.6) FX.spawn(b.x,b.y,b.z,0,.3,0,.35,b.friendly?0x9fe0ff:(b.col||0xff3a4a),.3,0,true); }
-    if(b.friendly&&Math.random()<.8) FX.spawn(b.x,b.y,b.z,0,0,0,.3,0x9fe0ff,.25,0,true);
+    if(b.friendly&&Math.random()<.8) FX.spawn(b.x,b.y,b.z,0,0,0,.3,b.rally?0xff2a3a:0x9fe0ff,.25,0,true);
     if(b.y<groundY(b.x,b.z)-.05||b.t>b.life||cellH(b.x,b.z)>b.y+.3){ b.dead=1; FX.burst(b.x,b.y,b.z,6,b.friendly?0x9fe0ff:0xede4cf,2,.14,false); continue; }
     if(!b.friendly&&b.src&&b.src.who&&Game.twins&&Game.twins.active&&P.atkGrace>0&&Game.state==='play'){ const dx=b.x-P.x, dz=b.z-P.z, d=Math.hypot(dx,dz);
       if(d<2.4&&Math.abs(b.y-P.y-1)<1.9&&(d<.9||angDiff(Math.atan2(dz,dx),P.ang)<1.7)){ reflectProj(b,'deflect'); continue; } }
@@ -7070,8 +7070,8 @@ function twSekiroParry(T,src){ if((T.skCd||0)>Game.time) return; T.skCd=Game.tim
 (function(){ const th=twHurt; twHurt=function(T,d,src){ if(T&&T.who==='omar'&&T.sekiroT>Game.time&&T.state==='atk'&&T.last==='sekiro'&&T.hp>0&&!TW._ally&&!['ally','ff','test'].includes(src)){ twSekiroParry(T,src); return false; } return th.apply(this,arguments); }; })();
 function texBlackCrescent(){ if(TW._bcTex) return TW._bcTex; const S=256, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   const shape=()=>{ c.beginPath(); c.arc(S/2,S/2,104,0,7); c.arc(S/2+46,S/2-30,92,0,7,true); };
-  c.save(); c.shadowColor='rgba(170,80,255,1)'; c.shadowBlur=30; c.fillStyle='#8a3aff'; shape(); c.fill('evenodd'); c.restore();
-  c.fillStyle='#07020c'; c.beginPath(); c.arc(S/2,S/2,98,0,7); c.arc(S/2+46,S/2-30,96,0,7,true); c.fill('evenodd');
+  c.save(); c.shadowColor='rgba(140,60,230,.9)'; c.shadowBlur=8; c.fillStyle='#8a3aff'; shape(); c.fill('evenodd'); c.restore(); /* black, with a thin purple outline */
+  c.fillStyle='#050208'; c.beginPath(); c.arc(S/2,S/2,100,0,7); c.arc(S/2+46,S/2-30,94,0,7,true); c.fill('evenodd');
   const t=new THREE.CanvasTexture(cv); TW._bcTex=t; return t; }
 TWK.omar.sekiro=function*(T,ph){ twBark('omar',"I am Sekiro.",true); Sound.sfx('gong'); const dur=ph>=3?4.2:3.6, need=ph>=3?2:3; T.skN=0; T.skNeed=need; T.sekiroT=Game.time+dur; T.scythe=1; T.swing=0; T.cast=0; T.mv=null;
   twBig('PARRY STANCE',{size:46,col:'#c08aff',y:UH*.24,dur:1.5,sub:'Every hit is parried. '+(need===2?'Two':'Three')+' parries and he counters.'});
@@ -7106,14 +7106,14 @@ for(const k of [1,2,3]) TWPOOL.omar[k].push('sekiro');
 
 // =====================================================================
 // LIMIT CUT II (phase 3): BLACK CRESCENT
-//   1) Moon match: Omar's moon turns white or blue; dye yours the same colour with his curving scythes before the meter runs out
+//   1) Moon match: Omar's moon turns red or dark purple (yours starts black); dye yours the same colour with his curving scythes before the meter runs out
 //   2) Double flood: two 3.8s rounds back to back (OM_WAVE23), his moon flips colour in between; 2 extra wrong-colour scythes and a second right one in each. The Death Sentence loops the whole time
 //      (the moon scythes stay on screen). Then the black crescent swallows the sky and the dark covers the screen
 //   3) Iai in the dark: small glints preview a combo, the large glint fires it; slash the white beats, never the red. 15 parries -> Getsuga clash
 // =====================================================================
-// the two moon colours: white (w) and blue (p)
+// the two moon colours: red (w) and dark purple (p); no colour = the black base moon
 const OM_WAVE23=3.8; // waves 2 and 3 of the moon match: the same length, the same scythes
-const OM_MOON={w:'#f2f4ff',p:'#4aa8ff'}, OM_MOON_HEX={w:0xf2f4ff,p:0x4aa8ff}, OM_MOON_FLASH={w:[1,1,1],p:[.3,.62,1]};
+const OM_MOON={w:'#ff2a3a',p:'#6a1fc8'}, OM_MOON_HEX={w:0xff2a3a,p:0x6a1fc8}, OM_MOON_FLASH={w:[1,.2,.25],p:[.45,.15,.85]};
 TW_SFX.iaiReal=function(){ Sound.tone('square',3400,4600,.04,.07); Sound.tone('sine',5200,4900,.3,.08); Sound.tone('triangle',2600,2600,.18,.06); Sound.hiss(9000,.07,.12,'highpass'); };
 TW_SFX.iaiFeint=function(){ Sound.hiss(500,.22,.12,'lowpass'); Sound.tone('sine',180,120,.2,.08); };
 function twMoonIcon(col){ TW._mi=TW._mi||{}; const k=col||'none'; if(TW._mi[k]) return TW._mi[k]; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
@@ -7154,7 +7154,7 @@ function twViewBox(){ const B=twBounds(), x=Cam.look.x, z=Cam.look.z; return {x0
 // a solid pixel crescent (dark outline, shaded body, bright inner edge) instead of a glow, plus a shadow + coloured ring on the ground,
 // so you can see which colour it is, that it spins, and where it is in depth
 function twMoonTex(col){ TW._mt=TW._mt||{}; if(TW._mt[col]) return TW._mt[col]; const S=48, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
-  const pal=col==='w'?['#0a0c18','#9aa4c8','#e4e8f8','#ffffff']:['#060a18','#1a4e9a','#4aa8ff','#c8ecff'];
+  const pal=col==='w'?['#12040a','#7a1020','#ff2a3a','#ffb0b8']:['#06020e','#2a0a50','#6a1fc8','#b07aff'];
   try{ const id=c.getImageData(0,0,S,S), d=id.data; if(d&&d.length===S*S*4){ const R=S*.44, cx=S/2, cy=S/2, ox=S*.2, r2=R*.86;
       for(let y=0;y<S;y++) for(let x=0;x<S;x++){ const a=Math.hypot(x+.5-cx,y+.5-cy), b=Math.hypot(x+.5-cx+ox,y+.5-cy); let k=-1;
         if(a<=R&&b>=r2){ const e=Math.min(R-a,b-r2); k=e<1.6?0:e<3?1:(b-r2<5)?3:2; } else if(a<=R+1.6&&b>=r2-1.6) k=0;
@@ -7176,7 +7176,7 @@ function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),2.2,2.2,{ro:6
       if(s.t>=3&&!s.done){ s.done=true; Sound.sfx('crossboom'); shake(.25); FX.burst(x,gy+1.2,z,30,OM_MOON_HEX[col],6,.35); FX.ring(x,gy+.1,z,OM_MOON[col],2.2,.35); if(play&&twInR(x,z,1.6,2.4)) twHitP(2,x,z,{ub:true}); return false; }
       if(Math.random()<.8) FX.spawn(x,gy+1.2,z,0,.3,0,.35,OM_MOON_HEX[col],.25,0,true);
       if(play&&!s.done&&Math.hypot(P2.x-x,P2.z-z)<1&&P2.y<gy+2){ const r=twHitP(2,x,z,{melee:true,pierce:true,noGuard:true,win:.3});
-        if(r==='parry'||r==='hit'){ s.done=true; const M=TW.moon; if(M&&M.pl!==col){ M.pl=col; Game.dmgNums.push({x:P2.x,y:P2.y+3,z:P2.z,n:col==='w'?'WHITE MOON':'BLUE MOON',t:0,big:true,col:OM_MOON[col]}); }
+        if(r==='parry'||r==='hit'){ s.done=true; const M=TW.moon; if(M&&M.pl!==col){ M.pl=col; Game.dmgNums.push({x:P2.x,y:P2.y+3,z:P2.z,n:col==='w'?'RED MOON':'DARK PURPLE MOON',t:0,big:true,col:OM_MOON[col]}); }
           FX.burst(x,gy+1.2,z,24,OM_MOON_HEX[col],5,.3); return false; } }
       return true; }, kill(){ scene.remove(m); scene.remove(g); }}); }
 // a barrage: one of each colour, left and right, arriving half a second apart so you can pick one
@@ -7193,7 +7193,7 @@ function twMoonWrongs(T,n,t0){ const M=TW.moon, wrong=M.om==='w'?'p':'w'; for(le
 // a second scythe of the RIGHT colour later in the round (wave 2): a second chance
 function twMoonRight(T,at){ const k={t:0}; twHz({upd(dt,play){ if(play) k.t+=dt; if(k.t>=at&&!k.done){ k.done=1; const M=TW.moon; if(M) twMoonScythe(T,M.om,Math.random()<.5?1:-1,1.25); } return !k.done; }}); }
 function* twMoonRound(T,dur,salvos,wrongs,rights){ const M=TW.moon; M.om=Math.random()<.5?'w':'p'; M.left=M.total=dur; M.pulse=1; Sound.sfx('gong'); FX.flash=.3; grade.uniforms.flashCol.value.set(...OM_MOON_FLASH[M.om]);
-  twBig(M.om==='w'?'HIS MOON IS WHITE':'HIS MOON IS BLUE',{size:48,col:OM_MOON[M.om],y:UH*.24,dur:1.4,sub:'Parry the matching scythe'}); T.cast=.6; if(wrongs) twMoonWrongs(T,wrongs,.45); for(let i=0;i<(rights||0);i++) twMoonRight(T,1.3+i*.6);
+  twBig(M.om==='w'?'HIS MOON IS RED':'HIS MOON IS DARK PURPLE',{size:48,col:OM_MOON[M.om],y:UH*.24,dur:1.4,sub:'Parry the matching scythe'}); T.cast=.6; if(wrongs) twMoonWrongs(T,wrongs,.45); for(let i=0;i<(rights||0);i++) twMoonRight(T,1.3+i*.6);
   let t=0, i=0; while(t<dur){ if(i<salvos.length&&t>=salvos[i]){ T.cast=.6; twMoonBarrage(T,dur>=5?1.7:1.25); i++; } yield .05; t+=.05; M.left=Math.max(0,dur-t); M.pulse=Math.max(0,M.pulse-.05*3); }
   return yield* twMoonFlood(T); }
 // the Death Sentence on a loop for the whole moon phase: two hovering scythes, 3-2-1, drop, drop, again
@@ -7300,7 +7300,7 @@ TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=grou
   else { Game.letterTo=.45; twCutin('omar','BLACK CRESCENT','Limit Break  ·  Requiem of the Dark Moon','#1a0030',2.4); Sound.sfx('gong'); Sound.sfx('void');
     twBark('omar',"The moon I ate? It was only the appetizer. Behold... the BLACK CRESCENT.",true);
     yield twMoveTo(T,c.x,A.z0+2.5,.8); T.scythe=1;
-    const moon=twBB(texBlackCrescent(),1,1), halo=twGlow(0x6a1aff,1); moon.userData.tw=1; moon.renderOrder=-1; const MN={s:.1,y:gy0+1};
+    const moon=twBB(texBlackCrescent(),1,1), halo=twGlow(0x6a1aff,1); halo.visible=false; /* black, not a purple glow */ moon.userData.tw=1; moon.renderOrder=-1; const MN={s:.1,y:gy0+1};
     twHz({upd(dt){ moon.position.set(c.x,MN.y,A.z0-.5); moon.scale.set(MN.s,MN.s,1); halo.position.copy(moon.position); halo.scale.setScalar(MN.s*1.8); halo.material.opacity=.35+.15*Math.sin(Game.time*3); return !MN.gone; }, kill(){ scene.remove(moon); scene.remove(halo); }});
     cineSet(c.x,gy0+.8,A.z1+2,c.x,gy0+4.5,A.z0); const rise={k:0}; twHz({upd(dt){ rise.k=Math.min(1,rise.k+dt*.6); MN.s=.1+rise.k*9; MN.y=gy0+1+rise.k*6.5; return rise.k<1; }});
     grade.uniforms.tint.value.set(.75,.7,1.05); grade.uniforms.sat.value=.7; Sound.sfx('choir'); shake(.6); yield 1.8; impactFrame([[2,2],[1,2]]); FX.flash=.5; grade.uniforms.flashCol.value.set(.6,.3,1); yield .5; Cam.cine=null;
@@ -7311,7 +7311,7 @@ TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=grou
     // 2) double flood: 5 seconds, then his moon flips and it runs again at once
     TW.moon.pl=null; TW.moon.total=0; twBark('omar',"Double moon. Double flood. Double the edge.",true); yield 1.6;
     yield* twMoonRound(T,OM_WAVE23,[.15],2,1); const prev=TW.moon.om; TW.moon.om=prev==='w'?'p':'w';
-    { const M=TW.moon; M.left=M.total=OM_WAVE23; M.pulse=1; Sound.sfx('gong'); twBig(M.om==='w'?'NOW WHITE':'NOW BLUE',{size:52,col:OM_MOON[M.om],y:UH*.24,dur:1}); let t=0, fired=false;
+    { const M=TW.moon; M.left=M.total=OM_WAVE23; M.pulse=1; Sound.sfx('gong'); twBig(M.om==='w'?'NOW RED':'NOW DARK PURPLE',{size:52,col:OM_MOON[M.om],y:UH*.24,dur:1}); let t=0, fired=false;
       twMoonWrongs(T,2,.45); twMoonRight(T,1.3); while(t<OM_WAVE23){ if(!fired&&t>=.15){ fired=true; twMoonBarrage(T,1.25); } yield .05; t+=.05; M.left=Math.max(0,OM_WAVE23-t); M.pulse=Math.max(0,M.pulse-.15); } yield* twMoonFlood(T); }
     yield .8; SL.stop=true; TW.moon=null;
     // the black crescent swells over the sky, and the dark pours out of it over the whole screen: into the Iai
@@ -7361,7 +7361,7 @@ function twRallySpawn(T,kind,delay){ const v=kind==='fast'?7:4.2, b=twBolt(T,{ki
 function twRallyBack(b){ const R=b.rally; R.n++;
   if(R.n>=4){ R.final=1; b.life=3; b.t=0; Game.dmgNums.push({x:b.x,y:b.y+1,z:b.z,n:'RALLY WON',t:0,big:true,col:'#ffd45a'}); Sound.sfx('beam'); shake(.3); FX.flash=Math.max(FX.flash,.15); grade.uniforms.flashCol.value.set(.6,.9,1); }
   else { b.life=30; b.t=0; Game.dmgNums.push({x:b.x,y:b.y+1,z:b.z,n:'RALLY '+R.n+'/3',t:0,big:true,col:'#ff8a9a'}); }
-  const T=R.T, v=R.final?30:Math.max(4.5,R.v), d=Math.hypot(T.x-b.x,T.z-b.z)||1; b.vx=(T.x-b.x)/d*v; b.vz=(T.z-b.z)/d*v; b.vy=0; }
+  const T=R.T, v=R.final?30:Math.max(4.5,R.v), d=Math.hypot(T.x-b.x,T.z-b.z)||1; b.vx=(T.x-b.x)/d*v; b.vz=(T.z-b.z)/d*v; b.vy=0; twRallyLook(b); }
 (function(){ const ub=updateBolts; updateBolts=function(dt){ if(TW.fight) for(const b of BOLTS){ const R=b.rally; if(!R||b.dead||!b.friendly) continue; const T=R.T;
       if(!T||T.gone||T.hp<=0||T.inv||T.state==='lc'){ b.dead=1; FX.burst(b.x,b.y,b.z,12,0xff2a3a,3,.25); continue; }
       if(T.hide&&!R.final) continue;
@@ -13211,8 +13211,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH='Oct 26: crescent Getsugas, Omar\'s ice melts, Caotan\'s cut-ins';
-const DBG_NEW=['omar:sekiro','omar:lc2','omar:orbs','omar:tear','duo:scytheRain','caotan:*'];
+const DBG_PATCH='Oct 26: red and dark purple moons, black Black Crescent, red rally scythes';
+const DBG_NEW=['omar:lc2','omar:scythes'];
 const DBG={on:false,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Grimmaw ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

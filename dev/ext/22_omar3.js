@@ -16,7 +16,7 @@ function twRallySpawn(T,kind,delay){ const v=kind==='fast'?7:4.2, b=twBolt(T,{ki
 function twRallyBack(b){ const R=b.rally; R.n++;
   if(R.n>=4){ R.final=1; b.life=3; b.t=0; Game.dmgNums.push({x:b.x,y:b.y+1,z:b.z,n:'RALLY WON',t:0,big:true,col:'#ffd45a'}); Sound.sfx('beam'); shake(.3); FX.flash=Math.max(FX.flash,.15); grade.uniforms.flashCol.value.set(.6,.9,1); }
   else { b.life=30; b.t=0; Game.dmgNums.push({x:b.x,y:b.y+1,z:b.z,n:'RALLY '+R.n+'/3',t:0,big:true,col:'#ff8a9a'}); }
-  const T=R.T, v=R.final?30:Math.max(4.5,R.v), d=Math.hypot(T.x-b.x,T.z-b.z)||1; b.vx=(T.x-b.x)/d*v; b.vz=(T.z-b.z)/d*v; b.vy=0; }
+  const T=R.T, v=R.final?30:Math.max(4.5,R.v), d=Math.hypot(T.x-b.x,T.z-b.z)||1; b.vx=(T.x-b.x)/d*v; b.vz=(T.z-b.z)/d*v; b.vy=0; twRallyLook(b); }
 (function(){ const ub=updateBolts; updateBolts=function(dt){ if(TW.fight) for(const b of BOLTS){ const R=b.rally; if(!R||b.dead||!b.friendly) continue; const T=R.T;
       if(!T||T.gone||T.hp<=0||T.inv||T.state==='lc'){ b.dead=1; FX.burst(b.x,b.y,b.z,12,0xff2a3a,3,.25); continue; }
       if(T.hide&&!R.final) continue;

@@ -117,6 +117,8 @@ s = patch(s, "yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); 
 s = patch(s, "['ATTACK','Getsuga Tenshou. Spam it.'],['HOLD ATTACK','Black Getsuga'],['JUMP','Twice as high. Hold to float in place.'],['BLOCK','Blade storm. Deflects every projectile.'],['DASH','Teleport. No cooldown.']",
   "['ATTACK','Three cuts: a slash, a double cut, a spin.'],[T?'GETSUGA BUTTON':'RIGHT CLICK','Getsuga Tenshou. Hold: Black Getsuga.'],['JUMP','Twice as high. Hold to ride a Getsuga.'],['PARRY','Attack right before a hit lands.'],['DASH','Teleport. No cooldown.']")
 s = patch(s, "b.big?7:4", "(b.big?7:4)*(b.mul||1)", 4)
+s = patch(s, "b.friendly?0x9fe0ff:0x7a2aff", "b.rally?0xff2a3a:b.friendly?0x9fe0ff:0x7a2aff")  # rally scythes stay red when you send them back
+s = patch(s, "if(b.friendly&&Math.random()<.8) FX.spawn(b.x,b.y,b.z,0,0,0,.3,0x9fe0ff,.25,0,true);", "if(b.friendly&&Math.random()<.8) FX.spawn(b.x,b.y,b.z,0,0,0,.3,b.rally?0xff2a3a:0x9fe0ff,.25,0,true);")
 s = patch(s, "nbDamage(!b.ali&&Game.flags.aliSword?7.5:.75)", "nbDamage((!b.ali&&Game.flags.aliSword?7.5:.75)*(b.mul||1))")  # Getsuga damage multiplier (Ali's alternating chain)
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
