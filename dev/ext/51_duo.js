@@ -48,7 +48,7 @@ const DUO={
       if(fo<=0){ fo=.36/sp; O.cast=.2; twAimBolt(O,'dagger',O.x,O.y+1.4,O.z,9*sp,rnd(-.1,.1),{col:0xb06aff}); }
       if(ph>=2&&!swapped&&tt>dur/2){ swapped=true; twBark('caotan',"SWITCH!",true); const cx2=O.x, cz2=O.z, ox2=C.x, oz2=C.z;
         FX.line(C.x,C.z,Math.atan2(cz2-C.z,cx2-C.x),Math.hypot(cx2-C.x,cz2-C.z),1.6,0xff6ab0,.5); FX.line(O.x,O.z,Math.atan2(oz2-O.z,ox2-O.x),Math.hypot(ox2-O.x,oz2-O.z),1.6,0xa04aff,.5); yield .5; tt+=.5;
-        Sound.sfx('dash'); twMoveTo(C,cx2,cz2,.35); twMoveTo(O,ox2,oz2,.35); const s={t:0,hit:false}; twHz({upd(dt2,play){ if(!play) return true; s.t+=dt2; const P2=Player;
+        Sound.sfx('dash'); twMoveTo(C,cx2,cz2,.35); twMoveTo(O,ox2,oz2,.35); const s={t:0,hit:false}; twHz({upd(dt2,play){ if(!play) return true; s.t+=dt2; const P2=Player; for(const T of [C,O]) twRushTell(T);
           for(const T of [C,O]) if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R){ if(twHitP(2,T.x,T.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ T.stun=Math.max(T.stun,1.2); }})!=='none') s.hit=true; } return s.t<.4; }}); a+=Math.PI; }
       yield dt; } yield .3; },
   *valentine(C,O,ph){ const sp=twSp(C); twBark('caotan',"Valentine's Funeral! I write the letters, he digs the graves!",true); const P=Player;

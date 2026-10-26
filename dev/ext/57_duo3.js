@@ -129,7 +129,7 @@ function* twDuoGlomp(C,sp,tell,K){ const F=TW.fight, p=twTsunFar(C); twBlink(C,p
   C.heartEyes=1; C.push=.3; C.glintT=.4; Sound.sfx('ting'); Sound.sfx('doki'); FX.line(C.x,C.z,a,d,2.6,0xff6ab0,tell); C.lockF=1; C.f=ux>0?1:-1; twBark('caotan',"Senpai GLOMP!",true);
   const from=Game.time+TW_STRICT.grace; yield tell;
   const s={t:0,res:null,dur:d/17}; Sound.sfx('dash'); C.parried=0;
-  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; C.x+=ux*17*dt; C.z+=uz*17*dt; const c=twClampXZ(C.x,C.z,.5); C.x=c.x; C.z=c.z; FX.spawn(C.x,C.y+1.4,C.z,0,0,0,.35,0xff8ac8,.6,0,true);
+  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; C.x+=ux*17*dt; C.z+=uz*17*dt; const c=twClampXZ(C.x,C.z,.5); C.x=c.x; C.z=c.z; twRushTell(C,Math.atan2(uz,ux)); FX.spawn(C.x,C.y+1.4,C.z,0,0,0,.35,0xff8ac8,.6,0,true);
     const P2=Player; if(!s.res&&Math.hypot(P2.x-C.x,P2.z-C.z)<TW_DASH_R&&Math.abs(P2.y-groundY(C.x,C.z))<2.4){
       const r=twStrictDo(from,()=>twHitP(0,C.x,C.z,{melee:true,heavy:true,win:TW_DASH_WIN,onParry:()=>{ C.parried=1; if(K) twComboTick(K); }})); if(r!=='none') s.res=r; }
     return s.t<s.dur&&!C.parried&&s.res!=='hit'; }});

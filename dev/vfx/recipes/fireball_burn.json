@@ -1,0 +1,85 @@
+{
+ "name": "fireball_burn",
+ "note": "flames licking around the charged fireball (a child sprite of the ball in 06c_pxvfx); loops",
+ "w": 64,
+ "h": 64,
+ "frames": 8,
+ "fps": 16,
+ "loop": true,
+ "seed": 12,
+ "outline": "outside",
+ "outlineColor": "#1a0004",
+ "pivot": [
+  0.5,
+  0.5
+ ],
+ "layers": [
+  {
+   "type": "flame",
+   "ramp": [
+    "#2a0006",
+    "#7a0010",
+    "#c0102a",
+    "#ff3a1a",
+    "#ff9a30",
+    "#ffe0a0"
+   ],
+   "w": 0.6,
+   "hgt": 1.45,
+   "y": 0.42,
+   "hollow": 0.93,
+   "flick": 0.55,
+   "rough": 0.8,
+   "speed": 1,
+   "gain": 0.95
+  },
+  {
+   "type": "flame",
+   "ramp": [
+    "#2a0006",
+    "#7a0010",
+    "#c0102a",
+    "#ff3a1a",
+    "#ff9a30",
+    "#ffe0a0"
+   ],
+   "w": 0.42,
+   "hgt": 1.25,
+   "y": 0.3,
+   "hollow": 0.9,
+   "flick": 0.6,
+   "speed": 2,
+   "gain": 0.6,
+   "note": "inner tongues"
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#2a0006",
+    "#7a0010",
+    "#c0102a",
+    "#ff3a1a",
+    "#ff9a30",
+    "#ffe0a0"
+   ],
+   "mode": "rise",
+   "count": 10,
+   "y": -0.2,
+   "areaX": 0.45,
+   "areaY": 0.35,
+   "speed": [
+    0.5,
+    1
+   ],
+   "life": [
+    0.4,
+    0.9
+   ],
+   "shape": "square",
+   "size": [
+    2,
+    1
+   ]
+  }
+ ]
+}

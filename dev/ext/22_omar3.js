@@ -109,7 +109,7 @@ function* twBHRush(T,BH,c,side,sp){ const P=Player, from=Game.time+TW_STRICT.gra
   let a=Math.atan2(P.z-T.z,P.x-T.x); const tell=.6/sp; let t=0, ln=null; T.lockF=1;
   while(t<tell){ const P2=Player; if(t<tell-.15) a=Math.atan2(P2.z-T.z,P2.x-T.x); T.f=Math.cos(a)>0?1:-1; if(!ln||t-ln>.1){ ln=t; FX.line(T.x,T.z,a,Math.hypot(P2.x-T.x,P2.z-T.z)+4,2.6,0xb06aff,.12); } yield .016; t+=.016; if(!BH.live){ T.hide=1; return; } }
   const s={t:0,hit:false,dur:(Math.hypot(Player.x-T.x,Player.z-T.z)+4)/20}; Sound.sfx('swing'); T.swing=1; T.parried=0;
-  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*20*dt; T.z+=Math.sin(a)*20*dt; const q=twClampXZ(T.x,T.z,.5); T.x=q.x; T.z=q.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0x2a0a3a,.6,0,false);
+  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*20*dt; T.z+=Math.sin(a)*20*dt; const q=twClampXZ(T.x,T.z,.5); T.x=q.x; T.z=q.z; if(!s.hit) twRushTell(T,a); FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0x2a0a3a,.6,0,false);
     const P2=Player; T.rushEta=s.hit?null:Game.time+twRealAhead(Math.max(0,(P2.x-T.x)*Math.cos(a)+(P2.z-T.z)*Math.sin(a)-TW_DASH_R)/20); // when it reaches you (the test bot reads this)
     if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const dash=P2.dash; P2.dash=0; if(P2.inv<5) P2.inv=0; // the black hole eats your i-frames
       const r=twStrictDo(from,()=>twHitP(2,T.x,T.z,{melee:true,heavy:true,win:TW_DASH_WIN,onParry:()=>{ T.parried=1; const dx=P2.x-c.x, dz=P2.z-c.z, d=Math.hypot(dx,dz)||1, w=twClampXZ(P2.x+dx/d*1.5,P2.z+dz/d*1.5,.3); P2.x=w.x; P2.z=w.z; }}));
@@ -160,7 +160,7 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
           if(c===act&&c.st!=='wait'&&!c.decided&&play){ if(prev&&prev.res) c.from=Math.max(c.from,prev.res+.15);
             for(let g=0;g<40;g++){ const p=twStrictFirst(c.from); if(!p) break; if(!inLine(c,P2)){ c.from=p.t; continue; } c.decided=true; if(twRealAhead(ahead(c,P2,now))+(now-p.t)>TW_STRICT.win){ twCloneGrabStart(S,cl,c); } break; }
             if(S.grab) return true; }
-          if(c.st==='dash'&&play){ c.x+=Math.cos(c.a)*vel*dt; c.z+=Math.sin(c.a)*vel*dt; c.d0+=vel*dt; if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
+          if(c.st==='dash'&&play){ c.x+=Math.cos(c.a)*vel*dt; c.z+=Math.sin(c.a)*vel*dt; c.d0+=vel*dt; if(!c.hit) twRushTell(c,c.a); if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
             if(!c.hit&&Math.hypot(P2.x-c.x,P2.z-c.z)<1.15&&Math.abs(P2.y-gy)<1.8){ const r=twStrictDo(c.from,()=>twHitP(2,c.x,c.z,{heavy:true,melee:true,onParry:()=>{ c.d0=99; Game.dmgNums.push({x:c.x,y:gy+3,z:c.z,n:'SHATTER',t:0,col:'#d0a0ff'}); }})); if(r!=='none'){ c.hit=true; c.res=now; } }
             if(!c.res&&c.d0>c.dist+1.2) c.res=now;
             if(c.d0>c.dist+6){ if(!c.res) c.res=now; FX.burst(c.x,gy+1.6,c.z,22,0x2a0a3a,4,.45,false); c.S.dispose(); c.gone=1; continue; } } } }

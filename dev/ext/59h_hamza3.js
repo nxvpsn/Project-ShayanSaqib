@@ -70,7 +70,7 @@ HZG.flop=function*(G,ph){ twBark('hamza',ph>=2?"DOUBLE FLOP. Bismillah.":"Belly 
 HZG.stampede=function*(G,ph){ const sp=hzgSp2(G), n=ph>=2?4:3; twBark('hamza',"STAMPEDE! Children, hold on to Daddy!",true);
   for(let k=0;k<n;k++){ const P=Player, a=Math.atan2(P.z-G.z,P.x-G.x), d=Math.min(18,Math.hypot(P.x-G.x,P.z-G.z)+4); FX.line(G.x,G.z,a,d,3.4,0xff3a5a,.6/sp); G.mouth=1; Sound.sfx('pigrumble'); yield .6/sp;
     Sound.sfx('dash'); Sound.sfx('pigroar'); const s={t:0,hit:false,dur:d/(20*sp),drop:ph>=2||k===1};
-    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; G.x+=Math.cos(a)*20*sp*dt; G.z+=Math.sin(a)*20*sp*dt; const c=twClampXZ(G.x,G.z,2); G.x=c.x; G.z=c.z; FX.spawn(G.x+rnd(-1,1),groundY(G.x,G.z)+.3,G.z+rnd(-1,1),rnd(-2,2),rnd(1,3),rnd(-2,2),.5,0xd8c0c8,.4,8,false);
+    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; G.x+=Math.cos(a)*20*sp*dt; G.z+=Math.sin(a)*20*sp*dt; const c=twClampXZ(G.x,G.z,2); G.x=c.x; G.z=c.z; if(!s.hit) twRushTell(G,a,1.6); FX.spawn(G.x+rnd(-1,1),groundY(G.x,G.z)+.3,G.z+rnd(-1,1),rnd(-2,2),rnd(1,3),rnd(-2,2),.5,0xd8c0c8,.4,8,false);
       const P2=Player; if(!s.hit&&Math.hypot(P2.x-G.x,P2.z-G.z)<2.3&&P2.y<G.y+2){ if(twHitP(3,G.x,G.z,{heavy:true,melee:true,onParry:()=>{ G.stun=Math.max(G.stun,1.4); Game.dmgNums.push({x:G.x,y:G.y+4,z:G.z,n:'STAGGERED',t:0,col:'#ffd45a'}); }})!=='none') s.hit=true; }
       if(s.drop&&s.t>s.dur*.5){ s.drop=false; hzgBaby(G.x,G.z,{vx:-Math.cos(a)*3+rnd(-2,2),vz:-Math.sin(a)*3+rnd(-2,2),vy:6}); Sound.sfx('oink'); } return s.t<s.dur; }});
     yield d/(20*sp)+.25; G.mouth=0; shake(.4); }

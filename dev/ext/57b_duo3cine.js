@@ -96,7 +96,7 @@ function* twDuoRush(O,sp){ const P=Player, from=Game.time+TW_STRICT.grace, a0=(P
   twBlink(O,p.x,p.z); O.hide=0; O.scythe=1; let a=Math.atan2(P.z-O.z,P.x-O.x); const tell=.6/sp; let t=0, ln=null; O.lockF=1;
   while(t<tell){ const P2=Player; if(t<tell-.15) a=Math.atan2(P2.z-O.z,P2.x-O.x); O.f=Math.cos(a)>0?1:-1; if(!ln||t-ln>.1){ ln=t; FX.line(O.x,O.z,a,Math.hypot(P2.x-O.x,P2.z-O.z)+4,2.6,0xb06aff,.12); } yield .016; t+=.016; }
   const s={t:0,hit:false,dur:(Math.hypot(Player.x-O.x,Player.z-O.z)+4)/20}; Sound.sfx('swing'); O.swing=1; O.parried=0;
-  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; O.x+=Math.cos(a)*20*dt; O.z+=Math.sin(a)*20*dt; const q=twClampXZ(O.x,O.z,.5); O.x=q.x; O.z=q.z; FX.spawn(O.x,O.y+1.4,O.z,0,0,0,.35,0x2a0a3a,.6,0,false);
+  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; O.x+=Math.cos(a)*20*dt; O.z+=Math.sin(a)*20*dt; const q=twClampXZ(O.x,O.z,.5); O.x=q.x; O.z=q.z; if(!s.hit) twRushTell(O,a); FX.spawn(O.x,O.y+1.4,O.z,0,0,0,.35,0x2a0a3a,.6,0,false);
     const P2=Player; if(!s.hit&&Math.hypot(P2.x-O.x,P2.z-O.z)<TW_DASH_R&&Math.abs(P2.y-groundY(O.x,O.z))<2.4){ s.hit=true; twStrictDo(from,()=>twHitP(2,O.x,O.z,{melee:true,heavy:true,win:TW_DASH_WIN,onParry:()=>{ O.parried=1; O.flash=.3; }})); }
     return s.t<s.dur&&!O.parried; }});
   let w=0; while(w<s.dur+.05&&!O.parried){ yield .016; w+=.016; } O.swing=0; O.lockF=0; if(O.parried) Sound.sfx('clash'); return O.parried; }

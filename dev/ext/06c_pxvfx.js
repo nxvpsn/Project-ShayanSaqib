@@ -30,7 +30,7 @@ function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols+(e
 // mirror a sheet left-right through its texture (a sprite's negative scale is ignored by three.js)
 function pxvFlip(e,f){ f=!!f; if(!!e.flip===f) return; e.flip=f; e.t.repeat.x=(f?-1:1)/e.A.cols; const i=e.f; e.f=-1; pxvFrame(e,i<0?0:i); }
 function pxvKill(e){ if(e.m.parent) e.m.parent.remove(e.m); try{ e.m.material.dispose(); e.t.dispose(); if(e.m.geometry&&e.m.isMesh) e.m.geometry.dispose(); }catch(x){} }
-function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
+function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } if(!e.noAim) pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
 function pxvStop(e){ const i=PXV.list.indexOf(e); if(i<0) return; PXV.list.splice(i,1); pxvKill(e); }
 function pxvClear(){ PXV.list.forEach(pxvKill); PXV.list.length=0; }
 (function(){ const fu=FX.update; FX.update=function(dt){ const r=fu.apply(this,arguments); try{ pxvUpdate(dt); }catch(e){ console.error('pxv',e); } return r; };
@@ -57,6 +57,10 @@ function pxvSlash(k,x,y,z,ang,n,size){ const e=pxvPlay(k,{x,y:y+.9,z,size,plane:
 // parryable melee hits that have no swing of their own (rushes, dashes, lunges, bites) get the same silver slash as they reach you
 function pxvMeleeTell(sx,sz){ if(!pxvOk('sh_slash')) return; const P=Player, t=Game.time; if(PXV_TELL.some(o=>t-o.t<.35&&Math.hypot(o.x-sx,o.z-sz)<2.2)) return;
   pxvSlash('sh_slash',sx,groundY(sx,sz),sz,Math.atan2(P.z-sz,P.x-sx),Math.random()<.5?1:0,4.5); }
+// parryable rushes and dashes: the silver slash all the way along the rush (1.3x, every .15s), not only when it reaches you.
+// Called from each rush's per-frame update; ang = the rush direction (or read from how far o moved since the last call); k scales it (Hamza 1.6x)
+function twRushTell(o,ang,k){ try{ if(!o||!pxvOk('sh_slash')) return; if(ang==null){ const dx=o.x-(o._rlx!=null?o._rlx:o.x), dz=o.z-(o._rlz!=null?o._rlz:o.z); o._rlx=o.x; o._rlz=o.z; if(dx*dx+dz*dz<1e-4) return; ang=Math.atan2(dz,dx); }
+    const t=Game.time; if(o._rtT!=null&&t-o._rtT<.15&&t>=o._rtT) return; o._rtT=t; o._rtN=(o._rtN||0)+1; pxvSlash('sh_slash',o.x,groundY(o.x,o.z),o.z,ang,o._rtN%2,4.5*1.3*(k||1)); }catch(e){ console.error('rush tell',e); } }
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ try{ if(opt&&opt.melee&&!opt.pierce&&!opt.unblockable&&sx!=null) pxvMeleeTell(sx,sz); }catch(e){ console.error('pxv tell',e); } return ph.apply(this,arguments); }; })();
 // Shayan's swing: the silver slash; ignited, it burns and a flame rides the sword along the swing
 (function(){ const sa=shArc; shArc=function(x,y,z,ang,n){ n=n|0; const ig=Player.ignite>0, k=ig?'sh_fslash':'sh_slash'; if(!pxvOk(k)) return sa.apply(this,arguments);
@@ -92,6 +96,10 @@ function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new T
 // ---------- Ali's teleport: he folds into a red-black seam, then bursts out where he lands ----------
 (function(){ const at=aliTeleport; aliTeleport=function(){ const P=Player, ox=P.x, oy=P.y, oz=P.z, r=at.apply(this,arguments);
     if(pxvOk('tp_out')){ pxvPlay('tp_out',{x:ox,y:oy+1.4,z:oz,size:3.4,depth:true}); pxvPlay('tp_in',{x:P.x,y:P.y+1.4,z:P.z,size:3.4,depth:true}); } return r; }; })();
+
+// ---------- the charged fireball burns: crimson flames lick around the ball as it flies (depth-tested, so the ball shows in the middle) ----------
+(function(){ const tf=twFireball; twFireball=function(big){ const n0=TW.fb.length, r=tf.apply(this,arguments); try{ const f=TW.fb[TW.fb.length-1];
+    if(big&&f&&TW.fb.length>n0&&f.g){ const e=pxvPlay('fireball_burn',{x:0,y:0,z:0,size:2.3,depth:true}); if(e){ f.g.add(e.m); e.m.position.set(0,.3,0); e.g=f.g; e.noAim=true; } } }catch(e){ console.error('fireball flames',e); } return r; }; })();
 
 // ---------- fireball explosions: tight and small (orange; the full charge's is deep crimson like the ball) ----------
 (function(){ const fh=twFireballHit; twFireballHit=function(f,x,y,z){ const k=f.big?'boom_big':'boom'; if(!pxvOk(k)) return fh.apply(this,arguments); pxvPlay(k,{x,y,z,size:f.big?3.2:1.5});

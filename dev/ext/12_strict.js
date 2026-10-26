@@ -31,7 +31,7 @@ TWK.caotan.tsun=function*(T,ph){ const sp=twSp(T); T.heartEyes=1; twBark('caotan
     while(Game.time<tEnd){ watch(); if(S.early) break; yield .016; }
     if(S.early){ yield* twTsunPunish(T); return; }
     const s={t:0,hit:false,dur:d/17}; Sound.sfx('dash'); T.parried=0; S.dash=true;
-    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=ux*17*dt; T.z+=uz*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xff8ac8,.6,0,true);
+    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=ux*17*dt; T.z+=uz*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; twRushTell(T,Math.atan2(uz,ux)); FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xff8ac8,.6,0,true);
       watch(); if(S.early) return false;
       const P2=Player; if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const r=twStrictDo(S.from,()=>twComboHit(T,2,T.x,T.z,{win:TW_DASH_WIN,onParry:()=>{ T.parried=1; }})); if(r!=='none') s.hit=true; }
       return s.t<s.dur&&!T.parried; }});

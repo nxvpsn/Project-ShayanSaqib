@@ -60,7 +60,7 @@ TWK.caotan.glint2=function*(T,ph){ const sp=twSp(T); yield* twGlint(T,2); twBark
 TWK.caotan.tsun=function*(T,ph){ const sp=twSp(T); T.heartEyes=1; twBark('caotan',"I-it's not like I WANTED to hit you! B-baka!!",true); Sound.sfx('doki');
   for(let i=0;i<3;i++){ const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x), d=Math.min(15,Math.hypot(P.x-T.x,P.z-T.z)+3.5); FX.line(T.x,T.z,a,d,1.5,0xff6ab0,.5/sp); T.lockF=1; T.f=Math.cos(a)>0?1:-1; yield .5/sp;
     const s={t:0,hit:false,dur:d/17}; Sound.sfx('dash'); T.parried=0;
-    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xff8ac8,.6,0,true);
+    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; twRushTell(T,a); FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xff8ac8,.6,0,true);
       const P2=Player; if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const r=twHitP(2,T.x,T.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ T.parried=1; T.stun=Math.max(T.stun,1.6); twBark('caotan',"Y-you parried me?! ...Kyaa!",true); }}); if(r!=='none') s.hit=true; }
       return s.t<s.dur&&!T.parried; }}); yield s.dur+.08; if(T.parried){ T.heartEyes=0; T.lockF=0; return; } }
   T.lockF=0; twBark('caotan',"*SLAP*",true); twBlast(T.x,T.z,2.4,.35,{col:0xff3a7a,dmg:3,shake:.5,h:.45}); twWave(T.x,T.z,{sp:8,max:9,col:0xff6ab0,delay:.35,r0:2.4}); /* the ring starts at the slap's edge, so one jump clears whichever reaches you */ yield .9; T.heartEyes=0; };
@@ -170,7 +170,7 @@ function twCaoPillowShot(T,a,v){ const m=twBB(texPillow(),.8,2.2), s={x:T.x,z:T.
 var TW_DASH_R=1.9, TW_DASH_WIN=.36;
 function* twGlomp(T,sp){ const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x), d=Math.min(14,Math.hypot(P.x-T.x,P.z-T.z)+3); twBark('caotan',"Senpai GLOMP!",true); FX.line(T.x,T.z,a,d,2.6,0xff6ab0,.55/sp); T.lockF=1; T.f=Math.cos(a)>0?1:-1; yield .55/sp;
   const s={t:0,hit:false,dur:d/17}; Sound.sfx('dash'); T.parried=0;
-  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xffd0ec,.6,0,true);
+  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; twRushTell(T,a); FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xffd0ec,.6,0,true);
     const P2=Player; if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const r=twHitP(2,T.x,T.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ T.parried=1; T.stun=Math.max(T.stun,1.4); twBark('caotan',"Rejected... at point blank range...",true); }}); if(r!=='none') s.hit=true; }
     return s.t<s.dur&&!T.parried; }}); yield s.dur+.1; T.lockF=0; }
 

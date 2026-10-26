@@ -26,7 +26,7 @@ TWK.caotan.tsun=function*(T,ph){ const sp=twSp(T); T.heartEyes=1; twBark('caotan
   for(let i=0;i<3;i++){ const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x), d=Math.min(15,Math.hypot(P.x-T.x,P.z-T.z)+3.5), tell=(i?.45:.6)/sp;
     FX.line(T.x,T.z,a,d,2.6,0xff6ab0,tell); T.lockF=1; T.f=Math.cos(a)>0?1:-1; yield tell;
     const s={t:0,hit:false,dur:d/17}; Sound.sfx('dash'); T.parried=0;
-    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xff8ac8,.6,0,true);
+    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; twRushTell(T,a); FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xff8ac8,.6,0,true);
       const P2=Player; if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const r=twComboHit(T,2,T.x,T.z,{win:TW_DASH_WIN,onParry:()=>{ T.parried=1; }}); if(r!=='none') s.hit=true; }
       return s.t<s.dur&&!T.parried; }}); yield s.dur+.1;
     if(T.parried&&i<2) twBark('caotan',["Hmph! Lucky!","AGAIN?! Stop deflecting my feelings!"][i],true); }

@@ -47,7 +47,7 @@ HZG.combo=function*(G,ph){ const C={n:3,par:0}; twBark('hamza',ph>=2?"Big Back C
   for(let i=0;i<3;i++){ const P=Player, a=Math.atan2(G.z-P.z,G.x-P.x)+(i===1?.9:i===2?-.9:0), p=twClampXZ(P.x+Math.cos(a)*2.6,P.z+Math.sin(a)*2.6,2);
     G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:.28}; Sound.sfx('dash'); yield .3; const tell=[.55,.42,.36][i]/(ph>=2?1.12:1), aa=Math.atan2(Player.z-G.z,Player.x-G.x);
     G.mouth=i===1?1:.4; FX.line(G.x,G.z,aa,3.2,3,0xff3a5a,tell); Sound.sfx(i===1?'pigrumble':'oink'); yield tell;
-    Sound.sfx(i===1?'chomp':'slam'); shake(.4); FX.burst(G.x,G.y+1,G.z,20,0xffb0c8,5,.3); let par=false; const P2=Player;
+    Sound.sfx(i===1?'chomp':'slam'); shake(.4); FX.burst(G.x,G.y+1,G.z,20,0xffb0c8,5,.3); FX.arc(G.x,groundY(G.x,G.z),G.z,aa,i,true); let par=false; const P2=Player;
     if(Math.hypot(P2.x-G.x,P2.z-G.z)<3.4&&Math.abs(P2.y-G.y)<2.6){ twHitP(3,G.x,G.z,{heavy:true,melee:true,onParry:()=>{ par=true; }}); if(par) twComboTick(C); }
     G.mouth=0; yield .4; }
   if(C.par>=3){ G.stun=Math.max(G.stun,3.6); twComboBroken(G.x,G.z); twBark('hamza',"...Hamza is sleepy now. Hamza takes a nap. Do not touch Hamza.",true); } else yield .3; };

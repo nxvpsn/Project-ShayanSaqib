@@ -59,7 +59,7 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
   twHz({upd(dt,play){ let alive=false; for(const c of cl){ if(c.gone) continue; alive=true; if(play) c.t+=dt; const gy=groundY(c.x,c.z), P2=Player;
       if(c.st==='wait'&&c.t>=0){ c.st='tell'; c.a=Math.atan2(P2.z-c.z,P2.x-c.x); FX.line(c.x,c.z,c.a,15,1.2,0xa04aff,.55/sp); Sound.sfx('charge'); }
       else if(c.st==='tell'&&c.t>.55/sp){ c.st='dash'; Sound.sfx('dash'); }
-      else if(c.st==='dash'&&play){ const s=18*sp; c.x+=Math.cos(c.a)*s*dt; c.z+=Math.sin(c.a)*s*dt; c.d0+=s*dt; if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
+      else if(c.st==='dash'&&play){ const s=18*sp; c.x+=Math.cos(c.a)*s*dt; c.z+=Math.sin(c.a)*s*dt; if(!c.hit) twRushTell(c,c.a); c.d0+=s*dt; if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
         if(!c.hit&&Math.hypot(P2.x-c.x,P2.z-c.z)<1.15&&Math.abs(P2.y-gy)<1.8){ const r=twHitP(2,c.x,c.z,{heavy:true,melee:true,onParry:()=>{ c.d0=99; Game.dmgNums.push({x:c.x,y:gy+3,z:c.z,n:'SHATTER',t:0,col:'#d0a0ff'}); }}); if(r!=='none') c.hit=true; }
         if(c.d0>15){ FX.burst(c.x,gy+1.6,c.z,22,0x2a0a3a,4,.45,false); c.S.dispose(); c.gone=1; continue; } }
       c.S.draw((cv,cx,by)=>drawOmarBoss(cv,cx,by,Math.cos(c.a)>0?1:-1,{t:c.t+3,scythe:1,swing:c.st==='dash'?1:0,cast:c.st==='tell'?1:0,flash:0,form:2})); c.S.place(c.x,gy+1.1,c.z,gy); }
