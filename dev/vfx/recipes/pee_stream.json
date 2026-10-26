@@ -1,0 +1,48 @@
+{
+ "note": "Hamza's golden arc onto the drill: spray from the left edge to the right; stretched between Hamza and the drill",
+ "w": 64,
+ "h": 32,
+ "frames": 6,
+ "fps": 18,
+ "loop": true,
+ "seed": 2,
+ "outline": "outside",
+ "outlineColor": "#6a4a00",
+ "pivot": [
+  0.5,
+  0.5
+ ],
+ "layers": [
+  {
+   "type": "particles",
+   "ramp": [
+    "#8a6a00",
+    "#e0b010",
+    "#ffe040",
+    "#fff6a0"
+   ],
+   "mode": "spray",
+   "count": 40,
+   "x": -1.85,
+   "y": -0.6,
+   "dir": -8,
+   "spread": 6,
+   "speed": [
+    3.4,
+    3.9
+   ],
+   "gravity": 3.2,
+   "life": [
+    0.6,
+    0.9
+   ],
+   "shape": "drop",
+   "size": [
+    2,
+    2
+   ],
+   "drag": 0
+  }
+ ],
+ "name": "pee_stream"
+}

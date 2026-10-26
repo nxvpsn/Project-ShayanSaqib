@@ -1,0 +1,44 @@
+{
+ "note": "Hamza's pee splashing off the spinning drill",
+ "w": 48,
+ "h": 48,
+ "frames": 6,
+ "fps": 18,
+ "loop": true,
+ "seed": 6,
+ "outline": "outside",
+ "outlineColor": "#6a4a00",
+ "pivot": [
+  0.5,
+  0.5
+ ],
+ "layers": [
+  {
+   "type": "particles",
+   "ramp": [
+    "#8a6a00",
+    "#e0b010",
+    "#ffe040",
+    "#fff6a0"
+   ],
+   "mode": "burst",
+   "count": 14,
+   "speed": [
+    1.2,
+    2.4
+   ],
+   "gravity": 3,
+   "life": [
+    0.4,
+    0.8
+   ],
+   "shape": "drop",
+   "size": [
+    2,
+    1
+   ],
+   "emit": 1
+  }
+ ],
+ "name": "pee_splash"
+}

@@ -1,0 +1,44 @@
+{
+ "note": "Heavenly Drill impact crater: glowing cracks on the ground (decal)",
+ "w": 96,
+ "h": 96,
+ "frames": 16,
+ "fps": 16,
+ "seed": 8,
+ "outline": "none",
+ "layers": [
+  {
+   "type": "cracks",
+   "ramp": [
+    "#1a0608",
+    "#5a0a0a",
+    "#c0200a",
+    "#ff6a10",
+    "#ffc040",
+    "#fff0c0"
+   ],
+   "count": 9,
+   "len": 0.95,
+   "squash": 1,
+   "grow": 0.15,
+   "fadeStart": 0.5
+  },
+  {
+   "type": "ring",
+   "ramp": [
+    "#1a0608",
+    "#5a0a0a",
+    "#c0200a",
+    "#ff6a10"
+   ],
+   "r0": 0.1,
+   "r1": 0.5,
+   "th": 0.25,
+   "breakup": 0.4,
+   "inner": 0.4,
+   "t1": 0.9,
+   "fade": 0.5
+  }
+ ],
+ "name": "drill_crater"
+}

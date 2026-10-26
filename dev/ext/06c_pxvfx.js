@@ -3,8 +3,8 @@
 // skill; python3 vfx/build_vfx.py) into sprite sheets in img/vfx, played here as camera-facing sprites
 // (or ground decals). Every hook falls back to the old effect until its sheet has loaded.
 // Replaced: Shayan's basic slash (a silver arc on the original swing's plane and size; burning, with flames
-// riding the sword, while ignited), Shayan's Getsuga Tenshou (black blade, red border), other fighters' swings
-// (FX.arc: steel, or a heavy pink arc), hit sparks (FX.spark), ground shockwaves (FX.ring), quick cuts (FX.cut),
+// riding the sword, while ignited) and, as the same silver slash, every parryable melee attack (FX.arc swings,
+// and melee hits without a swing: rushes, dashes, lunges), Shayan's Getsuga Tenshou (black blade, red border), hit sparks (FX.spark), ground shockwaves (FX.ring), quick cuts (FX.cut),
 // the shared crescent texture (CRESC), parries (blue, red for Ali's guard), Ali's teleport, fireball explosions.
 // Hits, clashes and the basic slash are kept small on purpose: readability first.
 // Untouched on purpose: Judgement Cut (the slash pass and twGash), the black hole, Shayan's dash trail,
@@ -14,19 +14,21 @@ const PXV={tex:{},ready:{},list:[]};
 function pxvLegacy(){ return !!Game.boss; }
 (function(){ for(const n in PXV_ATLAS){ try{ const t=new THREE.TextureLoader().load('img/vfx/'+n+'.png',()=>{ PXV.ready[n]=1; if(n==='cresc') pxvCresc(); });
     t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; PXV.tex[n]=t; }catch(e){} } })();
-function pxvOk(n){ return !!(PXV.ready[n]&&PXV.tex[n]&&PXV_ATLAS[n])&&!pxvLegacy(); }
-// play a sheet. o: {x,y,z, size (world height), rot (screen radians, CCW), flip, ground, groundRot, plane (a mesh the caller turns), op, color, add, speed, dur, depth}
-function pxvPlay(n,o){ if(!pxvOk(n)) return null; const A=PXV_ATLAS[n], t=PXV.tex[n].clone(); t.needsUpdate=true; t.repeat.set(1/A.cols,1); o=o||{};
+function pxvRdy(n){ return !!(PXV.ready[n]&&PXV.tex[n]&&PXV_ATLAS[n]); }
+function pxvOk(n){ return pxvRdy(n)&&!pxvLegacy(); }
+// play a sheet. o: {x,y,z, size (world height), rot (screen radians, CCW), flip, ground, groundRot, plane (a mesh the caller turns), op, color, add, speed, dur, depth,
+//   fade (seconds: fade out and die, frozen on frame o.frame), any (play even while Grimmaw is on the field)}
+function pxvPlay(n,o){ if(!(o&&o.any?pxvRdy(n):pxvOk(n))) return null; const A=PXV_ATLAS[n], t=PXV.tex[n].clone(); t.needsUpdate=true; t.repeat.set(1/A.cols,1); o=o||{};
   const mo={map:t,transparent:true,depthWrite:false,depthTest:o.depth===true||!!o.ground||!!o.plane,opacity:o.op==null?1:o.op,color:o.color==null?0xffffff:o.color,fog:false,blending:o.add?THREE.AdditiveBlending:THREE.NormalBlending};
   let m; const sz=o.size||2, ar=A.w/A.h;
   if(o.plane){ m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial(Object.assign(mo,{side:THREE.DoubleSide}))); m.scale.set(sz*ar,sz,1); }
   else if(o.ground){ m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial(Object.assign(mo,{side:THREE.DoubleSide}))); m.rotation.set(-Math.PI/2,0,o.groundRot||0); m.scale.set(sz*ar,sz,1); }
   else { m=new THREE.Sprite(new THREE.SpriteMaterial(Object.assign(mo,{rotation:o.rot||0}))); m.scale.set(sz*ar*(o.flip?-1:1),sz,1); if(A.pivot) m.center.set(A.pivot[0],1-A.pivot[1]); }
   m.position.set(o.x,o.y,o.z); m.renderOrder=o.ro||8; scene.add(m);
-  const e={m,t,A,f:-1,time:0,sp:(o.dur?(A.n/A.fps)/o.dur:1)*(o.speed||1)}; pxvFrame(e,0); PXV.list.push(e); return e; }
+  const e={m,t,A,f:-1,time:0,sp:(o.dur?(A.n/A.fps)/o.dur:1)*(o.speed||1),op:o.op==null?1:o.op}; if(o.fade){ e.fade=o.fade; e.age=0; e.sp=0; e.time=(o.frame||0)/A.fps; } pxvFrame(e,Math.floor(e.time*A.fps)%A.n); PXV.list.push(e); return e; }
 function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols)/e.A.cols,0); }
 function pxvKill(e){ if(e.m.parent) e.m.parent.remove(e.m); try{ e.m.material.dispose(); e.t.dispose(); if(e.m.geometry&&e.m.isMesh) e.m.geometry.dispose(); }catch(x){} }
-function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
+function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
 function pxvStop(e){ const i=PXV.list.indexOf(e); if(i<0) return; PXV.list.splice(i,1); pxvKill(e); }
 function pxvClear(){ PXV.list.forEach(pxvKill); PXV.list.length=0; }
 (function(){ const fu=FX.update; FX.update=function(dt){ const r=fu.apply(this,arguments); try{ pxvUpdate(dt); }catch(e){ console.error('pxv',e); } return r; };
@@ -41,15 +43,22 @@ function pxvAim(x,y,z,ang){ const a=toScreen(x,y,z), b=toScreen(x+Math.cos(ang),
     for(let i=0;i<3;i++){ const a=Math.random()*6.283; this.spawn(x,y,z,Math.cos(a)*rnd(3,5),rnd(0,3),Math.sin(a)*rnd(3,5),.18,i%2?0xfff6c8:0xffc04a,.12,4,true,3); } };
   const rg=FX.ring; FX.ring=function(x,y,z,c,r,life){ if(!pxvOk('ring')) return rg.apply(this,arguments);
     pxvPlay('ring',{x,y:y+.06,z,ground:true,size:(r||3)*2.08,color:new THREE.Color(c||'#fff'),add:true,dur:life||.5,groundRot:rnd(0,6.28)}); };
-  const ar=FX.arc; FX.arc=function(x,y,z,ang,n,big){ const k=big?'bigarc':'arc'; if(!pxvOk(k)) return ar.apply(this,arguments); const d=big?1.1:.9, cx=x+Math.cos(ang)*d, cz=z+Math.sin(ang)*d, s=pxvAim(cx,y+.9,cz,ang);
-    pxvPlay(k,{x:cx,y:y+.95,z:cz,size:big?3.9:2.9,rot:s.rot+(n===1?.35:n===2?-.35:0),flip:s.flip}); };
+  // every melee swing (enemies, allies, Ali) is Shayan's silver slash: a silver slash always means "parry this"
+  const ar=FX.arc; FX.arc=function(x,y,z,ang,n,big){ if(!pxvOk('sh_slash')) return ar.apply(this,arguments); pxvSlash('sh_slash',x,y,z,ang,n|0,big?5.6:4.5); };
   const ct=FX.cut; FX.cut=function(x,y,z){ if(!pxvOk('cut')) return ct.apply(this,arguments); pxvPlay('cut',{x,y,z,size:2.2,rot:rnd(-1.2,1.2),flip:Math.random()<.5}); }; })();
 
-// ---------- Shayan's basic slash: a plain silver arc, same plane and size as the original swing (slightly see-through) ----------
-// ignited: the burning sheet, a flame sprite riding the sword (the arc's leading edge) and flames pouring off it
+// ---------- the silver slash: Shayan's basic attack, and every parryable melee attack in the game ----------
+// laid on the original swing's plane (ring 1.0..2.08, tilted per combo step, mirrored for the rising swing), slightly see-through
+const PXV_TELL=[]; // recent slashes (x,z,time): a melee hit right after one doesn't draw a second
+function pxvSlash(k,x,y,z,ang,n,size){ const e=pxvPlay(k,{x,y:y+.9,z,size,plane:true,op:.82}); if(!e) return null; const m=e.m;
+  m.rotation.x=-Math.PI/2+(n===1?.25:n===2?-.25:0); m.rotation.z=-ang; if(n===1) m.scale.y*=-1; PXV_TELL.push({x,z,t:Game.time}); if(PXV_TELL.length>16) PXV_TELL.shift(); return e; }
+// parryable melee hits that have no swing of their own (rushes, dashes, lunges, bites) get the same silver slash as they reach you
+function pxvMeleeTell(sx,sz){ if(!pxvOk('sh_slash')) return; const P=Player, t=Game.time; if(PXV_TELL.some(o=>t-o.t<.35&&Math.hypot(o.x-sx,o.z-sz)<2.2)) return;
+  pxvSlash('sh_slash',sx,groundY(sx,sz),sz,Math.atan2(P.z-sz,P.x-sx),Math.random()<.5?1:0,4.5); }
+(function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ try{ if(opt&&opt.melee&&!opt.pierce&&!opt.unblockable&&sx!=null) pxvMeleeTell(sx,sz); }catch(e){ console.error('pxv tell',e); } return ph.apply(this,arguments); }; })();
+// Shayan's swing: the silver slash; ignited, it burns and a flame rides the sword along the swing
 (function(){ const sa=shArc; shArc=function(x,y,z,ang,n){ n=n|0; const ig=Player.ignite>0, k=ig?'sh_fslash':'sh_slash'; if(!pxvOk(k)) return sa.apply(this,arguments);
-    const e=pxvPlay(k,{x,y:y+.9,z,size:4.5,plane:true,op:.82}), m=e.m, dir=n===1?-1:1, th=SH_SL.TH;
-    m.rotation.x=-Math.PI/2+(n===1?.25:n===2?-.25:0); m.rotation.z=-ang; if(dir<0) m.scale.y*=-1;
+    const e=pxvSlash(k,x,y,z,ang,n,4.5), m=e.m, th=SH_SL.TH;
     if(!ig) return; const fl=pxvPlay('swordfire',{x,y:y+.9,z,size:1.5}), k2={t:0}, v=new THREE.Vector3(), T=.24;
     Game.fxUpd.push(dt=>{ try{ k2.t+=dt; const p=Math.min(1,k2.t/T), h=1-(1-p)*(1-p), a=-th/2+h*th; m.updateMatrixWorld(); /* local angle; the mirror (scale.y) flips it for the rising swing */
         v.set(Math.cos(a)*1.75/4.5,Math.sin(a)*1.75/4.5,0); m.localToWorld(v); if(fl) fl.m.position.set(v.x,v.y-.1,v.z);

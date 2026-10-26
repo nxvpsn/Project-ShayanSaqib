@@ -1,0 +1,83 @@
+{
+ "note": "Heavenly Drill: spinning fire sheath around the 3D drill (tip at the bottom). Played behind the cone's front face (depth-tested) so it shows around its silhouette.",
+ "w": 64,
+ "h": 128,
+ "frames": 12,
+ "fps": 24,
+ "loop": true,
+ "seed": 3,
+ "outline": "none",
+ "pivot": [
+  0.5,
+  0.5
+ ],
+ "layers": [
+  {
+   "type": "tornado",
+   "ramp": [
+    "#1a0608",
+    "#5a0a0a",
+    "#c0200a",
+    "#ff6a10",
+    "#ffc040",
+    "#fff0c0"
+   ],
+   "w0": 0.06,
+   "w1": 0.98,
+   "hgt": 3.7,
+   "y": 1.85,
+   "twist": 4,
+   "spin": 2,
+   "sway": 0.03,
+   "rough": 0.6,
+   "gain": 0.85
+  },
+  {
+   "type": "tornado",
+   "ramp": [
+    "#1a0608",
+    "#3a0606",
+    "#7a1008"
+   ],
+   "w0": 0.1,
+   "w1": 1.0,
+   "hgt": 3.7,
+   "y": 1.85,
+   "twist": 3,
+   "spin": 1,
+   "sway": 0.02,
+   "rough": 0.7,
+   "gain": 0.6,
+   "blend": "under",
+   "note": "dark sheath under the fire bands"
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#1a0608",
+    "#5a0a0a",
+    "#c0200a",
+    "#ff6a10",
+    "#ffc040",
+    "#fff0c0"
+   ],
+   "mode": "orbit",
+   "count": 14,
+   "orbitR": 0.7,
+   "turns": 2,
+   "y": 0.2,
+   "areaY": 1.5,
+   "life": [
+    0.4,
+    0.9
+   ],
+   "shape": "square",
+   "size": [
+    2,
+    1
+   ],
+   "note": "embers circling the drill"
+  }
+ ],
+ "name": "drill_aura"
+}
