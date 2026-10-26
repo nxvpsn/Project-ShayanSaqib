@@ -45,9 +45,9 @@ TWK.omar.scythes=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark(
 // ---------- Reap: teleports behind you on a steady beat, timed parries ----------
 // Phase II+: three reaps, same rhythm.
 TWK.omar.reap=function*(T,ph){ const sp=twSp(T), n=ph>=2?3:2; twBark('omar',ph>=2?"Reap. Reap. And... REAP.":"Behind you. Always behind you.");
-  for(let i=0;i<n;i++){ const from=Game.time+TW_STRICT.grace, P=Player, a=(P.ang||0)+Math.PI+rnd(-.6,.6), p=twClampXZ(P.x+Math.cos(a)*2.1,P.z+Math.sin(a)*2.1,.6); FX.marker(p.x,p.z,1,0x8a3aff,.45/sp);
+  for(let i=0;i<n;i++){ const from=Game.time+TW_STRICT.grace, P=Player, a=(P.ang||0)+Math.PI+rnd(-.6,.6), p=twClampXZ(P.x+Math.cos(a)*2.1,P.z+Math.sin(a)*2.1,.6); const mk=FX.marker(p.x,p.z,1,0x8a3aff,.45/sp); if(mk&&mk.m) mk.m.userData.iceL=.08; /* extra dark on Omar's ice */
     FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false); T.hide=1; Sound.sfx('dash'); yield .4/sp; T.x=p.x; T.z=p.z; T.y=groundY(p.x,p.z)+T.hy; T.hide=0; FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false);
-    T.scythe=1; T.swing=0; const P2=Player, aa=Math.atan2(P2.z-T.z,P2.x-T.x), tell=.45/sp; T.lockF=1; T.f=Math.cos(aa)>0?1:-1; T.parried=0; FX.line(T.x,T.z,aa,2.8,2.6,0xb06aff,tell);
+    T.scythe=1; T.swing=0; const P2=Player, aa=Math.atan2(P2.z-T.z,P2.x-T.x), tell=.45/sp; T.lockF=1; T.f=Math.cos(aa)>0?1:-1; T.parried=0; { const ln=FX.line(T.x,T.z,aa,2.8,2.6,0xb06aff,tell); if(ln&&ln.m) ln.m.userData.iceL=.08; }
     yield tell;
     T.swing=1; Sound.sfx('swing'); FX.arc(T.x,groundY(T.x,T.z),T.z,aa,0,true); twStrictDo(from,()=>twReapHit(T.x,T.z,aa,2.8,T)); yield .32/sp; T.lockF=0; T.scythe=0; if(T.parried) return; }
   yield .5; };

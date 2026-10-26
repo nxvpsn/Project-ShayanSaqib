@@ -55,7 +55,7 @@ const PT_DRAW={
     if(old){ P(16,12,3,12,'#d8d8e0'); P(38,14,3,10,'#d8d8e0'); P(18,32,3,1,'#c88a7a'); P(35,32,3,1,'#c88a7a'); } },
   ali(c,ex,op,old){ const P=ptP(c), A=AC2;
     ptBody(c,A.haori,'#100e18',A.haoriL); ptPoly(c,[[22,42],[34,42],[31,56],[25,56]],A.inner); P(26,42,4,8,A.skinS);
-    P(4,40,14,8,A.scarf); P(38,40,14,7,A.scarf); P(6,46,8,3,A.scarfD); P(40,45,10,2,A.scarfD); P(8,40,6,1,A.scarfH);
+    /* lamellar shoulder plates (the sprite model's armour) */ for(const [x0,w] of [[2,16],[38,16]]){ for(let k=0;k<3;k++){ P(x0+(x0<20?k:0),41+k*4,w-k,4,k%2?'#3a3e4a':'#4a4f5c'); P(x0+(x0<20?k:0),44+k*4,w-k,1,'#b8924a'); } P(x0+1,41,w-4,1,'#7a8090'); }
     P(26,30,4,12,A.skinS); ptHead(c,28,30,11,12,A.skin,A.skinS,A.skinH); P(18,36,20,5,A.skinS);
     for(let i=0;i<10;i++) P(19+i*2,38+(i%2),1,1,'#3a2a20');
     P(15,18,26,8,A.hair); P(13,22,4,16,A.hair); P(39,22,4,10,A.hair); P(10,26,4,10,A.hair); P(8,32,3,8,A.hair2);

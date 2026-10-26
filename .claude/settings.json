@@ -12,20 +12,13 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR/dev\" && bash setup.sh >/tmp/moonsinger-setup.log 2>&1 && echo 'dev setup done (harness + build OK)' || echo 'dev setup failed: see /tmp/moonsinger-setup.log'", "timeout": 300 }
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR/dev\" && bash setup.sh >/tmp/moonsinger-setup.log 2>&1 && echo 'dev setup done (harness + build OK)' || echo 'dev setup failed: see /tmp/moonsinger-setup.log'",
+            "timeout": 300
+          }
         ]
       }
     ]
-  },
-  "extraKnownMarketplaces": {
-    "awesome-gamedev-agent-skills": {
-      "source": {
-        "source": "github",
-        "repo": "gamedev-skills/awesome-gamedev-agent-skills"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "gamedev@awesome-gamedev-agent-skills": true
   }
 }

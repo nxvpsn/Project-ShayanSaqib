@@ -2,7 +2,7 @@
 // THE TWINS' OWN TITLE DROPS AND ARENAS (solo fights; the duo and everyone else keep the Evangelion cards)
 // - Caotan: his phase titles use the cut-in card (twCutin), held ~2.6s so they can be read.
 //   Domain Expansion: Unlimited Cum Works. After the intro dialogue he spins, white goo splats spread until the whole
-//   field is covered, then his hand wipes the screen and the arena is a round stained-glass mural of Hikari-chan
+//   field is covered while splats pile up on the screen until it is white (no second cover), then his pixel hand wipes it and the arena is a round stained-glass mural of Hikari-chan
 //   (Dive to the Heart style, in a dark night palette so his white attacks read on it), as wide as the square arena, floating in the dark. The fight is kept inside the circle.
 // - Omar: Zelda boss titles (subtitle + name panning across the lower screen and fading, ornament lines extending,
 //   the camera drifting) and his health bar extends from empty when the phase starts.
@@ -103,20 +103,28 @@ function twMuralTex(){ if(TWT.muralTex) return TWT.muralTex; const S=768, C=S/2,
       const e=Math.sqrt(d2)-Math.sqrt(d1); if(e<1.7){ d[i]=6; d[i+1]=4; d[i+2]=12; continue; } const f=.86+hs(best,7,3)*.24+(e<4?.08:0); d[i]=Math.min(255,d[i]*f); d[i+1]=Math.min(255,d[i+1]*f); d[i+2]=Math.min(255,d[i+2]*f); }
     c.putImageData(id,0,0); }catch(e){}
   const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return TWT.muralTex=t; }
-// the screen-filling goo for the wipe, and Caotan's hand
-function twGooCanvas(){ if(TWT.gooCv) return TWT.gooCv; const cv=document.createElement('canvas'); cv.width=UW; cv.height=UH; const c=cv.getContext('2d');
-  try{ c.fillStyle='#f3f1f8'; c.fillRect(0,0,UW,UH); for(let i=0;i<160;i++){ const x=twP5Rand(i)*UW, y=twP5Rand(i+.5)*UH, r=20+twP5Rand(i+.7)*90; c.fillStyle=['#e6e3ef','#fbfaff','#dcd9e8','#3e4566'][i%4]; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); }
-    for(let i=0;i<40;i++){ const x=twP5Rand(i+3.3)*UW, y=twP5Rand(i+4.4)*UH; c.fillStyle='rgba(255,255,255,.95)'; c.beginPath(); c.ellipse(x,y,10+twP5Rand(i)*16,5+twP5Rand(i+1)*7,-.5,0,7); c.fill(); } }catch(e){}
-  return TWT.gooCv=cv; }
-function twDrawHand(x,y,s){ D.save(); D.translate(x,y); D.scale(s,s); D.rotate(-.12); D.fillStyle='#f0c8a8'; D.strokeStyle='#3a2018'; D.lineWidth=6;
-  const f=(fx,fy,w,h)=>{ D.beginPath(); D.ellipse(fx,fy,w,h,0,0,7); D.fill(); D.stroke(); };
-  f(-70,-120,22,70); f(-24,-150,24,86); f(24,-140,24,80); f(66,-105,21,62); D.beginPath(); D.ellipse(0,20,92,110,0,0,7); D.fill(); D.stroke(); f(-108,10,22,55);
-  D.fillStyle='#f0c8a8'; D.fillRect(-60,40,120,200); D.fillStyle='#3e4566'; D.fillRect(-66,150,132,120); D.restore(); }
-function twDomFrame(){ const M=TWT.dom; if(!M) return; const cv=twGooCanvas();
-  if(M.mode==='cover'){ M.k=Math.min(1,M.k+1/60/.35); D.save(); D.globalAlpha=M.k; D.drawImage(cv,0,0); D.restore(); return; }
-  if(M.mode==='wipe'){ M.t+=1/60; const u=Math.min(1,M.t/1.05), hx=-260+(UW+520)*(u*u*(3-2*u)); if(u>=1){ TWT.dom=null; return; }
-    D.save(); D.beginPath(); D.moveTo(hx,0); for(let y=0;y<=UH;y+=30) D.lineTo(hx+Math.sin(y*.05+M.t*9)*22+30,y); D.lineTo(UW,UH); D.lineTo(UW,0); D.closePath(); D.clip(); D.drawImage(cv,0,0); D.restore();
-    for(let i=0;i<6;i++){ D.fillStyle='rgba(243,241,248,.9)'; D.beginPath(); D.arc(hx-20-i*24,UH*twP5Rand(i+M.t)*1,8+i,0,7); D.fill(); } twDrawHand(hx-40,UH*.62,1.55); } }
+// the splats that pile up on the screen (drawn at 1/4 resolution, so they are pixelly), and Caotan's pixel hand
+function twSplatCv(){ if(!TWT.spl){ const w=Math.ceil(UW/4), h=Math.ceil(UH/4), cv=document.createElement('canvas'); cv.width=w; cv.height=h; TWT.spl={cv,c:cv.getContext('2d'),w,h}; } return TWT.spl; }
+function twScreenSplat(S,x,y,r){ const c=S.c, blob=(bx,by,br,col)=>{ c.fillStyle=col; c.beginPath(); c.arc(bx,by,Math.max(0,br),0,7); c.fill(); };
+  const drops=[]; for(let i=0;i<7;i++){ const a=rnd(0,6.28), d=r*rnd(1.05,1.9); drops.push([x+Math.cos(a)*d,y+Math.sin(a)*d,r*rnd(.12,.3)]); }
+  for(const [dx,dy,dr] of drops) blob(dx,dy,dr+1,'#c9c6d8'); blob(x,y,r+1,'#c9c6d8');
+  for(const [dx,dy,dr] of drops) blob(dx,dy,dr,'#f3f1f8'); blob(x,y,r,'#f3f1f8'); blob(x-r*.3,y-r*.3,r*.35,'#ffffff'); }
+function twHandCv(){ if(TWT.handCv) return TWT.handCv; const cv=document.createElement('canvas'); cv.width=100; cv.height=200; const H=cv.getContext('2d');
+  try{ H.translate(52,95); H.scale(.39,.39); H.rotate(-.12); H.fillStyle='#f0c8a8'; H.strokeStyle='#3a2018'; H.lineWidth=7;
+    const f=(fx,fy,w,h)=>{ H.beginPath(); H.ellipse(fx,fy,w,h,0,0,7); H.fill(); H.stroke(); };
+    f(-70,-120,22,70); f(-24,-150,24,86); f(24,-140,24,80); f(66,-105,21,62); H.beginPath(); H.ellipse(0,20,92,110,0,0,7); H.fill(); H.stroke(); f(-108,10,22,55);
+    H.fillStyle='#f0c8a8'; H.fillRect(-60,40,120,200); H.fillStyle='#3e4566'; H.fillRect(-66,150,132,120); }catch(e){}
+  return TWT.handCv=cv; }
+function twDrawHand(x,y){ D.save(); D.imageSmoothingEnabled=false; D.drawImage(twHandCv(),Math.round(x-208),Math.round(y-380),400,800); D.restore(); }
+function twDomFrame(){ const M=TWT.dom; if(!M) return; const S=twSplatCv();
+  if(M.mode==='splat'){ M.t+=1/60; const u=Math.min(1,M.t/M.dur), n=1+Math.floor(u*u*9);
+    for(let i=0;i<n;i++) twScreenSplat(S,rnd(-4,S.w+4),rnd(-4,S.h+4),(5+u*26)*rnd(.6,1.25));
+    if(Math.random()<.25) Sound.sfx('squelch');
+    if(u>.75){ S.c.fillStyle=u>=1?'#f3f1f8':`rgba(243,241,248,${((u-.75)/.25).toFixed(3)})`; S.c.fillRect(0,0,S.w,S.h); }
+    D.save(); D.imageSmoothingEnabled=false; D.drawImage(S.cv,0,0,UW,UH); D.restore(); return; }
+  if(M.mode==='wipe'){ M.t+=1/60; const u=Math.min(1,M.t/1.05), hx=-260+(UW+520)*(u*u*(3-2*u)); if(u>=1){ TWT.dom=null; TWT.spl=null; return; }
+    D.save(); D.beginPath(); D.moveTo(hx,0); for(let y=0;y<=UH;y+=30) D.lineTo(hx+Math.sin(y*.05+M.t*9)*22+30,y); D.lineTo(UW,UH); D.lineTo(UW,0); D.closePath(); D.clip(); D.imageSmoothingEnabled=false; D.drawImage(S.cv,0,0,UW,UH); D.restore();
+    for(let i=0;i<6;i++){ D.fillStyle='rgba(243,241,248,.9)'; const px=Math.round((hx-20-i*24)/4)*4, py=Math.round(UH*twP5Rand(i+M.t)/4)*4, pr=8+i; D.fillRect(px-pr,py-pr,pr*2,pr*2); } twDrawHand(hx-40,UH*.62); } }
 function twTufts(){ return (L&&L.root?L.root.children:[]).filter(o=>o.isInstancedMesh); }
 function twGoopSpread(cx,cz,dur){ const tex=twSplatTex(0), A=twBounds(), n=1500, geo=new THREE.PlaneGeometry(1,1), mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.1,depthWrite:false,fog:false});
   const im=new THREE.InstancedMesh(geo,mat,n), o=new THREE.Object3D(), P=[]; for(let i=0;i<n;i++){ const x=A.x0-6+Math.random()*(A.x1-A.x0+12), z=A.z0-6+Math.random()*(A.z1-A.z0+12); P.push({x,z,d:Math.hypot(x-cx,z-cz)+rnd(0,8),s:rnd(3,6.5),r:rnd(0,6.28)});
@@ -137,12 +145,11 @@ function* twCaoDomain(T){ const P=Player, A=twBounds(), cx=(A.x0+A.x1)/2, cz=(A.
   // he spins and the goo goes everywhere
   Sound.sfx('squelch'); Sound.sfx('drone'); T.cast=1; const sp={on:1,t:0}; Game.fxUpd.push(dt=>{ if(!sp.on) return false; sp.t+=dt; if(Math.floor(sp.t/.07)%2) T.f=-T.f;
       for(let i=0;i<8;i++){ const a=rnd(0,6.28), v=rnd(6,16); FX.spawn(T.x,T.y+1.2,T.z,Math.cos(a)*v,rnd(2,7),Math.sin(a)*v,rnd(.4,.9),i%3?0xffffff:0xe6e3ef,rnd(.25,.5),12,false); } if(Math.random()<.2) Sound.sfx('squelch'); return true; });
-  yield wait(.5); cineSet(cx,62,cz+34,cx,0,cz-2); twGoopSpread(T.x,T.z,2.1); yield wait(2.2);
-  // the whole screen goes white, the floor is swapped underneath, and his hand wipes it clean
-  TWT.dom={mode:'cover',k:0}; yield wait(.4); sp.on=0; T.cast=0; T.f=-1;
+  yield wait(.5); cineSet(cx,62,cz+34,cx,0,cz-2); twGoopSpread(T.x,T.z,2.1); twCutin('caotan','DOMAIN EXPANSION','Unlimited Cum Works','#ff3a8a',2.6);
+  // splats keep landing on the screen until it is completely white; the floor is swapped underneath, then his hand wipes it clean
+  TWT.spl=null; TWT.dom={mode:'splat',t:0,dur:2.3}; yield wait(2.6); sp.on=0; T.cast=0; T.f=-1;
   for(const o of L.root.children.slice()) if(o.isInstancedMesh&&o.material&&o.material.map===twSplatTex(0)) L.root.remove(o); twMuralOn();
-  cineSet(cx,48,cz+40,cx,0,cz-4); twCutin('caotan','DOMAIN EXPANSION','Unlimited Cum Works','#ff3a8a',2.6); yield wait(2.6);
-  TWT.dom={mode:'wipe',t:0}; Sound.sfx('whoosh'); yield wait(1.1); Sound.sfx('choir'); Sound.sfx('sparkle'); yield cineTo([cx,30,cz+38],[cx,0,cz],1.1,twEIO);
+  cineSet(cx,48,cz+40,cx,0,cz-4); TWT.dom={mode:'wipe',t:0}; Sound.sfx('whoosh'); yield wait(1.1); Sound.sfx('choir'); Sound.sfx('sparkle'); yield cineTo([cx,30,cz+38],[cx,0,cz],1.1,twEIO);
   twCamT(T,7,1.2); if(ALI()) yield say('ali',"...That is your body pillow. On the floor. In stained glass."); else yield say('shayan',"Is that... HIKARI-CHAN? In STAINED GLASS?! Who PAID for this?!");
   yield say('caotan',"Every senpai deserves a cathedral. This one's yours. As in, your grave. ♡",'happy'); }
 // the fight stays inside the circle
@@ -188,9 +195,9 @@ function twIceMelt(x,z,r,dur){ const I=TWT.ice; if(!I||!I.im.parent||!(r>0)) ret
 (function(){ const tf=twTearFire; twTearFire=function(O,tx,ty,tz,hole){ try{ if(!hole) twIceMelt(tx,tz,3.2,.3); }catch(e){} return tf.apply(this,arguments); }; })();
 // glowing (additive) ground telegraphs vanish on the ice: while the Bankai holds they turn solid and dark (same hue)
 const TW_HSL={h:0,s:0,l:0};
-function twIceInks(){ const I=TWT.ice; if(!I) return; for(const c of scene.children){ if(!c.userData||c.userData.iceSeen||Math.abs(c.rotation.x+Math.PI/2)>.2) continue; c.userData.iceSeen=1;
+function twIceInks(){ const I=TWT.ice; if(!I) return; for(const c of scene.children){ if(!c.userData||c.userData.iceSeen||Math.abs(c.rotation.x+Math.PI/2)>.2) continue; c.userData.iceSeen=1; const lum=c.userData.iceL!=null?c.userData.iceL:.2; /* iceL: a darker ink for one telegraph (Omar's teleport reap) */
     c.traverse(o=>{ const m=o.material; if(!o.isMesh||!m||m.map||m.blending!==THREE.AdditiveBlending||!m.color||m.userData.iceInk) return; m.userData.iceInk=1; I.inks.push({m,c:m.color.getHex()});
-      m.blending=THREE.NormalBlending; m.color.getHSL(TW_HSL); m.color.setHSL(TW_HSL.h,TW_HSL.s>.15?Math.max(.65,TW_HSL.s):TW_HSL.s,Math.min(.2,TW_HSL.l)); m.needsUpdate=true; }); } }
+      m.blending=THREE.NormalBlending; m.color.getHSL(TW_HSL); m.color.setHSL(TW_HSL.h,TW_HSL.s>.15?Math.max(.65,TW_HSL.s):TW_HSL.s,Math.min(lum,TW_HSL.l)); m.needsUpdate=true; }); } }
 
 // ---------- the solo phase cards: Caotan = cut-in, Omar = Zelda (with his bar extending once the phase starts) ----------
 (function(){ const pc=twPhaseCine; twPhaseCine=function*(F,T){ yield* pc.apply(this,arguments); if(T&&T.who==='omar'&&T.hp>0&&TW.fight) T.zBar=performance.now(); }; })();
@@ -200,4 +207,4 @@ function twIceInks(){ const I=TWT.ice; if(!I) return; for(const c of scene.child
 function twArenaRestore(){ TWT.circle=null; TWT.snow=false; const M=TWT.mural; if(M){ if(M.g.parent) M.g.parent.remove(M.g); M.hid.forEach(o=>o.visible=true); TWT.mural=null; }
   const I=TWT.ice; if(I){ if(I.im.parent) I.im.parent.remove(I.im); const w=new THREE.Color(1,1,1); for(const C of I.cols){ for(let i=0;i<C.ps.length;i++) C.m.setColorAt(i,w); if(C.m.instanceColor) C.m.instanceColor.needsUpdate=true; if(C.lily) C.m.material.emissiveIntensity=C.e0; } for(const q of I.inks){ q.m.blending=THREE.AdditiveBlending; q.m.color.setHex(q.c); delete q.m.userData.iceInk; q.m.needsUpdate=true; } TWT.ice=null; } }
 (function(){ const ef=twEndFight; twEndFight=function(){ try{ twArenaRestore(); }catch(e){} return ef.apply(this,arguments); };
-  const cc=twClearCine; twClearCine=function(){ TWT.p5=TWT.zc=TWT.dom=null; return cc.apply(this,arguments); }; })();
+  const cc=twClearCine; twClearCine=function(){ TWT.p5=TWT.zc=TWT.dom=TWT.spl=null; return cc.apply(this,arguments); }; })();
