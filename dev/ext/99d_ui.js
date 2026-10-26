@@ -268,3 +268,8 @@ twDrawPadDrop=function(){ CT.drects=[]; if(CT.drop==null) return; const r=CT.rec
   const du=drawUI; drawUI=function(){ du(); try{ const T=TW.cheatToast; if(T){ const age=(performance.now()-T.t)/1000; if(age>1.8) TW.cheatToast=null; else { D.save(); D.globalAlpha=Math.min(1,(1.8-age)*3,age*12); D.font=`800 18px ${FB}`; const w=D.measureText(T.text).width+56, x=(UW-w)/2, y=28;
           uRR(x,y,w,40,20); D.fillStyle='rgba(12,14,24,.94)'; D.fill(); D.strokeStyle=T.on?UIC.good:UIC.bad; D.lineWidth=2; D.stroke(); D.fillStyle=T.on?UIC.good:UIC.bad; D.beginPath(); D.arc(x+22,y+20,5,0,7); D.fill(); uText(T.text,x+36,y+26,`800 18px ${FB}`,UIC.text); D.restore(); } }
       if(SAVE.settings.voices!==!!Voice.on){ SAVE.settings.voices=!!Voice.on; saveWrite(); } }catch(e){ console.error('ui top',e); } }; })();
+
+// ---------- dialogue choices: the mouse highlights the row under it, and clicking a row picks it ----------
+function twChoiceAt(e){ const d=Game.dlg; if(!d||d.type!=='choice'||!Game.dlgRows||TLM.open) return -1; const [x,y]=tlPt(e); return Game.dlgRows.findIndex(([rx,ry,rw,rh])=>x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh); }
+ui.addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse') return; const i=twChoiceAt(e); if(i>=0&&Game.dlg.sel!==i){ Game.dlg.sel=i; Sound.sfx('blip'); } });
+ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0) return; const i=twChoiceAt(e); if(i<0) return; e.preventDefault(); e.stopImmediatePropagation(); ui.focus(); Sound.unlock(); Game.dlg.sel=i; tapKey('confirm'); },true);
