@@ -16,7 +16,8 @@ function aliCombo(n){ const P=Player, tg=nearestFoe(ALI_R+1); if(tg) P.ang=Math.
   P.aliAtk={n,t:0,u:0,q:false,f0:P.f,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0;
   if(P.onGround&&n<2&&!(Game.twins&&Game.twins.active)){ P.vx+=Math.cos(P.ang)*3; P.vz+=Math.sin(P.ang)*3; } }
 // each cut is a Judgement Cut tear placed out in front (or around, for the spin), never over Ali
-function aliSlashFX(n,i){ const P=Player, gy=P.y, ux=Math.cos(P.ang), uz=Math.sin(P.ang), x=P.x, z=P.z; JC.flash=Math.max(JC.flash||0,.12);
+function aliSlashFX(n,i){ const P=Player; aliSlashFXAt(P.x,P.y,P.z,P.ang,n,i); }
+function aliSlashFXAt(x,gy,z,ang,n,i){ const ux=Math.cos(ang), uz=Math.sin(ang); JC.flash=Math.max(JC.flash||0,.12);
   if(n===0) twGash({life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
   else if(n===1){ if(i===0) twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
     else twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
@@ -63,3 +64,8 @@ function* aliFinalCut(){ const P=Player; P.cineAnim='beam'; Sound.sfx('swing'); 
   const du=drawUI; drawUI=function(){ du(); try{ const ali=ALI()&&!document.body.classList.contains('mech'); if(ali===was) return; was=ali;
       if(ali){ if(!g.dataset.sh) g.dataset.sh=g.innerHTML; g.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 4c8 2 12 8 10 16M6 4c4 4 5 10 3 16"/></svg>'; g.setAttribute('aria-label','Getsuga Tenshou, hold to charge a Black Getsuga'); }
       else if(g.dataset.sh){ g.innerHTML=g.dataset.sh; g.setAttribute('aria-label','Fireball, hold to charge'); } }catch(e){} }; }catch(e){} })();
+
+// ---------- the co-op friend's Ali gets the same kit ----------
+// the friend's own game runs this file; the host draws their tears when their animation starts a cut.
+function aliRemoteSlashFX(A,anim){ const n=anim==='aliS1'?0:anim==='aliS2'?1:anim==='aliSpin'?2:-1; if(n<0) return; const ang=A.ang!=null?A.ang:(A.f>0?0:Math.PI), x=A.x, y=A.y, z=A.z;
+  aliSlashFXAt(x,y,z,ang,n,0); if(n===1){ const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; if(k.t<.13) return true; aliSlashFXAt(x,y,z,ang,1,1); return false; }); } }

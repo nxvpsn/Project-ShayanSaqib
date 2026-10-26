@@ -4,7 +4,7 @@
 // ~20 updates a second. The guest sends Ali's position, actions and hits back.
 // Everything visual the host creates (telegraphs, projectiles, beams) is mirrored as shapes;
 // particles, sounds, voices and screen effects are forwarded as small events.
-// The video mode (?mode=video) stays available as a fallback.
+// (The old video mode, which streamed the host's screen, is gone.)
 // =====================================================================
 const NS={on:false,guest:false,host:false,applying:0,evq:[],base:new Set(),objs:new Map(),sent:new Map(),geoSent:new Set(),texSent:new Set(),gs:null,snT:0,gsT:0,last:0,nid:1,
   foes:new Map(),P:null,shSpr:null,lastBanner:'',lastSub:'',down:false,texCache:{},geoCache:{},lastRecv:0};
@@ -87,7 +87,7 @@ function nsHostTick(dt){ if(!NS.host||!MP.on) return; NS.snT-=dt; if(NS.snT<=0){
 // Ali on the host follows what the guest sends
 function nsRemoteAli(A,dt,play){ const P=Player, g=NS.gs; A.t+=dt; A.inv=Math.max(0,A.inv-dt); A.flash=Math.max(0,A.flash-dt); const q=MP.pq; MP.pq=[];
   const gy=groundY(A.x,A.z); if(A.coopDown){ A.anim='hurt'; A.y=(gy>-50?gy:P.y)+.1; return; }
-  if(g&&Game.state==='play'){ const k=Math.min(1,dt*20); A.x=lerp(A.x,g.x,k); A.z=lerp(A.z,g.z,k); A.y=g.y; A.f=g.f; A.anim=g.anim||'idle'; A.block=!!g.block||(performance.now()-(NS.blockAt||0)<160); if(g.block) NS.blockAt=performance.now(); }
+  if(g&&Game.state==='play'){ const k=Math.min(1,dt*20); A.x=lerp(A.x,g.x,k); A.z=lerp(A.z,g.z,k); A.y=g.y; A.f=g.f; A.ang=g.ang; A.ap=g.ap; const an=g.anim||'idle'; if(an!==A.anim) aliRemoteSlashFX(A,an); A.anim=an; A.block=false; }
   else { A.y=lerp(A.y,(gy>-50?gy:P.y),Math.min(1,dt*6)); }
   for(const a of q){ if(a==='attack'&&P.mpDown&&Math.hypot(P.x-A.x,P.z-A.z)<3.6) mpReviveTick(); }
   if(play) twAllyThreats(A); }
@@ -105,7 +105,7 @@ function nsGuestInit(m){ NS.on=true; NS.guest=true; NS.host=false; MP.sync=true;
   resetPlayer({x:m.ax,z:m.az},true); Player.maxHp=m.mhp||18; Player.hp=m.hp||Player.maxHp; Player.sp=0; Player.ang=0; Game.paulLock=false;
   Game.arena=m.arena?{lock:m.arena}:null; TW.foes=[]; TW.allies=[]; TW.hz=[]; TW.fight={kind:'duo',shared:1,noAttack:true,phase:1,C:null,O:null,lock:m.arena,center:{x:m.ax,z:m.az}};
   NS.base=new Set(scene.children); Game.state='play'; Game.letterTo=0; Game.fade=0; Game.fadeTo=0; Cam.cine=null; Cam.focus=null; Cam.zoom=1.3; NS.lastRecv=performance.now();
-  Game.banner={name:'Co-op',sub:'You are Ali. Attack: Getsuga · Right click: guard · Shift: blink. Hit Shayan 10 times if he goes down.',t:0,small:1}; nsGuestHud('Playing as Ali (low-latency mode)'); }
+  Game.banner={name:'Co-op',sub:'You are Ali. Attack: 3-cut combo · Right click: Getsuga · Shift: blink. Hit Shayan 10 times if he goes down.',t:0,small:1}; nsGuestHud('Playing as Ali (low-latency mode)'); }
 function nsGuestHud(text){ const s=document.getElementById('mpGStat'); if(s) s.textContent=text; }
 function nsGuestSnap(m){ NS.lastRecv=performance.now(); const P=Player;
   // state + camera
@@ -129,11 +129,11 @@ function nsGuestSnap(m){ NS.lastRecv=performance.now(); const P=Player;
   nsApplyEvents(m.ev); nsMirrorIn(m.mir); }
 function nsGuestTick(dt){ if(!NS.guest||!MP.on) return; nsSmoothMirrors(dt);
   for(const T of NS.foes.values()){ if(T.tx==null||Game.zw) continue; const k=Math.min(1,dt*14); T.x=lerp(T.x,T.tx,k); T.z=lerp(T.z,T.tz,k); T.y=lerp(T.y,T.ty,k); T.aliCd=(T.aliCd||0)-dt; T.t+=dt; }
-  NS.gsT-=dt; if(NS.gsT<=0){ NS.gsT=.033; const P=Player; const msg={t:'gs',x:r3(P.x),y:r3(P.y),z:r3(P.z),f:P.f,anim:P.anim,block:P.block?1:0,ev:NS.evq.splice(0)}; NS.mirT=(NS.mirT||0)-1; if(NS.mirT<=0){ NS.mirT=2; msg.mir=nsMirrorOut(); } mpSend(msg); }
-  if(performance.now()-NS.lastRecv>5000&&!NS.warned){ NS.warned=1; nsOfferVideo('No updates from the host for 5 seconds.'); } }
-function nsOfferVideo(why){ const d=mpPanel('<div style="font:700 22px Georgia,serif;margin-bottom:8px">Connection trouble</div><div style="color:#a8906a;margin-bottom:12px">'+why+' You can switch to video mode (more compatible, a bit more delay).</div><button id="nsVid" style="'+MP_BTN+'">Switch to video mode</button><button id="nsStay" style="'+MP_BTN2+'">Keep waiting</button>');
-  d.querySelector('#nsVid').onclick=()=>nsSwitchVideo(); d.querySelector('#nsStay').onclick=()=>{ NS.warned=0; NS.lastRecv=performance.now(); mpClosePanel(); }; }
-function nsSwitchVideo(){ try{ mpSend({t:'leave',switching:1}); }catch(e){} const code=MP.code||''; setTimeout(()=>{ location.href=location.pathname+'?join='+code+'&mode=video'; },250); }
+  NS.gsT-=dt; if(NS.gsT<=0){ NS.gsT=.033; const P=Player; const msg={t:'gs',x:r3(P.x),y:r3(P.y),z:r3(P.z),f:P.f,anim:P.anim,ang:r3(P.ang||0),ap:P.aliAtk?r3(P.aliAtk.u):0,block:0,ev:NS.evq.splice(0)}; NS.mirT=(NS.mirT||0)-1; if(NS.mirT<=0){ NS.mirT=2; msg.mir=nsMirrorOut(); } mpSend(msg); }
+  if(performance.now()-NS.lastRecv>5000&&!NS.warned){ NS.warned=1; nsConnWarn(); } }
+// nothing from the host for 5s: say so, offer to keep waiting or rejoin
+function nsConnWarn(){ const d=mpPanel('<div style="font:700 22px Georgia,serif;margin-bottom:8px">Connection trouble</div><div style="color:#a8906a;margin-bottom:12px">No updates from the host for 5 seconds.</div><button id="nsStay" style="'+MP_BTN+'">Keep waiting</button><button id="nsRe" style="'+MP_BTN2+'">Rejoin</button>');
+  d.querySelector('#nsStay').onclick=()=>{ NS.warned=0; NS.lastRecv=performance.now(); mpClosePanel(); }; d.querySelector('#nsRe').onclick=()=>location.reload(); }
 // the guest's hits go to the host; the guest shows instant feedback
 (function(){ const th=twHurt; twHurt=function(T,d,src){ if(!NS.guest) return th(T,d,src); if(!T||T.hp<=0||T.gone||T.down) return false;
     if(T.inv||T.hide||T.state==='cut'){ FX.spark(T.x,T.y+1.4,T.z); return false; } let dd=d; if(src==='beam'){ if(T.aliCd>0) return false; T.aliCd=.3; dd*=.32; } if(src==='melee') dd*=.8; dd=Math.round(dd*10)/10;

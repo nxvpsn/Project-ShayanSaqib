@@ -65,7 +65,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 | 06d_drillfx | Heavenly Drill pixel pass over `makeDrill` (`drxAttach`): spinning fire sheath `drill_aura` (speed follows `d.spin`), black/red lightning `drill_bolt`, a fire helix, motion smears, Hamza's `pee_stream`/`pee_splash` while `Game.chant.pee`, impact `drill_boom` + `drill_crater` (impact read from `d.spin>=90` or the drill dying). Plays during Grimmaw too (`any`) |
 | 07_allies | AI allies: Caotan, Omar, AI Ali (movement, hits, down and revive, bars) |
 | 08_aim | mouse aim for swings, beams, Getsugas and fireballs |
-| 08b_ali | the player's Ali kit: `aliInput` (called from updatePlayer via a build.py patch), combo `aliCombo`/`aliAtkUpdate`/`aliSlashFX` (`ALI_R` 3.8 reach), poses `aliS1`/`aliS2`/`aliSpin`/`aliSurf` in `03_cast` cPose, riding a Getsuga while gliding (`aliSurf`), `aliHungJJ`, `aliFinalCut`, the touch Getsuga button icon. The AI and co-op Ali keep their own code |
+| 08b_ali | the player's Ali kit: `aliInput` (called from updatePlayer via a build.py patch), combo `aliCombo`/`aliAtkUpdate`/`aliSlashFX` (`ALI_R` 3.8 reach), poses `aliS1`/`aliS2`/`aliSpin`/`aliSurf` in `03_cast` cPose, riding a Getsuga while gliding (`aliSurf`), `aliHungJJ`, `aliFinalCut`, the touch Getsuga button icon. The co-op friend's game runs the same kit; the host draws their tears (`aliRemoteSlashFX`). The AI Ali keeps its own code |
 | 09_parry | `twComboStart/Hit/End`, `twSlash`, `twBlinkTo`; glint counters only show when `T.showN` is set |
 | 10/11_caotan | Caotan's kit: `TWK.caotan.*` (11 overrides glint1, glint2, tsun and letters), the dating-sim limit cut (wrong answer means death), Megane Supernova (×10: mixed lasers, `twCaoPillowShot`, `twCaoNose`; 2.2s hide window). Dashes use `TW_DASH_R`/`TW_DASH_WIN`. Laser rule (`TW_CAO_COLS` wrapper on `twBeam`): jumpable = blue and low, not jumpable = pink with a `wall` (knee-high during the warning, tall while firing) |
 | 12_strict | timed parries: `TW.presses` (every fresh attack press), `twStrictDo(from,fn)` makes melee parries inside `fn` count only if the FIRST press after `from` (tell start + `TW_STRICT.grace` 0.2s) lands in the window; `twRealAhead` converts world seconds to real ones (parry slow-mo/hitstop). Used by Caotan's Triple Rush (two short blinks then a blink to 9 units before rush 1, a blink out before rushes 2-3; an early press in the arrow = `twTsunPunish`, point-blank pillow), Omar's reap, Shadow Step, clones and black-hole rushes. Ali's guard is untouched |
@@ -87,7 +87,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 | 59h_hamza3 | Hamza round 3: pools `bounce/flop/stampede/babies/quake/roll/meteor/babyRain/belly` (`hzgLeap` with crater shadows, `hzgLand`), piglet baby mobs in `MOBS` (`hzgBaby`, type `piglet`, `updateMob`/`drawHoundHD` wrappers, `hzgSnack` heals 4% after 9s, `hzgClearBabies`), LC `hzgBuffet` (meteor flops, baby boom with `TW.hg` timer, belly quake), `hzgFrenzy` with the new moves |
 | 59n_nathan2 | Nathan remaster (Ali route; Shayan's Oddities too): `nbRailgun`, `nbFunnels`, `nbStarDash`, `nbMemoryRain`, `nbSingularity`, `nbGrapple` (grab `nbGrabCine`); LCs `nbStorm` (phase II ≤600) and `nbHeaven` (phase III ≤250); `nbOverdrive` (15s) before `nbFinale` (`NB.overCk` retry). Temp meshes in `NB2.m`, cleared by `nbClear` |
 | 59o_nathan3 | Nathan round 3: `carousel`, `bitWall`, `hexagram`, `afterimage`, `swarm`, `phantom` added to every pool; `nbSp` +0.08; build.py trims `NB.cd` |
-| 60_coop | co-op lobby (two links), video mode (the host streams the canvas; the guest sends inputs), remote Ali, revives (10 hits), both-down Ready, guest boot |
+| 60_coop | co-op lobby (one link), the friend's Ali on the host (`nsRemoteAli`; timed parries from their attack presses, `A.atkAt`), revives (10 hits), both-down Ready, guest boot |
 | 62_coopsync | low-latency mode: `NS`. Covers the host snapshot every 50ms, mirroring of scene objects, forwarded FX/sfx/voice/screen events, guest hits sent to the host, and the guest's Q ultimate freezing the twins on the host |
 | 70/71_mech | the old 3D phases of the mech fight (unused: 73_touhou disables `m3Enter`); 71 halves `HZ_HP` |
 | 72_mechanim | Nathan's mech PNG animated: split once into wing / glow / head / base layers (`maInit`), recomposed each frame into the canvas MECHTEX now shows (`maDraw`): breathing, head bob, wing flicker, lights pulse, lean + blade flare on `NAT.atk` |
@@ -121,7 +121,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 
 ## 5. Co-op in one paragraph
 
-- **Lobby:** the host chooses "Yes" at Ali's arrival in the duo fight. The lobby creates a PeerJS id `msbell-coop-CODE` and shows two links: `?join=CODE` (low-latency) and `?join=CODE&mode=video`.
+- **Lobby:** the host chooses "Yes" at Ali's arrival in the duo fight. The lobby creates a PeerJS id `msbell-coop-CODE` and shows one link, `?join=CODE`: the friend's game runs in their own browser as Ali (the old video mode is gone).
 - **Messages:**
   - Guest to host: `hello{mode}`, `gs` (Ali state, 30 Hz), `p` (button presses for revive and mash), `hit{id,d}`, `ult{on}`, `ready`, `leave`.
   - Host to guest: `init`, `sn` (snapshot), `hurt`, `parry`, `tp`, `st` (revive/ready status), `end`.
@@ -149,7 +149,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 | `PARRY=1 REAL=1 node t_atk.js ext.js` | every new boss attack and combo, and whether perfect parries stun | 3 min |
 | `REAL=1 node t_duo3.js ext.js` (`ONLY=moves\|rain\|grab\|assist\|lc\|trans`) | the duo remaster: every move, rain, grab, Ali's kick/guard/revives, both LCs, transitions, Burnout and the ending | 2 min (fake THREE: 20s) |
 | `REAL=1 node t_boss2.js ext.js` (`ONLY=hamza\|nathan`) | Giant Hamza and Nathan remasters: every new move, the grabs, LCs, frenzy/overdrive, finales | 3 min |
-| `REAL=1 node t_coop.js ext.js` | video-mode host logic: remote Ali, revives, ready, leave | 1 min |
+| `REAL=1 node t_coop.js ext.js` | co-op host logic: the friend's Ali, revives, ready, leave | 1 min |
 | `NOHOST=1 SECS=40 ULT=1 node t_sync.js ext.js` | low-latency co-op between two game instances | 2 min |
 | `t_sha`, `t_esc`, `t_esc2`, `t_aim`, `t_ui` | save keys, sprite paths, Esc timeline, mouse aim, timeline UI | <1 min each |
 | `t_pad` | controller: fake pad drives gameplay, timeline, Controls card + drop-down, aim, glyphs, rumble | <1 min |
