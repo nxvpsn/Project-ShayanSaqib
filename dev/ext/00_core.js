@@ -99,8 +99,8 @@ function twWave(x,z,o){ o=Object.assign({sp:7,max:11,col:0xff7ab0,dmg:2,delay:0}
     if(Math.random()<.5){ const a=rnd(0,6.28); FX.spawn(x+Math.cos(a)*r,gy+.2,z+Math.sin(a)*r,0,rnd(1,2.5),0,.35,o.col,.25,4,true); } return r<o.max; },
     kill(){ if(m) scene.remove(m); }}); }
 // a lingering zone that slows (puddle) or hurts (void) the player
-function twZone(x,z,r,dur,o){ o=o||{}; const gy=groundY(x,z), m=new THREE.Mesh(new THREE.CircleGeometry(r,32),new THREE.MeshBasicMaterial({color:o.col||0xf8f4ff,transparent:true,opacity:0,depthWrite:false,blending:o.add?THREE.AdditiveBlending:THREE.NormalBlending}));
-  m.rotation.x=-Math.PI/2; m.position.set(x,gy+.05,z); m.userData.tw=1; scene.add(m); let tick=0;
+function twZone(x,z,r,dur,o){ o=o||{}; const gy=groundY(x,z), m=new THREE.Mesh(o.splat?new THREE.PlaneGeometry(r*2.5,r*2.5):new THREE.CircleGeometry(r,32),new THREE.MeshBasicMaterial({map:o.splat?twSplatTex(Math.floor(Math.random()*3)):null,alphaTest:o.splat?.1:0,color:o.splat?0xffffff:(o.col||0xf8f4ff),transparent:true,opacity:0,depthWrite:false,blending:o.add?THREE.AdditiveBlending:THREE.NormalBlending}));
+  m.rotation.x=-Math.PI/2; if(o.splat) m.rotation.z=rnd(0,6.28); m.position.set(x,gy+.05,z); m.userData.tw=1; scene.add(m); let tick=0;
   return twHz({upd(dt,play){ if(play) this.t+=dt; const k=Math.min(1,this.t*4)*Math.min(1,(dur-this.t)*2); m.material.opacity=(o.op||.75)*k; tick-=dt;
     if(play&&this.t>.2&&twInR(x,z,r,.6)){ const P=twP(); if(o.slow){ P.x-=P.vx*dt*o.slow; P.z-=P.vz*dt*o.slow; if(Math.random()<.2) FX.spawn(P.x,P.y+.1,P.z,0,.6,0,.4,0xffffff,.2,0,false); }
       if(o.dmg&&tick<=0){ tick=o.every||.6; twHitP(o.dmg,x,z,{ub:true}); } }

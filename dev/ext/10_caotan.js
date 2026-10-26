@@ -18,9 +18,9 @@ TWK.caotan.goo=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark('c
   for(let v=0;v<(ph>=2?1:3);v++){ T.fire=.25; for(const k of [-1,0,1]) twAimBolt(T,'goo',T.x+T.f*.3,T.y+.95,T.z,9.5*sp,k*.18,{col:0xffffff}); Sound.sfx('squelch'); yield .42/sp; }
   if(ph<2) return; const P=Player;
   for(let i=0;i<(ph>=3?8:6);i++){ const a=rnd(0,6.28), r=i===0?0:rnd(1.2,3.4), p=twClampXZ(P.x+P.vx*.5+Math.cos(a)*r,P.z+P.vz*.5+Math.sin(a)*r,.6);
-    const m=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),new THREE.MeshBasicMaterial({color:0xffffff})); m.userData.tw=1; scene.add(m); T.fire=.2; Sound.sfx('squelch');
+    const m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5); T.fire=.2; Sound.sfx('squelch');
     twThrow({x:T.x,y:T.y+1,z:T.z,tx:p.x,tz:p.z,dur:.85/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); FX.burst(x,groundY(x,z)+.2,z,14,0xffffff,3,.3,false);
-      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.85,fx:.05}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
+      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
   yield .45; };
 function twRayWall(x,z,ux,uz){ const A=twLock(); let tx=1e9,tz=1e9; if(ux>1e-4) tx=(A.x1-x)/ux; else if(ux<-1e-4) tx=(A.x0-x)/ux; if(uz>1e-4) tz=(A.z1-z)/uz; else if(uz<-1e-4) tz=(A.z0-z)/uz; return tx<tz?{t:tx,ax:'x'}:{t:tz,ax:'z'}; }
 TWK.caotan.glint1=function*(T,ph){ const sp=twSp(T); yield* twGlint(T,1); twBark('caotan',ph>=2?"Senpai Snipe: Ricochet Edition!":"Senpai Snipe!");
@@ -173,3 +173,27 @@ function* twGlomp(T,sp){ const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x), d=Math.m
   twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xffd0ec,.6,0,true);
     const P2=Player; if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const r=twHitP(2,T.x,T.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ T.parried=1; T.stun=Math.max(T.stun,1.4); twBark('caotan',"Rejected... at point blank range...",true); }}); if(r!=='none') s.hit=true; }
     return s.t<s.dur&&!T.parried; }}); yield s.dur+.1; T.lockF=0; }
+
+// ---------- Caotan's white goo: sperm-shaped pellets (a head and a wriggling tail, pointing where they fly) and goo splats where they land ----------
+const TW_SPERM=[], TW_SPLAT=[];
+function twSpermTex(f){ if(TW_SPERM[f]) return TW_SPERM[f]; const W=48, H=18, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
+  try{ c.lineCap='round'; const pts=[]; for(let i=0;i<=14;i++){ const u=i/14; pts.push([33-u*31,H/2+Math.sin(u*8.5-f*1.5708)*u*4.2]); }
+    for(const [w,col] of [[4.4,'#7c7e94'],[2.4,'#f6f6fc']]) for(let i=0;i<14;i++){ c.strokeStyle=col; c.lineWidth=Math.max(.9,w*(1-i/14*.75)); c.beginPath(); c.moveTo(pts[i][0],pts[i][1]); c.lineTo(pts[i+1][0],pts[i+1][1]); c.stroke(); }
+    const el=(x,y,rx,ry,col)=>{ c.fillStyle=col; c.beginPath(); c.ellipse(x,y,rx,ry,0,0,7); c.fill(); };
+    el(38,H/2,9,7,'#7c7e94'); el(38,H/2,7.6,5.8,'#fbfbff'); el(36.5,H/2+2.2,5.5,2.4,'#d6d8e6'); el(40.5,H/2-2.4,2.4,1.4,'#ffffff'); }catch(e){}
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW_SPERM[f]=t; }
+// a sperm sprite on par (a projectile's group): it turns to the direction par moves on screen and wriggles its tail
+function twSperm(par,size){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:twSpermTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false})); s.scale.set(size,size*18/48,1); s.renderOrder=5; par.add(s);
+  const last=new THREE.Vector3(), cur=new THREE.Vector3(); par.updateMatrixWorld(); par.getWorldPosition(last); let f=0, ft=0;
+  Game.fxUpd.push(dt=>{ try{ let o=par; while(o.parent) o=o.parent; if(o!==scene) return false; ft+=dt; if(ft>.055){ ft=0; f=(f+1)%4; s.material.map=twSpermTex(f); }
+      par.getWorldPosition(cur); const a=toScreen(last.x,last.y,last.z), b=toScreen(cur.x,cur.y,cur.z), dx=b[0]-a[0], dy=b[1]-a[1]; if(dx*dx+dy*dy>.04) s.material.rotation=Math.atan2(-dy,dx); last.copy(cur); return true; }catch(e){ console.error('sperm',e); return false; } });
+  return s; }
+// white goo bolts (Caotan's volleys) become sperm instead of glowing orbs
+(function(){ const sp=spawnProj; spawnProj=function(o){ const b=sp.apply(this,arguments); try{ if(b&&b.kind==='goo'&&o&&o.col===0xffffff&&b.m){ if(b.core) b.core.visible=false; if(b.gl) b.gl.visible=false; twSperm(b.m,1.3); } }catch(e){ console.error('goo sperm',e); } return b; }; })();
+// a white goo splat for slowing puddles: a wobbly blob with droplets around it
+function twSplatTex(v){ if(TW_SPLAT[v]) return TW_SPLAT[v]; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  try{ const blob=(cx,cy,r,col,j)=>{ c.fillStyle=col; c.beginPath(); for(let i=0;i<=40;i++){ const a=i/40*6.2832, rr=r*(1+.16*Math.sin(a*5+v*1.9+j)+.08*Math.sin(a*11+v*3.3)); const x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr; if(i) c.lineTo(x,y); else c.moveTo(x,y); } c.fill(); };
+    const drops=[]; for(let i=0;i<9;i++){ const a=i/9*6.2832+v, d=19+((i*7+v*5)%9); drops.push([S/2+Math.cos(a)*d,S/2+Math.sin(a)*d,2+((i+v)%3)]); }
+    for(const [x,y,r] of drops){ c.fillStyle='#9a9cb2'; c.beginPath(); c.arc(x,y,r+1,0,7); c.fill(); } blob(S/2,S/2,17.5,'#9a9cb2',0);
+    for(const [x,y,r] of drops){ c.fillStyle='#f2f2fa'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); } blob(S/2,S/2,16,'#f2f2fa',0); blob(S/2+2,S/2+2,10,'#dcdcea',.6); blob(S/2-5,S/2-5,4.5,'#ffffff',1.3); }catch(e){}
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW_SPLAT[v]=t; }

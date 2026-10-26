@@ -97,7 +97,8 @@ function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new T
 (function(){ const fh=twFireballHit; twFireballHit=function(f,x,y,z){ const k=f.big?'boom_big':'boom'; if(!pxvOk(k)) return fh.apply(this,arguments); pxvPlay(k,{x,y,z,size:f.big?3.2:1.5});
     FX.burst(x,y,z,f.big?12:4,f.big?0xa0081e:0xff7a1a,f.big?3.5:2,f.big?.26:.18); if(f.big){ FX.ring(x,y-.6,z,'#a0102a',1.4,.3); shake(.35); Sound.sfx('slam'); } else Sound.sfx('hit'); }; })();
 
-// ---------- area blasts: a pixel detonation in the attack's own colour (skinned blasts keep their look) ----------
-(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(o&&o.skin) return tb.apply(this,arguments); o=Object.assign({},o||{}); const ob=o.onBoom, col=o.col||0xff3a6a;
+// ---------- area blasts: a pixel detonation in the attack's own colour (skinned blasts and ones with their own animation keep their look) ----------
+// attacks with their own landing animation (onBoom: Omar's hands, Caotan's nosebleed geysers, ...) keep it unobstructed: no pixel detonation over it
+(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(o&&(o.skin||o.onBoom)) return tb.apply(this,arguments); o=Object.assign({},o||{}); const ob=o.onBoom, col=o.col||0xff3a6a;
     o.onBoom=function(bx,bz){ if(ob) ob.apply(this,arguments); const gy=groundY(bx,bz); pxvPlay('blast',{x:bx,y:gy+r*.55,z:bz,size:Math.max(2.4,r*1.9),color:new THREE.Color(o.burst||col),depth:true}); };
     return tb.call(this,x,z,r,delay,o); }; })();

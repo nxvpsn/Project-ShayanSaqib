@@ -4947,8 +4947,8 @@ function twWave(x,z,o){ o=Object.assign({sp:7,max:11,col:0xff7ab0,dmg:2,delay:0}
     if(Math.random()<.5){ const a=rnd(0,6.28); FX.spawn(x+Math.cos(a)*r,gy+.2,z+Math.sin(a)*r,0,rnd(1,2.5),0,.35,o.col,.25,4,true); } return r<o.max; },
     kill(){ if(m) scene.remove(m); }}); }
 // a lingering zone that slows (puddle) or hurts (void) the player
-function twZone(x,z,r,dur,o){ o=o||{}; const gy=groundY(x,z), m=new THREE.Mesh(new THREE.CircleGeometry(r,32),new THREE.MeshBasicMaterial({color:o.col||0xf8f4ff,transparent:true,opacity:0,depthWrite:false,blending:o.add?THREE.AdditiveBlending:THREE.NormalBlending}));
-  m.rotation.x=-Math.PI/2; m.position.set(x,gy+.05,z); m.userData.tw=1; scene.add(m); let tick=0;
+function twZone(x,z,r,dur,o){ o=o||{}; const gy=groundY(x,z), m=new THREE.Mesh(o.splat?new THREE.PlaneGeometry(r*2.5,r*2.5):new THREE.CircleGeometry(r,32),new THREE.MeshBasicMaterial({map:o.splat?twSplatTex(Math.floor(Math.random()*3)):null,alphaTest:o.splat?.1:0,color:o.splat?0xffffff:(o.col||0xf8f4ff),transparent:true,opacity:0,depthWrite:false,blending:o.add?THREE.AdditiveBlending:THREE.NormalBlending}));
+  m.rotation.x=-Math.PI/2; if(o.splat) m.rotation.z=rnd(0,6.28); m.position.set(x,gy+.05,z); m.userData.tw=1; scene.add(m); let tick=0;
   return twHz({upd(dt,play){ if(play) this.t+=dt; const k=Math.min(1,this.t*4)*Math.min(1,(dur-this.t)*2); m.material.opacity=(o.op||.75)*k; tick-=dt;
     if(play&&this.t>.2&&twInR(x,z,r,.6)){ const P=twP(); if(o.slow){ P.x-=P.vx*dt*o.slow; P.z-=P.vz*dt*o.slow; if(Math.random()<.2) FX.spawn(P.x,P.y+.1,P.z,0,.6,0,.4,0xffffff,.2,0,false); }
       if(o.dmg&&tick<=0){ tick=o.every||.6; twHitP(o.dmg,x,z,{ub:true}); } }
@@ -6271,8 +6271,9 @@ function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new T
 (function(){ const fh=twFireballHit; twFireballHit=function(f,x,y,z){ const k=f.big?'boom_big':'boom'; if(!pxvOk(k)) return fh.apply(this,arguments); pxvPlay(k,{x,y,z,size:f.big?3.2:1.5});
     FX.burst(x,y,z,f.big?12:4,f.big?0xa0081e:0xff7a1a,f.big?3.5:2,f.big?.26:.18); if(f.big){ FX.ring(x,y-.6,z,'#a0102a',1.4,.3); shake(.35); Sound.sfx('slam'); } else Sound.sfx('hit'); }; })();
 
-// ---------- area blasts: a pixel detonation in the attack's own colour (skinned blasts keep their look) ----------
-(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(o&&o.skin) return tb.apply(this,arguments); o=Object.assign({},o||{}); const ob=o.onBoom, col=o.col||0xff3a6a;
+// ---------- area blasts: a pixel detonation in the attack's own colour (skinned blasts and ones with their own animation keep their look) ----------
+// attacks with their own landing animation (onBoom: Omar's hands, Caotan's nosebleed geysers, ...) keep it unobstructed: no pixel detonation over it
+(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(o&&(o.skin||o.onBoom)) return tb.apply(this,arguments); o=Object.assign({},o||{}); const ob=o.onBoom, col=o.col||0xff3a6a;
     o.onBoom=function(bx,bz){ if(ob) ob.apply(this,arguments); const gy=groundY(bx,bz); pxvPlay('blast',{x:bx,y:gy+r*.55,z:bz,size:Math.max(2.4,r*1.9),color:new THREE.Color(o.burst||col),depth:true}); };
     return tb.call(this,x,z,r,delay,o); }; })();
 
@@ -6481,9 +6482,9 @@ TWK.caotan.goo=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark('c
   for(let v=0;v<(ph>=2?1:3);v++){ T.fire=.25; for(const k of [-1,0,1]) twAimBolt(T,'goo',T.x+T.f*.3,T.y+.95,T.z,9.5*sp,k*.18,{col:0xffffff}); Sound.sfx('squelch'); yield .42/sp; }
   if(ph<2) return; const P=Player;
   for(let i=0;i<(ph>=3?8:6);i++){ const a=rnd(0,6.28), r=i===0?0:rnd(1.2,3.4), p=twClampXZ(P.x+P.vx*.5+Math.cos(a)*r,P.z+P.vz*.5+Math.sin(a)*r,.6);
-    const m=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),new THREE.MeshBasicMaterial({color:0xffffff})); m.userData.tw=1; scene.add(m); T.fire=.2; Sound.sfx('squelch');
+    const m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5); T.fire=.2; Sound.sfx('squelch');
     twThrow({x:T.x,y:T.y+1,z:T.z,tx:p.x,tz:p.z,dur:.85/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); FX.burst(x,groundY(x,z)+.2,z,14,0xffffff,3,.3,false);
-      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.85,fx:.05}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
+      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
   yield .45; };
 function twRayWall(x,z,ux,uz){ const A=twLock(); let tx=1e9,tz=1e9; if(ux>1e-4) tx=(A.x1-x)/ux; else if(ux<-1e-4) tx=(A.x0-x)/ux; if(uz>1e-4) tz=(A.z1-z)/uz; else if(uz<-1e-4) tz=(A.z0-z)/uz; return tx<tz?{t:tx,ax:'x'}:{t:tz,ax:'z'}; }
 TWK.caotan.glint1=function*(T,ph){ const sp=twSp(T); yield* twGlint(T,1); twBark('caotan',ph>=2?"Senpai Snipe: Ricochet Edition!":"Senpai Snipe!");
@@ -6636,6 +6637,30 @@ function* twGlomp(T,sp){ const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x), d=Math.m
   twHz({upd(dt,play){ if(!play) return true; s.t+=dt; T.x+=Math.cos(a)*17*dt; T.z+=Math.sin(a)*17*dt; const c=twClampXZ(T.x,T.z,.5); T.x=c.x; T.z=c.z; FX.spawn(T.x,T.y+1.4,T.z,0,0,0,.35,0xffd0ec,.6,0,true);
     const P2=Player; if(!s.hit&&Math.hypot(P2.x-T.x,P2.z-T.z)<TW_DASH_R&&Math.abs(P2.y-groundY(T.x,T.z))<2.4){ const r=twHitP(2,T.x,T.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ T.parried=1; T.stun=Math.max(T.stun,1.4); twBark('caotan',"Rejected... at point blank range...",true); }}); if(r!=='none') s.hit=true; }
     return s.t<s.dur&&!T.parried; }}); yield s.dur+.1; T.lockF=0; }
+
+// ---------- Caotan's white goo: sperm-shaped pellets (a head and a wriggling tail, pointing where they fly) and goo splats where they land ----------
+const TW_SPERM=[], TW_SPLAT=[];
+function twSpermTex(f){ if(TW_SPERM[f]) return TW_SPERM[f]; const W=48, H=18, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
+  try{ c.lineCap='round'; const pts=[]; for(let i=0;i<=14;i++){ const u=i/14; pts.push([33-u*31,H/2+Math.sin(u*8.5-f*1.5708)*u*4.2]); }
+    for(const [w,col] of [[4.4,'#7c7e94'],[2.4,'#f6f6fc']]) for(let i=0;i<14;i++){ c.strokeStyle=col; c.lineWidth=Math.max(.9,w*(1-i/14*.75)); c.beginPath(); c.moveTo(pts[i][0],pts[i][1]); c.lineTo(pts[i+1][0],pts[i+1][1]); c.stroke(); }
+    const el=(x,y,rx,ry,col)=>{ c.fillStyle=col; c.beginPath(); c.ellipse(x,y,rx,ry,0,0,7); c.fill(); };
+    el(38,H/2,9,7,'#7c7e94'); el(38,H/2,7.6,5.8,'#fbfbff'); el(36.5,H/2+2.2,5.5,2.4,'#d6d8e6'); el(40.5,H/2-2.4,2.4,1.4,'#ffffff'); }catch(e){}
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW_SPERM[f]=t; }
+// a sperm sprite on par (a projectile's group): it turns to the direction par moves on screen and wriggles its tail
+function twSperm(par,size){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:twSpermTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false})); s.scale.set(size,size*18/48,1); s.renderOrder=5; par.add(s);
+  const last=new THREE.Vector3(), cur=new THREE.Vector3(); par.updateMatrixWorld(); par.getWorldPosition(last); let f=0, ft=0;
+  Game.fxUpd.push(dt=>{ try{ let o=par; while(o.parent) o=o.parent; if(o!==scene) return false; ft+=dt; if(ft>.055){ ft=0; f=(f+1)%4; s.material.map=twSpermTex(f); }
+      par.getWorldPosition(cur); const a=toScreen(last.x,last.y,last.z), b=toScreen(cur.x,cur.y,cur.z), dx=b[0]-a[0], dy=b[1]-a[1]; if(dx*dx+dy*dy>.04) s.material.rotation=Math.atan2(-dy,dx); last.copy(cur); return true; }catch(e){ console.error('sperm',e); return false; } });
+  return s; }
+// white goo bolts (Caotan's volleys) become sperm instead of glowing orbs
+(function(){ const sp=spawnProj; spawnProj=function(o){ const b=sp.apply(this,arguments); try{ if(b&&b.kind==='goo'&&o&&o.col===0xffffff&&b.m){ if(b.core) b.core.visible=false; if(b.gl) b.gl.visible=false; twSperm(b.m,1.3); } }catch(e){ console.error('goo sperm',e); } return b; }; })();
+// a white goo splat for slowing puddles: a wobbly blob with droplets around it
+function twSplatTex(v){ if(TW_SPLAT[v]) return TW_SPLAT[v]; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  try{ const blob=(cx,cy,r,col,j)=>{ c.fillStyle=col; c.beginPath(); for(let i=0;i<=40;i++){ const a=i/40*6.2832, rr=r*(1+.16*Math.sin(a*5+v*1.9+j)+.08*Math.sin(a*11+v*3.3)); const x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr; if(i) c.lineTo(x,y); else c.moveTo(x,y); } c.fill(); };
+    const drops=[]; for(let i=0;i<9;i++){ const a=i/9*6.2832+v, d=19+((i*7+v*5)%9); drops.push([S/2+Math.cos(a)*d,S/2+Math.sin(a)*d,2+((i+v)%3)]); }
+    for(const [x,y,r] of drops){ c.fillStyle='#9a9cb2'; c.beginPath(); c.arc(x,y,r+1,0,7); c.fill(); } blob(S/2,S/2,17.5,'#9a9cb2',0);
+    for(const [x,y,r] of drops){ c.fillStyle='#f2f2fa'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); } blob(S/2,S/2,16,'#f2f2fa',0); blob(S/2+2,S/2+2,10,'#dcdcea',.6); blob(S/2-5,S/2-5,4.5,'#ffffff',1.3); }catch(e){}
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW_SPLAT[v]=t; }
 
 // ----- 11_caotan2.js -----
 // =====================================================================
@@ -7029,7 +7054,20 @@ function twDarkTo(k,r){ if(!TW.dark) TW.dark={k:0,r:r||200,eyes:[]}; if(!TW.hz.i
 // one curving scythe of colour col: it sweeps out to one side, then curls in on you. Parried or not, its colour dyes your moon.
 // the part of the arena the camera shows: moon scythes never leave it, so the one you need is always reachable
 function twViewBox(){ const B=twBounds(), x=Cam.look.x, z=Cam.look.z; return {x0:Math.max(B.x0+.5,x-8.5),x1:Math.min(B.x1-.5,x+8.5),z0:Math.max(B.z0+.5,z-5),z1:Math.min(B.z1-.5,z+3.5)}; }
-function twMoonScythe(T,col,side,dur){ const m=twBB(CRESC,1.5,1.5,{add:true,col:OM_MOON_HEX[col]}), g=twGlow(OM_MOON_HEX[col],1.6); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
+// a solid pixel crescent (dark outline, shaded body, bright inner edge) instead of a glow, plus a shadow + coloured ring on the ground,
+// so you can see which colour it is, that it spins, and where it is in depth
+function twMoonTex(col){ TW._mt=TW._mt||{}; if(TW._mt[col]) return TW._mt[col]; const S=48, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  const pal=col==='w'?['#0a0c18','#9aa4c8','#e4e8f8','#ffffff']:['#060a18','#1a4e9a','#4aa8ff','#c8ecff'];
+  try{ const id=c.getImageData(0,0,S,S), d=id.data; if(d&&d.length===S*S*4){ const R=S*.44, cx=S/2, cy=S/2, ox=S*.2, r2=R*.86;
+      for(let y=0;y<S;y++) for(let x=0;x<S;x++){ const a=Math.hypot(x+.5-cx,y+.5-cy), b=Math.hypot(x+.5-cx+ox,y+.5-cy); let k=-1;
+        if(a<=R&&b>=r2){ const e=Math.min(R-a,b-r2); k=e<1.6?0:e<3?1:(b-r2<5)?3:2; } else if(a<=R+1.6&&b>=r2-1.6) k=0;
+        if(k>=0){ const h=pal[k], i=(y*S+x)*4; d[i]=parseInt(h.slice(1,3),16); d[i+1]=parseInt(h.slice(3,5),16); d[i+2]=parseInt(h.slice(5,7),16); d[i+3]=255; } }
+      c.putImageData(id,0,0); } }catch(e){}
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return TW._mt[col]=t; }
+function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THREE.CircleGeometry(.75,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false,fog:false})),
+    rg=new THREE.Mesh(new THREE.RingGeometry(.8,.95,28),new THREE.MeshBasicMaterial({color:OM_MOON_HEX[col],transparent:true,opacity:.7,depthWrite:false,fog:false,side:THREE.DoubleSide}));
+  sh.rotation.x=rg.rotation.x=-Math.PI/2; g.add(sh,rg); g.userData.tw=1; scene.add(g); return g; }
+function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),2.2,2.2,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
   const a=Math.atan2(P.z-T.z,P.x-T.x), px=-Math.sin(a)*side, pz=Math.cos(a)*side, [x0,z0]=cl(T.x+px*1.2,T.z+pz*1.2), d=Math.hypot(P.x-T.x,P.z-T.z), [cx,cz]=cl((T.x+P.x)/2+px*Math.max(5,d*.7),(T.z+P.z)/2+pz*Math.max(5,d*.7));
   const s={col,t:0,done:false,ex:P.x,ez:P.z,px:x0,pz:z0,vx:0,vz:0,turn:(Math.random()<.5?1:-1)*rnd(.6,1.2)}; Sound.sfx('swing'); (TW._moonS=(TW._moonS||[]).filter(o=>!o.done&&o.t<4)).push(s);
   return twHz({upd(dt,play){ if(play) s.t+=dt; const P2=Player, u=Math.min(1,s.t/dur); if(u<.75){ s.ex=P2.x; s.ez=P2.z; }
@@ -7037,7 +7075,7 @@ function twMoonScythe(T,col,side,dur){ const m=twBB(CRESC,1.5,1.5,{add:true,col:
       else { // after its curve it keeps flying around inside the view: a slow swirl, bouncing off the edges of the screen
         const V2=twViewBox(), sp=9, k=play?dt:0; let a2=Math.atan2(s.vz,s.vx)+s.turn*k; s.vx=Math.cos(a2)*sp; s.vz=Math.sin(a2)*sp; x=s.px+s.vx*k; z=s.pz+s.vz*k;
         if(x<V2.x0){ x=V2.x0; s.vx=Math.abs(s.vx); } if(x>V2.x1){ x=V2.x1; s.vx=-Math.abs(s.vx); } if(z<V2.z0){ z=V2.z0; s.vz=Math.abs(s.vz); } if(z>V2.z1){ z=V2.z1; s.vz=-Math.abs(s.vz); } }
-      s.px=x; s.pz=z; const gy=groundY(x,z); m.position.set(x,gy+1.2,z); m.rotation.z+=dt*18; g.position.copy(m.position);
+      s.px=x; s.pz=z; const gy=groundY(x,z); m.position.set(x,gy+1.2,z); m.rotation.z+=dt*14; g.position.set(x,gy+.05,z);
       if(s.t>=3&&!s.done){ s.done=true; Sound.sfx('crossboom'); shake(.25); FX.burst(x,gy+1.2,z,30,OM_MOON_HEX[col],6,.35); FX.ring(x,gy+.1,z,OM_MOON[col],2.2,.35); if(play&&twInR(x,z,1.6,2.4)) twHitP(2,x,z,{ub:true}); return false; }
       if(Math.random()<.8) FX.spawn(x,gy+1.2,z,0,.3,0,.35,OM_MOON_HEX[col],.25,0,true);
       if(play&&!s.done&&Math.hypot(P2.x-x,P2.z-z)<1&&P2.y<gy+2){ const r=twHitP(2,x,z,{melee:true,pierce:true,noGuard:true,win:.3});
@@ -9061,8 +9099,8 @@ DUO.burnout=function*(C,O){ const F=TW.fight, sp=1.15, H=TW.hg={left:20,total:20
         if(el<5&&!ev.spin){ ev.spin=1; const dir=Math.random()<.5?1:-1, b0=rnd(0,6.28); for(let k=0;k<2;k++) twBeam({x:C.x,z:C.z,ang:t=>b0+k*Math.PI+Math.max(0,t-.8)*.95*dir,len:18,w:1,warn:.8,dur:4.4,dmg:3,col:0xbfe4ff}); }
         if((el<5||el>=10&&el<15)&&el>=ev.c){ ev.c=el+(el<5?1.7:1.45); const a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.38,0,.38]) twCaoPillowShot(C,a+k,10); C.cast=.4; }
         // 5-10: goo puddles and pink walls; black holes; a light rain
-        if(el>=5&&el<10){ if(el>=ev.goo){ ev.goo=el+2; for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),new THREE.MeshBasicMaterial({color:0xffffff})); m.userData.tw=1; scene.add(m);
-              twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
+        if(el>=5&&el<10){ if(el>=ev.goo){ ev.goo=el+2; for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5);
+              twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
           if(el>=ev.pink){ ev.pink=el+1.3; C.push=.3; C.glintT=.3; Sound.sfx('ting'); twPink(C.x,C.z,Math.atan2(P.z-C.z,P.x-C.x),{warn:.55}); }
           if(!ev.holes){ ev.holes=1; for(let k=0;k<3;k++){ const p=twRandIn(3), a=rnd(0,6.28); twMiniHole(p.x,p.z,{r:.7,pull:3.4,range:5,dur:10,eat:.95,dmg:4,vx:Math.cos(a)*1.1,vz:Math.sin(a)*1.1}); } }
           if(el>=ev.rain){ ev.rain=el+.5; const a=rnd(0,6.28), r=rnd(0,2.5); twSkyScythe(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.8,{quiet:1}); } }

@@ -341,8 +341,8 @@ DUO.burnout=function*(C,O){ const F=TW.fight, sp=1.15, H=TW.hg={left:20,total:20
         if(el<5&&!ev.spin){ ev.spin=1; const dir=Math.random()<.5?1:-1, b0=rnd(0,6.28); for(let k=0;k<2;k++) twBeam({x:C.x,z:C.z,ang:t=>b0+k*Math.PI+Math.max(0,t-.8)*.95*dir,len:18,w:1,warn:.8,dur:4.4,dmg:3,col:0xbfe4ff}); }
         if((el<5||el>=10&&el<15)&&el>=ev.c){ ev.c=el+(el<5?1.7:1.45); const a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.38,0,.38]) twCaoPillowShot(C,a+k,10); C.cast=.4; }
         // 5-10: goo puddles and pink walls; black holes; a light rain
-        if(el>=5&&el<10){ if(el>=ev.goo){ ev.goo=el+2; for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),new THREE.MeshBasicMaterial({color:0xffffff})); m.userData.tw=1; scene.add(m);
-              twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
+        if(el>=5&&el<10){ if(el>=ev.goo){ ev.goo=el+2; for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5);
+              twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
           if(el>=ev.pink){ ev.pink=el+1.3; C.push=.3; C.glintT=.3; Sound.sfx('ting'); twPink(C.x,C.z,Math.atan2(P.z-C.z,P.x-C.x),{warn:.55}); }
           if(!ev.holes){ ev.holes=1; for(let k=0;k<3;k++){ const p=twRandIn(3), a=rnd(0,6.28); twMiniHole(p.x,p.z,{r:.7,pull:3.4,range:5,dur:10,eat:.95,dmg:4,vx:Math.cos(a)*1.1,vz:Math.sin(a)*1.1}); } }
           if(el>=ev.rain){ ev.rain=el+.5; const a=rnd(0,6.28), r=rnd(0,2.5); twSkyScythe(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.8,{quiet:1}); } }
