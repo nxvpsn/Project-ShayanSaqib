@@ -1,0 +1,411 @@
+{
+ "name": "getsuga_gold",
+ "note": "Ali's Getsuga, second in an alternating chain (1.5x): red and black with the Jujishou's gold lining: camera-facing sprite riding the projectile (06c_pxvfx). Bulges to +x (travel). Written by vfx/getsuga_family.py.",
+ "w": 128,
+ "h": 128,
+ "frames": 8,
+ "fps": 18,
+ "loop": true,
+ "seed": 9,
+ "outline": "outside",
+ "outlineColor": "#ffb020",
+ "pivot": [
+  0.5,
+  0.5
+ ],
+ "layers": [
+  {
+   "type": "crescent",
+   "ramp": [
+    "#2a1600",
+    "#7a4a00",
+    "#c08a10"
+   ],
+   "r": 0.9,
+   "rIn": 0.8,
+   "off": 0.3,
+   "x": -0.32,
+   "gain": 0.75,
+   "blend": "under",
+   "note": "echo outside"
+  },
+  {
+   "type": "crescent",
+   "ramp": [
+    "#000000",
+    "#07000a",
+    "#120012",
+    "#1e0418",
+    "#30061e"
+   ],
+   "r": 0.82,
+   "rIn": 0.74,
+   "off": 0.36,
+   "x": -0.32,
+   "note": "dark body: a crescent moon"
+  },
+  {
+   "type": "crescent",
+   "ramp": [
+    "#a00a1e",
+    "#ff1a3a",
+    "#ffb020",
+    "#fff0b0"
+   ],
+   "r": 0.84,
+   "rIn": 0.8,
+   "off": 0.07,
+   "x": -0.32,
+   "gain": 1.1,
+   "note": "bright rim along the outer edge"
+  },
+  {
+   "type": "particles",
+   "ramp": [
+    "#a00a1e",
+    "#ff1a3a",
+    "#ffb020",
+    "#fff0b0"
+   ],
+   "mode": "spray",
+   "count": 22,
+   "x": -0.05,
+   "areaY": 0.7,
+   "areaX": 0.12,
+   "dir": 180,
+   "spread": 30,
+   "speed": [
+    0.6,
+    1.4
+   ],
+   "life": [
+    0.3,
+    0.7
+   ],
+   "shape": "streak",
+   "size": 2
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#6a4000",
+    "#e09a10",
+    "#ffe070",
+    "#ffffff"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": -0.138,
+   "y0": -0.634,
+   "x1": 0.216,
+   "y1": -0.45,
+   "jag": 0.55,
+   "depth": 4,
+   "branch": 0.35,
+   "hold": 1,
+   "flicker": 0.3,
+   "gain": 0.95
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#6a4000",
+    "#e09a10",
+    "#ffe070",
+    "#ffffff"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": 0.186,
+   "y0": -0.424,
+   "x1": 0.373,
+   "y1": -0.097,
+   "jag": 0.55,
+   "depth": 4,
+   "branch": 0.35,
+   "hold": 1,
+   "flicker": 0.3,
+   "gain": 0.95
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#6a4000",
+    "#e09a10",
+    "#ffe070",
+    "#ffffff"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": 0.334,
+   "y0": -0.092,
+   "x1": 0.319,
+   "y1": 0.285,
+   "jag": 0.55,
+   "depth": 4,
+   "branch": 0.35,
+   "hold": 1,
+   "flicker": 0.3,
+   "gain": 0.95
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#6a4000",
+    "#e09a10",
+    "#ffe070",
+    "#ffffff"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": 0.283,
+   "y0": 0.268,
+   "x1": 0.071,
+   "y1": 0.58,
+   "jag": 0.55,
+   "depth": 4,
+   "branch": 0.35,
+   "hold": 1,
+   "flicker": 0.3,
+   "gain": 0.95
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#6a4000",
+    "#e09a10",
+    "#ffe070",
+    "#ffffff"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": 0.049,
+   "y0": 0.547,
+   "x1": -0.174,
+   "y1": 0.685,
+   "jag": 0.55,
+   "depth": 4,
+   "branch": 0.35,
+   "hold": 1,
+   "flicker": 0.3,
+   "gain": 0.95
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#000000",
+    "#0c0006",
+    "#1e000c",
+    "#3a0616"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": -0.195,
+   "y0": -0.891,
+   "x1": 0.477,
+   "y1": -0.46,
+   "jag": 0.7,
+   "depth": 4,
+   "branch": 0.5,
+   "hold": 1,
+   "flicker": 0.25,
+   "gain": 0.9
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#000000",
+    "#0c0006",
+    "#1e000c",
+    "#3a0616"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": 0.526,
+   "y0": -0.308,
+   "x1": 0.477,
+   "y1": 0.46,
+   "jag": 0.7,
+   "depth": 4,
+   "branch": 0.5,
+   "hold": 1,
+   "flicker": 0.25,
+   "gain": 0.9
+  },
+  {
+   "type": "bolt",
+   "ramp": [
+    "#000000",
+    "#0c0006",
+    "#1e000c",
+    "#3a0616"
+   ],
+   "mode": "line",
+   "count": 1,
+   "x0": 0.369,
+   "y0": 0.579,
+   "x1": -0.224,
+   "y1": 0.915,
+   "jag": 0.7,
+   "depth": 4,
+   "branch": 0.5,
+   "hold": 1,
+   "flicker": 0.25,
+   "gain": 0.9
+  }
+ ],
+ "vary": [
+  {
+   "seed": 30,
+   "layers": {
+    "0": {
+     "r": 0.9,
+     "off": 0.277
+    },
+    "1": {
+     "r": 0.815,
+     "off": 0.342,
+     "x": -0.317
+    },
+    "2": {
+     "r": 0.83,
+     "off": 0.051,
+     "x": -0.301
+    }
+   }
+  },
+  {
+   "seed": 37,
+   "layers": {
+    "0": {
+     "r": 0.879,
+     "off": 0.29
+    },
+    "1": {
+     "r": 0.831,
+     "off": 0.383,
+     "x": -0.318
+    },
+    "2": {
+     "r": 0.825,
+     "off": 0.084,
+     "x": -0.323
+    }
+   }
+  },
+  {
+   "seed": 44,
+   "layers": {
+    "0": {
+     "r": 0.88,
+     "off": 0.273
+    },
+    "1": {
+     "r": 0.828,
+     "off": 0.381,
+     "x": -0.321
+    },
+    "2": {
+     "r": 0.828,
+     "off": 0.081,
+     "x": -0.32
+    }
+   }
+  },
+  {
+   "seed": 51,
+   "layers": {
+    "0": {
+     "r": 0.889,
+     "off": 0.317
+    },
+    "1": {
+     "r": 0.809,
+     "off": 0.35,
+     "x": -0.305
+    },
+    "2": {
+     "r": 0.85,
+     "off": 0.079,
+     "x": -0.316
+    }
+   }
+  },
+  {
+   "seed": 58,
+   "layers": {
+    "0": {
+     "r": 0.895,
+     "off": 0.313
+    },
+    "1": {
+     "r": 0.837,
+     "off": 0.338,
+     "x": -0.336
+    },
+    "2": {
+     "r": 0.834,
+     "off": 0.064,
+     "x": -0.309
+    }
+   }
+  },
+  {
+   "seed": 65,
+   "layers": {
+    "0": {
+     "r": 0.91,
+     "off": 0.322
+    },
+    "1": {
+     "r": 0.813,
+     "off": 0.357,
+     "x": -0.321
+    },
+    "2": {
+     "r": 0.833,
+     "off": 0.072,
+     "x": -0.333
+    }
+   }
+  },
+  {
+   "seed": 72,
+   "layers": {
+    "0": {
+     "r": 0.919,
+     "off": 0.287
+    },
+    "1": {
+     "r": 0.801,
+     "off": 0.36,
+     "x": -0.332
+    },
+    "2": {
+     "r": 0.847,
+     "off": 0.059,
+     "x": -0.323
+    }
+   }
+  },
+  {
+   "seed": 79,
+   "layers": {
+    "0": {
+     "r": 0.918,
+     "off": 0.292
+    },
+    "1": {
+     "r": 0.802,
+     "off": 0.381,
+     "x": -0.307
+    },
+    "2": {
+     "r": 0.859,
+     "off": 0.07,
+     "x": -0.307
+    }
+   }
+  }
+ ]
+}

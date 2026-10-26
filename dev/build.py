@@ -116,6 +116,8 @@ s = patch(s, "const m=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.
 s = patch(s, "yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); yield wait(.7);", "yield wait(.35); Voice.bark('aliJudgement'); Sound.sfx('secret'); yield wait(.35); yield* aliFinalCut(); yield wait(.2);")
 s = patch(s, "['ATTACK','Getsuga Tenshou. Spam it.'],['HOLD ATTACK','Black Getsuga'],['JUMP','Twice as high. Hold to float in place.'],['BLOCK','Blade storm. Deflects every projectile.'],['DASH','Teleport. No cooldown.']",
   "['ATTACK','Three cuts: a slash, a double cut, a spin.'],[T?'GETSUGA BUTTON':'RIGHT CLICK','Getsuga Tenshou. Hold: Black Getsuga.'],['JUMP','Twice as high. Hold to ride a Getsuga.'],['PARRY','Attack right before a hit lands.'],['DASH','Teleport. No cooldown.']")
+s = patch(s, "b.big?7:4", "(b.big?7:4)*(b.mul||1)", 4)
+s = patch(s, "nbDamage(!b.ali&&Game.flags.aliSword?7.5:.75)", "nbDamage((!b.ali&&Game.flags.aliSword?7.5:.75)*(b.mul||1))")  # Getsuga damage multiplier (Ali's alternating chain)
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

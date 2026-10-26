@@ -48,7 +48,7 @@ function* twFullmoonCounter(T){ const P=Player; twBark('omar',"Fullmoon Counter!
   const mA=new THREE.Mesh(new THREE.PlaneGeometry(s,s),new THREE.MeshBasicMaterial({map:CRESC,color:0x9a4aff,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,blending:THREE.AdditiveBlending}));
   const mD=new THREE.Mesh(new THREE.PlaneGeometry(s*.82,s*.82),new THREE.MeshBasicMaterial({map:CRESC,color:0x05010a,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false})); mD.position.z=.02;
   const mB=mA.clone(); mB.rotation.y=Math.PI/2; mB.scale.set(.75,1,1); const gl=new THREE.Mesh(new THREE.PlaneGeometry(s*1.6,s*1.6),new THREE.MeshBasicMaterial({map:GLOW,color:0x6a1aff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); gl.rotation.x=TILT;
-  g.add(mA,mD,mB,gl); g.rotation.y=-a; g.userData.tw=1; scene.add(g); T.swing=1; Sound.sfx('beam'); Sound.sfx('crossboom'); shake(.8); FX.flash=.35; grade.uniforms.flashCol.value.set(.6,.3,1);
+  g.add(mA,mD,mB,gl); g.rotation.y=-a; g.userData.tw=1; scene.add(g); twGetsugaSkin(g,GS*3,'getsuga_omar'); T.swing=1; Sound.sfx('beam'); Sound.sfx('crossboom'); shake(.8); FX.flash=.35; grade.uniforms.flashCol.value.set(.6,.3,1);
   const b={x:T.x+Math.cos(a)*1.2,z:T.z+Math.sin(a)*1.2,t:0,hit:false}; const sp=16, life=Math.hypot(lock.x-b.x,lock.z-b.z)/sp+.9;
   twHz({upd(dt,play){ if(play) b.t+=dt; b.x+=Math.cos(a)*sp*dt; b.z+=Math.sin(a)*sp*dt; const gy=groundY(b.x,b.z); g.position.set(b.x,gy+2.6,b.z); const k=Math.min(1,(life-b.t)*3); [mA,mB,mD,gl].forEach(o=>o.material.opacity=Math.max(0,k));
       for(let i=0;i<5;i++) FX.spawn(b.x+rnd(-1,1),gy+rnd(.2,5),b.z+rnd(-1,1),-Math.cos(a)*3,rnd(-.5,.5),-Math.sin(a)*3,.45,i%2?0x8a3aff:0x0a0010,.45,0,i%2===1);
@@ -227,7 +227,7 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
   const gy=groundY(px+5,pz), by=gy+1.5; FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[2,2]]); Sound.sfx('shatter');
   cineSet(px+5,gy+2.2,pz+11,px+5,gy+1.5,pz); twBark('omar',"GETSUGA... TENSHOU.",true); if(ALI()) twBark('ali',"Getsuga... Tenshou."); else twBark('shayan',"GETSUGA... TENSHOU!");
   T.cast=1; P.cineAnim='charge'; P.charge=2; Sound.sfx('charge'); yield .7; P.charge=0; P.cineAnim='beam';
-  const mine=ALI()?twGetsugaMesh(5.2,0xff2a3a,0x14020a,0xff1a2a):twGetsugaMesh(5.2,0xff3a5a,0x2a0010,0xff2040), his=twGetsugaMesh(5.6,0x9a4aff,0x05010a,0x6a1aff);
+  TW._gsc=2; const mine=ALI()?twGetsugaMesh(5.2,0xff2a3a,0x14020a,0xff1a2a):twGetsugaMesh(5.2,0xff3a5a,0x2a0010,0xff2040), his=twGetsugaMesh(5.6,0x9a4aff,0x05010a,0x6a1aff); TW._gsc=0; /* clash crescents: twice the normal size */
   mine.rotation.y=0; his.rotation.y=-Math.PI; Sound.sfx('beam'); Sound.sfx('crossboom'); shake(.8); FX.flash=.5; T.swing=1;
   const st={a:px+1,b:T.x-1,cx:px+5,t:0,ph:'fly',win:null}; Game.fxUpd.push(dt=>{ if(st.dead){ scene.remove(mine); scene.remove(his); return false; } st.t+=dt; const j=st.ph==='grind'?Math.sin(st.t*60)*.08:0;
     mine.position.set(st.a+j,by,pz); his.position.set(st.b-j,by,pz); const k=1+(st.ph==='grind'?Math.sin(st.t*40)*.05:0); mine.scale.setScalar(k); his.scale.setScalar(k*1.04);
@@ -236,7 +236,7 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
     return true; });
   // they fly at each other
   yield* (function*(){ const a0=st.a, b0=st.b; for(let t=0;t<.45;t+=1/30){ const u=t/.45; st.a=lerp(a0,st.cx-1.1,u); st.b=lerp(b0,st.cx+1.1,u); yield 1/30; } })();
-  st.ph='grind'; FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4); FX.hitstop=.12;
+  st.ph='grind'; twIceMelt(st.cx,pz,12,1.2); FX.flash=1; impactFrame([[1,2],[3,2]]); Sound.sfx('crossboom'); Sound.sfx('clash'); shake(1.4); FX.hitstop=.12;
   const M=TW.mash={v:0,n:0,t:0,dur:4.6,omarClash:1}; twClashWarp(st.cx,by,pz); hit.attack=false; const lo=px+2.6, hi=T.x-2.6;
   while(M.t<M.dur){ const dt=1/30; yield dt; M.t+=dt; const pushes=M.n; M.n=0; M.v=clamp(M.v+pushes*.09-dt*.25,-1,1); st.cx=lerp(st.cx,lerp(lo,hi,(M.v+1)/2),.25); st.a=st.cx-1.1; st.b=st.cx+1.1;
     P.vx=P.vz=0; if(pushes){ Sound.sfx('hit'); shake(.15); } if(Math.random()<.15) Sound.sfx('slam'); FX.flash=Math.max(FX.flash,.06); }

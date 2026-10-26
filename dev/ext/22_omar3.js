@@ -80,7 +80,7 @@ function* twOmarCollapse(T,ph){ const sp=twSp(T), P=Player; twBark('omar',"Colla
     const room=Math.min(ray(-Math.cos(a),-Math.sin(a)),6)-k*.01; if(room>best){ best=room; c={x,z}; } }
   if(!c) c=twClampXZ(P.x+Math.cos((P.ang||0)+Math.PI)*TW_BH.spawn,P.z+Math.sin((P.ang||0)+Math.PI)*TW_BH.spawn,1.5); const gy=groundY(c.x,c.z);
   const core=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0x000000})); core.userData.tw=1; core.scale.setScalar(.01); scene.add(core); const halo=twGlow(0x8a2aff,1);
-  const BH=TW.bh={x:c.x,z:c.z,live:true,t:0}; twBig('DASH!',{size:64,col:'#c08aff',y:UH*.26,dur:1.2,sub:'The black hole pulls you in. Keep dashing away, and parry his rushes.'}); Sound.sfx('void');
+  const BH=TW.bh={x:c.x,z:c.z,live:true,t:0}; twIceMelt(c.x,c.z,6,1.5); twBig('DASH!',{size:64,col:'#c08aff',y:UH*.26,dur:1.2,sub:'The black hole pulls you in. Keep dashing away, and parry his rushes.'}); Sound.sfx('void');
   twHz({upd(dt,play){ if(play) BH.t+=dt; const k=Math.min(1,BH.t*2)*(BH.live?1:Math.max(0,1-(BH.t-BH.endT)*4)); core.scale.setScalar(Math.max(.01,1.3*k)); core.position.set(c.x,gy+1.3,c.z); halo.position.copy(core.position); halo.scale.setScalar(5*k+Math.sin(BH.t*20)*.3);
       for(let i=0;i<4;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(c.x+Math.cos(a)*r,gy+1.3+rnd(-1,1),c.z+Math.sin(a)*r,-Math.cos(a)*r*1.6,0,-Math.sin(a)*r*1.6,.5,i%2?0x8a2aff:0x1a0a2a,.3,0,i%2===0); }
       if(BH.live) twBHSuck(c,gy); // nothing else may fly while the hole is open: it all gets eaten

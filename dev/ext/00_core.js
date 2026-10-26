@@ -150,8 +150,8 @@ function twNear(x,z,r,pad){ let best=null,bd=r; for(const T of TW.foes){ if(T.hp
     if(TW.giant&&TW.giant.hp>0&&!set.has(TW.giant)){ const G=TW.giant; if(Math.hypot(G.x-x,G.z-z)<rad+2.4){ set.add(G); if(hzgHurt(dmg,'melee')){ any=true; Sound.sfx('hit'); addSP(1); } } }
     return any; };
   const ub=updateBeams; updateBeams=function(dt){ for(const b of BEAMS){ const rad=b.big?1.6:1.15;
-      for(const T of TW.foes){ if(T.hp<=0||T.gone||T.hide||b.hit.has(T)) continue; if(Math.hypot(T.x-b.x,T.z-b.z)<rad+.8*T.scale){ b.hit.add(T); if(twHurt(T,b.big?7:4,'beam')) Sound.sfx('hit'); } }
-      const G=TW.giant; if(G&&G.hp>0&&!b.hit.has(G)&&Math.hypot(G.x-b.x,G.z-b.z)<rad+2.4){ b.hit.add(G); hzgHurt(b.big?7:4,'beam'); } }
+      for(const T of TW.foes){ if(T.hp<=0||T.gone||T.hide||b.hit.has(T)) continue; if(Math.hypot(T.x-b.x,T.z-b.z)<rad+.8*T.scale){ b.hit.add(T); if(twHurt(T,(b.big?7:4)*(b.mul||1),'beam')) Sound.sfx('hit'); } }
+      const G=TW.giant; if(G&&G.hp>0&&!b.hit.has(G)&&Math.hypot(G.x-b.x,G.z-b.z)<rad+2.4){ b.hit.add(G); hzgHurt((b.big?7:4)*(b.mul||1),'beam'); } }
     return ub(dt); };
   const ubo=updateBolts; updateBolts=function(dt){ for(const b of BOLTS){ if(b.dead||!b.friendly) continue;
       for(const T of TW.foes){ if(T.hp<=0||T.gone||T.hide) continue; if(Math.hypot(T.x-b.x,T.z-b.z)<1.1*T.scale&&Math.abs(T.y+1.3*T.scale-b.y)<1.8*T.scale){ b.dead=1; twHurt(T,b.dmg*1.15,'bolt'); Sound.sfx('hit'); shake(.15); break; } }

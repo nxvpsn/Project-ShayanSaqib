@@ -37,7 +37,7 @@ function* twPhaseCine(F,T){ const P=Player, who=T.who, H=HERO(), hz=!!Game.hamza
     yield say('caotan',"...MAGICAL.");
     Sound.sfx('sparkle'); Sound.sfx('choir'); const orb=twOrbit(T,8.5,2.6,-.9,.9,3.4,1.8);
     const rib={on:1}; Game.fxUpd.push(()=>{ if(!rib.on) return false; for(let i=0;i<6;i++){ const a=performance.now()/200+i*1.05, r=1.2+Math.sin(performance.now()/300+i)*.3; FX.spawn(T.x+Math.cos(a)*r,T.y+rnd(0,3.4),T.z+Math.sin(a)*r,0,2.2,0,.6,i%2?0xff6ab0:0xffd0ec,.35,0,true); } return true; });
-    yield wait(1.2); twP5Card(['MAGICAL SENPAI','CAOTAN ☆ TRANSFORMATION'],2.1); impactFrame([[1,2],[3,2],[2,2]]); yield wait(2);
+    yield wait(1.2); twCutin('caotan','MAGICAL SENPAI','Phase II  ·  Caotan ☆ Transformation','#ff6ab0',2.6); impactFrame([[1,2],[3,2],[2,2]]); yield wait(2.6);
     T.form=2; T.tint=0xffe8f4; for(let i=0;i<3;i++){ yield* twGlint(T,1,.18,1); } grade.uniforms.tint.value.set(1.1,.95,1.08); grade.uniforms.sat.value=1.2; rib.on=0; orb.dead=1;
     twHeartBurst(T.x,T.z,60); FX.ring(T.x,groundY(T.x,T.z),T.z,'#ff6ab0',10,.8); Sound.sfx('kyun');
     yield say('caotan',"Kira kira~! Magical Senpai Caotan, here to punish you in the name of the MOON! ...And also me.",'happy');
@@ -52,8 +52,7 @@ function* twPhaseCine(F,T){ const P=Player, who=T.who, H=HERO(), hz=!!Game.hamza
     yield say('caotan',"I've been holding back. This whole time. My true power... my FINAL FORM...");
     const heart=twBB(texHeart('#ff3a8a'),14,14,{add:true,op:.0}); heart.position.set(T.x,T.y+9,T.z-8); const hk={k:0}; Game.fxUpd.push(dt=>{ if(hk.dead) return false; hk.k=Math.min(1,hk.k+dt*.6); heart.material.opacity=hk.k*.55*(1+.15*Math.sin(performance.now()/120)); heart.scale.setScalar(1+.05*Math.sin(performance.now()/120)); return true; });
     Sound.sfx('doki'); yield tween(T,{hy:2.8},1.4,t=>t*(2-t)); yield* twGlint(T,3,.12,1); T.form=3; T.tint=0xffd8f0;
-    twP5Card(['CAOTAN-SAMA','SENPAI UNCHAINED'],2.1); impactFrame([[3,2],[1,2],[2,2],[1,1]]); shake(1); grade.uniforms.tint.value.set(1.18,.9,1.1); yield wait(2.1);
-    twCutin('caotan','SENPAI UNCHAINED','Phase III  ·  He is no longer pretending to be normal','#ff3a8a',2); yield wait(1.4);
+    twCutin('caotan','SENPAI UNCHAINED','Phase III  ·  He is no longer pretending to be normal','#ff3a8a',2.6); impactFrame([[3,2],[1,2],[2,2],[1,1]]); shake(1); grade.uniforms.tint.value.set(1.18,.9,1.1); yield wait(2.6);
     yield say('caotan',"No more holding back. No more 'just friends'. Senpai... I am going to love you TO DEATH. Literally. With lasers.",'angry');
     hk.dead=1; scene.remove(heart); T.hy=1.3;
     if(mira) yield say('mira',ALI()?"Ali. Please. End this. I can't watch any more anime.":"Shayan, Mira is watching this. MIRA IS WATCHING THIS.",'worried');
@@ -158,7 +157,7 @@ function* twBetrayal(){ const P=Player, who=Game.flags.twinAlly, H=HERO(), A=TW.
   if(mira) yield say('mira',ALI()?"Ali, I'm still in the cage. Just so everyone remembers.":"Shayan! I'm still in the cage! Is everyone just going to keep fighting?!",'angry');
   // his signature move before the fight: Caotan's Domain Expansion (stained-glass arena), Omar's Bankai (black flowers, ice)
   if(who==='caotan') yield* twCaoDomain(T); else yield* twOmarBankai(T);
-  T.scythe=0; if(who==='caotan'){ twP5Card(ALI()?['ALI THE WANDERER','VS '+TW_TITLE[who][0].toUpperCase()]:['SHAYAN SAQIB','VS '+TW_TITLE[who][0].toUpperCase()],2.3); yield wait(2.3); }
+  T.scythe=0; if(who==='caotan'){ twCutin('caotan',TW_TITLE[who][0].toUpperCase(),(ALI()?'Ali the Wanderer':'Shayan Saqib')+'  vs  '+TW_TITLE[who][1],'#ff6ab0',2.6); yield wait(2.6); }
   else { twZeldaCard(TW_TITLE[who][1],TW_TITLE[who][0],ALI()?'vs Ali the Wanderer':'vs Shayan Saqib',2.6); yield* twZeldaPan(T,2.5); }
   card(TW_TITLE[who][0],TW_TITLE[who][1]); Sound.play(TW_MUSIC[who][1]); yield wait(1.2);
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); T.inv=false; T.noAttack=0; Cam.cine=null; Game.letterTo=0; Game.state='play'; P.inv=1; if(who==='omar') T.zBar=performance.now(); }

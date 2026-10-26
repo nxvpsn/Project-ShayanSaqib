@@ -27,11 +27,11 @@ twSetScr('twinsGate',function*(){ const P=Player; yield fadeOut(); loadLevel('tw
   // the twins drop in, one at a time, with a lot of unnecessary posing
   const C=TWL[0], O=TWL[1];
   const ride=(T,side)=>{ const r={on:1}; Game.fxUpd.push(()=>{ if(!r.on) return false; const gy=groundY(T.x,T.z); cineSet(T.x+side,Math.max(gy+3,T.y*.55+2.4),T.z+9.5,T.x,T.y+1.6,T.z); return true; }); return r; };
-  let rd=ride(C,-2); yield wait(.5); yield tween(C,{hy:1.3},.75,t=>t*t); rd.on=0; Sound.sfx('slam'); shake(.6); FX.burst(C.x,groundY(C.x,C.z)+.3,C.z,40,0xffffff,7,.4,false); FX.ring(C.x,groundY(C.x,C.z),C.z,'#ffffff',4,.5);
+  let rd=ride(C,-2); yield wait(.5); yield tween(C,{hy:1.3},.75,t=>t*t); for(let k=0;k<90&&C.y-groundY(C.x,C.z)>1.6;k++) yield wait(1/60); rd.on=0; /* his height lags the tween: keep following until he lands */ Sound.sfx('slam'); shake(.6); FX.burst(C.x,groundY(C.x,C.z)+.3,C.z,40,0xffffff,7,.4,false); FX.ring(C.x,groundY(C.x,C.z),C.z,'#ffffff',4,.5);
   twCamT(C,7.5,-1.5); yield wait(.3);
   yield say('caotan',ALI()?"Not so fast, rice hat!":"Not so fast, little blacksmith!");
   yield* twGlint(C,1,.22,1); yield say('caotan',"I am Caotan Cummaster! My aim is legendary, my reserves are endless, and my glasses are... PRESCRIPTION.");
-  O.hy=10; O.y=groundY(O.x,O.z)+10; rd=ride(O,1.6); yield wait(.35); yield tween(O,{hy:1.3},1,t=>1-Math.pow(1-t,3)); rd.on=0; FX.burst(O.x,O.y+1.4,O.z,60,0x140a1a,6,.5,false); Sound.sfx('void');
+  O.hy=10; O.y=groundY(O.x,O.z)+10; rd=ride(O,1.6); yield wait(.35); yield tween(O,{hy:1.3},1,t=>1-Math.pow(1-t,3)); for(let k=0;k<90&&O.y-groundY(O.x,O.z)>1.6;k++) yield wait(1/60); rd.on=0; FX.burst(O.x,O.y+1.4,O.z,60,0x140a1a,6,.5,false); Sound.sfx('void');
   twCamT(O,7.5,1.4); O.scythe=1;
   yield say('omar',"And I am Omar the Edge. The darkness and I are on a first-name basis. It calls me 'Omar'. I call it... 'Darkness'.");
   O.scythe=0; twCamP(6.2,1.2);

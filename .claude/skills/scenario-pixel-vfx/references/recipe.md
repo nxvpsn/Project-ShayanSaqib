@@ -51,6 +51,7 @@ Defaults in brackets.
 - `ring`: shockwave. `r0` [0.1], `r1` [0.95], `th` [0.2] thickness, `thEnd` [0.03], `breakup` [0.7], `freq` [3], `fade` [0.35], `inner` [0] faint fill, `ease` [outQuart].
 - `flame`: rising flame anchored at its base; loops. `w` [0.42], `hgt` [1.2], `taper` [1.1], `freq` [2.6], `rough` [0.75], `speed` [1] whole cycles, `flick` [0.35] sway, `hollow` [0] (0.8 to 1 for a body aura).
 - `beam`: horizontal beam from the anchor (rotate with `angle`). `len` [1.8], `th` [0.16], `cap` [0.26] origin flare, `wob` [0.5], `speed` [2], `grow` [0.15] (one-shots).
+- `crescent`: a crescent moon (static): outer circle `r` [0.8] minus an inner circle `rIn` [0.92·r] pushed back by `off` [0.3] along -x; bulges to +x with sharp tips, hottest at the outer rim. Use `x`/`y` to place it.
 - `slash`: crescent sword arc. `r` [0.72], `th` [0.2], `a0` [-160] and `a1` [40] start and end angles in degrees (direction from their order), `sweep` [0.3] share of time for the swing, `trail` [0.9], `erode` [0.6].
 - `orb`: energy ball with a swirling core; loops. `r` [0.32], `pulse` [0.08], `pulseRate` [2], `spin` [1], `freq` [2.8], `rim` [0.35].
 - `comet`: projectile head and streaming tail pointing along `angle`. `r` [0.2], `len` [1.1], `speed` [2], `rough` [0.6]. Add `from: [x, y]` and `until` [0.45] to fly from `from` to the anchor.

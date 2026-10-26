@@ -137,7 +137,7 @@ twGetsugaClash=function*(F,C,O){ const P=Player, A=TW.allies.find(a=>a.who==='al
   yield say('shayan',"They're wide open! Ali, you thinking what I'm thinking?"); yield say('ali',"I'm thinking you talk too much.");
   cineSet(P.x+1,gy+2.2,P.z+8,P.x+3,gy+1.6,P.z); P.charge=2; Sound.sfx('charge'); yield say('shayan',"GETSUGA...",'angry'); yield say('ali',"...TENSHOU.");
   // two red crescents fly, merge into one, and stop dead in the air
-  const S=7.5, by=gy+S*.42, mine=twGetsugaMesh(S*.7,0xff3a5a), ali=twGetsugaMesh(S*.7,0xff1a2a), his=twGetsugaMesh(S*1.15,0x9a4aff); his.rotation.y=Math.PI; his.visible=false; ali.visible=false; /* Shayan's and Ali's fly as one crescent (two looked like a repeat) */
+  TW._gsc=2; const S=7.5, by=gy+S*.42, mine=twGetsugaMesh(S*.7,0xff3a5a), ali=twGetsugaMesh(S*.7,0xff1a2a), his=twGetsugaMesh(S*1.15,0x9a4aff); TW._gsc=0; his.rotation.y=Math.PI; his.visible=false; ali.visible=false; /* Shayan's and Ali's fly as one crescent (two looked like a repeat) */
   const st={a:P.x+1,b:O.x-1,cx:c.x+2.4,t:0,ph:'fly',merge:0,dead:0}; P.charge=0; P.cineAnim='beam'; Sound.sfx('beam'); Sound.sfx('crossboom'); FX.flash=.6; grade.uniforms.flashCol.value.set(1,.4,.5); shake(.6);
   Game.fxUpd.push(dt=>{ if(st.dead){ scene.remove(mine); scene.remove(ali); scene.remove(his); return false; } st.t+=dt; const j=st.ph==='grind'?Math.sin(st.t*60)*.1:0, z0=c.z;
     const mz=lerp(P.z,z0,st.merge), az=lerp(A?A.z:P.z,z0,st.merge); mine.position.set(st.a+j,by,mz+.05); ali.position.set(st.a+j-.2,by+.15,az); const k=1+st.merge*.55+(st.ph==='grind'?Math.sin(st.t*40)*.05:0); mine.scale.setScalar(k); ali.scale.setScalar(k*.98);

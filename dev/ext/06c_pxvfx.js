@@ -30,7 +30,7 @@ function pxvFrame(e,i){ if(e.f===i) return; e.f=i; e.t.offset.set((i%e.A.cols+(e
 // mirror a sheet left-right through its texture (a sprite's negative scale is ignored by three.js)
 function pxvFlip(e,f){ f=!!f; if(!!e.flip===f) return; e.flip=f; e.t.repeat.x=(f?-1:1)/e.A.cols; const i=e.f; e.f=-1; pxvFrame(e,i<0?0:i); }
 function pxvKill(e){ if(e.m.parent) e.m.parent.remove(e.m); try{ e.m.material.dispose(); e.t.dispose(); if(e.m.geometry&&e.m.isMesh) e.m.geometry.dispose(); }catch(x){} }
-function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; while(o.parent) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } if(!e.noAim) pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
+function pxvUpdate(dt){ for(let i=PXV.list.length-1;i>=0;i--){ const e=PXV.list[i]; if(e.fade){ e.age+=dt; if(e.age>=e.fade){ pxvKill(e); PXV.list.splice(i,1); continue; } e.m.material.opacity=e.op*(1-e.age/e.fade); continue; } if(e.g){ let o=e.g; for(let k=0;o.parent&&k<64;k++) o=o.parent; if(o!==scene){ pxvKill(e); PXV.list.splice(i,1); continue; } if(!e.noAim) pxvFollow(e); } e.time+=dt*e.sp; const f=Math.floor(e.time*e.A.fps); if(f>=e.A.n&&!e.A.loop){ pxvKill(e); PXV.list.splice(i,1); continue; } pxvFrame(e,f%e.A.n); } }
 function pxvStop(e){ const i=PXV.list.indexOf(e); if(i<0) return; PXV.list.splice(i,1); pxvKill(e); }
 function pxvClear(){ PXV.list.forEach(pxvKill); PXV.list.length=0; }
 (function(){ const fu=FX.update; FX.update=function(dt){ const r=fu.apply(this,arguments); try{ pxvUpdate(dt); }catch(e){ console.error('pxv',e); } return r; };
@@ -53,7 +53,7 @@ function pxvAim(x,y,z,ang){ const a=toScreen(x,y,z), b=toScreen(x+Math.cos(ang),
 // laid on the original swing's plane (ring 1.0..2.08, tilted per combo step, mirrored for the rising swing), slightly see-through
 const PXV_TELL=[]; // recent slashes (x,z,time): a melee hit right after one doesn't draw a second
 function pxvSlash(k,x,y,z,ang,n,size){ const e=pxvPlay(k,{x,y:y+.9,z,size,plane:true,op:.82}); if(!e) return null; const m=e.m;
-  m.rotation.x=-Math.PI/2+(n===1?.25:n===2?-.25:0); m.rotation.z=-ang; if(n===1) m.scale.y*=-1; PXV_TELL.push({x,z,t:Game.time}); if(PXV_TELL.length>16) PXV_TELL.shift(); return e; }
+  m.rotation.x=-Math.PI/2+(n===1?.25:n===2?-.25:0); m.rotation.z=-ang; if(n===1) m.scale.y*=-1; if(TWT.ice&&TW.fight){ m.material.color.setRGB(.34,.34,.4); m.material.opacity=.95; } /* dark gray on Omar's snow */ PXV_TELL.push({x,z,t:Game.time}); if(PXV_TELL.length>16) PXV_TELL.shift(); return e; }
 // parryable melee hits that have no swing of their own (rushes, dashes, lunges, bites) get the same silver slash as they reach you
 function pxvMeleeTell(sx,sz){ if(!pxvOk('sh_slash')) return; const P=Player, t=Game.time; if(PXV_TELL.some(o=>t-o.t<.35&&Math.hypot(o.x-sx,o.z-sz)<2.2)) return;
   pxvSlash('sh_slash',sx,groundY(sx,sz),sz,Math.atan2(P.z-sz,P.x-sx),Math.random()<.5?1:0,4.5); }
@@ -79,16 +79,20 @@ function pxvCresc(){ try{ const img=PXV.tex.cresc&&PXV.tex.cresc.image, A=PXV_AT
 // Shayan's (black blade, red border), Ali's Getsuga Jujishou (gold, riding the Judgement Cut tear, which is untouched) and Omar's
 // (violet; twGetsugaMesh, also used by the 2v2 clash). The sprite is a child of the projectile's group, so it moves, fades and
 // disappears with it; it twitches in size and angle every frame.
+// one Getsuga size for everyone: the size of the small ones hung in Ali's Q. Clash cutscenes x2 (TW._gsc=2), Omar's Fullmoon Counter x3
+const GS=2.3;
 function pxvAttach(n,g,size){ const e=pxvPlay(n,{x:0,y:0,z:0,size}); if(!e) return null; g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=size; return e; }
 function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld), p1=e.dir?p0.clone().add(new THREE.Vector3(e.dir.dx,0,e.dir.dz)):g.localToWorld(new THREE.Vector3(1,0,0)); /* e.dir: the travel direction, for groups that don't turn (Shayan's Getsuga resets its group's rotation) */
   const a=toScreen(p0.x,p0.y,p0.z), b=toScreen(p1.x,p1.y,p1.z), dx=b[0]-a[0], dy=b[1]-a[1], fl=dx<0, jt=1+rnd(-.06,.06);
   e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
-      if(pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); if(b.bolt&&!jj) b.bolt.visible=false; b.pxv=pxvAttach(k,b.g,jj?4.2:(big||b.ali)?4.4:3.6); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25); Ali's plain Getsuga looks like Shayan's charged one */ } }
+      if(pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); if(b.bolt&&!jj) b.bolt.visible=false; b.pxv=pxvAttach(k,b.g,jj?GS:big?GS*1.25:GS); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25); Ali's plain Getsuga looks like Shayan's charged one */ } }
     return r; }; })();
+// a group of plain meshes (Omar's Fullmoon Counter) wearing the pixel crescent instead
+function twGetsugaSkin(g,size,k){ try{ if(!pxvOk(k)) return null; g.children.forEach(c=>c.visible=false); return pxvAttach(k,g,size); }catch(e){ console.error('getsuga skin',e); return null; } }
 (function(){ const gm=twGetsugaMesh; twGetsugaMesh=function(s,col){ const g=gm.apply(this,arguments); try{ const k=(col==null||col===0x9a4aff)?'getsuga_omar':'getsuga';
-    if(pxvOk(k)){ const mats=g.userData.mats; g.children.forEach(c=>c.visible=false); const e=pxvAttach(k,g,s*1.2); if(e&&mats) mats.push(e.m.material); } }catch(e){ console.error('pxv getsugaMesh',e); } return g; }; })();
+    if(pxvOk(k)){ const mats=g.userData.mats; g.children.forEach(c=>c.visible=false); const e=pxvAttach(k,g,GS*(TW._gsc||1)); if(e&&mats) mats.push(e.m.material); } }catch(e){ console.error('pxv getsugaMesh',e); } return g; }; })();
 
 // ---------- parries: a clash star (blue; red for Ali) ----------
 (function(){ const ph=playerHit; playerHit=function(){ const r=ph.apply(this,arguments); if(r==='parry'){ const P=Player; pxvPlay(ALI()?'parry_ali':'parry',{x:P.x+Math.cos(P.ang||0)*.6,y:P.y+1.3,z:P.z+Math.sin(P.ang||0)*.6,size:1.6}); } return r; }; })();

@@ -313,6 +313,18 @@ TYPES.slash = (c, L) => {
   });
 };
 
+// Crescent moon: the part of an outer circle (r) outside an inner circle (rIn) pushed back by off along -x; bulges toward +x
+// with sharp tips. Hottest at the outer rim. (Added for The Moonsinger's Bell.)
+TYPES.crescent = (c, L) => {
+  const R = L.r ?? 0.8, Ri = L.rIn ?? R * 0.92, off = L.off ?? 0.3, gain = L.gain ?? 1;
+  field(c, L, R + 0.05, (x, y) => {
+    const a = Math.hypot(x, y); if (a > R) return 0;
+    const b = Math.hypot(x + off, y); if (b < Ri) return 0;
+    const dOut = R - a, dIn = b - Ri, w = dOut + dIn;
+    return (0.25 + 0.85 * (dIn / Math.max(w, 1e-4))) * gain;
+  });
+};
+
 // Energy orb with swirling interior; loops.
 TYPES.orb = (c, L) => {
   const r = L.r ?? 0.32, freq = L.freq ?? 2.8, pulse = L.pulse ?? 0.08, spin = Math.round(L.spin ?? 1);

@@ -43,7 +43,10 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
 function twSkyScythe(x,z,warn,o){ o=o||{}; const p=twClampXZ(x,z,.6), gy=groundY(p.x,p.z), m=o.mesh||twScytheMesh(false), s={t:0}; m.userData.tw=1; m.visible=!!o.mesh;
   const sx=o.fx!=null?o.fx:p.x+rnd(-2,2), sy=o.fy!=null?o.fy:gy+12, sz=o.fz!=null?o.fz:p.z-3;
   twBlast(p.x,p.z,1,warn,{col:0xff2a3a,burst:0x8a3aff,ring:'#c08aff',dmg:o.dmg||2,sfx:'hit',shake:.12,quiet:o.quiet});
-  twHz({upd(dt,play){ if(play) s.t+=dt; const u=clamp((s.t-(warn-.3))/.3,0,1); if(!o.mesh) m.visible=u>0; if(u>0||!o.mesh){ m.position.set(lerp(sx,p.x,u),lerp(sy,gy+.6,o.arc?u:u*u)+(o.arc?Math.sin(u*Math.PI)*o.arc:0),lerp(sz,p.z,u)); m.rotation.z=s.t*18; } return s.t<warn+.05; }, kill(){ scene.remove(m); }}); }
+  twHz({upd(dt,play){ if(play) s.t+=dt;
+    if(s.t>=warn){ if(!s.stuck){ s.stuck=1; m.visible=true; m.position.set(p.x,gy+.45,p.z); m.rotation.set(0,rnd(0,6.28),2.3+rnd(-.3,.3)); } /* it sticks in the ground, then shatters a second later */
+      if(s.t<warn+1) return true; FX.burst(p.x,gy+.7,p.z,16,0xc08aff,5,.35); FX.burst(p.x,gy+.5,p.z,10,0x1a0a20,4,.3,false); if(!o.quiet) Sound.sfx('glass'); return false; }
+    const u=clamp((s.t-(warn-.3))/.3,0,1); if(!o.mesh) m.visible=u>0; if(u>0||!o.mesh){ m.position.set(lerp(sx,p.x,u),lerp(sy,gy+.6,o.arc?u:u*u)+(o.arc?Math.sin(u*Math.PI)*o.arc:0),lerp(sz,p.z,u)); m.rotation.z=s.t*18; } return true; }, kill(){ scene.remove(m); }}); }
 // a dark orb high in the sky: a thin red aiming line, then a black laser down through you (Omar's rift orb)
 function twSkyOrb(x,z,o){ o=Object.assign({h:6.5,every:2.4,aim:.75,dur:20,delay:0},o||{}); const m=new THREE.Mesh(new THREE.SphereGeometry(.5,16,12),new THREE.MeshBasicMaterial({color:0x07020c})); m.userData.tw=1; scene.add(m); const g=twGlow(0x8a2aff,2.6);
   const Q={x,z,y:groundY(x,z)+o.h,t:0,next:o.delay+1,aim:null,ph:rnd(0,6)};
