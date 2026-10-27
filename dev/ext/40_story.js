@@ -123,7 +123,7 @@ function* twPactTalk(C,O){ const P=Player, H=HERO(); Sound.play('romance');
 // ---------- the twins chime in during the Kojima fight (the old Grimmaw) ----------
 function twAllySays(cao,om){ return function*(){ const has=w=>TW.allies.some(A=>A.who===w); if(has('caotan')&&cao) yield say('caotan',cao); if(has('omar')&&om) yield say('omar',om); }; }
 twWrapScr('p1special',twAllySays("Soldiers falling out of the sky?! In BOXES?! Senpai, stay close!","It is raining men. In sneaking suits. The forecast did not mention this."));
-twWrapScr('p2special',twAllySays("Nine of the same guy?! Is that a HYDRA of GRANDPAS?! Go, go, go!","Nine Snakes. Nine mullets. One shared bandana. Respect."));
+twWrapScr('p2special',twAllySays("Nine of the same guy?! Is that a HYDRA of GRANDPAS?! Go, go, go!","Nine Solid Snacks. Nine mullets. One shared bandana. Respect."));
 twWrapScr('p3special',twAllySays("The baby is on FIRE! Like, actually! Not in a hot way!","Let him burn. Fire is just loud darkness. And he is just a loud baby."));
 function* twAllyReactHamza(){ const has=w=>TW.allies.some(A=>A.who===w);
   if(has('caotan')) yield say('caotan',"He just... he cut the PIG. In HALF. Without LOOKING.",'surprised');

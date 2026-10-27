@@ -5,6 +5,7 @@ and writes them to audio/v/<key>.mp3 + audio/v/manifest.json (existing clips are
 
   python3 build_voices.py index.html --dry-run      # list lines that would be rendered
   python3 build_voices.py index.html [--jobs N]     # render missing lines and embed
+  python3 build_voices.py index.html --only 'a|b'  # only the missing lines whose text contains a or b
 """
 import re, sys, os, json, base64, subprocess, tempfile, concurrent.futures as cf
 
@@ -148,6 +149,8 @@ def main():
     lines = scan(code)
     want = {vhash(w + '|' + t): (w, t) for (w, t) in lines}
     missing = [(w, t, k) for k, (w, t) in want.items() if k not in existing or (w, t) in FORCE and existing.get(k + '#') is None]
+    if '--only' in sys.argv:  # --only "text a|text b": render just the lines whose text contains one of these
+        keys = sys.argv[sys.argv.index('--only') + 1].split('|'); missing = [m for m in missing if any(q in m[1] for q in keys)]
     print(f'{len(lines)} voiced lines found, {len(existing)} clips in audio/v, {len(missing)} to render')
     if dry:
         for w, t, k in sorted(missing): print(f'{w:10s} {k:8s} {t}')

@@ -36,7 +36,7 @@ function* twPaulIntro(){ const P=Player; yield fadeOut(); pfStart(); TWS.paulTri
   cineSet(PF_C.x,4,PF_C.z+16,PF_C.x,1.6,PF_C.z); for(const id of ['caotan','omar','hamza']) pfRemoveFx(pfMem(id),0xbfe8ff); yield say('paul',"Caotan. Omar. Hamza. Flight: disabled. Walk like the rest of us.");
   PF.fly={}; Sound.sfx('crash'); shake(.5); yield wait(.3);
   yield say('caotan',"My legs! They've never touched grass!",'surprised'); yield say('omar',"The ground. It's so... grounded."); yield say('hamza',"Oink.",'sad');
-  shot('grimmaw',9); pfRemoveFx(pfMem('grimmaw'),0xff5a3a); yield say('paul',"Kojima. Monologue: muted."); yield say('',"Kojima threw back his enormous head and began a forty-minute monologue. Nothing came out. Somewhere, a single Snake felt sorry for him.");
+  shot('grimmaw',9); pfRemoveFx(pfMem('grimmaw'),0xff5a3a); yield say('paul',"Kojima. Monologue: muted."); yield say('',"Kojima threw back his enormous head and began a forty-minute monologue. Nothing came out. Somewhere, a single Solid Snack felt sorry for him.");
   shot('mira'); pfRemoveFx(pfMem('mira'),0xffd0ec); yield say('paul',"Mira. Singing voice: removed. ...Sorry, Mira. It was for balance."); yield say('mira',"...!",'angry');
   shot('nathan',10); yield say('paul',"Nathan. Mech: uninstalled.");
   const N=pfMem('nathan'); Sound.sfx('shatter'); Sound.sfx('crossboom'); for(let i=0;i<80;i++) FX.spawn(N.x+rnd(-2,2),rnd(.5,4.5),N.z,rnd(-6,6),rnd(-2,6),rnd(-3,3),rnd(.6,1.4),[0x5d6f9e,0x3ff4ff,0x8fa0c8][i%3],rnd(.3,.6),12,false); PF.mechOn=false; impactFrame([[3,2],[2,1]]); shake(.8); yield wait(.8);

@@ -53,3 +53,5 @@ function kjDrawSplash(){ const T=KJT, k=Math.min(1,T.t/1.25), R=Math.hypot(UW,UH
         c.getContext('2d').drawImage(renderer.domElement,0,0); T.snap=c; T.mode='hold'; D.drawImage(c,0,0,UW,UH); return; }
       if(T.mode==='hold'){ if(T.snap) D.drawImage(T.snap,0,0,UW,UH); return; }
       T.t+=dt; if(T.mode==='iris') kjDrawIris(Math.min(1,T.t/.9)); else if(T.mode==='reveal') kjDrawReveal(Math.min(1,T.t/1.0)); else if(T.mode==='splash') kjDrawSplash(); }catch(e){ console.error('kojima transition',e); KJT=null; } }; })();
+// the transitions cut the camera: a sword tear still on screen (re-projected every frame) would stretch into a long black line
+(function(){ for(const S of [SCR,SCR_BASE,SCRA]) for(const k of ['toPhase2','execution']){ const f=S[k]; if(typeof f==='function') S[k]=function*(){ try{ twClearCutFX(); }catch(e){} yield* f.apply(this,arguments); }; } })();

@@ -2,8 +2,8 @@
 // HE'S DAY OLD KOJIMA replaces Grimmaw (same id 'grimmaw' everywhere in code, same fight and effects):
 // a baby in a tailored suit with a head far too big for him, a moustache, round glasses, and a giant gold fountain pen
 // for a sword (he signs things with it; people, mostly). His soldiers (the old hound pack, id 'hound') are now
-// sneaking-suit Snakes (spear: knife, '!' on the tell) and cyborg Raidens (archer: HF blade; shaman: the red "Ripper" one).
-// The nine-headed Hydrahound is a nine-headed Hydra of Snakes. Portraits are in 98c_kojima_pt.js.
+// sneaking-suit Solid Snacks (spear: knife, '!' on the tell) and cyborg Raidons (archer: HF blade; shaman: the red "Ripper" one).
+// The nine-headed Hydrahound is a nine-headed Hydra of Solid Snacks. Portraits are in 98c_kojima_pt.js.
 // =====================================================================
 function drawKojimaCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim||'idle', fl=s.flash>0, tk=cTalk('grimmaw'), E=(dx,dy,rx,ry,col)=>ell(c,cx+dx*f,by+dy,rx,ry,col);
   const C=cFlash({suit:'#24263a',suitD:'#181a28',suitH:'#3a3e58',shirt:'#f2eee6',tie:'#c8202e',tieD:'#8a1420',skin:'#f0c4a0',skinD:'#d8a07c',skinH:'#ffe0c8',hair:'#14121a',hairH:'#34303e',
@@ -46,7 +46,7 @@ function drawKojimaCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim|
   if(a==='slash'&&s.ap!=null&&s.ap<.9) for(let i=1;i<14;i++){ const a0=ang-i*.08, a1=a0-.09, r=48; cSeg(p,A.ex+Math.cos(a0)*r,A.ey+Math.sin(a0)*r,A.ex+Math.cos(a1)*r,A.ey+Math.sin(a1)*r,i<5?4:i<9?3:2,'rgba(255,230,150,'+(.75-i*.05).toFixed(2)+')'); }
   cArm(p,A,5,C.suitD,C.suit,C.skin,C.skinD); }
 
-// ---------- his soldiers: Snakes (spear) and Raidens (archer, shaman) ----------
+// ---------- his soldiers: Solid Snacks (spear) and Raidons (archer, shaman) ----------
 function drawSoldierCast(c,cx,by,f,s,arch){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim||'idle', fl=s.flash>0, rip=arch==='shaman', rai=!!arch;
   const C=cFlash(rai?{suit:'#2a2c36',suitD:'#1c1e26',suitH:'#454856',line:rip?'#ff3a4a':'#8fe0ff',plate:'#c8ccd8',plateH:'#ffffff',hair:'#e8ecf2',hairD:'#b8c0cc',skin:'#f0d0b8',skinD:'#d0a888',boot:'#14141a'}
     :{suit:'#3e4a5e',suitD:'#2c3646',suitH:'#5a6a82',line:'#141820',plate:'#1a1c22',plateH:'#3a3e48',hair:'#5a3a24',hairD:'#3a2416',skin:'#d8a888',skinD:'#b08060',boot:'#18151c',band:'#1a2234'},fl);
@@ -80,7 +80,7 @@ function drawSoldierCast(c,cx,by,f,s,arch){ const p=SH(c,cx,by,f), t=s.t||0, a=s
   else { const ang=a==='lunge'?0:a==='tell'?-.45:.9, x1=A.ex+Math.cos(ang)*8, y1=A.ey+Math.sin(ang)*8; cSeg(p,A.ex,A.ey,x1,y1,2,'#c8cbd6'); p(Math.round(x1),Math.round(y1),1,1,'#ffffff'); }
   cArm(p,A,3,C.suitD,C.suit,C.skin,C.skinD); }
 
-// ---------- the Hydra of Snakes ----------
+// ---------- the Hydra of Solid Snacks ----------
 drawHydraHead=function(c,hx,hy,f,open){ const H=(dx,dy,w,h,col)=>R(c,f>0?hx+dx:hx-dx-w,hy+dy,w,h,col), sk='#d8a888', skD='#b08060', hr='#5a3a24', band='#1a2234';
   ell(c,hx,hy,13,12,skD); ell(c,hx+2*f,hy,12,11,sk); H(-14,-14,22,7,hr); H(-15,-8,7,16,hr); H(-17,0,4,8,'#3a2416'); H(-10,-10,26,4,band);
   const tw=Math.round(Math.sin(performance.now()/120+hx)*2); H(-20,-9+tw,7,2,band); H(-25,-7+tw,6,2,band); H(-19,-6-tw,7,2,band);

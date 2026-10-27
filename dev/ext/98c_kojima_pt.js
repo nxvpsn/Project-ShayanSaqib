@@ -1,5 +1,5 @@
 // =====================================================================
-// PORTRAITS for He's Day Old Kojima (id 'grimmaw') and his soldiers (id 'hound', a Snake): see 03k_kojima.js
+// PORTRAITS for He's Day Old Kojima (id 'grimmaw') and his soldiers (id 'hound', a Solid Snack): see 03k_kojima.js
 // =====================================================================
 PT_DRAW.grimmaw=function(c,ex,op){ const P=ptP(c), sk='#f0c4a0', skD='#d8a07c', skH='#ffe0c8', hair='#14121a', mus='#2a1a14';
   // the suit, shoulders far too small for the head

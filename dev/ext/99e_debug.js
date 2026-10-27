@@ -10,8 +10,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: the Hamza bullet hell's ticks (an HP chunk per attack, 20 s finale), Drill = 3 Power Shots with 2 charges";
-const DBG_NEW=['mech:*'];
+const DBG_PATCH="Oct 27: duo grabs reworked (Omar's grab on an early parry, Ali saves 25%), Tag-Team Rush; a kinder Feeding Trough";
+const DBG_NEW=['duo:rushTag','duo:glompReap','duo:horizon','mech:trough'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

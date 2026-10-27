@@ -86,9 +86,8 @@ function thLine(x0,y0,x1,y1){ const len=Math.hypot(x1-x0,y1-y0), ms=[]; for(cons
     m.renderOrder=7; m.position.set((x0+x1)/2,(y0+y1)/2,.45); m.rotation.z=Math.atan2(y1-y0,x1-x0); m.scale.set(Math.max(.01,len),w,1); m.userData.temp=1; scene.add(m); ms.push(m); }
   const s={t:0}; Game.fxUpd.push(dt=>{ s.t+=dt; const k=Math.max(0,1-s.t/.3); ms.forEach(m=>{ m.material.opacity=k; m.scale.y=Math.max(.01,m.scale.y*(1-dt*2)); }); if(k<=0){ ms.forEach(m=>scene.remove(m)); return false; } return true; }); }
 function thBits(dt){ const N=NAT, T=Game.mech.th, TX=thTex(); for(const b of T.bits){ b.wt-=dt;
-    if(T.focus){ const a=T.t*2.4+b.i*Math.PI/2; b.tu=N.tu+Math.cos(a)*1.2; b.tv=N.tv+.4+Math.sin(a)*.5; }
-    else if(b.wt<=0){ b.wt=rnd(.8,1.6); b.tu=clamp(N.tu+rnd(-6,6),-TH.W+.8,TH.W-.8); b.tv=clamp(rnd(-TH.H+1.5,-1.5),-TH.H+1,-1); }
-    b.u=lerp(b.u,b.tu,Math.min(1,dt*(T.focus?9:2.2))); b.v=lerp(b.v,b.tv,Math.min(1,dt*(T.focus?9:2.2)));
+    if(b.wt<=0){ /* focus no longer pulls them in: they keep their spread */ b.wt=rnd(.8,1.6); b.tu=clamp(N.tu+rnd(-6,6),-TH.W+.8,TH.W-.8); b.tv=clamp(rnd(-TH.H+1.5,-1.5),-TH.H+1,-1); }
+    b.u=lerp(b.u,b.tu,Math.min(1,dt*2.2)); b.v=lerp(b.v,b.tv,Math.min(1,dt*2.2));
     // fire at the nearest minion, else at Hamza
     let tg=null,bd=1e9; for(const m of T.mn){ if(m.hp<=0) continue; const d=Math.hypot(m.u-b.u,m.v-b.v); if(d<bd){ bd=d; tg=m; } } const C=thBossC(), tu=tg?tg.u:C.u+rnd(-2,2), tv=tg?tg.v:C.v-1.5;
     const ta=Math.atan2(tv-b.v,tu-b.u); b.ang=ta; b.cd-=dt;
@@ -162,8 +161,8 @@ const TH_SP_K=100/(6.5*35), TH_SP_MAX=200;
 function thSpGain(d){ const N=NAT; if(N) N.sp=Math.min(TH_SP_MAX,(N.sp||0)+d*TH_SP_K); }
 const TH_PAT={
   *spiral(T){ let a=0; for(;;){ const m=thMouth(); T.jaw=.5; for(let k=0;k<5;k++) thB(m.u,m.v,a+k*1.2566,5.2,{col:0xff5a8a,r:.28}); for(let k=0;k<5;k++) thB(m.u,m.v,-a*1.3+k*1.2566+.6,3.8,{col:0xb06aff,r:.22}); a+=.21; yield .1; } },
-  *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=.85+k*.8, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
-    for(;;){ row(); gu+=dir*.35; if(Math.abs(gu)>TH.W-1.6){ dir=-dir; gu=clamp(gu,-(TH.W-1.6),TH.W-1.6); } yield .07; } },
+  *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=1.25+k*.8, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
+    for(;;){ row(); gu+=dir*.3; if(Math.abs(gu)>TH.W-1.9){ dir=-dir; gu=clamp(gu,-(TH.W-1.9),TH.W-1.9); } yield .07; /* the gap slides at 4.3/s: focused (4.8/s) you can always catch up */ } },
   *cross(T){ for(let w=0;;w++){ const e=thEye(w%2?1:-1), a0=thAim(e.u,e.v); for(let k=-3;k<=3;k++) thB(e.u,e.v,a0+k*.16,7.2,{col:0xff3a3a,r:.24});
       if(w%3===0){ const m=thMouth(); T.jaw=.7; for(let k=0;k<28;k++) thB(m.u,m.v,k/28*6.283+w*.1,2.8,{col:0xffd04a,r:.3}); } Sound.sfx('swing'); yield .34; } },
   *parade(T){ for(let w=0;w<4;w++){ const side=w%2?1:-1; for(let i=0;i<6;i++) thMinion('pig',side*(TH.W+1),TH.H-1-i*.2,thPigCurve(side,i*.28));
