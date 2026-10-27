@@ -2,6 +2,8 @@
   milkyway   the night sky over Starfall Ridge, Boxwood Ruins and the flower field: a diagonal Milky Way (blue at the top
              left, lavender in the middle, pink-white where it meets the horizon) over a magenta horizon glow, on black
              (it is drawn additively over the sky dome);
+  moon       the moon Ali cuts apart (equirectangular, 1024x512): a height field of craters (rims, bowls, central
+             peaks), dark maria and bright ray systems, lit from the upper left;
   vmtn_far / vmtn_mid / vmtn_near   Lanternbrook's dusk mountains (sun low on the left): rim-lit snow peaks, a violet
              range, and near hills with pines and the lights of far villages.
 Usage: python3 skyart.py [names...]   (default: all)"""
@@ -150,6 +152,45 @@ def village():
               pines=((22, 16, 36), 7), lights=True, steep=(.25, .6))
 
 
+def moon():
+    W, H = 1024, 512
+    rng = np.random.default_rng(42)
+    ys, xs = np.mgrid[0:H, 0:W].astype(float)
+    lat = (ys / H - .5) * math.pi; cl = np.maximum(np.cos(lat), .08)
+    hgt = (fbm(W, H, 64, 1, 5) - .5) * 10 + (fbm(W, H, 8, 2, 3) - .5) * 2.5
+    alb = np.ones((H, W))
+    mare = fbm(W, H, 128, 7, 4); mare = np.clip((mare - .43) * 4.5, 0, 1)
+    alb -= mare * .42; hgt -= mare * 3
+    def crater(cx, cy, r, k=1., rays=False):
+        y0, y1 = int(max(0, cy - 3 * r)), int(min(H, cy + 3 * r + 1))
+        if y1 <= y0: return
+        Y, X = ys[y0:y1], xs[y0:y1]; c = cl[y0:y1]
+        dx = ((X - cx + W / 2) % W - W / 2) * c; dy = Y - cy; d = np.sqrt(dx * dx + dy * dy) / r
+        bowl = np.where(d < 1, -(1 - d * d) * .4 * r, 0)
+        rim = .22 * r * np.exp(-((d - 1) / .16) ** 2)
+        ej = np.where(d > 1, .06 * r * np.exp(-(d - 1) * 2.2), 0)
+        peak = .18 * r * np.exp(-(d / .14) ** 2) if r > 14 else 0
+        hgt[y0:y1] += (bowl + rim + ej + peak) * k * .5
+        alb[y0:y1] += np.where(d < 1.15, .06, 0) * k
+        if rays:
+            ang = np.arctan2(dy, dx); st = np.zeros_like(ang)
+            for a0 in rng.uniform(-math.pi, math.pi, 14): st = np.maximum(st, np.exp(-((((ang - a0 + math.pi) % (2 * math.pi)) - math.pi) / .05) ** 2))
+            alb[y0:y1] += st * np.exp(-np.maximum(d - 1, 0) / 2.4) * (d > .9) * .32
+    for (cx, cy, r) in [(300, 150, 34), (720, 330, 42), (520, 120, 22), (130, 360, 28), (880, 200, 26)]: crater(cx, cy, r, 1.2, True)
+    for i in range(1300):
+        r = 1.5 + 34 * rng.random() ** 9; crater(rng.uniform(0, W), rng.uniform(20, H - 20), r, rng.uniform(.6, 1.1))
+    # light from the upper left (in texture space); horizontal slopes are stretched by the projection
+    gy, gx = np.gradient(hgt); gx = gx * cl
+    n = np.dstack([-gx, -gy, np.full_like(gx, 2.2)]); n /= np.linalg.norm(n, axis=2, keepdims=True)
+    L = np.array([-.55, -.6, .58]); L /= np.linalg.norm(L)
+    sh = np.clip((n * L).sum(axis=2), 0, 1)
+    v = np.clip(alb * .88 * (.22 + .8 * sh), 0, 1.25)
+    lo, hi = np.array([40, 42, 58]), np.array([232, 226, 212])
+    img = lo + (hi - lo) * np.clip(v, 0, 1)[..., None]
+    img += np.clip(v - 1, 0, 1)[..., None] * 60
+    save(img, 'moon', 48)
+
+
 if __name__ == '__main__':
-    names = sys.argv[1:] or ['milkyway', 'village']
+    names = sys.argv[1:] or ['milkyway', 'village', 'moon']
     for n in names: globals()[n]()
