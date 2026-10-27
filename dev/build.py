@@ -161,8 +161,8 @@ s = patch(s, """case 'charge_w': b.anim='leapPrep'; b.vx=b.vz=0; if(b.st<dt*1.5)
       if(b.st>.7/sp){ go('charge');""", """case 'charge_w': b.anim='leapPrep'; b.vx=b.vz=0; if(b.st<dt*1.5){ b.ang=Math.atan2(dz,dx); b.lineMk=FX.line(b.x,b.z,b.ang,22,1.8,0xff3030,.6/sp); }
       if(b.st>.6/sp){ go('charge');""")
 
-# Shayan's Full Counter hits a big sphere around him (7 units, every direction), as big as it looks
-s = patch(s, """meleeHits(P.x,P.z,P.y,a.big?5.7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);""", """meleeHits(P.x,P.z,P.y,a.big?7:1.9,P.ang,a.big?Math.PI:1.35,a.big?18:(a.n===2?2:1),a.hit);""")
+# Shayan's Full Counter: the original half-circle in front (+-1.6 rad), reach 7 (its crescent reaches 6.5 ahead, 5.7 at the sides)
+s = patch(s, """meleeHits(P.x,P.z,P.y,a.big?5.7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);""", """meleeHits(P.x,P.z,P.y,a.big?7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);""")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)
