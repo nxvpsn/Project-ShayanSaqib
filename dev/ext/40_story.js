@@ -1,5 +1,5 @@
 // =====================================================================
-// STORY: the gate fight, the choice, the party, the hooks into Grimmaw
+// STORY: the gate fight, the choice (Shayan's road; on Ali's road he kills both: twAliKillsBoth), the party, the hooks into Grimmaw
 // =====================================================================
 function twSetScr(name,fn){ SCR[name]=fn; SCR_BASE[name]=fn; SCRA[name]=fn; }
 function twWrapScr(name,pre){ for(const o of [SCR_BASE,SCRA]){ const orig=o[name]; if(!orig) continue; o[name]=function*(){ yield* pre(); yield* orig.call(this); }; } SCR[name]=(ALI()?SCRA:SCR_BASE)[name]; }
@@ -61,43 +61,55 @@ twSetScr('twinsDown',function*(){ const P=Player, C=TW.foes.find(T=>T.who==='cao
   yield say('caotan',"His poems rhyme 'darkness' with 'darkness'!");
   yield say('omar',"Because nothing ELSE rhymes with it, Caotan!",'angry');
   if(Game.hamza) yield say('hamza',"Bismillah, just pick one. We're burning moonlight.",'happy');
+  // Ali's road has no decision: he kills both, then walks into Kojima's keep alone
+  if(ALI()){ yield* twAliKillsBoth(C,O); Game.flags.twinsDone=1; Game.flags.twinAlly=null; Game.flags.twinPact=0; twEndFight(); Game.arena=null; Cam.focus=null; yield* SCR.keepGate(); return; }
   twCamP(6.8,-1.2);
   // the merciful option opens only once both twins' betrayal fights are beaten on this road; the twins notice when it does
-  const pact=twPactOpen(), rk=ALI()?'al':'sh'; TWS.pactSeen=TWS.pactSeen||{};
+  const pact=twPactOpen(), rk='sh'; TWS.pactSeen=TWS.pactSeen||{};
   if(pact&&!TWS.pactSeen[rk]){ TWS.pactSeen[rk]=1; twSave(); yield* twPactUnlockTalk(C,O); }
   else if(!pact&&!(TWS.pactTease||{})[rk]){ TWS.pactTease=TWS.pactTease||{}; TWS.pactTease[rk]=1; twSave(); twCam2(C,O,9.5,1.5); yield say('caotan',"Hey! Why is the nice option GRAY?! Who designed this?!",'angry'); yield say('omar',"Mercy is a premium feature, brother. It unlocks after two funerals. Ours.",'sad'); }
-  const c=yield choose(ALI()?[{t:"Caotan. You talk too much."},{t:"Omar. You're not edgy. You're dull."},{act:1,t:"What if there was another way...",lock:!pact,why:"Locked: beat both twins' betrayal fights on Ali's road first"}]
-    :[{t:"Kill Caotan."},{t:"Kill Omar."},{act:1,t:"What if there was another way...",lock:!pact,why:"Locked: beat both twins' betrayal fights on Shayan's road first"}]);
+  const c=yield choose([{t:"Kill Caotan."},{t:"Kill Omar."},{act:1,t:"What if there was another way...",lock:!pact,why:"Locked: beat both twins' betrayal fights on Shayan's road first"}]);
   if(c===2){ yield* twPactTalk(C,O); }
   else { const V=c===0?C:O, S=c===0?O:C; yield* twExecute(V,S); }
   Game.flags.twinsDone=1; twEndFight(); Game.arena=null; Cam.focus=null;
   yield* SCR.keepGate(); });
 
+// Ali's road: "one of you" turns out to mean both
+function* twAliKillsBoth(C,O){ const P=Player;
+  twCamP(6.8,-1.2); yield say('ali',"You both make excellent points.");
+  twCam2(C,O,9.5,1.5); yield say('caotan',"So you'll pick ONE of us?!",'happy');
+  twCamP(6.8,-1.2); yield say('ali',"Hm. Why not both?");
+  twCam2(C,O,10,-1); yield say('omar',"...Brother. I believe we have been out-negotiated.",'sad');
+  yield say('caotan',"WAIT! I have a body pillow at home! Who's gonna feed h-",'surprised');
+  // one draw, two twins
+  const mx=(C.x+O.x)/2, mz=(C.z+O.z)/2; zwStart(); Sound.sfx('dash'); aliGhost(P.x,P.y,P.z); P.x=mx; P.z=mz+.6; P.f=1; P.cineFly=true; P.cineAnim='idle'; cineSet(mx+.6,1.6,mz+7.5,mx,1.4,mz); yield wait(.6);
+  yield say('ali',"Nothing personal. Twice.");
+  Sound.sfx('secret'); zwEnd(); JC.lines=[]; for(let i=0;i<36;i++){ const a=rnd(0,Math.PI), x=UW/2+rnd(-160,160), y=UH/2+rnd(-100,100); JC.lines.push({x0:x-Math.cos(a)*340,y0:y-Math.sin(a)*340,x1:x+Math.cos(a)*340,y1:y+Math.sin(a)*340,t:1}); }
+  JC.flash=1; impactFrame([[3,3],[1,2],[2,3]]); Sound.sfx('crossboom'); shake(1.4); P.cineFly=false; P.cineAnim=null;
+  for(const V of [C,O]){ const vc=V.who==='caotan'; for(let i=0;i<3;i++) FX.burst(V.x,V.y+1.4,V.z,60,vc?0xffffff:0x1a0820,7+i*2,.5,vc); FX.burst(V.x,V.y+1.4,V.z,30,vc?0xfff0d0:0x8a3aff,10,.35); FX.ring(V.x,groundY(V.x,V.z)+.1,V.z,vc?'#ffffff':'#8a3aff',3,.5); }
+  Sound.sfx('gore'); Sound.sfx('squelch'); twRemoveFoe(C); twRemoveFoe(O); yield wait(1.2);
+  cineSet(P.x+1.4,1.4,P.z+4,P.x,1.4,P.z);
+  yield say('',"The gatekeeper twins came apart in matching pieces. Even now, they did not look alike.");
+  if(Game.hamza){ yield say('hamza',"Bismillah... Ali, that was two whole people."); yield say('ali',"It was two butter knives. Now it is four."); }
+  yield say('ali',"Baby. You have ten seconds. Start running."); }
 // both betrayal fights beaten on this road (the timeline cheat counts too)
-function twPactOpen(){ const r=ALI()?'al':'sh'; return twDone(r+'_omar_f')&&twDone(r+'_cao_f'); }
+function twPactOpen(){ return twDone('sh_omar_f')&&twDone('sh_cao_f'); }
 function* twPactUnlockTalk(C,O){ twCam2(C,O,9.5,1.5); Sound.sfx('secret');
-  if(ALI()){ yield say('caotan',"Rice hat! Rice hat! The third option! It's not gray anymore! It's GLOWING!",'happy');
-    yield say('omar',"You have cut us down in two separate timelines. The menu noticed. Now it lets you be merciful.");
-    yield say('ali',"Hm. I preferred the gray.");
-    yield say('caotan',"HE PREFERRED THE GRAY?!",'surprised'); yield say('omar',"Choose wisely, wanderer. We remember the other save files. We remember EVERYTHING.",'sad'); }
-  else { yield say('caotan',"Senpai. SENPAI. Do you see it? The third option! It's not gray anymore!",'happy');
+  { yield say('caotan',"Senpai. SENPAI. Do you see it? The third option! It's not gray anymore!",'happy');
     yield say('omar',"You killed us both. In separate timelines. We remember. We talk about it in the loading screens.",'sad');
     yield say('shayan',"...Are you two reading the MENU?",'surprised');
     yield say('caotan',"We've been reading it for a while. You hover over 'Kill Caotan' a LOT.",'sad');
     yield say('omar',"Pick the nice one. Or don't. Either way, we've already seen how it ends."); } }
 function* twExecute(V,S){ const P=Player, H=HERO(), vc=V.who==='caotan';
   twCamT(V,7); yield say(V.who,vc?"Wait wait wait, I have a body pillow at home! Who's gonna feed her?!":"So be it. Tell my poems... I'm sorry.",vc?'surprised':'normal');
-  if(ALI()){ twCamT(V,8,3); zwStart(); Sound.sfx('dash'); aliGhost(P.x,P.y,P.z); P.x=V.x+(V.x>P.x?1.6:-1.6); P.z=V.z+.3; P.f=P.x<V.x?-1:1; P.cineFly=true; P.cineAnim='idle'; yield wait(.5);
-    yield say('ali',"Nothing personal."); Sound.sfx('secret'); zwEnd(); JC.lines=[]; for(let i=0;i<24;i++){ const a=rnd(0,Math.PI), mx=UW/2+rnd(-120,120), my=UH/2+rnd(-90,90); JC.lines.push({x0:mx-Math.cos(a)*300,y0:my-Math.sin(a)*300,x1:mx+Math.cos(a)*300,y1:my+Math.sin(a)*300,t:1}); }
-    JC.flash=1; impactFrame([[3,3],[1,2]]); Sound.sfx('crossboom'); shake(1.2); P.cineFly=false; P.cineAnim=null; }
-  else { P.ang=Math.atan2(V.z-P.z,V.x-P.x); P.f=V.x>P.x?1:-1; P.charge=2; cineSet(P.x-P.f*2.4,1.3,P.z+3.4,P.x+P.f*1.2,1.5,P.z); yield wait(.3); yield say('shayan',"Sorry, man. Getsuga Tenshou!",'angry');
+  { P.ang=Math.atan2(V.z-P.z,V.x-P.x); P.f=V.x>P.x?1:-1; P.charge=2; cineSet(P.x-P.f*2.4,1.3,P.z+3.4,P.x+P.f*1.2,1.5,P.z); yield wait(.3); yield say('shayan',"Sorry, man. Getsuga Tenshou!",'angry');
     twCamT(V,9,0); Game.timeScale=.3; fireBeam(true,true); P.charge=0; yield wait(.35); Game.timeScale=1; FX.flash=1; grade.uniforms.flashCol.value.set(1,.9,.95); shake(1); Sound.sfx('slam'); }
   for(let i=0;i<3;i++) FX.burst(V.x,V.y+1.4,V.z,60,vc?0xffffff:0x1a0820,7+i*2,.5,vc); FX.burst(V.x,V.y+1.4,V.z,30,vc?0xfff0d0:0x8a3aff,10,.35); FX.ring(V.x,groundY(V.x,V.z)+.1,V.z,vc?'#ffffff':'#8a3aff',3,.5); Sound.sfx('gore');
   twRemoveFoe(V); yield wait(1.2);
   twCamT(S,7);
   if(S.who==='omar'){ yield say('omar',"...Brother. He is gone. I feel... nothing. As is tradition."); yield say('omar',"...I feel a little something. Do not look at me."); yield say('omar',"Very well, swordsman. I will fight beside you. For now. The darkness is... patient."); }
   else { yield say('caotan',"OMAR! ...Okay. He's gone. That's... that's a lot."); yield say('caotan',"Hi! I'm your new party member! I do ranged DPS, emotional support, and I never, EVER run dry!",'happy'); }
-  yield say(H,ALI()?"Keep up. Or don't. I don't care.":"...Great. Welcome to the team, I guess. Please stand where I can see you.");
+  yield say(H,"...Great. Welcome to the team, I guess. Please stand where I can see you.");
   S.down=0; twAddAlly(S.who); const A=TW.allies[TW.allies.length-1]; A.x=S.x; A.z=S.z; A.y=S.y; twRemoveFoe(S); Game.flags.twinAlly=S.who; Game.flags.twinPact=0;
   Game.banner={name:(S.who==='caotan'?'Caotan':'Omar')+' joined your party',sub:'An AI ally. Totally, completely trustworthy.',t:0,small:1}; Sound.sfx('secret'); }
 
@@ -105,15 +117,12 @@ function* twPactTalk(C,O){ const P=Player, H=HERO(); Sound.play('romance');
   twCam2(C,O,10.5,.5); yield wait(.4);
   yield say('caotan',"...Another way?",'surprised'); yield say('omar',"There is no other way. There is only the edge. And the... other edge.");
   twCamP(6.2,1);
-  if(ALI()){ yield say('ali',"The baby is the real problem. You two are... a speed bump. A loud one.");
-    yield say('ali',"Help me reach the baby, and you both walk away. Two weaklings are better than zero weaklings. Barely.");
-    yield say('caotan',"He called us weaklings! He's warming up to us!",'happy'); }
-  else { yield say('shayan',"The baby is the real problem. He's the one who took Mira. You guys just... guard a door.");
+  { yield say('shayan',"The baby is the real problem. He's the one who took Mira. You guys just... guard a door.");
     yield say('shayan',"Help me save her, and you both walk away. Nobody has to die tonight. Except maybe the baby guy."); }
   twCam2(C,O,10,-1);
   yield say('caotan',"Like... a team? Like a FRIEND GROUP? With a group chat?!",'happy');
   yield say('omar',"I do not do friends. I do... allies of convenience.");
-  yield say(H,ALI()?"Then be convenient.":"That's literally what friends are, man.");
+  yield say(H,"That's literally what friends are, man.");
   yield say('omar',"...Fine. But I am not smiling in the party photo.");
   yield say('caotan',"SQUAAAD!! Omar, group hug!",'happy'); yield say('omar',"Touch me and I will reap you."); yield say('caotan',"He's hugging back on the inside.",'happy');
   if(Game.hamza) yield say('hamza',"Bismillah. The party is now big enough for a tax return.",'happy');

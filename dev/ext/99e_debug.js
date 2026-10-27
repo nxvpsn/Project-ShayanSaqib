@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: pink sperm death: sword/Getsuga finish cuts it in half (fireballs still burn it); the Drill now splits onto every enemy on screen in any fight when 2+ (one-shots the sperm), Ali's ultimate hits everything on screen too";
+const DBG_PATCH="Oct 27: Ali's road is now Twins (he kills both) -> He's Day Old Kojima -> Nathan. Also: pink sperm cut-in-half death; Drill/Ali ultimate hit every enemy on screen";
 const DBG_NEW=['caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -55,7 +55,7 @@ function dbgArena(then){ Object.assign(Game,{script:null,wait:null,dlg:null,time
     Game.state='play'; Game.arena=null; Cam.focus=null; Cam.zoom=1; Player.hidden=false; if(!DBG.ali&&DBG.blade) Game.flags.aliSword=1; if(then) then(); return; }
   run(function*(){ twWarpReset(DBG.ali); yield* twWarpFlowers({noHamza:1}); Game.state='play'; Game.arena=null; Cam.zoom=1; if(!DBG.ali&&DBG.blade) Game.flags.aliSword=1; if(then) then(); }); }
 function dbgSpawn(id){ DBG.boss=id; DBG.move=null;
-  if(id==='grimmaw'||id==='paul'){ dbgSay(id==='paul'?'Warping (with its intro cutscene)':'Warping to Kojima (his intro plays; the controls work once he is on the field)'); Object.assign(Game,{script:null,wait:null,dlg:null}); run(function*(){ yield* twWarp(id==='paul'?'paul':(DBG.ali?'al_cao_g':'sh_cao_g')); }); return; }
+  if(id==='grimmaw'||id==='paul'){ dbgSay(id==='paul'?'Warping (with its intro cutscene)':'Warping to Kojima (his intro plays; the controls work once he is on the field)'); Object.assign(Game,{script:null,wait:null,dlg:null}); run(function*(){ yield* twWarp(id==='paul'?'paul':(DBG.ali?'al_kj':'sh_cao_g')); }); return; }
   if(id==='mech'){ Object.assign(Game,{script:null,wait:null,dlg:null}); run(function*(){ twWarpReset(false); yield fadeOut(); enterMech(); NAT.x=-14; NAT.y=0; NAT.show=1; Game.mech.st='fight'; Game.mech._resp=1; Game.fade=1; Game.fadeTo=0; startMechPhase(1); dbgApplyMode(); }); return; }
   dbgArena(()=>{ const c=L.zone?{x:L.zone.x,z:L.zone.z}:{x:Player.x,z:Player.z};
     if(id==='caotan'||id==='omar'){ const T=twStartSolo(id); T.cd=1.2; }

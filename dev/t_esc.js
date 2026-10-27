@@ -11,7 +11,7 @@ for(let i=0;i<10&&R("Game.state")!=='play';i++) adv(5);
 const s0=st(); R("twEscOpen()"); H.frames(60); R("twTimelineClose(null)"); console.log('mid-fight resume', s0, '->', st());
 // 3. Paul fight then leave via Esc
 R("twEscOpen(); twTimelineClose('paul')"); adv(60); for(let i=0;i<20&&!(R("!!PF&&PF.started"));i++) adv(5); console.log('paul fight', st());
-R("twEscOpen(); twTimelineClose('al_dec')"); adv(30); console.log('left paul ->', st());
+R("twEscOpen(); twTimelineClose('al_twins')"); adv(30); console.log('left paul ->', st());
 // 4. during a cutscene, open & close -> script continues
 R("run(SCR.paul)"); H.frames(10); const c0=st(); R("twEscOpen()"); R("twTimelineClose(null)"); console.log('cutscene resume', c0, '->', st());
 adv(10); console.log('paul talk menu', st(), 'tab', R("TLM.tab"), 'sel', R("TLM.sel"));

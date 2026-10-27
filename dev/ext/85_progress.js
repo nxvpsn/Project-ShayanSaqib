@@ -31,15 +31,9 @@ const TL=[
   {id:'sh_duo',tab:0,col:5,row:2,par:['sh_both_f'],name:'The Other Way',desc:"The twins turn. A samurai cuts Mira free. Black holes, a tree of Judgement Cuts, a drill, a pillow the size of the sky."},
   // Ali's road
   {id:'al_root',tab:1,col:0,row:1,root:1,name:"Ali's Road",desc:"Shayan hit the wrong man. Ali kicked him to the moon, cut the moon to pieces and took over. He counts to ten. Slowly."},
-  {id:'al_twins',tab:1,col:1,row:1,par:['al_root'],name:'Butter Knives in Coats',desc:"The gatekeeper twins try very hard to stop the samurai. The samurai tries very little."},
-  {id:'al_dec',tab:1,col:2,row:1,par:['al_twins'],name:'Hm.',desc:"Two twins on their knees, one sword, zero patience. The nice option stays gray until Ali beats both betrayals himself."},
-  {id:'al_omar',tab:1,col:3,row:0,par:['al_dec'],name:'Ten Seconds, Infant',desc:"Caotan is gone. Omar follows Ali into Day Old Keep. The baby got a ten-second head start. It did not help."},
-  {id:'al_cao',tab:1,col:3,row:1,par:['al_dec'],name:'Uwu & the Baby',desc:"Omar is gone. Caotan follows Ali to Day Old Keep like a lost puppy with glasses. The baby wet himself when he heard Ali counting."},
-  {id:'al_both',tab:1,col:3,row:2,par:['al_dec'],name:'Emotional Support Twins',desc:"Two weaklings are better than zero weaklings. Barely. Ali, two twins and one very rich baby with a Hydra of Solid Snacks."},
-  {id:'al_omar_f',tab:1,col:4,row:0,par:['al_omar'],name:'Butter Knife Betrayal',desc:"Omar studied Ali's moveset. He read the wiki. He went Bankai. It did not help either."},
-  {id:'al_cao_f',tab:1,col:4,row:1,par:['al_cao'],name:'Friendzoned by a Samurai',desc:"Caotan's dating sim, Domain Expansion edition, except the love interest only says 'Hm.'"},
-  {id:'al_nathan',tab:1,col:5,row:0.5,par:['al_omar_f','al_cao_f'],name:'Your Tragic Arc Was Mid',desc:"Nathan the Nasty crosses timelines to save the world from the pig. Ali already cut the pig in half. So Nathan fights Ali instead."},
-  {id:'al_nathan_both',tab:1,col:4.5,row:2,par:['al_both'],name:'Reply All',desc:"Nathan the Nasty versus Ali and two twins who will not stop talking. The mech has funnels. The twins have opinions."},
+  {id:'al_twins',tab:1,col:1,row:1,par:['al_root'],name:'Butter Knives in Coats',desc:"The gatekeeper twins try very hard to stop the samurai. Each begs him to kill the other one. He picks neither. Then both."},
+  {id:'al_kj',tab:1,col:2,row:1,par:['al_twins'],name:'Ten Seconds, Infant',desc:"Ali walks into Day Old Keep alone. The baby got a ten-second head start and a Hydra of Solid Snacks. Neither helped."},
+  {id:'al_nathan',tab:1,col:3,row:1,par:['al_kj'],name:'Your Tragic Arc Was Mid',desc:"Nathan the Nasty crosses timelines to save the world from the pig. Ali already cut the pig in half. So Nathan fights Ali instead."},
   // oddities
   {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Turn',desc:"Paul's shortcut drops Shayan in front of Nathan's mech. This was never supposed to happen. Paul loves it."},
   {id:'paul',tab:2,col:4,row:1,par:[],final:1,name:'Paul Extreme: Code Review',desc:"Paul's own raid. Everyone loses their powers. Opens once every other checkpoint is cleared, or with the timeline cheat."}];
@@ -49,7 +43,7 @@ function twAllDone(){ return TL_CHECKS.every(twDone); }
 function twNodeOpen(n){ return n.root||(n.final?(twAllDone()||!!TWS.unl[n.id]):twDone(n.id)); }
 
 // ---------- checkpoint hooks ----------
-(function(){ const td=SCR_BASE.twinsDown; const wrapDown=function*(){ const r=twRP(); twMark(r+'_twins'); twMark(r+'_dec'); yield* td.call(this); };
+(function(){ const td=SCR_BASE.twinsDown; const wrapDown=function*(){ const r=twRP(); twMark(r+'_twins'); if(r==='sh') twMark('sh_dec'); /* Ali's road has no decision */ yield* td.call(this); };
   twSetScr('twinsDown',wrapDown);
   const ex=twExecute; twExecute=function*(V,S){ yield* ex(V,S); twMark(twRP()+'_'+(S.who==='omar'?'omar':'cao')); };
   const pt=twPactTalk; twPactTalk=function*(C,O){ yield* pt(C,O); twMark(twRP()+'_both'); };
@@ -57,9 +51,9 @@ function twNodeOpen(n){ return n.root||(n.final?(twAllDone()||!!TWS.unl[n.id]):t
   const hf=hzgFinale; hzgFinale=function*(){ twMark('sh_both_f'); yield* hf(); };
   const de=twDuoEnding; twDuoEnding=function*(F,C,O){ twMark('sh_duo'); yield* de(F,C,O); };
   const bh=blackHoleFinale; blackHoleFinale=function*(){ if(!ALI()) twMark('sh_hamza'); yield* bh(); };
-  const nf=nbFinale; nbFinale=function*(){ if(ALI()) twMark(Game.flags.twinPact?'al_nathan_both':'al_nathan'); else twMark('sh_nathan'); yield* nf(); }; })();
+  const nf=nbFinale; nbFinale=function*(){ twMark(ALI()?'al_nathan':'sh_nathan'); yield* nf(); }; })();
 
-function twMarkGrimmaw(){ const k=twAllyKey(); if(k) twMark(twRP()+'_'+k+'_g'); } // the Grimmaw/Kojima win (no panel any more; kept for old saves)
+function twMarkGrimmaw(){ if(ALI()){ twMark('al_kj'); return; } const k=twAllyKey(); if(k) twMark(twRP()+'_'+k+'_g'); } // the Kojima win: Ali's road has its own checkpoint (Shayan's '_g' ids have no panel; kept for old saves)
 // ---------- warps ----------
 function twWarpReset(ali){ const P=Player; Voice.stop(); if(Game.mech) exitMech(); nbRemove(); twEndFight(); twClearAllies(); TW.giant=null; TW.giantRespawn=null; clearGibs(); endClash();
   if(Game.boss&&Game.boss.spr) Game.boss.spr.dispose(); Game.boss=null; Game.bossBar=0; if(Game.zw) zwEnd(); JC.lines=[]; Game.arena=null; Game.fxUpd=[]; twSweep(false); clearTwins();
@@ -88,7 +82,8 @@ function* twWarp(id){ const n=TL_BY[id]; if(!n&&!/_g$/.test(id)) return; /* '_g'
   if(id==='sh_both_f'){ twSetParty('both'); yield* twWarpFlowers({mira:1}); yield* twPactHamza(); return; }
   if(id==='sh_duo'){ twSetParty('both'); yield* twWarpFlowers({mira:1,noHamza:1}); yield* twTwinsTurn(); return; }
   if(id==='sh_hamza'){ yield fadeOut(); Game.mira=null; yield* nathanIntro(); return; }
-  if(id==='al_nathan'||id==='al_nathan_both'){ if(id==='al_nathan_both') twSetParty('both'); yield* twWarpFlowers({mira:1,noHamza:1}); yield* nathanArrives(); return; } }
+  if(id==='al_kj'){ Game.flags.twinsDone=1; Game.flags.twinAlly=null; Game.flags.twinPact=0; yield* SCR.keepGate(); return; } // Ali walks into the keep alone (he killed both twins)
+  if(id==='al_nathan'){ yield* twWarpFlowers({mira:1,noHamza:1}); yield* nathanArrives(); return; } }
 
 // warping to the very beginning skips the Hamza / Elder Hamid intro (and the controls card): Hamza is already tagging along
 function* twIntroSkipped(){ const H=Game.hamza, P=Player; if(H){ H.mode='follow'; H.f=-1; H.x=P.x-1.2; H.z=P.z+.4; H.y=P.y; } Cam.focus=null; Game.hintT=0; yield wait(.2); yield fadeIn(); }
@@ -139,14 +134,8 @@ const ART={
     c.fillStyle='#f09ab6'; c.beginPath(); c.arc(146,40,28,0,7); c.fill(); c.fillStyle='#ff2a3a'; c.fillRect(132,32,7,5); c.fillRect(152,32,7,5); c.fillStyle='#3a0010'; c.fillRect(134,50,24,8); artBullets(c,40);
     artMech(c,30,52,40,48); c.strokeStyle='#ff2a2a'; c.lineWidth=1.5; for(const [x,y] of [[22,60],[78,60],[26,90],[74,90]]){ c.beginPath(); c.moveTo(x,y); c.lineTo(146,44); c.stroke(); } artText(c,'BULLET HELL',90,102,'#3ff4ff'); },
   sh_duo(c){ artBG(c,'#03030c','#3a2060','#141a36'); artHole(c,150,24,9); c.globalAlpha=.7; artPillow(c,172,56,80,.15); c.globalAlpha=1; CA_(c,110,100,.48,-1,{form:3}); OM_(c,146,100,.48,-1,{form:3}); SH_(c,34,100,.8,1,'attack'); AL_(c,64,100,.8,1); MI_(c,10,100,.6,1); artJC(c,3); artText(c,'THE OTHER WAY',8,18,'#ffd45a'); },
-  al_dec(c){ artBG(c,'#100818','#2a1030','#2a2030'); CA_(c,62,100,.5,1,{down:1}); OM_(c,130,100,.5,-1,{down:1}); AL_(c,172,100,.7,-1); artText(c,'...HM.',80,20,'#ff9aa8'); artText(c,'[LOCKED] THE NICE ONE',8,104,'#8a8496'); },
-  al_omar(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,150,100,.6,-1,'winded'); OM_(c,96,100,.48,1); AL_(c,44,100,.9,1); artText(c,'10... 9... 8...',8,18,'#ff9aa8'); },
-  al_cao(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,152,100,.6,-1,'winded'); CA_(c,96,100,.48,1,{heartEyes:1}); AL_(c,44,100,.9,1); artHearts(c,6); artText(c,'ALI-KUN ♡',8,18,'#ffd0ec'); },
-  al_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); KJ_(c,166,100,.52,-1,'howl'); CA_(c,90,100,.42,1,{heartEyes:1}); OM_(c,122,100,.42,1); AL_(c,40,100,.9,1); artText(c,'WEAKLINGS (2) + BABY',6,18,'#ffd45a'); },
-  al_omar_f(c){ artBG(c,'#03030c','#2a2050','#e8eef8'); OM_(c,118,100,.6,-1,{form:3,scythe:1}); AL_(c,40,100,.9,1); artJC(c,5); artText(c,'HE READ THE WIKI',6,18,'#c08aff'); },
-  al_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); c.globalAlpha=.5; artPillow(c,150,52,90,0); c.globalAlpha=1; artHearts(c,12); CA_(c,118,100,.6,-1,{form:2,heartEyes:1}); AL_(c,40,100,.9,1); artText(c,'"Hm."',20,22,'#ffffff'); },
+  al_kj(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,140,100,.6,-1,'winded'); AL_(c,52,100,.9,1); artText(c,'10... 9... 8...',8,18,'#ff9aa8'); },
   al_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); artMech(c,96,18,84,86); AL_(c,44,100,.9,1); artJC(c,3,'#3ff4ff'); artText(c,'ARC: MID',8,18,'#3ff4ff'); },
-  al_nathan_both(c){ artBG(c,'#03030c','#141030','#1a2040'); artMech(c,110,22,74,80); AL_(c,30,100,.8,1); CA_(c,64,96,.36,1); OM_(c,88,96,.36,1); artText(c,'REPLY ALL',8,18,'#3ff4ff'); },
   sh_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); artMoon(c,30,28,10,false); artMech(c,96,18,84,86); SH_(c,44,100,.9,1); PA_(c,14,100,.6,1); artText(c,'WRONG TURN',56,18,'#3ff4ff'); },
   paul(c){ c.fillStyle='#000'; c.fillRect(0,0,ART_W,ART_H); c.font='10px monospace'; for(let i=0;i<60;i++){ c.fillStyle=`rgba(80,255,120,${hash(i,5)})`; c.fillText(hash(i,2)>.5?'1':'0',hash(i,9)*ART_W,hash(9,i)*ART_H); }
     PA_(c,96,100,1.4,-1); c.fillStyle='rgba(255,0,60,.35)'; c.fillRect(60,40,80,6); artText(c,'ERROR: TOO MANY BOSSES',20,20,'#ff4a6a'); }
