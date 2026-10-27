@@ -183,7 +183,7 @@ function twNear(x,z,r,pad){ let best=null,bd=r; for(const T of TW.foes){ if(T.hp
     for(const T of TW.foes){ if(T.hp<=0||T.gone||T.hide||T.inv) continue; const d=Math.hypot(T.x-P.x,T.z-P.z)-.8; if(d<bd){ bd=d; best=T; } }
     const G=TW.giant; if(G&&G.hp>0&&!G.inv){ const d=Math.hypot(G.x-P.x,G.z-P.z)-2; if(d<bd){ bd=d; best=G; } } return best; };
   const sa=specialAttack; specialAttack=function*(){ const P=Player, tg=nearestFoe(24); const isTw=tg&&TW.foes.includes(tg), isG=tg&&tg===TW.giant;
-    yield* sa(); if(isTw&&tg.hp>0){ const was=tg.inv; tg.inv=false; twHurt(tg,16,'ult'); tg.inv=was; for(const T of TW.foes) if(T!==tg&&T.hp>0&&Math.hypot(T.x-tg.x,T.z-tg.z)<4.5){ const w2=T.inv; T.inv=false; twHurt(T,10,'ult'); T.inv=w2; } }
+    yield* sa(); if(TW._dsplit){ TW._dsplit=0; return; } /* split drill: every target already hit (11d_ultall) */ if(isTw&&tg.hp>0){ const was=tg.inv; tg.inv=false; twHurt(tg,16,'ult'); tg.inv=was; for(const T of TW.foes) if(T!==tg&&T.hp>0&&Math.hypot(T.x-tg.x,T.z-tg.z)<4.5){ const w2=T.inv; T.inv=false; twHurt(T,10,'ult'); T.inv=w2; } }
     if(isG) hzgHurt(16,'ult'); };
   const at=aliTargets; aliTargets=function(){ if(TW.fight){ const al=TW.foes.filter(T=>T.hp>0&&!T.gone&&!T.hide&&!T.inv); if(al.length) return al; }
     if(TW.giant&&TW.giant.hp>0&&!TW.giant.inv) return [TW.giant]; return at(); };

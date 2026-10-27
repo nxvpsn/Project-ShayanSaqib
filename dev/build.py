@@ -163,6 +163,11 @@ s = patch(s, """case 'charge_w': b.anim='leapPrep'; b.vx=b.vz=0; if(b.st<dt*1.5)
 
 # Shayan's Full Counter: the original half-circle in front (+-1.6 rad), reach 7 (its crescent reaches 6.5 ahead, 5.7 at the sides)
 s = patch(s, """meleeHits(P.x,P.z,P.y,a.big?5.7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);""", """meleeHits(P.x,P.z,P.y,a.big?7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);""")
+# the Heavenly Drill splits on every enemy on screen in any fight when there are two or more (ultFoes/ultHit: ext/11d_ultall.js)
+s = patch(s, "const foes=B?[]:MOBS.filter(m=>m.hp>0&&Math.abs(m.x-P.x)<15&&Math.abs(m.z-P.z)<11);",
+  "const foes=(typeof ultFoes==='function')?ultFoes():(B?[]:MOBS.filter(m=>m.hp>0&&Math.abs(m.x-P.x)<15&&Math.abs(m.z-P.z)<11));")
+s = patch(s, "if(!q.extra&&q.tg.hp>0){ damageMob(q.tg,10,Math.atan2(q.tg.z-P.z,q.tg.x-P.x)); Sound.sfx('gore'); }",
+  "if(!q.extra&&q.tg.hp>0){ if(typeof ultHit==='function') ultHit(q.tg,'drill'); else damageMob(q.tg,10,Math.atan2(q.tg.z-P.z,q.tg.x-P.x)); Sound.sfx('gore'); }")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

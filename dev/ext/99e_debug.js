@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Impregnate: the pink sperm homes in and loops back if you dodge it; its BURN IT! bar is 10 hits (slashes, fireballs, Getsugas). Goo clone: real goo look, Shayan's charged-fireball flames, mistimed rush parry = TOO EARLY! + no-damage knockback, survives Debug loop. White goo pellets/puddles slow you";
+const DBG_PATCH="Oct 27: pink sperm death: sword/Getsuga finish cuts it in half (fireballs still burn it); the Drill now splits onto every enemy on screen in any fight when 2+ (one-shots the sperm), Ali's ultimate hits everything on screen too";
 const DBG_NEW=['caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
