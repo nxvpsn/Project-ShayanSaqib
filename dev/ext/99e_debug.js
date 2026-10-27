@@ -10,7 +10,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: the Hamza bullet hell's HP gate (every attack plays in full before a phase can end or the finale starts)";
+const DBG_PATCH="Oct 27: the Hamza bullet hell's ticks (an HP chunk per attack, 20 s finale), Drill = 3 Power Shots with 2 charges";
 const DBG_NEW=['mech:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -91,7 +91,7 @@ function dbgKill(){ const b=DBG.boss, ot=TW.otk; TW.otk=false;
     else if(b==='duo'){ const F=dbgDuo(); if(F){ F.lcDone[F.phase]=1; for(const T of [F.C,F.O]){ T.inv=false; if(T.hp>0) twHurt(T,T.hp+1,'test'); } } }
     else if(b==='hamza'&&TW.giant){ const G=TW.giant; G.lcDone=1; G.inv=false; hzgHurt(G.hp+1,'test'); }
     else if(b==='nathan'&&NB){ NB.lcA=NB.lcB=1; NB.inv=false; const p=NB.phase, bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; nbDamage(NB.bars-bot+.01); }
-    else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss; B.vuln=true; mechDamage(B.hp+1,0,0,0,true); }
+    else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss, T=Game.mech.th; if(T){ T.tick=thTicks(T.ph).length; T.finDone=1; } B.vuln=true; mechDamage(B.hp+1,0,0,0,true); }
     else if(b==='grimmaw'&&dbgKJ()){ const K=Game.boss; if(K.state==='dome'){ K.armor=0; damageBoss(1); } else { K.inv=false; if(['kj','twcombo'].includes(K.state)){ K.state='idle'; K.kjg=K.twg=null; } damageBoss(K.hp+1); } } } finally{ TW.otk=ot; } }
 function dbgLC(kind,ph){ const b=DBG.boss; DBG.last={a:'lc',k:kind,ph}; if(kind==='kill'){ if(dbgPhase()!==ph) dbgSetPhase(ph); dbgKill(); dbgSay('Phase change'); return; }
   if(b==='grimmaw'){ dbgKJLC(kind,ph); return; }

@@ -10,7 +10,7 @@
 // a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
 // The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes at 3-4 hearts and burns at 1-2 (his face follows), it explodes when he dies. The bits turn red (and ding) when the Power Shot is charged; the shot also fires four red bit lasers (minions first).
 // =====================================================================
-const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,213,263]};   // +25% (was 170, 210)
+const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5};
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
 function thOn(){ return !!(Game.mech&&Game.mech.th); }
 function thW(u,v){ return [TH.CX+v,-u,0]; }
@@ -46,7 +46,7 @@ function thTouchButtons(on){ try{ const a=document.getElementById('tbAttack'), g
 function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return; thClear(G.th);
   const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:2,graze:G.thGraze||0,
     fire:0,hold:0,pk:1,cam:null,panel:animate?0:1,ready:!animate,miss:0,spellMiss:0,bonus:null,tip:null,shield:0};
-  const B=G.boss; if(B){ B.hp=B.maxHp=TH.HP[ph]||TH.HP[2]; B.vuln=true; }
+  const B=G.boss; if(B){ B.hp=B.maxHp=thPhaseHp(ph); B.vuln=true; } T.tick=0; T.pops=[]; T.finDone=0; T.finT=0;
   N.tu=0; N.tv=-8; N.x=TH.CX+N.tv; N.y=-N.tu; N.vx=N.vy=0; N.qb=0; N.inv=animate?99:2; N.boostN=3; N.charge=N.shot=0; N.atk=null; N.pull=0; N.show=1; N.sp=N.sp||0;
   if(N.coreMk) N.coreMk.visible=false; if(N.coreRing) N.coreRing.visible=false;
   const TX=thTex(); for(let i=0;i<4;i++){ const mesh=thPlane(.75,TX.bit); T.bits.push({mesh,u:N.tu+(i-1.5)*1.6,v:N.tv-.6,tu:0,tv:0,cd:.4+i*.3,ang:Math.PI/2,i,wt:0}); }
@@ -80,7 +80,7 @@ function thPowerShot(){ const N=NAT, T=Game.mech.th; T.pb.push({u:N.tu,v:N.tv+.8
 function thBitLasers(){ const T=Game.mech.th, B=Game.mech.boss, C=thBossC(), live=T.mn.filter(m=>m.hp>0); Sound.sfx('beam');
   for(const b of T.bits){ let tg=null; if(live.length){ live.sort((p,q)=>Math.hypot(p.u-b.u,p.v-b.v)-Math.hypot(q.u-b.u,q.v-b.v)); tg=live.length>1?live.shift():live[0]; }
     const tu=tg?tg.u:C.u+rnd(-1.2,1.2), tv=tg?tg.v:C.v-1.2, [x0,y0]=thW(b.u,b.v), [x1,y1]=thW(tu,tv);
-    if(tg){ tg.hp-=8; tg.flash=.1; T.score+=300; if(tg.hp<=0) thKill(tg); } else if(B){ const was=B.hp; mechDamage(1.1*(T.stun>0?1.5:1),x1,y1,0,false); if(B.hp<was) T.score+=Math.round((was-B.hp)*1000); }
+    thSpGain(1.1); if(tg){ tg.hp-=8; tg.flash=.1; T.score+=300; if(tg.hp<=0) thKill(tg); } else if(B){ const was=B.hp; mechDamage(1.1*(T.stun>0?1.5:1),x1,y1,0,false); if(B.hp<was) T.score+=Math.round((was-B.hp)*1000); }
     thFx(tu,tv,12,0xff3a3a,4,.25); thLine(x0,y0,x1,y1); } }
 function thLine(x0,y0,x1,y1){ const len=Math.hypot(x1-x0,y1-y0), ms=[]; for(const [col,w] of [[0xff2a2a,.26],[0xffe0e0,.08]]){ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:col,transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
     m.renderOrder=7; m.position.set((x0+x1)/2,(y0+y1)/2,.45); m.rotation.z=Math.atan2(y1-y0,x1-x0); m.scale.set(Math.max(.01,len),w,1); m.userData.temp=1; scene.add(m); ms.push(m); }
@@ -103,7 +103,7 @@ function thHurt(){ const N=NAT, G=Game.mech, T=G.th; if(N.inv>0||Game.state!=='p
   else if(Math.random()<.4) Voice.bark(Math.random()<.5?'nhurt1':'nhurt2'); }
 
 // ---------- the Heavenly Drill: one line, the drill grows over his head, then flies up and hits the whole screen ----------
-function* thDrill(){ const N=NAT, G=Game.mech, T=G.th, B=G.boss; if(!T) return; N.sp=0; T.drill=1; N.inv=99; T.hold=0;
+function* thDrill(){ const N=NAT, G=Game.mech, T=G.th, B=G.boss; if(!T) return; N.sp=Math.max(0,N.sp-100); T.drill=1; N.inv=99; T.hold=0;
   const [x0,y0]=thW(N.tu,N.tv+1.4), d=makeTrueDrill(); T.drillD=d; d.x=x0; d.y=y0; d.z=1; d.s=.1; d.spin=12; d.dir.set(1,0,0); d.fire=.4;
   twBark('nathan',"Heavenly Drill of Eternal Annihilation!",true); Sound.sfx('charge'); Sound.sfx('drone'); T.slow=.25;
   const g={k:0}; Game.fxUpd.push(()=>{ if(g.done) return false; const [x,y]=thW(N.tu,N.tv+1.4+g.k*1.6); d.x=x; d.y=y; d.s=.1+g.k*1.25; d.spin=12+g.k*90; d.fire=.4+g.k*2.4; return true; });
@@ -116,14 +116,14 @@ function* thDrill(){ const N=NAT, G=Game.mech, T=G.th, B=G.boss; if(!T) return; 
   for(const b of T.eb){ if(Math.random()<.35) thFx(b.u,b.v,2,0x9ff8ff,2,.2); T.score+=10; } T.eb=[];
   for(const m of T.mn) if(m.hp>0) thKill(m);
   for(let k=0;k<5;k++) for(let i=0;i<6;i++) thFx(rnd(-TH.W,TH.W),rnd(-TH.H,TH.H),10,[0x3ff4ff,0xffffff,0x2a6aff][i%3],8,.4);
-  if(B){ const was=B.vuln; B.vuln=true; B.flash=1.2; const c=thBossC(), [bx,by]=thW(c.u,c.v); mechDamage(B.maxHp*.12,bx,by,0,true); if(!was&&B.hp>0) B.vuln=false; }
+  if(B){ const was=B.vuln; B.vuln=true; B.flash=1.2; const c=thBossC(), [bx,by]=thW(c.u,c.v); mechDamage(3*(3.2+T.bits.length*1.1),bx,by,0,true); /* three Power Shots (with their bit lasers) */ if(!was&&B.hp>0) B.vuln=false; }
   for(let k=0;k<8;k++){ shake(1.3-k*.12); FX.flash=k%2?.8:.2; grade.uniforms.flashCol.value.set(.5,.9,1); yield wait(.06); }
   d.dead=1; T.drillD=null; T.slow=1; T.drill=0; if(Game.mech&&Game.mech.th===T) N.inv=1.2; }
 
 // ---------- minions ----------
 function thMinion(kind,u,v,fn,o){ const T=Game.mech.th, TX=thTex(); const pig=kind==='pig', mesh=thPlane(pig?1.5:2.1,pig?pigletTex()[0]:TX.eld[0]);
   const m=Object.assign({kind,u,v,vu:0,vv:0,hp:pig?1.3:6,maxHp:pig?1.3:6,r:pig?.6:.95,t:0,mesh,fn,cd:rnd(.6,1.4),flash:0},o||{}); T.mn.push(m); thFx(u,v,8,pig?0xff8aa8:0xb06aff,3,.25); return m; }
-function thKill(m){ const T=Game.mech.th; m.hp=0; thFx(m.u,m.v,26,m.kind==='pig'?0xff5a8a:0xb06aff,6,.35); thFx(m.u,m.v,10,0x1a0420,4,.4); Sound.sfx('gore'); T.score+=m.kind==='pig'?2000:6000; NAT.sp=Math.min(100,NAT.sp+(m.kind==='pig'?3:8));
+function thKill(m){ const T=Game.mech.th; m.hp=0; thFx(m.u,m.v,26,m.kind==='pig'?0xff5a8a:0xb06aff,6,.35); thFx(m.u,m.v,10,0x1a0420,4,.4); Sound.sfx('gore'); T.score+=m.kind==='pig'?2000:6000; 
  }
 function thMinions(dt){ const T=Game.mech.th, TX=thTex(), sl=T.slow||1;
   for(const m of T.mn){ if(m.hp<=0) continue; m.t+=dt*sl; m.flash=Math.max(0,m.flash-dt); if(m.fn) m.fn(m,dt*sl); m.u+=m.vu*dt*sl; m.v+=m.vv*dt*sl;
@@ -147,6 +147,19 @@ function thEldHover(tu,tv,o){ o=o||{}; return (m,dt)=>{ m.vu=(tu-m.u)*2.5; m.vv=
 const TH_SPELLS={
   1:[['Snout Spiral',22,'spiral'],['Feeding Trough',16,'trough'],['Oink-Oink Crossfire',22,'cross'],['Piglet Parade',22,'parade'],['Bacon Downpour',22,'rain'],['Event Horizon',22,'horizon']],
   2:[['Eight Billion Lullabies',24,'lullaby'],['Eyes That Keep the Pig',30,'ward'],['Narrow Throat',18,'throat'],['Mitosis',22,'mitosis'],['Six Skeletal Wings',24,'wings'],['Oink Oink Oink',99,'final']]};
+// ---------- ticks: each attack is its own chunk of Hamza's HP ----------
+// A chunk is what perfect play deals to him in 15 s of that attack (measured in the harness: Power Shot fired the frame it is full,
+// recharged at once, focused, right under him), so clearing an attack in 15 s takes perfect play; most players take a little longer.
+// Clearing the chunk pops its tick on the HP bar and moves on to the next attack. Phase II ends with the finale: survive 20 s.
+const TH_TICK={spiral:107,trough:115,cross:115,parade:89,rain:114,horizon:114,lullaby:115,ward:121,throat:115,mitosis:116,wings:115};
+const TH_FINALE=20;
+function thTicks(ph){ return (TH_SPELLS[ph]||TH_SPELLS[2]).filter(e=>e[2]!=='final'); }
+function thPhaseHp(ph){ return thTicks(ph).reduce((s,e)=>s+(TH_TICK[e[2]]||100),0)+(ph===2?1:0); } // phase II keeps 1 HP for the finale
+// his HP once tick i is cleared
+function thTickFloor(T,i){ const L1=thTicks(T.ph); let f=T.ph===2&&!T.finDone?1:0; for(let j=i+1;j<L1.length;j++) f+=TH_TICK[L1[j][2]]||100; return f; }
+// the Drill gauge fills only from shots that land (boss-damage worth): about one Drill per 35 s of good shooting, up to 2 charges
+const TH_SP_K=100/(6.5*35), TH_SP_MAX=200;
+function thSpGain(d){ const N=NAT; if(N) N.sp=Math.min(TH_SP_MAX,(N.sp||0)+d*TH_SP_K); }
 const TH_PAT={
   *spiral(T){ let a=0; for(;;){ const m=thMouth(); T.jaw=.5; for(let k=0;k<5;k++) thB(m.u,m.v,a+k*1.2566,5.2,{col:0xff5a8a,r:.28}); for(let k=0;k<5;k++) thB(m.u,m.v,-a*1.3+k*1.2566+.6,3.8,{col:0xb06aff,r:.22}); a+=.21; yield .1; } },
   *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=.85+k*.8, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
@@ -179,20 +192,23 @@ const TH_PAT={
   *final(T){ let a=0; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(); T.jaw=.9; for(let k=0;k<6;k++) thB(m.u,m.v,a+k*1.047,4.4,{col:0xff3a5a,r:.24}); a+=.19;
       if(w%8===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.18,7,{col:0xffffff,r:.22}); } }
       if(w%30===0) thMinion('pig',rnd(-6,6),TH.H,thPigDive); if(w%3===0) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2,5,{col:0xff9a5a,r:.22}); yield .1; } } };
-function* thBossLoop(T){ const B=Game.mech.boss, list=TH_SPELLS[T.ph]||TH_SPELLS[2]; T.seen=new Set(); yield 1.4;
-  for(let n=0;;n++){ let i=n%(list.length-(T.ph===2?1:0)); if(T.ph===2&&B&&B.hp<=B.maxHp*.28) i=list.length-1; let ent=list[i]; if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } const [name,dur,key]=ent; // debug mode can pick the spell
-    T.spell={name,dur,t:0,key}; T.spellMiss=0; T.tip=null; T.pull=0; T.stun=0; Sound.sfx('secret'); Game.cineMark='spell';
-    const g=TH_PAT[key](T); let el=0; for(;;){ const s=g.next(); if(s.done) break; const w=s.value||.1; yield w; el+=w; if(el>=dur) break; if(key!=='final'&&T.ph===2&&B&&B.hp<=B.maxHp*.28&&!T.dbgSpell) break; }
-    T.seen.add(key);
-    // pattern over: the bullets fizzle, a bonus if no life was lost
+function* thBossLoop(T){ const B=Game.mech.boss, ticks=thTicks(T.ph), fin=TH_SPELLS[2].find(e=>e[2]==='final'); yield 1.4;
+  for(;;){ let ent=T.tick<ticks.length?ticks[T.tick]:T.ph===2?fin:null; if(!ent) return; // phase I: the last tick took him to 0
+    if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } // debug mode can pick the attack
+    const [name,,key]=ent, tk=T.tick, isFin=key==='final';
+    T.spell={name,dur:isFin?TH_FINALE:15,t:0,key}; T.spellMiss=0; T.tip=isFin?'Survive!':null; T.pull=0; T.stun=0; Sound.sfx('secret'); Game.cineMark='spell';
+    const g=TH_PAT[key](T); let el=0; for(;;){ const s=g.next(); if(s.done) break; const w=s.value||.1; yield w; el+=w; T.finT=isFin?el:0; if(isFin?el>=TH_FINALE:T.tick!==tk) break; }
+    // attack over: the bullets fizzle, a bonus if no life was lost
     for(const b of T.eb){ if(Math.random()<.3) thFx(b.u,b.v,2,0xffffff,1,.2); } T.eb=[]; T.pull=0; T.tip=null; for(const m of T.mn){ if(m.hp>0) thFx(m.u,m.v,8,0xb06aff,3,.25); m.gone=1; }
-    if(!T.spellMiss&&key!=='final'){ const bonus=(T.ph*1000000)+Math.round(Math.max(0,dur-el)*20000); T.score+=bonus; T.bonus={t:0,n:bonus}; Sound.sfx('ready'); } T.spell=null; yield 1.3; } }
+    if(isFin&&el>=TH_FINALE){ T.finDone=1; T.spell=null; if(B){ B.vuln=true; mechDamage(B.hp+1,TH.CX+TH.VH,0,0,true); } return; } // he falls once you outlast it
+    if(T.tick===tk){ T.spell=null; continue; } // the attack ran out before its tick was cleared: it starts again
+    if(!T.spellMiss){ const bonus=(T.ph*1000000)+Math.round(Math.max(0,15-el)*20000); T.score+=bonus; T.bonus={t:0,n:bonus}; Sound.sfx('ready'); } T.spell=null; yield 1.3; } }
 
-// ---------- the HP gate: a phase can't end (and phase II's finale can't start) before every attack has had its turn ----------
-// an attack counts once it has played in full; until then his HP stops at the floor and the bar turns gold (the one-hit-kill cheat skips it)
-function thHpFloor(T,B){ if(!T||!B||TW.otk) return 0; const L1=TH_SPELLS[T.ph]||TH_SPELLS[2], need=T.ph===2?L1.slice(0,-1):L1, seen=T.seen||new Set();
-  if(need.every(e=>seen.has(e[2]))) return 0; return T.ph===2?B.maxHp*.285:1; }
-(function(){ const md=mechDamage; mechDamage=function(d,x,y,z,b){ try{ const G=Game.mech, T=G&&G.th, B=G&&G.boss; if(T&&B&&B.vuln){ const f=thHpFloor(T,B); T.gated=f>0&&B.hp-d<=f; if(f>0) d=Math.max(0,Math.min(d,B.hp-f)); } }catch(e){ console.error('hp gate',e); } return md.call(this,d,x,y,z,b); }; })();
+// a hit can't carry past the current tick: the chunk empties, the tick pops, the next attack starts (the one-hit-kill cheat skips this)
+(function(){ const md=mechDamage; mechDamage=function(d,x,y,z,b){ try{ const G=Game.mech, T=G&&G.th, B=G&&G.boss;
+    if(T&&B&&B.vuln&&!TW.otk&&T.tick!=null){ const n=thTicks(T.ph).length; while(T.tick<n&&B.hp<=thTickFloor(T,T.tick)+1e-6) T.tick++; /* HP set from outside (Debug Mode): catch up */ const f=thTickFloor(T,T.tick); d=Math.max(0,Math.min(d,B.hp-f)); if(d<=0) return;
+      if(B.hp-d<=f+1e-6&&T.tick<thTicks(T.ph).length){ const i=T.tick; T.tick++; T.pops.push({i,t:0}); Sound.sfx('ting'); Sound.sfx('ready'); const C=thBossC(); thFx(C.u,C.v,30,0xffd45a,6,.4); } } }catch(e){ console.error('ticks',e); }
+  return md.call(this,d,x,y,z,b); }; })();
 
 // ---------- per-frame ----------
 function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const sl=T.slow||1;
@@ -212,7 +228,7 @@ function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const 
     if(b.bounce>0){ let hit=0; if((b.u<-TH.W+b.r&&b.vu<0)||(b.u>TH.W-b.r&&b.vu>0)){ b.vu=-b.vu; hit=1; } if(b.v<-TH.H+b.r&&b.vv<0){ b.vv=-b.vv; hit=1; } if(hit){ b.bounce--; if(b.onB) b.onB(b); } }
     if(b.u<-TH.W-1.5||b.u>TH.W+1.5||b.v<-TH.H-1.5||b.v>TH.H+3||(b.life&&b.t>b.life)) { b.dead=1; continue; }
     if(N.show&&Game.state==='play'){ const d=Math.hypot(b.u-hu,b.v-hv); if(d<b.r*.6+TH.HIT){ b.dead=1; thHurt(); }
-      else if(!b.gz&&d<b.r+TH.GRAZE&&T.ready){ b.gz=1; T.graze++; T.score+=500; N.sp=Math.min(100,N.sp+.9); if(T.graze%2===0) Sound.tone('square',2200,2600,.025,.035); const [x,y]=thW(hu+(b.u-hu)*.5,hv+(b.v-hv)*.5); FX.spawn(x,y,.4,rnd(-3,3),rnd(-3,3),0,.15,0xffffff,.16,0,true); } }
+      else if(!b.gz&&d<b.r+TH.GRAZE&&T.ready){ b.gz=1; T.graze++; T.score+=500; if(T.graze%2===0) Sound.tone('square',2200,2600,.025,.035); const [x,y]=thW(hu+(b.u-hu)*.5,hv+(b.v-hv)*.5); FX.spawn(x,y,.4,rnd(-3,3),rnd(-3,3),0,.15,0xffffff,.16,0,true); } }
     [b.x,b.y]=thW(b.u,b.v); b.z=0; }
   T.eb=T.eb.filter(b=>!b.dead);
   // Event Horizon pulls you toward the mouth
@@ -220,9 +236,9 @@ function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const 
   // player bullets
   const C=thBossC(); for(const p of T.pb){ p.t+=dt; p.u+=p.vu*dt; p.v+=p.vv*dt; if(p.v>TH.H+2||p.u<-TH.W-1||p.u>TH.W+1){ p.dead=1; continue; }
     if(p.big&&Math.random()<.9){ const [x,y]=thW(p.u+rnd(-.4,.4),p.v-.6); FX.spawn(x,y,.3,-rnd(3,8),rnd(-1,1),0,.25,Math.random()<.5?0x3a8aff:0xbff8ff,rnd(.3,.6),0,true); }
-    for(const m of T.mn){ if(m.hp<=0||(p.hit&&p.hit.has(m))) continue; if(Math.hypot(m.u-p.u,m.v-p.v)<m.r+p.r){ m.hp-=p.big?6:p.dmg*6; m.flash=.08; T.score+=100; if(m.hp<=0) thKill(m); if(p.pierce) p.hit.add(m); else { p.dead=1; break; } } }
+    for(const m of T.mn){ if(m.hp<=0||(p.hit&&p.hit.has(m))) continue; if(Math.hypot(m.u-p.u,m.v-p.v)<m.r+p.r){ m.hp-=p.big?6:p.dmg*6; m.flash=.08; thSpGain(p.dmg); T.score+=100; if(m.hp<=0) thKill(m); if(p.pierce) p.hit.add(m); else { p.dead=1; break; } } }
     if(p.dead) continue;
-    if(B&&p.v>C.v-4.6&&Math.hypot(p.u-C.u,(p.v-C.v)*.8)<4.4&&!(p.hit&&p.hit.has(B))){ const [x,y]=thW(p.u,p.v); const was=B.hp; mechDamage(p.dmg*(T.stun>0?1.5:1),x,y,0,!!p.big); if(B.hp<was){ T.score+=Math.round((was-B.hp)*1000); N.sp=Math.min(100,N.sp+(p.big?4:.06)); } if(p.pierce) p.hit.add(B); else p.dead=1; } }
+    if(B&&p.v>C.v-4.6&&Math.hypot(p.u-C.u,(p.v-C.v)*.8)<4.4&&!(p.hit&&p.hit.has(B))){ const [x,y]=thW(p.u,p.v); const was=B.hp; mechDamage(p.dmg*(T.stun>0?1.5:1),x,y,0,!!p.big); if(B.hp<was) T.score+=Math.round((was-B.hp)*1000); thSpGain(p.dmg); if(p.pierce) p.hit.add(B); else p.dead=1; } }
   T.pb=T.pb.filter(p=>!p.dead); if(T.stun>0) T.stun-=dt;
   // items: red P raises power, blue points score; above the top third they fly to you
   for(const it of T.items){ it.t+=dt; const near=N.tv>TH.H*.2||it.auto||Math.hypot(it.u-N.tu,it.v-N.tv)<2.2; if(near&&N.show){ const du=N.tu-it.u, dv=N.tv-it.v, d=Math.hypot(du,dv)||1; it.u+=du/d*22*dt; it.v+=dv/d*22*dt; } else { it.vv=Math.max(-3.5,it.vv-dt*6); it.v+=it.vv*dt; }
@@ -269,8 +285,8 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   uText('東方大豚',R0,y,`900 26px ${FB}`,'#f6dca0'); uText('~ The Endless Hunger',R0+2,y+20,`italic 600 13px ${FB}`,'#b9a8d8'); y+=60;
   const fmt=n=>String(Math.floor(n)).padStart(10,'0'); row('HiScore',fmt(Math.max(SAVE.settings.thHi||0,T.score)),'#d8d0f0'); row('Score',fmt(T.score)); y+=8;
   uText('Player',R0,y,`700 15px ${FB}`,'#b9a8d8'); for(let i=0;i<TH.LIVES;i++){ thStar(R0+RW-10-i*22,y-6,8,i<T.lives?'#ff6ab0':'rgba(255,255,255,.12)'); } y+=30;
-  uText('Drill',R0,y,`700 15px ${FB}`,'#b9a8d8'); const dw=RW-60; uRR(R0+60,y-11,dw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(R0+60,y-11,Math.max(6,dw*N.sp/100),12,6); D.fillStyle=N.sp>=100?`hsl(${195+Math.sin(T.t*8)*20},100%,65%)`:'#3a8aff'; D.fill(); y+=22;
-  uText(N.sp>=100?K('special')+'  HEAVENLY DRILL READY':Math.floor(N.sp)+'%',R0+RW,y,`800 12px ${FB}`,N.sp>=100?'#9ff8ff':'#8f95ab','right'); y+=26;
+  uText('Drill',R0,y,`700 15px ${FB}`,'#b9a8d8'); const dw=RW-60; uRR(R0+60,y-11,dw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); for(let c=0;c<2;c++){ const k=clamp((N.sp-c*100)/100,0,1), cx=R0+60+c*(dw/2+2), cw=dw/2-2; if(k>0){ uRR(cx,y-11,Math.max(6,cw*k),12,6); D.fillStyle=k>=1?`hsl(${195+Math.sin(T.t*8+c)*20},100%,65%)`:'#3a8aff'; D.fill(); } } y+=22;
+  uText(N.sp>=100?K('special')+'  DRILL READY ×'+Math.floor(N.sp/100):Math.floor(N.sp)+'%',R0+RW,y,`800 12px ${FB}`,N.sp>=100?'#9ff8ff':'#8f95ab','right'); y+=26;
   row('Graze',String(T.graze),'#fff');
   uText('Shot',R0,y,`700 15px ${FB}`,'#b9a8d8'); const cw=RW-60, ck=clamp(T.hold/TH.FULL,0,1); uRR(R0+60,y-11,cw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); if(ck>0){ uRR(R0+60,y-11,Math.max(6,cw*ck),12,6); D.fillStyle=ck>=1?'#9ff8ff':'#5a8aff'; D.fill(); }
   y+=22; uText(tch?(ck>=1?'POWER SHOT!':'Power Shot charges by itself'):ck>=1?'POWER SHOT · release':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); y+=18;
@@ -283,8 +299,14 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
   D.restore();
   // boss bar across the top of the field
-  const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':T.gated&&thHpFloor(T,B)>0?'#ffd45a':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
-    if(T.ph===2){ D.fillStyle='#ffd45a'; D.fillRect(bx+bw*.28-1,byy-3,2,13); } uText('HAMZA',bx,byy+24,`800 12px ${FB}`,'#ffd0e0'); }
+  const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
+    // a tick between every attack's chunk; the ones you have reached pop and fade
+    const n=thTicks(T.ph).length; for(let i=0;i<n;i++){ const f=thTickFloor(T,i)/B.maxHp, tx=bx+bw*f, done=i<T.tick, cur=i===T.tick;
+      if(done) continue; D.fillStyle=cur?'#ffd45a':'rgba(255,255,255,.7)'; D.beginPath(); D.moveTo(tx,byy-4); D.lineTo(tx+4,byy+3.5); D.lineTo(tx,byy+11); D.lineTo(tx-4,byy+3.5); D.closePath(); D.fill(); }
+    for(const q of T.pops||[]){ q.t+=1/60; const f=thTickFloor(T,q.i)/B.maxHp, tx=bx+bw*f, u=Math.min(1,q.t/.55), r=4+u*22; D.globalAlpha=a*(1-u); D.strokeStyle='#ffd45a'; D.lineWidth=3*(1-u)+1;
+      D.beginPath(); D.arc(tx,byy+3.5,r,0,7); D.stroke(); D.fillStyle='#fff'; D.beginPath(); D.arc(tx,byy+3.5,Math.max(0,6*(1-u*1.6)),0,7); D.fill(); D.globalAlpha=a; }
+    if(T.pops) T.pops=T.pops.filter(q=>q.t<.55);
+    uText('HAMZA',bx,byy+24,`800 12px ${FB}`,'#ffd0e0'); uText(T.tick<n?(T.tick+1)+' / '+n:T.ph===2?'SURVIVE '+Math.max(0,Math.ceil(TH_FINALE-(T.finT||0))):'',bx+bw,byy+24,`800 12px ${FB}`,T.tick<n?'#ffd45a':'#ff8a9a','right'); }
   if(T.bonus){ const k=T.bonus.t; D.globalAlpha=a*Math.min(1,(2.6-k)*2); uText('No-Hit Bonus!',fx+fw/2,fy+fh*.32,`900 26px ${FB}`,'#ffd45a','center'); uText('+'+T.bonus.n.toLocaleString(),fx+fw/2,fy+fh*.32+28,`800 18px ${FB}`,'#fff','center'); D.globalAlpha=a; }
   if(T.tip&&T.ready){ uText(T.tip,fx+fw/2,fy+fh-18,`700 14px ${FB}`,'#bfe8ff','center'); }
   D.restore();
@@ -356,3 +378,6 @@ function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hi
     else { D.fillStyle='#08060c'; D.fillRect(0,4,w,h); for(let i=0;i<220;i++){ const v=Math.floor(Math.random()*80); D.fillStyle=`rgb(${v},${v},${v})`; D.fillRect(Math.floor(Math.random()*w),4+Math.floor(Math.random()*h),2,1); } uText('SIGNAL LOST',w/2,h/2,`900 18px ${FB}`,'#ff6a6a','center'); } }
   D.restore(); D.save(); D.strokeStyle='#e3b65a'; D.lineWidth=2; D.strokeRect(Math.round(x+jx)-1,Math.round(y+jy)+3,w+2,h-2); D.restore(); }
 
+
+// the Hamza song keeps going through this section's cutscenes (they used to switch to the requiem)
+(function(){ const pl=Sound.play; Sound.play=function(name){ if(name==='requiem'&&Game.mech&&MP3.want&&MP3.want.name==='hamza') return; return pl.apply(this,arguments); }; })();
