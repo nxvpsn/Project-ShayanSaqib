@@ -8168,7 +8168,7 @@ function twTearSpots(n,avoid){ const A=twLock(), B=twBounds(), P=Player, out=[];
   for(const [sp,far,box] of [[3.6,3.2,A],[3.2,2.8,A],[3,2.5,B],[3,1.5,B]]) for(let g=0;g<400&&out.length<n;g++){ const x=rnd(box.x0+2,box.x1-2), z=rnd(box.z0+2,box.z1-2);
     if(Math.hypot(x-P.x,z-P.z)<far||Math.hypot(x-avoid.x,z-avoid.z)<2.5||out.some(o=>Math.hypot(o.x-x,o.z-z)<sp)) continue; out.push({x,z}); }
   return out; }
-function twTearOpen(R,x,y,z,sky){ const m=twBB(texScar(),sky?1.54:1.26,sky?3.64:3.08), gl=twGlow(0x5a1010,3.6); m.userData.tw=1; m.rotation.x=TILT; m.position.set(x,y,z); m.scale.set(.01,1,1); gl.position.set(x,y,z+.05); gl.material.opacity=0;
+function twTearOpen(R,x,y,z,sky){ const m=twBB(texScar(),sky?1.54:1.26,sky?3.64:3.08), gl=twGlow(0x8a0010,4.2); gl.material.blending=THREE.NormalBlending; /* a solid deep red (an additive glow vanishes on snow), a hot core on top */ const core=twGlow(0xff1a2a,1.7); gl.userData.core=core; m.userData.tw=1; m.rotation.x=TILT; m.position.set(x,y,z); m.scale.set(.01,1,1); gl.position.set(x,y,z+.05); gl.material.opacity=0; core.position.set(x,y,z+.07); core.material.opacity=0;
   const s={x,y,z,m,gl,k:0,sky,link:null}; if(sky) R.skyScar=s; else R.scars.push(s); Sound.sfx('tear'); FX.burst(x,y,z,24,0x9a3aff,4,.35); FX.burst(x,y,z,16,0x05010a,3,.35,false); return s; }
 TWK.omar.tear=function*(T,ph){ if(TW.tear){ yield .2; return; } const sp=twSp(T), A=twLock(), c=twCenter();
   twBark('omar',"I will tear this world... along the dotted line.",true);
@@ -8200,8 +8200,8 @@ function twTearRun(R){ twHz({upd(dt,play){ const P=Player, T=R.T; if(play) R.t+=
       if(R.aim){ const a=R.aim; if(play) a.t+=dt; const B=TW.bh&&TW.bh.live?TW.bh:null; a.hole=!!B; // during Collapse the orb fires into the black hole
         if(B){ a.tx=B.x; a.ty=groundY(B.x,B.z)+1.3; a.tz=B.z; } else if(a.t<TW_TEAR.aim-.2){ a.tx=P.x; a.ty=P.y+.9; a.tz=P.z; } // aimed through your body, on into the ground
         const gy=groundY(a.tx,a.tz), k=B?1:(O.y-gy)/Math.max(.3,O.y-a.ty), ex=O.x+(a.tx-O.x)*k, ez=O.z+(a.tz-O.z)*k, ey=B?a.ty:gy; twBeamTo(a.m,O.x,O.y,O.z,ex,ey,ez,1); a.m.material.opacity=.5+.5*Math.sin(a.t*40);
-        const sk=R.scars.find(s=>s.link==='sky'); if(sk){ sk.gl.material.opacity=.55+.25*Math.sin(a.t*30); } // the laser light shows through the scar that leads to it
-        if(a.t>=TW_TEAR.aim){ scene.remove(a.m); R.aim=null; if(sk) sk.gl.material.opacity=0; twTearFire(O,ex,ey,ez,a.hole); } }
+        const sk=R.scars.find(s=>s.link==='sky'); if(sk){ sk.gl.material.opacity=.7+.2*Math.sin(a.t*30); sk.gl.userData.core.material.opacity=.6+.3*Math.sin(a.t*30); } // the laser light shows through the scar that leads to it
+        if(a.t>=TW_TEAR.aim){ scene.remove(a.m); R.aim=null; if(sk){ sk.gl.material.opacity=0; sk.gl.userData.core.material.opacity=0; } twTearFire(O,ex,ey,ez,a.hole); } }
       // portals: you
       if(P.riftFall&&P.onGround) P.riftFall=0; // coming back down from the rift, the scars ignore you until you land
       if(R.linked&&play&&!Game.script&&!(P.portalCd>Game.time)&&!P.hidden&&!P.riftFall) { let best=null, bd=1.4; for(const s of R.scars){ const d=Math.hypot(P.x-s.x,P.z-s.z); if(d<bd&&Math.abs(P.y+.8-s.y)<1.6){ bd=d; best=s; } } if(best) twTearEnter(R,best); }
@@ -8209,7 +8209,7 @@ function twTearRun(R){ twHz({upd(dt,play){ const P=Player, T=R.T; if(play) R.t+=
       if(R.linked) for(const f of TW.fb||[]){ if(f.life<=0||f.ported) continue; for(const s of R.scars){ if(Math.hypot(f.x-s.x,f.y-s.y,f.z-s.z)<.9){ f.ported=1; twTearFb(R,s,f); break; } } }
       // fireballs hitting the orb
       for(const f of TW.fb||[]){ if(f.life>0&&Math.hypot(f.x-O.x,f.y-O.y,f.z-O.z)<.6+f.r){ f.life=0; twFireballHit(f,f.x,f.y,f.z); twTearOrbHit(R,f.big?2:1); if(R.done) return true; } } }
-    return true; }, kill(){ for(const s of [R.skyScar,...R.scars]){ if(s){ scene.remove(s.m); scene.remove(s.gl); } } if(R.orb){ scene.remove(R.orb.m); scene.remove(R.orb.g); } if(R.aim) scene.remove(R.aim.m); if(TW.tear===R) TW.tear=null; }}); }
+    return true; }, kill(){ for(const s of [R.skyScar,...R.scars]){ if(s){ scene.remove(s.m); scene.remove(s.gl); scene.remove(s.gl.userData.core); } } if(R.orb){ scene.remove(R.orb.m); scene.remove(R.orb.g); } if(R.aim) scene.remove(R.aim.m); if(TW.tear===R) TW.tear=null; }}); }
 function twTearFire(O,tx,ty,tz,hole){ const P=Player, dx=tx-O.x, dy=ty-O.y, dz=tz-O.z, L=Math.hypot(dx,dy,dz)||1, core=twTearBeam(0x05010a,.17,false), edge=twTearBeam(0x9a3aff,.3,true);
   Sound.sfx('beam'); shake(.25); FX.burst(tx,ty+.1,tz,20,0x8a2aff,4,.3); FX.burst(tx,ty+.1,tz,14,0x05010a,3,.3,false);
   const k={t:0}; twHz({upd(dt){ k.t+=dt; const w=Math.max(.01,1-k.t/.3); twBeamTo(core,O.x,O.y,O.z,tx,ty,tz,w); twBeamTo(edge,O.x,O.y,O.z,tx,ty,tz,w); return k.t<.3; }, kill(){ scene.remove(core); scene.remove(edge); }});
@@ -15261,8 +15261,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Ali's Nathan fight: Nathan in 8 directions (3D-rendered pixel sheet), no cyan halo; Ali faces right in third person, his slash tears follow him";
-const DBG_NEW=['nathan:*'];
+const DBG_PATCH="Oct 27: Omar's Tear: the scar that leads to the sky glows deep red (reads on snow)";
+const DBG_NEW=['omar:tear'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
