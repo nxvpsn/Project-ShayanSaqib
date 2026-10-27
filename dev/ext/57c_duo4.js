@@ -11,7 +11,7 @@
 //       Hikari-chan, and a Megane Supernova you survive only in her shadow while a black hole drags her away
 // - camera: a tracked, zoomed-out follow cam during the limit cuts, always restored (also on retry and on leaving)
 // =====================================================================
-DUO3.hp=[0,345,390,435]; DUO3.gap=[0,.8,.6,.45]; DUO3.rain=100; DUO3.seed=[0,0,30,45];
+DUO3.hp=[0,276,312,348]; /* 20% under the 345/390/435 it had */ DUO3.gap=[0,.8,.6,.45]; DUO3.rain=100; DUO3.seed=[0,0,30,45];
 for(const k of [1,2,3]) DUO_HP[k]=DUO_SHARED_HP[k]=DUO3.hp[k];
 DUO3_POOL[1].push('laserStorm');
 DUO3_POOL[2].push('laserStorm','scytheCyclone','getsugaGauntlet');
@@ -68,7 +68,7 @@ twAliRevive=function*(F){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sat=
 // ---------- co-op: the friend's Ali gets the assists (the host rolls them and briefly drives him) ----------
 function twAliAssister(){ const a=twAliAI(); if(a) return a; if(!TW.coop) return null; return TW.allies.find(x=>x.who==='ali'&&x.remote&&!x.gone&&!x.hidden)||null; }
 twDuo3Roll=function(F,k,mid){ const A=twAliAssister(); if(!twAliReady(A)||F.lc) return; if(Math.random()<.25) F.guard={mid,n:0};
-  const who=DUO3_RANGED[k]; if(who&&Math.random()<.25) F.kick={mid,who,at:Game.time+rnd(.9,1.3)}; };
+  const who=DUO3_RANGED[k]; if(who&&twAliCutRoll(F)) F.kick={mid,who,at:Game.time+rnd(.9,1.3)}; };
 twDuo3Assist=function(F,dt,play){ if(!play) return; const A=twAliAssister();
   if(F.revQ&&!Game.script&&Game.state==='play'){ F.revQ=0; run(function*(){ yield* twAliRevive(F); }); return; }
   const K=F.kick; if(K&&Game.time>=K.at){ F.kick=null; if(K.mid===F.mid&&F.busy&&!F.lc&&!F.grabbed&&twAliReady(A)&&(F.C.gen||F.O.gen)){ twAliKick(F,A,K); twAssistSync(A,1); } } };

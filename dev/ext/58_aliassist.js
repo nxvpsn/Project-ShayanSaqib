@@ -14,16 +14,19 @@
 function twTinyJC(x,y,z,len){ const s=toScreen(x,y,z); if(s[2]>1) return; const a=rnd(0,Math.PI), L0=len||110; JC.lines.push({x0:s[0]-Math.cos(a)*L0,y0:s[1]-Math.sin(a)*L0,x1:s[0]+Math.cos(a)*L0,y1:s[1]+Math.sin(a)*L0,t:0,ttl:.3}); }
 
 function twAliReady(A){ return !!A&&!A.gone&&!A.hidden; }
+const TW_ALI_CUT=.4; // Ali cuts a cuttable duo move this often (and saves you from a grab this often, dgAliRoll)
+// he cuts at least once per phase: once 3 moves of a phase have gone by without a cut, the next cuttable move is his
+function twAliCutRoll(F){ const ph=F.phase||1; F.mvN=F.mvN||{}; F.cutN=F.cutN||{}; F.mvN[ph]=(F.mvN[ph]||0)+1; return Math.random()<TW_ALI_CUT||(!F.cutN[ph]&&F.mvN[ph]>=3); }
 // at the start of every duo move
 function twDuo3Roll(F,k,mid){ const A=twAliAI(); if(!twAliReady(A)||F.lc) return;
   if(Math.random()<.25) F.guard={mid,n:0};
-  const who=DUO3_RANGED[k]; if(who&&Math.random()<.25) F.kick={mid,who,at:Game.time+rnd(.9,1.3)}; }
+  const who=DUO3_RANGED[k]; if(who&&twAliCutRoll(F)) F.kick={mid,who,at:Game.time+rnd(.9,1.3)}; }
 function twDuo3Assist(F,dt,play){ if(!play) return; const A=twAliAI();
   if(F.revQ&&!Game.script&&Game.state==='play'){ const n=F.revQ; F.revQ=0; run(function*(){ yield* twAliRevive(F,n); }); return; }
   const K=F.kick; if(K&&Game.time>=K.at){ F.kick=null; if(K.mid===F.mid&&F.busy&&!F.lc&&!F.grabbed&&twAliReady(A)&&(F.C.gen||F.O.gen)) twAliKick(F,A,K); } }
 
 // ---------- the kick ----------
-function twAliKick(F,A,K){ const T=K.who==='caotan'?F.C:F.O, o=T===F.C?F.O:F.C, mid=K.mid, gy=groundY(T.x,T.z);
+function twAliKick(F,A,K){ F.cutN=F.cutN||{}; F.cutN[F.phase||1]=1; const T=K.who==='caotan'?F.C:F.O, o=T===F.C?F.O:F.C, mid=K.mid, gy=groundY(T.x,T.z);
   // the move stops dead
   F.C.gen=null; F.O.gen=null; for(const X of [F.C,F.O]){ X.state='idle'; X.lockF=0; X.swing=0; X.cast=0; X.fire=0; X.heartEyes=0; if(X.hide){ X.hide=0; } X.hy=1.3; } TW.sentence=null; TW.caoSafe=null;
   aliGhost(A.x,A.y,A.z); const side=A.x<T.x?-1:1; A.x=T.x+side*.9; A.z=T.z+.3; A.f=-side; A.flash=.2; Sound.sfx('dash'); Sound.sfx('secret'); FX.burst(A.x,A.y+1,A.z,24,0xb0182a,5,.35);
@@ -33,11 +36,11 @@ function twAliKick(F,A,K){ const T=K.who==='caotan'?F.C:F.O, o=T===F.C?F.O:F.C, 
   for(const h of TW.hz.slice()){ if(h.mid!==mid) continue; if(h._x!=null) cuts.push([h._x,groundY(h._x,h._z)+1,h._z]); try{ h.kill&&h.kill(); }catch(e){} const i=TW.hz.indexOf(h); if(i>=0) TW.hz.splice(i,1); }
   const seq={t:0,n:0}; Game.fxUpd.push(dt=>{ seq.t+=dt; while(seq.n<Math.min(cuts.length,16)&&seq.t>seq.n*.035){ const [x,y,z]=cuts[seq.n++]; twTinyJC(x,y,z,90); FX.cut(x,y,z); FX.burst(x,y,z,10,0xff2a3a,4,.25); if(seq.n%2) Sound.sfx('swing'); } return seq.n<Math.min(cuts.length,16); });
   // the kick: down he goes
-  T.down=1; T.stun=Math.max(T.stun,2.6); T.state='stun'; T.flash=.4; T.mv=null; Sound.sfx('punch'); Sound.sfx('crash'); shake(.7); impactFrame([[2,1],[1,1]]); FX.ring(T.x,gy+.1,T.z,'#ff3a4a',3,.45); FX.burst(T.x,gy+.4,T.z,40,0xd8c0c8,6,.4,false);
+  T.down=1; T.stun=Math.max(T.stun,1); T.state='stun'; /* down for 1s */ T.flash=.4; T.mv=null; Sound.sfx('punch'); Sound.sfx('crash'); shake(.7); impactFrame([[2,1],[1,1]]); FX.ring(T.x,gy+.1,T.z,'#ff3a4a',3,.45); FX.burst(T.x,gy+.4,T.z,40,0xd8c0c8,6,.4,false);
   Game.dmgNums.push({x:T.x,y:gy+3.4,z:T.z,n:'KICKED DOWN',t:0,big:true,col:'#ff6a7a'}); TW._ally=1; try{ twHurt(T,3,'ally'); } finally{ TW._ally=0; }
   o.stun=Math.max(o.stun,.9); o.state='stun';
   const r=Math.floor(Math.random()*3); if(r===0) twBark('ali',"Sit.",true); else if(r===1) twBark('ali',"No.",true); else twBark('ali',"Down. Stay.",true);
-  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=2.4){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
+  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=1){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
 
 // ---------- the guard: Ali parries for Shayan ----------
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const F=TW.fight, P=Player, G=F&&F.kind==='duo'?F.guard:null;

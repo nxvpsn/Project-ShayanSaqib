@@ -8,7 +8,7 @@
 //   in and lasers you while you burn (your body chars), Omar throws you into a black hole that spits you out (uncharred).
 // - COME HERE, LITTLE BOY (`DUO.comeHere`): a twin blinks in front of you under a death sigil; unblockable and
 //   unparryable, only a dash in the last beat gets away. Caught: that twin's grab above plays out.
-// - Ali (the AI ally) cuts 25% of grabs short: Judgement Cuts through the grab and kicks the grabber down.
+// - Ali (the AI ally) cuts 40% of grabs short (TW_ALI_CUT): Judgement Cuts through the grab and kicks the grabber down.
 // =====================================================================
 // the camera: s.want() -> [px,py,pz,lx,ly,lz]; it eases toward that every frame
 function dgCam(want,k){ if(typeof twClearCutFX==='function') twClearCutFX(); /* a slash tear left on screen would stretch across the cut */ const L0=Cam.look||{x:Player.x,y:Player.y,z:Player.z}, cp=camera.position;
@@ -39,7 +39,7 @@ function* dgLaunch(F,cam,gx,gy,gz,hk,dmg){ const P=Player;
   for(let t=0;t<1.25&&P.hp>0;t+=1/60) yield wait(1/60);
   dgRelease(F,cam,{keepInv:1}); }
 // Ali cuts the grab short (25%): Judgement Cuts through the grabber, then the kick (twAliKick knocks him down)
-function dgAliRoll(F){ const A=twAliAI(); return !!A&&twAliReady(A)&&(A.down||0)<=0&&!ALI()&&!F.lc&&Math.random()<.25; }
+function dgAliRoll(F){ const A=twAliAI(); return !!A&&twAliReady(A)&&(A.down||0)<=0&&!ALI()&&!F.lc&&Math.random()<TW_ALI_CUT; }
 function* dgAliSave(F,T,cam){ const P=Player, A=twAliAI(); if(!A) return;
   cam.want=()=>dgFrame([[P.x,P.y+1,P.z],[T.x,T.y+1,T.z],[A.x,A.y+1,A.z]],{min:20});
   for(let i=0;i<3;i++){ twTinyJC(T.x+rnd(-.6,.6),T.y+1.2+rnd(-.5,.5),T.z,220); FX.cut(T.x,T.y+1.2,T.z); Sound.sfx('swing'); yield wait(.07); }
@@ -138,13 +138,14 @@ function texDoom(){ return twTex('doom',24,24,c=>{ const P=(x,y,w,h,k)=>R(c,x,y,
   P(9,16,1,1,'#120006'); P(11,16,1,1,'#120006'); P(13,16,1,1,'#120006'); }); }
 // it hangs over the player's head until s.dead; s.k pulses it (the last beat)
 function dgDoomSigil(F){ const P=Player, m=twBB(texDoom(),1.3,1.3,{ro:9}), s={m,k:0,t:0,dead:0};
-  Game.fxUpd.push(dt=>{ try{ if(s.dead||TW.fight!==F){ scene.remove(m); return false; } s.t+=dt; s.k=Math.max(0,s.k-dt*2.5);
+  Game.fxUpd.push(dt=>{ try{ if(s.dead||TW.fight!==F||!(F.C.gen||F.O.gen)){ scene.remove(m); return false; } /* cut short (Ali): gone with the move */ s.t+=dt; s.k=Math.max(0,s.k-dt*2.5);
       const sc=Math.max(.01,Math.min(1,s.t*6)*(1+.12*Math.sin(s.t*9)+.5*s.k)); m.scale.set(sc,sc,1); m.position.set(P.x,P.y+3.1,P.z+.2); return true; }catch(e){ console.error('doom sigil',e); scene.remove(m); return false; } });
   return s; }
 DUO.comeHere=function*(C,O,ph){ const F=TW.fight, P=Player, live=[C,O].filter(T=>T&&T.hp>0&&!T.gone), T=live[Math.floor(Math.random()*live.length)];
   if(!T||!F||F.lc||F.grabbed){ yield .3; return; }
   const sp=twSp(T), front=()=>{ const a=P.ang||0; return twClampXZ(P.x+Math.cos(a)*1.5,P.z+Math.sin(a)*1.5,.6); };
   if(T===C) twBark('caotan',"Come here, little boy! ♡",true); else twBark('omar',"Come here, little boy.",true);
+  if(F.kick&&F.kick.mid===F.mid){ F.kick.who=T.who; F.kick.at=Game.time+.6; } /* Ali's cut: on the twin that came, before the grab */
   const q=front(); twBlink(T,q.x,q.z); T.hide=0; T.lockF=1; if(T===C){ C.heartEyes=1; } else { O.scythe=0; O.cast=1; }
   const S=dgDoomSigil(F); Sound.sfx('gong'); Sound.sfx('drone');
   // he shadows you: stays right in front, whatever you do
@@ -162,6 +163,7 @@ DUO.comeHere=function*(C,O,ph){ const F=TW.fight, P=Player, live=[C,O].filter(T=
   if(T===C) twBark('caotan',"Senpai left me on read... in PERSON?!",true); else twBark('omar',"He dashed. They always dash. Like my father.",true);
   yield .6; };
 for(const k of [1,2,3]) DUO3_POOL[k].push('comeHere');
+Object.assign(DUO3_RANGED,{comeHere:'caotan',rushTag:'omar'}); // Ali can cut these too (comeHere's cut retargets the twin that came)
 // ---------- a tag-team rush move, so the rushes (and their grabs) come up more often ----------
 DUO.rushTag=function*(C,O,ph){ const sp=twSp(C), K={n:[0,2,3,4][ph],par:0}; twBark('omar',"Tag. You're it. You were always it.",true);
   for(let i=0;i<K.n;i++){ const r=i%2===0?yield* twDuoRush(O,sp,K):yield* twDuoGlomp(C,sp,[0,.62,.55,.48][ph],K); if(r==='grab') return; yield .3; }
