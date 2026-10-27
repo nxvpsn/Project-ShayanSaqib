@@ -2,8 +2,8 @@
 // OMAR THE EDGE: reaper, darkness, void, death (and a lot of monologue)
 // =====================================================================
 const OM_BARK=["Feel the edge.","Darkness consumes all.","My scythes hunger.","I was born in the dark. Then they turned the lights on. Rude.","Death is just... a long nap. With scythes.","Even my shadow has a shadow."];
-function twHandRise(x,z){ const gy=groundY(x,z), m=twBB(texHand(),.9,1.35); const s={t:0}; FX.burst(x,gy+.2,z,10,0x2a1a3a,3,.35,false);
-  twHz({upd(dt){ s.t+=dt; const u=s.t<.15?s.t/.15:s.t<.5?1:Math.max(0,1-(s.t-.5)/.3); m.position.set(x,gy-.6+u*1.25,z); m.scale.y=Math.max(.01,u); return s.t<.8; }, kill(){ scene.remove(m); }}); }
+function twHandRise(x,z,tall){ const gy=groundY(x,z), k=tall?2:1, m=twBB(texHand(),.9,1.35*k); const s={t:0}; FX.burst(x,gy+.2,z,10,0x2a1a3a,3,.35,false); /* tall: twice the length */
+  twHz({upd(dt){ s.t+=dt; const u=s.t<.15?s.t/.15:s.t<.5?1:Math.max(0,1-(s.t-.5)/.3); m.position.set(x,gy-.6*k+u*1.25*k,z); m.scale.y=Math.max(.01,u); return s.t<.8; }, kill(){ scene.remove(m); }}); }
 function twBigScythe(x,z,dur){ const gy=groundY(x,z), g=new THREE.Group(); const bl=new THREE.Mesh(new THREE.TorusGeometry(1.5,.18,4,24,Math.PI*.9),new THREE.MeshBasicMaterial({color:0x0c0812})); const ed=new THREE.Mesh(new THREE.TorusGeometry(1.62,.06,4,24,Math.PI*.9),new THREE.MeshBasicMaterial({color:0xd0a0ff}));
   const pole=new THREE.Mesh(new THREE.BoxGeometry(.14,3.2,.14),new THREE.MeshBasicMaterial({color:0x2a1a30})); pole.position.set(1.5,1.4,0); g.add(bl,ed,pole); g.userData.tw=1; scene.add(g); const s={t:0};
   twHz({upd(dt){ s.t+=dt; const u=Math.min(1,s.t/dur); g.position.set(x,gy+.6+(1-u*u)*10,z); g.rotation.z=-u*2.4; if(u>=1&&s.t>dur+.25) return false; return true; }, kill(){ scene.remove(g); }}); }
@@ -70,7 +70,7 @@ TWK.omar.monologue=function*(T,ph){ const sp=twSp(T); const lines=["When I was s
   for(let w=0;w<(ph>=3?2:2);w++){ twBark('omar',lines[w*2],true);
     for(let k=0;k<5;k++){ const R=2.2+k*2.2, N=Math.round(R*2.6), gap1=rnd(0,6.28), gap2=gap1+Math.PI+rnd(-.5,.5);
       for(let i=0;i<N;i++){ const a=i*6.283/N; if(angDiff(a,gap1)<.42||angDiff(a,gap2)<.42) continue; const x=ox+Math.cos(a)*R, z=oz+Math.sin(a)*R; const A=twLock(); if(x<A.x0||x>A.x1||z<A.z0||z>A.z1) continue;
-        twBlast(x,z,.8,.55/sp,{col:0x8a2aff,burst:0x1a0a2a,ring:'#a04aff',dmg:2,quiet:i>0,sfx:'squelch',shake:.08,skin:'goop',n:10}); }
+        twBlast(x,z,.8,.55/sp,{col:0x8a2aff,burst:0x1a0a2a,ring:'#a04aff',dmg:2,quiet:i>0,sfx:'squelch',shake:.08,skin:'goop',n:10,h:1,linger:2,onTouch:twGoopSlow}); }
       yield .42/sp; }
     if(w===0){ twBark('omar',lines[1],true); yield .6; } }
   twBark('omar',lines[2],true); yield .8; twBark('omar',lines[3],true); T.hy=1.3; yield .4; };

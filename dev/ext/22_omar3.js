@@ -68,10 +68,11 @@ TWK.omar.reap=function*(T,ph){ const sp=twSp(T), n=ph>=2?3:2; twBark('omar',ph>=
 
 // ---------- Hands: spirals; phase II+ a second spiral runs in the gaps of the first, from the same centre ----------
 // Getting grabbed roots you for 2s. A hand that lands while you are already rooted still hurts but does not extend the root.
-function* twHandChase(T,sp){ for(let i=0;i<7;i++){ const P=Player, p=twClampXZ(P.x+P.vx*.25,P.z+P.vz*.25,.4); twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:'crash',shake:.1,onBoom(x,z){ twHandRise(x,z); }}); yield .27/sp; } }
+function* twHandChase(T,sp){ for(let i=0;i<7;i++){ const P=Player, p=twClampXZ(P.x+P.vx*.25,P.z+P.vz*.25,.4); twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:'crash',shake:.1,h:1,onBoom(x,z){ twHandRise(x,z); }}); yield .27/sp; } }
 function twHandRoot(){ const P=Player; if(!(P.rootT>Game.time)){ P.rootT=Game.time+2; Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'GRABBED',t:0,col:'#c08aff'}); } P.hurt=Math.max(P.hurt,P.rootT-Game.time); P.vx=P.vz=0; }
 function* twHandSpiral(T,sp,a0,ox,oz,arms){ for(let k=0;k<11;k++){ for(let m=0;m<arms;m++){ const a=a0+m*6.283/arms+k*.33, r=1.2+k*1.05, p={x:ox+Math.cos(a)*r,z:oz+Math.sin(a)*r}; const A=twLock(); if(p.x<A.x0||p.x>A.x1||p.z<A.z0||p.z>A.z1) continue;
-      twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:k%2?'crash':'hit',shake:.06,quiet:m>0,onBoom(x,z){ twHandRise(x,z); },onHit:twHandRoot}); }
+      const tall=k%2===1; /* every other hand along an arm: twice as tall, can't be jumped (the others can) */
+      twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:k%2?'crash':'hit',shake:.06,quiet:m>0,h:tall?99:1,onBoom(x,z){ twHandRise(x,z,tall); },onHit:twHandRoot}); }
     yield .12/sp; } }
 TWK.omar.hands=function*(T,ph){ const sp=twSp(T); twBark('omar',ph>=2?"The graveyard has a firm handshake.":"The dead rise... for ME."); T.cast=.6;
   if(ph<2){ yield* twHandChase(T,sp); yield .5; return; }
@@ -291,3 +292,19 @@ TWK.omar.storm=function*(T,ph){ const sp=twSp(T), list=TW.planted.splice(0), P=P
   for(const o of list){ const P2=Player, dx=P2.x-o.x, dy=(P2.y+1.1)-o.y, dz=P2.z-o.z, d=Math.hypot(dx,dy,dz)||1, v=26*sp; o.gone=1; scene.remove(o.m);
     const b=twBolt(T,{kind:'scythe',x:o.x,y:o.y,z:o.z,vx:dx/d*v,vy:dy/d*v,vz:dz/d*v,col:0x8a3aff,dmg:2,life:2}); b.storm=1; Sound.sfx('swing'); yield .26/sp; }
   H.live=false; yield .8; TW.storming=0; T.cast=0; };
+
+// ---------- the goop slow: standing in a lingering monologue puddle halves your speed for 8s (refreshes); an icon over your head ----------
+const TW_GOOP_SLOW=8;
+function twGoopSlow(){ const P=Player, was=P.goopT>Game.time; P.goopT=Game.time+TW_GOOP_SLOW; if(!was){ Sound.sfx('squelch'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'SLOWED',t:0,col:'#c08aff'}); } }
+(function(){ const iv=inputVec; inputVec=function(){ const v=iv.apply(this,arguments); try{ if(Player.goopT>Game.time) return [v[0]*.5,v[1]*.5]; }catch(e){} return v; }; })();
+(function(){ const rp=resetPlayer; resetPlayer=function(){ Player.goopT=0; return rp.apply(this,arguments); }; })();
+(function(){ const ef=twEndFight; twEndFight=function(){ Player.goopT=0; return ef.apply(this,arguments); }; })();
+function drawGoopIcon(){ const P=Player, left=(P.goopT||0)-Game.time; if(!(left>0)||Game.state!=='play'||Game.script) return; const q=toScreen(P.x,P.y+3,P.z); if(!(q[2]<1)) return;
+  const s=36, x=Math.round(q[0]-s/2), y=Math.round(q[1]-s), k=Math.max(0,Math.min(1,left/TW_GOOP_SLOW)), pulse=left<2?.6+.4*Math.sin(Game.time*12):1;
+  D.save(); D.globalAlpha=pulse; uRR(x,y,s,s,7); D.fillStyle='rgba(26,6,38,.92)'; D.fill(); D.lineWidth=2; D.strokeStyle='#c08aff'; D.stroke();
+  // a sad purple puddle (the goop's face), the time left as a ring around it
+  D.fillStyle='#7a3ac0'; D.beginPath(); D.ellipse(x+s/2,y+s/2+3,12,8,0,0,7); D.fill(); D.fillStyle='#120418'; D.fillRect(x+12,y+15,3,4); D.fillRect(x+21,y+15,3,4); D.fillRect(x+13,y+24,10,2);
+  D.fillStyle='#9ad8ff'; D.fillRect(x+12,y+20,2,3);
+  D.strokeStyle='#e8d8ff'; D.lineWidth=3; D.beginPath(); D.arc(x+s/2,y+s/2,s/2+4,-Math.PI/2,-Math.PI/2+k*6.283); D.stroke();
+  uText(Math.ceil(left)+'s',x+s/2,y+s+20,`800 16px ${FB}`,'#e8d8ff','center'); D.restore(); }
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ drawGoopIcon(); }catch(e){ console.error('goop icon',e); } }; })();

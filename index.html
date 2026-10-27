@@ -6033,7 +6033,7 @@ function twClearCutFX(){ Game.moonCut=null; TW_GASH.length=0; JC.lines=[]; JC.sp
 
 // ---------- skinned ground blasts: twBlast(..., {skin:'goop'|'frosting'|'crater'}) ----------
 // Same timing, radius and hit test as twBlast; the plain marker circle becomes a decal that swells during the warning
-// and erupts on the hit (goop: Omar's purple puddles with a sad face; frosting: Hamza's pink cake splats; crater: cracked earth)
+// and erupts on the hit (goop: Omar's purple puddles with a sad face, no airborne particles, `o.linger`/`o.onTouch` after the hit; frosting: Hamza's pink cake splats; crater: cracked earth)
 const TW_SKINS={};
 function twSkinTex(kind,v){ const key=kind+v; if(TW_SKINS[key]) return TW_SKINS[key]; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   const pal=kind==='goop'?['#1a0626','#4a1a7a','#7a3ac0','#c08aff']:kind==='frosting'?['#a8406a','#f08ab0','#ffc0d8','#ffffff']:['#2a1a12','#5a3a24','#8a6a44','#ffb050'];
@@ -6050,13 +6050,15 @@ function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2
     const pc=kind==='goop'?[0x7a3ac0,0x2a0a3a,0xc08aff]:kind==='frosting'?[0xff8ab0,0xffffff,0xffc0d8]:[0x8a6a44,0x3a2a1a,0xffb050];
     return twHz({upd(dt,play){ if(play) this.t+=dt; const gy=groundY(x,z);
         if(this.t<delay){ const k=Math.min(1,this.t/Math.max(.05,delay)); dec.scale.setScalar(Math.max(.01,r*(.35+.65*k)*(1+Math.sin(this.t*30)*.03*k))); dec.material.opacity=.55+.45*k;
-          if(play&&Math.random()<.35) FX.spawn(x+rnd(-r,r)*.7,gy+.1,z+rnd(-r,r)*.7,0,rnd(.5,1.5),0,.4,pc[0],.18,-1,kind!=='goop'); return true; }
+          if(play&&kind!=='goop'&&Math.random()<.35) FX.spawn(x+rnd(-r,r)*.7,gy+.1,z+rnd(-r,r)*.7,0,rnd(.5,1.5),0,.4,pc[0],.18,-1,false); return true; } /* goop: nothing in the air */
         if(!this.boomed){ this.boomed=1; this.bt=0; dec.scale.setScalar(r*1.15);
-          for(let i=0;i<(o.n||26);i++){ const a=Math.random()*6.283, s=rnd(2,6); FX.spawn(x+Math.cos(a)*r*.5,gy+.2,z+Math.sin(a)*r*.5,Math.cos(a)*s*.6,rnd(4,9),Math.sin(a)*s*.6,rnd(.4,.8),pc[i%3],rnd(.2,.34),16,kind==='frosting',.5); }
+          if(kind!=='goop') for(let i=0;i<(o.n||26);i++){ const a=Math.random()*6.283, s=rnd(2,6); FX.spawn(x+Math.cos(a)*r*.5,gy+.2,z+Math.sin(a)*r*.5,Math.cos(a)*s*.6,rnd(4,9),Math.sin(a)*s*.6,rnd(.4,.8),pc[i%3],rnd(.2,.34),16,kind==='frosting',.5); }
           FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.3,.3);
           if(!o.quiet){ Sound.sfx(o.sfx||(kind==='goop'?'squelch':'slam')); shake(o.shake||.18); }
           if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } }
-        this.bt+=dt; dec.material.opacity=Math.max(0,1-this.bt/.7); return this.bt<.7; },
+        // o.linger: the puddle stays that long after the hit (full strength); o.onTouch() while you stand in it
+        this.bt+=dt; const lg=o.linger||0; if(this.bt<lg){ dec.material.opacity=1; if(play&&o.onTouch){ const P=twP(); if(Math.hypot(P.x-x,P.z-z)<r*.9&&P.y<gy+.35) o.onTouch(); } return true; }
+        dec.material.opacity=Math.max(0,1-(this.bt-lg)/.7); return this.bt<lg+.7; },
       kill(){ scene.remove(dec); dec.geometry.dispose(); dec.material.dispose(); }}); }; })();
 
 // ----- 04p_pxv_atlas.js -----
@@ -7418,8 +7420,8 @@ function* twTsunPunish(T){ const P=Player; T.combo=null; twBlinkTo(T,'back',1.3,
 // OMAR THE EDGE: reaper, darkness, void, death (and a lot of monologue)
 // =====================================================================
 const OM_BARK=["Feel the edge.","Darkness consumes all.","My scythes hunger.","I was born in the dark. Then they turned the lights on. Rude.","Death is just... a long nap. With scythes.","Even my shadow has a shadow."];
-function twHandRise(x,z){ const gy=groundY(x,z), m=twBB(texHand(),.9,1.35); const s={t:0}; FX.burst(x,gy+.2,z,10,0x2a1a3a,3,.35,false);
-  twHz({upd(dt){ s.t+=dt; const u=s.t<.15?s.t/.15:s.t<.5?1:Math.max(0,1-(s.t-.5)/.3); m.position.set(x,gy-.6+u*1.25,z); m.scale.y=Math.max(.01,u); return s.t<.8; }, kill(){ scene.remove(m); }}); }
+function twHandRise(x,z,tall){ const gy=groundY(x,z), k=tall?2:1, m=twBB(texHand(),.9,1.35*k); const s={t:0}; FX.burst(x,gy+.2,z,10,0x2a1a3a,3,.35,false); /* tall: twice the length */
+  twHz({upd(dt){ s.t+=dt; const u=s.t<.15?s.t/.15:s.t<.5?1:Math.max(0,1-(s.t-.5)/.3); m.position.set(x,gy-.6*k+u*1.25*k,z); m.scale.y=Math.max(.01,u); return s.t<.8; }, kill(){ scene.remove(m); }}); }
 function twBigScythe(x,z,dur){ const gy=groundY(x,z), g=new THREE.Group(); const bl=new THREE.Mesh(new THREE.TorusGeometry(1.5,.18,4,24,Math.PI*.9),new THREE.MeshBasicMaterial({color:0x0c0812})); const ed=new THREE.Mesh(new THREE.TorusGeometry(1.62,.06,4,24,Math.PI*.9),new THREE.MeshBasicMaterial({color:0xd0a0ff}));
   const pole=new THREE.Mesh(new THREE.BoxGeometry(.14,3.2,.14),new THREE.MeshBasicMaterial({color:0x2a1a30})); pole.position.set(1.5,1.4,0); g.add(bl,ed,pole); g.userData.tw=1; scene.add(g); const s={t:0};
   twHz({upd(dt){ s.t+=dt; const u=Math.min(1,s.t/dur); g.position.set(x,gy+.6+(1-u*u)*10,z); g.rotation.z=-u*2.4; if(u>=1&&s.t>dur+.25) return false; return true; }, kill(){ scene.remove(g); }}); }
@@ -7486,7 +7488,7 @@ TWK.omar.monologue=function*(T,ph){ const sp=twSp(T); const lines=["When I was s
   for(let w=0;w<(ph>=3?2:2);w++){ twBark('omar',lines[w*2],true);
     for(let k=0;k<5;k++){ const R=2.2+k*2.2, N=Math.round(R*2.6), gap1=rnd(0,6.28), gap2=gap1+Math.PI+rnd(-.5,.5);
       for(let i=0;i<N;i++){ const a=i*6.283/N; if(angDiff(a,gap1)<.42||angDiff(a,gap2)<.42) continue; const x=ox+Math.cos(a)*R, z=oz+Math.sin(a)*R; const A=twLock(); if(x<A.x0||x>A.x1||z<A.z0||z>A.z1) continue;
-        twBlast(x,z,.8,.55/sp,{col:0x8a2aff,burst:0x1a0a2a,ring:'#a04aff',dmg:2,quiet:i>0,sfx:'squelch',shake:.08,skin:'goop',n:10}); }
+        twBlast(x,z,.8,.55/sp,{col:0x8a2aff,burst:0x1a0a2a,ring:'#a04aff',dmg:2,quiet:i>0,sfx:'squelch',shake:.08,skin:'goop',n:10,h:1,linger:2,onTouch:twGoopSlow}); }
       yield .42/sp; }
     if(w===0){ twBark('omar',lines[1],true); yield .6; } }
   twBark('omar',lines[2],true); yield .8; twBark('omar',lines[3],true); T.hy=1.3; yield .4; };
@@ -7935,10 +7937,11 @@ TWK.omar.reap=function*(T,ph){ const sp=twSp(T), n=ph>=2?3:2; twBark('omar',ph>=
 
 // ---------- Hands: spirals; phase II+ a second spiral runs in the gaps of the first, from the same centre ----------
 // Getting grabbed roots you for 2s. A hand that lands while you are already rooted still hurts but does not extend the root.
-function* twHandChase(T,sp){ for(let i=0;i<7;i++){ const P=Player, p=twClampXZ(P.x+P.vx*.25,P.z+P.vz*.25,.4); twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:'crash',shake:.1,onBoom(x,z){ twHandRise(x,z); }}); yield .27/sp; } }
+function* twHandChase(T,sp){ for(let i=0;i<7;i++){ const P=Player, p=twClampXZ(P.x+P.vx*.25,P.z+P.vz*.25,.4); twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:'crash',shake:.1,h:1,onBoom(x,z){ twHandRise(x,z); }}); yield .27/sp; } }
 function twHandRoot(){ const P=Player; if(!(P.rootT>Game.time)){ P.rootT=Game.time+2; Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'GRABBED',t:0,col:'#c08aff'}); } P.hurt=Math.max(P.hurt,P.rootT-Game.time); P.vx=P.vz=0; }
 function* twHandSpiral(T,sp,a0,ox,oz,arms){ for(let k=0;k<11;k++){ for(let m=0;m<arms;m++){ const a=a0+m*6.283/arms+k*.33, r=1.2+k*1.05, p={x:ox+Math.cos(a)*r,z:oz+Math.sin(a)*r}; const A=twLock(); if(p.x<A.x0||p.x>A.x1||p.z<A.z0||p.z>A.z1) continue;
-      twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:k%2?'crash':'hit',shake:.06,quiet:m>0,onBoom(x,z){ twHandRise(x,z); },onHit:twHandRoot}); }
+      const tall=k%2===1; /* every other hand along an arm: twice as tall, can't be jumped (the others can) */
+      twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:k%2?'crash':'hit',shake:.06,quiet:m>0,h:tall?99:1,onBoom(x,z){ twHandRise(x,z,tall); },onHit:twHandRoot}); }
     yield .12/sp; } }
 TWK.omar.hands=function*(T,ph){ const sp=twSp(T); twBark('omar',ph>=2?"The graveyard has a firm handshake.":"The dead rise... for ME."); T.cast=.6;
   if(ph<2){ yield* twHandChase(T,sp); yield .5; return; }
@@ -8158,6 +8161,22 @@ TWK.omar.storm=function*(T,ph){ const sp=twSp(T), list=TW.planted.splice(0), P=P
   for(const o of list){ const P2=Player, dx=P2.x-o.x, dy=(P2.y+1.1)-o.y, dz=P2.z-o.z, d=Math.hypot(dx,dy,dz)||1, v=26*sp; o.gone=1; scene.remove(o.m);
     const b=twBolt(T,{kind:'scythe',x:o.x,y:o.y,z:o.z,vx:dx/d*v,vy:dy/d*v,vz:dz/d*v,col:0x8a3aff,dmg:2,life:2}); b.storm=1; Sound.sfx('swing'); yield .26/sp; }
   H.live=false; yield .8; TW.storming=0; T.cast=0; };
+
+// ---------- the goop slow: standing in a lingering monologue puddle halves your speed for 8s (refreshes); an icon over your head ----------
+const TW_GOOP_SLOW=8;
+function twGoopSlow(){ const P=Player, was=P.goopT>Game.time; P.goopT=Game.time+TW_GOOP_SLOW; if(!was){ Sound.sfx('squelch'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'SLOWED',t:0,col:'#c08aff'}); } }
+(function(){ const iv=inputVec; inputVec=function(){ const v=iv.apply(this,arguments); try{ if(Player.goopT>Game.time) return [v[0]*.5,v[1]*.5]; }catch(e){} return v; }; })();
+(function(){ const rp=resetPlayer; resetPlayer=function(){ Player.goopT=0; return rp.apply(this,arguments); }; })();
+(function(){ const ef=twEndFight; twEndFight=function(){ Player.goopT=0; return ef.apply(this,arguments); }; })();
+function drawGoopIcon(){ const P=Player, left=(P.goopT||0)-Game.time; if(!(left>0)||Game.state!=='play'||Game.script) return; const q=toScreen(P.x,P.y+3,P.z); if(!(q[2]<1)) return;
+  const s=36, x=Math.round(q[0]-s/2), y=Math.round(q[1]-s), k=Math.max(0,Math.min(1,left/TW_GOOP_SLOW)), pulse=left<2?.6+.4*Math.sin(Game.time*12):1;
+  D.save(); D.globalAlpha=pulse; uRR(x,y,s,s,7); D.fillStyle='rgba(26,6,38,.92)'; D.fill(); D.lineWidth=2; D.strokeStyle='#c08aff'; D.stroke();
+  // a sad purple puddle (the goop's face), the time left as a ring around it
+  D.fillStyle='#7a3ac0'; D.beginPath(); D.ellipse(x+s/2,y+s/2+3,12,8,0,0,7); D.fill(); D.fillStyle='#120418'; D.fillRect(x+12,y+15,3,4); D.fillRect(x+21,y+15,3,4); D.fillRect(x+13,y+24,10,2);
+  D.fillStyle='#9ad8ff'; D.fillRect(x+12,y+20,2,3);
+  D.strokeStyle='#e8d8ff'; D.lineWidth=3; D.beginPath(); D.arc(x+s/2,y+s/2,s/2+4,-Math.PI/2,-Math.PI/2+k*6.283); D.stroke();
+  uText(Math.ceil(left)+'s',x+s/2,y+s+20,`800 16px ${FB}`,'#e8d8ff','center'); D.restore(); }
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ drawGoopIcon(); }catch(e){ console.error('goop icon',e); } }; })();
 
 // ----- 23_tear.js -----
 // =====================================================================
@@ -15273,8 +15292,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: a scythe you deflect can't hurt you for 0.2s afterwards (rally scythes knocked straight back)";
-const DBG_NEW=['omar:scythes','duo:volley'];
+const DBG_PATCH="Oct 27: Omar: monologue goop jumpable, lingers 2s, standing in it slows you 50% for 8s (icon); every other spiral hand is tall and unjumpable, the rest jumpable; deflected scythes 0.2s immunity";
+const DBG_NEW=['omar:monologue','omar:hands','omar:scythes','duo:volley'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

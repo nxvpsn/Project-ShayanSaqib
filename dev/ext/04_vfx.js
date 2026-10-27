@@ -106,7 +106,7 @@ function twClearCutFX(){ Game.moonCut=null; TW_GASH.length=0; JC.lines=[]; JC.sp
 
 // ---------- skinned ground blasts: twBlast(..., {skin:'goop'|'frosting'|'crater'}) ----------
 // Same timing, radius and hit test as twBlast; the plain marker circle becomes a decal that swells during the warning
-// and erupts on the hit (goop: Omar's purple puddles with a sad face; frosting: Hamza's pink cake splats; crater: cracked earth)
+// and erupts on the hit (goop: Omar's purple puddles with a sad face, no airborne particles, `o.linger`/`o.onTouch` after the hit; frosting: Hamza's pink cake splats; crater: cracked earth)
 const TW_SKINS={};
 function twSkinTex(kind,v){ const key=kind+v; if(TW_SKINS[key]) return TW_SKINS[key]; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   const pal=kind==='goop'?['#1a0626','#4a1a7a','#7a3ac0','#c08aff']:kind==='frosting'?['#a8406a','#f08ab0','#ffc0d8','#ffffff']:['#2a1a12','#5a3a24','#8a6a44','#ffb050'];
@@ -123,11 +123,13 @@ function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2
     const pc=kind==='goop'?[0x7a3ac0,0x2a0a3a,0xc08aff]:kind==='frosting'?[0xff8ab0,0xffffff,0xffc0d8]:[0x8a6a44,0x3a2a1a,0xffb050];
     return twHz({upd(dt,play){ if(play) this.t+=dt; const gy=groundY(x,z);
         if(this.t<delay){ const k=Math.min(1,this.t/Math.max(.05,delay)); dec.scale.setScalar(Math.max(.01,r*(.35+.65*k)*(1+Math.sin(this.t*30)*.03*k))); dec.material.opacity=.55+.45*k;
-          if(play&&Math.random()<.35) FX.spawn(x+rnd(-r,r)*.7,gy+.1,z+rnd(-r,r)*.7,0,rnd(.5,1.5),0,.4,pc[0],.18,-1,kind!=='goop'); return true; }
+          if(play&&kind!=='goop'&&Math.random()<.35) FX.spawn(x+rnd(-r,r)*.7,gy+.1,z+rnd(-r,r)*.7,0,rnd(.5,1.5),0,.4,pc[0],.18,-1,false); return true; } /* goop: nothing in the air */
         if(!this.boomed){ this.boomed=1; this.bt=0; dec.scale.setScalar(r*1.15);
-          for(let i=0;i<(o.n||26);i++){ const a=Math.random()*6.283, s=rnd(2,6); FX.spawn(x+Math.cos(a)*r*.5,gy+.2,z+Math.sin(a)*r*.5,Math.cos(a)*s*.6,rnd(4,9),Math.sin(a)*s*.6,rnd(.4,.8),pc[i%3],rnd(.2,.34),16,kind==='frosting',.5); }
+          if(kind!=='goop') for(let i=0;i<(o.n||26);i++){ const a=Math.random()*6.283, s=rnd(2,6); FX.spawn(x+Math.cos(a)*r*.5,gy+.2,z+Math.sin(a)*r*.5,Math.cos(a)*s*.6,rnd(4,9),Math.sin(a)*s*.6,rnd(.4,.8),pc[i%3],rnd(.2,.34),16,kind==='frosting',.5); }
           FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.3,.3);
           if(!o.quiet){ Sound.sfx(o.sfx||(kind==='goop'?'squelch':'slam')); shake(o.shake||.18); }
           if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } }
-        this.bt+=dt; dec.material.opacity=Math.max(0,1-this.bt/.7); return this.bt<.7; },
+        // o.linger: the puddle stays that long after the hit (full strength); o.onTouch() while you stand in it
+        this.bt+=dt; const lg=o.linger||0; if(this.bt<lg){ dec.material.opacity=1; if(play&&o.onTouch){ const P=twP(); if(Math.hypot(P.x-x,P.z-z)<r*.9&&P.y<gy+.35) o.onTouch(); } return true; }
+        dec.material.opacity=Math.max(0,1-(this.bt-lg)/.7); return this.bt<lg+.7; },
       kill(){ scene.remove(dec); dec.geometry.dispose(); dec.material.dispose(); }}); }; })();
