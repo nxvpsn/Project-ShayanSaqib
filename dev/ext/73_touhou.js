@@ -179,13 +179,20 @@ const TH_PAT={
   *final(T){ let a=0; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(); T.jaw=.9; for(let k=0;k<6;k++) thB(m.u,m.v,a+k*1.047,4.4,{col:0xff3a5a,r:.24}); a+=.19;
       if(w%8===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.18,7,{col:0xffffff,r:.22}); } }
       if(w%30===0) thMinion('pig',rnd(-6,6),TH.H,thPigDive); if(w%3===0) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2,5,{col:0xff9a5a,r:.22}); yield .1; } } };
-function* thBossLoop(T){ const B=Game.mech.boss, list=TH_SPELLS[T.ph]||TH_SPELLS[2]; yield 1.4;
+function* thBossLoop(T){ const B=Game.mech.boss, list=TH_SPELLS[T.ph]||TH_SPELLS[2]; T.seen=new Set(); yield 1.4;
   for(let n=0;;n++){ let i=n%(list.length-(T.ph===2?1:0)); if(T.ph===2&&B&&B.hp<=B.maxHp*.28) i=list.length-1; let ent=list[i]; if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } const [name,dur,key]=ent; // debug mode can pick the spell
     T.spell={name,dur,t:0,key}; T.spellMiss=0; T.tip=null; T.pull=0; T.stun=0; Sound.sfx('secret'); Game.cineMark='spell';
     const g=TH_PAT[key](T); let el=0; for(;;){ const s=g.next(); if(s.done) break; const w=s.value||.1; yield w; el+=w; if(el>=dur) break; if(key!=='final'&&T.ph===2&&B&&B.hp<=B.maxHp*.28&&!T.dbgSpell) break; }
+    T.seen.add(key);
     // pattern over: the bullets fizzle, a bonus if no life was lost
     for(const b of T.eb){ if(Math.random()<.3) thFx(b.u,b.v,2,0xffffff,1,.2); } T.eb=[]; T.pull=0; T.tip=null; for(const m of T.mn){ if(m.hp>0) thFx(m.u,m.v,8,0xb06aff,3,.25); m.gone=1; }
     if(!T.spellMiss&&key!=='final'){ const bonus=(T.ph*1000000)+Math.round(Math.max(0,dur-el)*20000); T.score+=bonus; T.bonus={t:0,n:bonus}; Sound.sfx('ready'); } T.spell=null; yield 1.3; } }
+
+// ---------- the HP gate: a phase can't end (and phase II's finale can't start) before every attack has had its turn ----------
+// an attack counts once it has played in full; until then his HP stops at the floor and the bar turns gold (the one-hit-kill cheat skips it)
+function thHpFloor(T,B){ if(!T||!B||TW.otk) return 0; const L1=TH_SPELLS[T.ph]||TH_SPELLS[2], need=T.ph===2?L1.slice(0,-1):L1, seen=T.seen||new Set();
+  if(need.every(e=>seen.has(e[2]))) return 0; return T.ph===2?B.maxHp*.285:1; }
+(function(){ const md=mechDamage; mechDamage=function(d,x,y,z,b){ try{ const G=Game.mech, T=G&&G.th, B=G&&G.boss; if(T&&B&&B.vuln){ const f=thHpFloor(T,B); T.gated=f>0&&B.hp-d<=f; if(f>0) d=Math.max(0,Math.min(d,B.hp-f)); } }catch(e){ console.error('hp gate',e); } return md.call(this,d,x,y,z,b); }; })();
 
 // ---------- per-frame ----------
 function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const sl=T.slow||1;
@@ -276,7 +283,7 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
   D.restore();
   // boss bar across the top of the field
-  const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
+  const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':T.gated&&thHpFloor(T,B)>0?'#ffd45a':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
     if(T.ph===2){ D.fillStyle='#ffd45a'; D.fillRect(bx+bw*.28-1,byy-3,2,13); } uText('HAMZA',bx,byy+24,`800 12px ${FB}`,'#ffd0e0'); }
   if(T.bonus){ const k=T.bonus.t; D.globalAlpha=a*Math.min(1,(2.6-k)*2); uText('No-Hit Bonus!',fx+fw/2,fy+fh*.32,`900 26px ${FB}`,'#ffd45a','center'); uText('+'+T.bonus.n.toLocaleString(),fx+fw/2,fy+fh*.32+28,`800 18px ${FB}`,'#fff','center'); D.globalAlpha=a; }
   if(T.tip&&T.ready){ uText(T.tip,fx+fw/2,fy+fh-18,`700 14px ${FB}`,'#bfe8ff','center'); }
