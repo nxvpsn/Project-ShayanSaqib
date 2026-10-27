@@ -67,7 +67,7 @@ function twInR(x,z,r,hmax){ const P=twP(); return Math.hypot(P.x-x,P.z-z)<r&&(hm
 // ground circle telegraph -> boom
 function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marker(x,z,r,col,delay+.05);
   return twHz({upd(dt,play){ if(play) this.t+=dt; if(this.t<delay) return true; const gy=groundY(x,z);
-    FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.4,.4); FX.burst(x,gy+.3,z,o.n||22,o.burst||col,o.sp||5,.3,true); if(o.dark) FX.burst(x,gy+.3,z,14,0x140a1a,4,.4,false);
+    FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.4,.4); if(!o.noBurst) FX.burst(x,gy+.3,z,o.n||22,o.burst||col,o.sp||5,.3,true); if(o.dark) FX.burst(x,gy+.3,z,14,0x140a1a,4,.4,false);
     if(!o.quiet){ Sound.sfx(o.sfx||'slam'); shake(o.shake||.22); }
     if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } return false; },
     kill(){ if(mk) scene.remove(mk.m); }}); }

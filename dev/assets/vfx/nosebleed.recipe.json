@@ -1,0 +1,8 @@
+{ "name": "Nosebleed Splurt", "w": 56, "h": 96, "frames": 16, "fps": 20, "loop": false, "seed": 11,
+  "ramps": { "main": "blood" }, "outline": "auto", "dither": 0, "pivot": [0.5, 0.92],
+  "layers": [
+    { "type": "pillar", "ramp": "$main", "x": 0, "y": 0.84, "w": 0.3, "hgt": 1.6, "speed": 3, "rough": 0.6, "grow": 0.1, "t0": 0, "t1": 0.5, "gain": 0.85 },
+    { "type": "particles", "ramp": "$main", "mode": "spray", "x": 0, "y": -0.7, "count": 22, "dir": -90, "spread": 110, "speed": [1.2, 2.2], "gravity": 7, "drag": 0.3, "life": [0.7, 1.1], "emit": 0.3, "t0": 0.12, "ground": 0.88, "shape": "drop", "size": [3, 2], "heat": [0.85, 0.35] },
+    { "type": "particles", "ramp": "$main", "mode": "burst", "x": 0, "y": 0.86, "count": 10, "dir": -90, "spread": 160, "speed": [0.7, 1.4], "gravity": 6, "drag": 0.8, "life": [0.35, 0.6], "ground": 0.9, "shape": "chunk", "size": [3, 2], "heat": [0.75, 0.3] },
+    { "type": "ring", "ramp": "$main", "x": 0, "y": 0.88, "r0": 0.1, "r1": 0.85, "th": 0.22, "squash": 0.28, "t0": 0.04, "t1": 0.75, "breakup": 0.5, "gain": 0.7 }
+  ] }
