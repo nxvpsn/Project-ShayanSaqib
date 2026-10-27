@@ -6,7 +6,7 @@
 // =====================================================================
 const ALLY_BARK={caotan:["I got you, senpai!","Reload! I never run dry!","Pew pew! That's the sound of loyalty!","My aim is legendary! Mostly!","Push up glasses... FIRE!"],
   omar:["The darkness fights beside you. Today.","My scythe thirsts. For that guy, specifically.","Do not thank me. Thanks are for the light.","Reaping. Still reaping.","Edge assist."],
-  ali:["Too slow.","I'm only here because it's interesting.","Nothing personal.","Hm.","Don't die. It would be embarrassing for me."]};
+  ali:["Too slow.","I'm only here because the moon was busy.","Nothing personal.","Hm.","Don't die. It would be embarrassing. For me."]};
 const ALLY_HURT={caotan:["Ow! My glasses!","That one went straight to my heart. Wrong way.","I'm fine! I'm fine! I'm leaking!"],omar:["Pain... is an old friend.","My coat! I just ironed it. In the dark.","Hm. That stung my soul."],ali:["...Hm.","Interesting.","You got one. Don't get used to it."]};
 function twAddAlly(who){ if(TW.allies.find(A=>A.who===who)) return; const P=Player, mhp=who==='ali'?16:12;
   TW.allies.push({who,x:P.x-1.5,z:P.z+.5,y:P.y+1.3,hy:who==='ali'?0:1.3,t:rnd(0,3),f:1,cd:rnd(1.5,2.6),flash:0,glintT:0,push:0,cast:0,fire:0,form:1,n:0,barkT:rnd(6,10),spr:null,hidden:false,
@@ -56,10 +56,12 @@ function twUpdateAlly(A,dt,play){ const P=Player; A.t+=dt; A.flash=Math.max(0,A.
   if(!play||Player.hidden) return; twAllyThreats(A); if(!tg) return;
   A.barkT-=dt; if(A.barkT<=0){ A.barkT=rnd(10,16); const L2=ALLY_BARK[A.who]; twBark(A.who,L2[Math.floor(Math.random()*L2.length)]); }
   const o=tg.o;
-  if(A.who==='ali'){ // teleport around, burst Getsugas, ult on a long timer
+  if(A.who==='ali'){ // teleport around; his player kit at random (the 3-cut combo or a Getsuga), ult on a long timer
+    if(A.cmb){ twAliCombo(A,o,tg,dt); return; }
     A.blinkT-=dt; if(A.blinkT<=0){ A.blinkT=rnd(2.2,3.4); aliGhost(A.x,A.y,A.z); const a=rnd(0,6.28), p=twClampXZ(o.x+Math.cos(a)*4.6,o.z+Math.sin(a)*3.6,.8); A.x=p.x; A.z=p.z; FX.burst(A.x,A.y+1,A.z,20,0x0c0814,4,.3,false); Sound.sfx('dash'); }
     A.ultT-=dt; if(A.ultT<=0){ A.ultT=rnd(36,44); twAllyJC(A,tg); return; }
-    A.cd-=dt; if(A.cd<=0){ A.cd=rnd(1.6,2.1); A.flash=.15; Sound.sfx('beam'); for(let i=0;i<3;i++) twAllyShot(A,o,tg,0xff2a3a,.5,'crescent',i*.13); } return; }
+    A.cd-=dt; if(A.cd<=0){ A.cd=rnd(1.5,2); if(Math.random()<.5){ /* the combo: blink in close and cut */ const a=Math.atan2(A.z-o.z,A.x-o.x), p=twClampXZ(o.x+Math.cos(a)*2.2,o.z+Math.sin(a)*2.2,.8); aliGhost(A.x,A.y,A.z); A.x=p.x; A.z=p.z; Sound.sfx('dash'); A.cmb={n:0,t:0,fx:0,ang:Math.atan2(o.z-A.z,o.x-A.x)}; }
+      else { /* the right click: one Getsuga (2 in a row now and then), 1 damage each in the duo (his 1.1x included) */ A.flash=.15; A.anim='beam'; const n=Math.random()<.35?2:1; for(let i=0;i<n;i++) twAllyShot(A,o,tg,0xff2a3a,TW.fight&&TW.fight.kind==='duo'?1/1.1:1,'getsuga',i*.35); Sound.sfx('beam'); } } return; }
   A.cd-=dt; if(A.cd>0) return;
   if(A.who==='caotan'){ A.cd=rnd(3.3,3.9); A.push=.5; A.glintT=.5; A.glintN=1; Sound.sfx('ting'); const ang=Math.atan2(o.z-A.z,o.x-A.x); FX.line(A.x,A.z,ang,Math.hypot(o.x-A.x,o.z-A.z),.6,0xffb0e0,.3);
     const hold={t:0}; twHz({upd(dt2,pl){ if(pl) hold.t+=dt2; if(hold.t<.3) return true; if(A.down>0) return false; twAllyRay(A.x,A.y+1.9,A.z,o.x,(o.y||0)+tg.y,o.z,0xffb0e0); twAllyDeal(tg,2.2); return false; }}); }
@@ -68,13 +70,18 @@ function twUpdateAlly(A,dt,play){ const P=Player; A.t+=dt; A.flash=Math.max(0,A.
 function twAllyJC(A,tg){ const o=tg.o; twBark('ali',"Nothing personal.",true); Sound.sfx('secret'); let t=0,n=0; JC.flash=.5;
   Game.fxUpd.push(dt=>{ t+=dt; while(n<5&&t>.1+n*.08){ n++; const s=toScreen(o.x,(o.y||0)+1.4,o.z), a=rnd(0,Math.PI); JC.lines.push({x0:s[0]-Math.cos(a)*260,y0:s[1]-Math.sin(a)*260,x1:s[0]+Math.cos(a)*260,y1:s[1]+Math.sin(a)*260,t:0,ttl:.32});
       FX.cut(o.x,(o.y||0)+1.4,o.z); Sound.sfx('hit'); twAllyDeal(tg,1.1); } if(n>=5){ Sound.sfx('crossboom'); shake(.4); return false; } return true; }); }
+// AI Ali's 3-cut combo (his player combo: a long slash, a double cut, a spin), Judgement Cut tears and all
+function twAliCombo(A,o,tg,dt){ const M=A.cmb, C=ALI_COMBO[M.n]; M.t+=dt; A.anim=C.anim; A.ap=Math.min(1,M.t/C.dur); A.f=Math.cos(M.ang)>=0?1:-1;
+  C.hits.forEach(([t0],i)=>{ if(M.t>=t0&&!(M.fx>>i&1)){ M.fx|=1<<i; M.ang=Math.atan2(o.z-A.z,o.x-A.x); aliSlashFXAt(A.x,A.y,A.z,M.ang,M.n,i); if(Math.hypot(o.x-A.x,o.z-A.z)<ALI_R+tg.r) twAllyDeal(tg,C.dmg*.5); } });
+  if(M.t>=C.dur){ M.n++; M.t=0; M.fx=0; if(M.n>2){ A.cmb=null; A.ap=null; A.anim='idle'; } } }
 function twAllyShot(A,o,tg,col,dmg,kind,delay){ let mesh;
-  if(kind==='crescent'){ mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),new THREE.MeshBasicMaterial({map:CRESC,color:col,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})); mesh.rotation.x=TILT; }
+  let px=null; if(kind==='getsuga'){ mesh=new THREE.Group(); px=typeof pxvOk==='function'&&pxvOk('getsuga')?pxvAttach('getsuga',mesh,GS):null; if(px) px.dir={dx:1,dz:0}; else kind='crescent'; }
+  if(kind==='getsuga'){} else if(kind==='crescent'){ mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),new THREE.MeshBasicMaterial({map:CRESC,color:col,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})); mesh.rotation.x=TILT; }
   else { mesh=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshBasicMaterial({color:col})); }
   mesh.userData.tw=1; scene.add(mesh); const s={x:A.x,y:A.y+1.2,z:A.z}, dly=delay||0;
   twHz({upd(dt,play){ if(!play) return true; this.t+=dt; if(this.t<dly){ mesh.visible=false; return true; } mesh.visible=true; const tx=o.x, ty=(o.y||0)+tg.y, tz=o.z, dx=tx-s.x, dy=ty-s.y, dz=tz-s.z, d=Math.hypot(dx,dy,dz)||1, sp=16;
-    s.x+=dx/d*sp*dt; s.y+=dy/d*sp*dt; s.z+=dz/d*sp*dt; mesh.position.set(s.x,s.y,s.z); mesh.rotation.z+=dt*14; if(Math.random()<.7) FX.spawn(s.x,s.y,s.z,0,0,0,.25,col,.25,0,true);
-    if(d<tg.r+.3){ twAllyDeal(tg,dmg); FX.burst(s.x,s.y,s.z,10,col,3,.25); return false; } return this.t<3; }, kill(){ scene.remove(mesh); }}); }
+    s.x+=dx/d*sp*dt; s.y+=dy/d*sp*dt; s.z+=dz/d*sp*dt; mesh.position.set(s.x,s.y,s.z); if(px){ px.dir.dx=dx; px.dir.dz=dz; } else mesh.rotation.z+=dt*14; if(Math.random()<.7) FX.spawn(s.x,s.y,s.z,0,0,0,.25,col,.25,0,true);
+    if(d<tg.r+.3){ twAllyDeal(tg,dmg); if(px){ pxvStop(px); px=null; } FX.burst(s.x,s.y,s.z,10,col,3,.25); return false; } return this.t<3; }, kill(){ if(px) pxvStop(px); scene.remove(mesh); }}); }
 function twAllyRay(x0,y0,z0,x1,y1,z1,col){ const m=[beamMesh(col,.22),beamMesh(0xffffff,.08)]; m.forEach(o=>{ o.userData.tw=1; o.position.set(x0,y0,z0); o.lookAt(x1,y1,z1); o.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); });
   Sound.sfx('beam'); FX.burst(x1,y1,z1,16,col,4,.3); twHz({upd(dt){ this.t+=dt; const k=Math.max(0,1-this.t/.3); m.forEach(o=>{ o.scale.x=o.scale.y=Math.max(.01,k); }); return this.t<.3; }, kill(){ m.forEach(o=>scene.remove(o)); }}); }
 // little HP bars over the allies' heads

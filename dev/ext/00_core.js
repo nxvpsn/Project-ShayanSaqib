@@ -235,7 +235,7 @@ function twDrawFoes(){ const t=performance.now()/1000;
     S.glow(T.flash>0?.8:T.stun>0?.25+.2*Math.sin(t*20):T.inv?.35:T.phase>=3?.18:0); }
   for(const A of TW.allies){ if(A.gone) continue; const S=twSprOf(A); const vis=!A.hidden&&Game.state!=='title'&&!Game.mech; S.show(vis); if(!vis) continue;
     S.draw((c,cx,by)=>A.who==='caotan'?drawCaotanBoss(c,cx,by,A.f,A):A.who==='omar'?drawOmarBoss(c,cx,by,A.f,A):drawAliHD(c,cx,by,A.f,{t:A.t,anim:A.anim||'idle',flash:A.flash,ap:A.ap}));
-    S.mesh.scale.setScalar(1);
+    S.mesh.scale.setScalar(A.who==='ali'&&S._shS?S._shS:1); /* Ali's sprite model is drawn at 0.8, like the player's */
     S.place(A.x,A.y,A.z,groundY(A.x,A.z)); S.glow(A.flash>0?.7:.08); S.mesh.material.color.setHex(0xffffff); }
 }
 (function(){ const ds=drawSprites; drawSprites=function(){ ds(); if(!Game.mech) try{ twDrawFoes(); if(TW.giant) hzgDraw(); }catch(e){ console.error('twDraw',e); } }; })();

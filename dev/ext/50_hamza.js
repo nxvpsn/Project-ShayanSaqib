@@ -102,27 +102,27 @@ function* hzgFinale(){ const G=TW.giant, P=Player, H=Game.hamza, C=TW.allies.fin
   yield* twTwinsTurn(); }
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2; cineSet((cx+ox)/2,P.y+3,(cz+oz)/2+10.5,(cx+ox)/2,P.y+2,(cz+oz)/2); yield wait(.6);
-  yield say('caotan',"So... the pig's dead.");
-  yield say('omar',"The Dog Lord is dead.");
-  yield say('caotan',"And the main character is... tired. Low HP. Very vulnerable.");
-  yield say('omar',"Shayan Saqib. The last thing standing between us... and the throne of Kennel Keep.");
+  yield say('caotan',"So... the pig's dead. Rest in pork.");
+  yield say('omar',"The Dog Lord is dead. I will mourn him later. Alone. In the rain. With a playlist.");
+  yield say('caotan',"And the main character is at one HP, sweaty and vulnerable. My three favorite things.");
+  yield say('omar',"Shayan Saqib. The last thing standing between us and the throne of Kennel Keep. And its excellent dental plan.");
   twCamP(6.2,1.2);
-  yield say('shayan',"I KNEW IT. I KNEW having two of you was too good to be true!",'angry');
-  yield say('caotan',"Sorry, senpai. It's not personal. It's... a plot twist! ♡",'happy');
-  yield say('omar',"Every story needs a betrayal. Ours just needed... two.");
+  yield say('shayan',"I KNEW IT! Nobody is THAT helpful without a betrayal arc!",'angry');
+  yield say('caotan',"Sorry, senpai! It's not personal! I just want your throne. And your body. Mostly the throne. ♡",'happy');
+  yield say('omar',"Every story needs a betrayal. I wrote ours in my journal. In blood. Well. Red gel pen.");
   twClearAllies(); twDuoStart(cx,cz,ox,oz); const D=TW.fight; D.noAttack=true; Game.state='cut';
   for(const T of TW.foes){ T.inv=true; } yield wait(.3); Sound.sfx('charge'); Sound.sfx('drone');
   cineSet(P.x-2,1.4,P.z+6,P.x,1.6,P.z); TW.foes.forEach(T=>{ T.cast=2; T.fire=2; }); yield wait(.7);
   // time stops. someone walks in.
   zwStart(); Sound.sfx('secret'); yield wait(.5); twAddAlly('ali'); const A=TW.allies[TW.allies.length-1]; A.x=P.x+1.6; A.z=P.z+.8; A.y=groundY(A.x,A.z);
   FX.burst(A.x,A.y+1,A.z,40,0xb0182a,5,.35); cineSet(A.x+.8,A.y+1.7,A.z+5.6,A.x,A.y+1.1,A.z); yield wait(.4);
-  yield say('ali',"Two on one? Hm.");
+  yield say('ali',"Two on one. Cowards.");
   yield say('ali',"Now it's two on two.");
   zwEnd(); twCamP(6.5,.5);
   yield say('shayan',"Who... who ARE you?!",'surprised');
-  yield say('ali',"Your rival. You just don't know it yet. Also, I was in the area. I'm always in the area.");
-  yield say('caotan',"Is that... the guy who CUT THE MOON?!",'surprised'); yield say('omar',"...Brother. I believe we should have stayed at the gate.");
-  if(mi) yield say('mira',"Okay, I don't know who that is, but he has a cool hat. Go get them, boys!",'happy');
+  yield say('ali',"Your rival. You don't know it yet. I was in the area. I'm always in the area. It's a lifestyle.");
+  yield say('caotan',"Straw hat. Red eye. Brooding. Is that the guy who CUT THE MOON?! Can he sign my BODY PILLOW?!",'surprised'); yield say('omar',"...Brother. He is edgier than me. I need to go lie face-down in a puddle.");
+  if(mi) yield say('mira',"I don't know who that is, but that hat is doing a LOT of work. Go get 'em, boys!",'happy');
   yield* twCoopChoice();
   evaCard(['SHAYAN & ALI','VS THE GATEKEEPER TWINS'],2.4,1); Sound.sfx('slam'); yield wait(2.4); card('Caotan & Omar','Tuesday\'s Children');
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); TW.foes.forEach(T=>{ T.inv=false; }); D.noAttack=true; D.director=1; Cam.cine=null; Game.letterTo=0; P.inv=1; Game.state='play'; Sound.play('boss'); }

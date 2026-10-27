@@ -37,7 +37,7 @@ function twAliKick(F,A,K){ const T=K.who==='caotan'?F.C:F.O, o=T===F.C?F.O:F.C, 
   Game.dmgNums.push({x:T.x,y:gy+3.4,z:T.z,n:'KICKED DOWN',t:0,big:true,col:'#ff6a7a'}); TW._ally=1; try{ twHurt(T,3,'ally'); } finally{ TW._ally=0; }
   o.stun=Math.max(o.stun,.9); o.state='stun';
   const r=Math.floor(Math.random()*3); if(r===0) twBark('ali',"Sit.",true); else if(r===1) twBark('ali',"No.",true); else twBark('ali',"Down. Stay.",true);
-  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES!",true); else twBark('omar',"I have been... grounded.",true); } if(up.t>=2.4){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
+  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=2.4){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
 
 // ---------- the guard: Ali parries for Shayan ----------
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const F=TW.fight, P=Player, G=F&&F.kind==='duo'?F.guard:null;

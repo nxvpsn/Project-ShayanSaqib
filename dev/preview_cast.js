@@ -19,7 +19,9 @@ function Ctx(w,h){ const d=new Uint8ClampedArray(w*h*4); let fs='#000', ga=1, M=
       for(let yy=y0;yy<y1;yy++) for(let xx=x0;xx<x1;xx++){ const i=(yy*w+xx)*4, da=d[i+3]/255; if(gco==='source-atop'){ if(!da) continue; d[i]=d[i]*(1-a)+r*a; d[i+1]=d[i+1]*(1-a)+g*a; d[i+2]=d[i+2]*(1-a)+b*a; continue; } const oa=a+da*(1-a); if(oa<=0) continue;
         d[i]=(r*a+d[i]*da*(1-a))/oa; d[i+1]=(g*a+d[i+1]*da*(1-a))/oa; d[i+2]=(b*a+d[i+2]*da*(1-a))/oa; d[i+3]=oa*255; } },
     clearRect(){ d.fill(0); }, save(){ st.push([fs,ga,M.slice(),gco]); }, restore(){ const s=st.pop(); if(s){ fs=s[0]; ga=s[1]; M=s[2]; gco=s[3]; } },
-    beginPath(){}, moveTo(){}, lineTo(){}, stroke(){}, fill(){}, arc(){}, ellipse(){}, closePath(){}, fillText(){}, strokeText(){}, measureText(){ return {width:0}; },
+    // paths: only circles (arc) are filled; rect/clip/strokeRect are no-ops
+    beginPath(){ self._p=[]; }, moveTo(){}, lineTo(){}, stroke(){}, rect(){}, clip(){}, strokeRect(){},
+    arc(x,y,r){ (self._p=self._p||[]).push([x,y,r]); }, fill(){ const [a,b,c,dd,e,f]=M, k=Math.sqrt(Math.abs(a*dd-b*c)); for(const [x,y,r] of (self._p||[])){ const X=a*x+c*y+e, Y=b*x+dd*y+f, R=r*k; const m0=M; M=[1,0,0,1,0,0]; for(let yy=Math.floor(Y-R);yy<=Y+R;yy++){ const hw=Math.sqrt(Math.max(0,R*R-(yy+.5-Y)*(yy+.5-Y))); if(hw>0) self.fillRect(Math.round(X-hw),yy,Math.round(2*hw),1); } M=m0; } }, ellipse(){}, closePath(){}, fillText(){}, strokeText(){}, measureText(){ return {width:0}; },
     // drawImage with the current transform, nearest sampling; sources: another Ctx's canvas, or {rgba,width,height} (C.__imgs)
     drawImage(src,...q){ const S=src&&src.__ctx?{rgba:src.__ctx.data,width:src.width,height:src.height}:src; if(!S||!S.rgba) return; let sx=0,sy=0,sw=S.width,sh=S.height,dx,dy,dw,dh;
       if(q.length===2){ [dx,dy]=q; dw=sw; dh=sh; } else if(q.length===4){ [dx,dy,dw,dh]=q; } else { [sx,sy,sw,sh,dx,dy,dw,dh]=q; }
@@ -29,7 +31,7 @@ function Ctx(w,h){ const d=new Uint8ClampedArray(w*h*4); let fs='#000', ga=1, M=
         const ix=Math.floor(sx+(lx-dx)/dw*sw), iy=Math.floor(sy+(ly-dy)/dh*sh); if(ix<0||iy<0||ix>=S.width||iy>=S.height) continue; const j=(iy*S.width+ix)*4, sa=S.rgba[j+3]/255*ga; if(sa<=0) continue;
         const i=(Y*w+X)*4, da=d[i+3]/255, oa=sa+da*(1-sa); for(let k=0;k<3;k++) d[i+k]=(S.rgba[j+k]*sa+d[i+k]*da*(1-sa))/oa; d[i+3]=oa*255; } },
     translate(x,y){ mul([1,0,0,1,x,y]); }, rotate(r){ const co=Math.cos(r), si=Math.sin(r); mul([co,si,-si,co,0,0]); }, scale(x,y){ mul([x,0,0,y,0,0]); }, setTransform(a,b,c,dd,e,f){ M=[a,b,c,dd,e,f]; },
-    getImageData(){ return {data:new Uint8ClampedArray(d),width:w,height:h}; }, putImageData(id){ d.set(id.data); }, createLinearGradient(){ return {addColorStop(){}}; }, createRadialGradient(){ return {addColorStop(){}}; } };
+    getImageData(){ return {data:new Uint8ClampedArray(d),width:w,height:h}; }, putImageData(id){ d.set(id.data); }, createLinearGradient(){ return {st:[],addColorStop(o,c){ this.st.push(c); },toString(){ return this.st[0]||'#000'; }}; }, createRadialGradient(){ return {st:[],addColorStop(o,c){ this.st.push(c); },toString(){ return this.st[0]||'#000'; }}; } };
   self.canvas.__ctx=self; self.canvas.getContext=()=>self; return self; }
 C.__Ctx=Ctx;
 // raw RGBA images for drawImage: IMG_RAW='name=file.rgba:w:h,...' (e.g. Ali's sheet, written by a script)

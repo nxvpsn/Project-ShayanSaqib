@@ -23,16 +23,46 @@ twDrawGraveyard=function(){}; // no counter: the rain just happens
 (function(){ const th=twHurt; twHurt=function(T,d,src){ const F=TW.fight; if(TW._ally&&F&&F.kind==='duo') d*=1.1; return th.call(this,T,d,src); }; })();
 // (installed when a duo fight starts, so it sits outside 58's three-revive wrapper and keeps it from ever running out)
 (function(){ const ds=twDuoStart; twDuoStart=function(){ if(!TW._odInf){ TW._odInf=1; const od=Game.onDeath; Game.onDeath=function(){ const F=TW.fight; if(F&&F.kind==='duo') F.heals=Math.min(F.heals||0,2); return od.apply(this,arguments); }; } return ds.apply(this,arguments); }; })();
-const TW_REV_BARKS=[["Don't move. I'm cutting through your injuries. They had it coming.","Did you just heal me... with a SWORD?!"],["I sliced your wounds in half. Both halves surrendered.","That is NOT how medicine works!"],
-  ["I cut the death off you. It was a sloppy death anyway.","...I'm not even gonna ask."],["Again? You're making this a hobby.","It's a lifestyle at this point."],["Get up. They're laughing at you.","They're laughing at EVERYTHING!"]];
-twAliRevive=function*(F){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sat=grade.uniforms.sat.value; F.revN=(F.revN||0)+1; const B=TW_REV_BARKS[(F.revN-1)%TW_REV_BARKS.length];
+// each revive: Ali's line, then Shayan's comeback (speaker pairs, so the voice builder finds them)
+const TW_REV_BARKS=[
+  [['ali',"Don't move. I'm cutting through your injuries. They had it coming."],['shayan',"Did you just heal me... with a SWORD?!"]],
+  [['ali',"I sliced your wounds in half. Both halves surrendered."],['shayan',"That is NOT how medicine works!"]],
+  [['ali',"I cut the death off you. It was a sloppy death anyway."],['shayan',"...I'm not even gonna ask."]],
+  [['ali',"Again? You're making this a hobby."],['shayan',"It's a lifestyle at this point."]],
+  [['ali',"Get up. They're laughing at you."],['shayan',"They're laughing at EVERYTHING!"]],
+  [['ali',"Your soul tried to leave. I cut it a new door back in."],['shayan',"Is that... is that LEGAL?!"]],
+  [['ali',"I've revived you more times than I've blinked today."],['shayan',"You BLINK?!"]],
+  [['ali',"Stand up. You're lying on my good side."],['shayan',"You don't HAVE a good side!"]],
+  [['ali',"Death called. I hung up. With a sword."],['shayan',"Can you stop saying it like it's NORMAL?!"]],
+  [['ali',"You died like a blacksmith. Loudly, and near a fire."],['shayan',"That's... weirdly specific."]],
+  [['ali',"I sharpened your health bar. It's pointier now."],['shayan',"That's not a thing! ...Is that a thing?!"]],
+  [['ali',"Die again and I'm keeping your sword."],['shayan',"You don't even LIKE my sword!"]],
+  [['ali',"Breathe. In through the nose. Out through the wound."],['shayan',"I don't HAVE a wound anymore!"]],
+  [['ali',"I cut the floor before you hit it. You're welcome."],['shayan',"How do you cut a FLOOR?!"]],
+  [['ali',"You owe me fourteen revives and a sandwich."],['shayan',"Since WHEN?!"]],
+  [['ali',"Mira's watching. Try dying less dramatically."],['shayan',"There's a LESS dramatic way?!"]],
+  [['ali',"The reaper came for you. I sent him home crying."],['shayan',"Dude, the reaper is RIGHT THERE! He's the boss!"]],
+  [['ali',"Hm. Your spirit has the structural integrity of wet bread."],['shayan',"Thanks?! I think?!"]],
+  [['ali',"I'm keeping a tally of your deaths on my sword."],['shayan',"Please don't make me a NOTCH!"]],
+  [['ali',"Your life flashed before your eyes. It was mostly hammering."],['shayan',"Hey! Hammering is a CRAFT!"]],
+  [['ali',"Up. The floor is not your girlfriend."],['shayan',"WHY does everyone keep saying that?!"]],
+  [['ali',"I've seen tofu with more fight in it."],['shayan',"I just took a LASER to the FACE!"]],
+  [['ali',"Get up. Caotan is taking pictures."],['shayan',"CAOTAN! DELETE THAT!"]],
+  [['ali',"I stitched you back together with spite. Mine."],['shayan',"I can feel it. I suddenly want to brood."]],
+  [['ali',"I didn't cut the moon so you could lose to two weebs."],['shayan',"One of them is a GOTH!"]],
+  [['ali',"You were dead for three seconds. Personal best."],['shayan',"That is NOT the record I wanted!"]],
+  [['ali',"Next time, die somewhere with shade."],['shayan',"I'll put it in my calendar!"]],
+  [['ali',"Stop dying near me. It's bad for my reputation."],['shayan',"YOUR reputation?! I'm the one DYING!"]],
+  [['ali',"Here. Your organs. Mostly in the right order."],['shayan',"MOSTLY?!"]],
+  [['ali',"Last time I'm doing this. ...That's a lie. Get up."],['shayan',"Love you too, man."]]];
+twAliRevive=function*(F){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sat=grade.uniforms.sat.value; F.revN=(F.revN||0)+1; if(!F.revBag||!F.revBag.length) F.revBag=TW_REV_BARKS.slice().sort(()=>Math.random()-.5); const B=F.revBag.pop(); /* a shuffled bag: no repeats until all 30 are used */
   if(!A){ P.hp=P.maxHp; P.inv=1; return; }
   Game.letterTo=.4; P.cineFly=true; P.cineAnim='hurt'; P.vx=P.vz=P.vy=0; P.y=gy; A.hold=1; A.down=0; A.hp=A.maxHp; grade.uniforms.sat.value=.25; Sound.sfx('drone');
   try{ cineSet(P.x+2.6,gy+2.4,P.z+8,P.x,gy+.9,P.z); yield wait(.4);
-    aliGhost(A.x,A.y,A.z); A.x=P.x-1.3; A.z=P.z+.35; A.face=1; FX.burst(A.x,A.y+1,A.z,30,0xb0182a,5,.35); Sound.sfx('dash'); twBark('ali',B[0],true); yield wait(1.4);
+    aliGhost(A.x,A.y,A.z); A.x=P.x-1.3; A.z=P.z+.35; A.face=1; FX.burst(A.x,A.y+1,A.z,30,0xb0182a,5,.35); Sound.sfx('dash'); twBark('ali',B[0][1],true); yield wait(1.4);
     Sound.sfx('secret'); JC.flash=.35; for(let i=0;i<6;i++){ twTinyJC(P.x,P.y+1,P.z,180+i*20); FX.cut(P.x,P.y+1,P.z); Sound.sfx(i%2?'swing':'hit'); yield wait(.06); }
     P.hp=P.maxHp; P.cineAnim='idle'; FX.ring(P.x,gy+.1,P.z,'#8affb0',3,.5); FX.burst(P.x,gy+1,P.z,40,0x8affb0,5,.3); Sound.sfx('heart'); FX.flash=.4; grade.uniforms.flashCol.value.set(.5,1,.6);
-    Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'ALI: GET UP',t:0,big:true,col:'#8affb0'}); twBark('shayan',B[1],true); yield wait(1.1);
+    Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'ALI: GET UP',t:0,big:true,col:'#8affb0'}); twBark('shayan',B[1][1],true); yield wait(1.1);
   } finally { grade.uniforms.sat.value=sat; P.hp=Math.max(P.hp,1); P.cineFly=false; P.cineAnim=null; A.hold=0; A.face=null; Cam.cine=null; Game.letterTo=0; P.inv=1.5; } };
 
 // ---------- co-op: the friend's Ali gets the assists (the host rolls them and briefly drives him) ----------
@@ -72,7 +102,7 @@ function twScytheRing(O,x,z,n,v,gapA,gapN,o){ o=o||{}; for(let i=0;i<n;i++){ if(
 // NEW MOVES
 // =====================================================================
 // LASER STORM: a dozen beams from every edge at you, alternating blue (jump) and pink (move); Omar's scythes in the gaps
-DUO.laserStorm=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.1); twBark('caotan',"LASER STORM! Every angle is my good angle!",true); const n=8+ph*2;
+DUO.laserStorm=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.1); twBark('caotan',"LASER STORM! Every angle is my good angle! ESPECIALLY from below!",true); const n=8+ph*2;
   for(let i=0;i<n;i++){ const P=Player, a=rnd(0,6.28); C.push=.25; Sound.sfx('ting'); if(i%2) twPink(P.x-Math.cos(a)*12,P.z-Math.sin(a)*12,a,{warn:.55/sp}); else twBlue(P.x,P.z,a,{warn:.5/sp});
     if(i%3===2){ O.cast=.4; const P2=Player; for(const s of [-1,1]) twAimBolt(O,'scythe',O.x+s*1.2,O.y+1.1,O.z,10*sp,s*.25,{col:0x8a3aff,storm:1}); Sound.sfx('swing'); }
     yield .3/sp; }
@@ -204,7 +234,7 @@ DUO.waltz=function*(C,O){ const F=TW.fight, c=F.center, gy=groundY(c.x,c.z), sp=
     const orb={a:rnd(0,6.28)};
     for(let k=0;k<5;k++){ const a=orb.a+k*6.283/5, h=twMiniHole(c.x+Math.cos(a)*rx,c.z+Math.sin(a)*rz,{r:.9,pull:2.2,range:6,dur:60,eat:1,dmg:4,disk:1,h:1.6}); holes.push(h); Sound.sfx('void'); shake(.3); FX.flash=.2; yield .3; }
     extra.push(twHz({upd(dt,play){ if(play) orb.a+=dt*.3; holes.forEach((h,k)=>{ if(!h.hole) return; const a=orb.a+k*6.283/5; h.hole.x=c.x+Math.cos(a)*rx; h.hole.z=c.z+Math.sin(a)*rz; }); return keep.on; }}));
-    twMoveTo(O,c.x,c.z,.6); twBark('caotan',"Five?! Omar, that's four too many holes!",true);
+    twMoveTo(O,c.x,c.z,.6); twBark('caotan',"Five?! Omar, that's four too many holes! Even for YOU!",true);
     let t=0, nG=0, nB=.9, g=0; while(g<10){ t+=.05; if(t>=nG){ nG+=.85/sp; g++; if(g%3===1){ const e=twEdgePt(8); twBlink(O,e.x,e.z); } const P2=Player, a=Math.atan2(P2.z-O.z,P2.x-O.x)+(g%2?.16:-.16); O.lockF=1; O.f=Math.cos(a)>0?1:-1; O.swing=0; twGetsuga(O,a,{warn:.5,sp:15*sp,len:24}); }
       if(t>=nB){ nB+=1.45/sp; C.push=.3; C.glintT=.3; Sound.sfx('ting'); const P3=Player; twBlue(P3.x,P3.z,rnd(0,Math.PI),{warn:.55}); } yield .05; }
     O.lockF=0; yield .9;
@@ -231,7 +261,7 @@ DUO.waltz=function*(C,O){ const F=TW.fight, c=F.center, gy=groundY(c.x,c.z), sp=
     big.live=false; Sound.sfx('crossboom'); Sound.sfx('skyopen'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[2,2],[1,2],[3,1]]); shake(1.3);
     twBig('JUMP!',{size:80,col:'#ff4a5a',y:UH*.3,dur:1.6}); for(const [sp2,dl] of [[7,0],[9,.6],[11,1.2],[13,1.8]]) twWave(c.x,c.z,{col:0xb06aff,sp:sp2,max:18,dmg:3,delay:dl,r0:2.5}); yield 3;
   } finally { TW.lcCleanup=null; cleanup(); }
-  twBark('caotan',"My glasses! It ate my SPARE glasses!",true); twBig('EVENT HORIZON SURVIVED',{size:54,col:'#ffd45a',sub:'Both twins are dizzy. Go!'});
+  twBark('caotan',"My glasses! It ate my SPARE glasses! And my SPARE spare glasses!",true); twBig('EVENT HORIZON SURVIVED',{size:54,col:'#ffd45a',sub:'Both twins are dizzy. Go!'});
   F.lc=0; F.lcDone[2]=1; F.busy=0; for(const T of [C,O]){ T.inv=false; T.stun=4.5; T.state='stun'; if(T.hp<=0) T.hp=.1; } yield 4.5; };
 
 // =====================================================================
@@ -290,11 +320,11 @@ DUO.fusion=function*(C,O){ const F=TW.fight, c=F.center, gy=groundY(c.x,c.z), sp
     const nb=[beamMesh(0xbfe4ff,3.5),beamMesh(0xffffff,1.6)]; nb.forEach(o=>{ o.userData.tw=1; o.position.set(C.x,C.y+2,C.z); o.lookAt(C.x,C.y+30,C.z); o.scale.set(1,1,40); });
     extra.push(twHz({upd(dt){ this.t+=dt; const k=Math.max(0,1-this.t/1.2); nb.forEach(o=>{ o.scale.x=o.scale.y=Math.max(.01,k*(1+Math.sin(this.t*50)*.1)); }); return this.t<1.2; }, kill(){ nb.forEach(o=>scene.remove(o)); }}));
     for(let k=0;k<5;k++) FX.ring(C.x,groundY(C.x,C.z)+.1,C.z,k%2?'#ffffff':'#9fd8ff',6+k*4,.6+k*.1);
-    const Pl=Player; if(Math.hypot(Pl.x-safe.x,Pl.z-safe.z)>1.7){ TW.caoSafe=null; if(TW.god) Game.dmgNums.push({x:Pl.x,y:Pl.y+2.4,z:Pl.z,n:'∞ HP',t:0,col:'#7affb0'}); else { Pl.inv=0; Pl.dash=0; hurtPlayer(99,C.x,C.z); } twBark('caotan',"Should've hugged the pillow, senpai.",true); }
+    const Pl=Player; if(Math.hypot(Pl.x-safe.x,Pl.z-safe.z)>1.7){ TW.caoSafe=null; if(TW.god) Game.dmgNums.push({x:Pl.x,y:Pl.y+2.4,z:Pl.z,n:'∞ HP',t:0,col:'#7affb0'}); else { Pl.inv=0; Pl.dash=0; hurtPlayer(99,C.x,C.z); } twBark('caotan',"Should've hugged the pillow, senpai. She was RIGHT THERE. Waiting. Like always.",true); }
     else Game.dmgNums.push({x:Pl.x,y:Pl.y+2.4,z:Pl.z,n:'SHIELDED BY WAIFU',t:0,big:true,col:'#bfe4ff'});
     TW.caoSafe=null; drag.upd=()=>false; scene.remove(ring); ring=null; yield 1.2;
     // the hole eats her
     twAnim(H,{x:bc.x,z:bc.z,k:.05,y:groundY(bc.x,bc.z)+1.3},.9,twEIn2); Sound.sfx('suck'); twBark('caotan',"HIKARI-CHAAAAAN! NOOOOO!",true); yield 1; Sound.sfx('chomp'); hole.upd=()=>false; H.kill();
-    twBark('omar',"...She was delicious. Mostly feathers.",true); yield 1;
+    twBark('omar',"...She was delicious. Mostly feathers. Slightly... sticky.",true); yield 1;
   } finally { TW.lcCleanup=null; cleanup(); }
   C.cracked=1; twBig('MEGANE APOCALYPSE SURVIVED',{size:52,col:'#ffd45a',sub:'Caotan is in mourning. Omar is full. Go!'}); F.lc=0; F.lcDone[3]=1; F.busy=0; for(const T of [C,O]){ T.inv=false; T.stun=5; T.state='stun'; if(T.hp<=0) T.hp=.1; } yield 5; };

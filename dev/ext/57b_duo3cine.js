@@ -8,10 +8,10 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
   C.mv=null; C.x=gx-f*.6; C.z=gz+.15; C.lockF=1; C.f=f; C.heartEyes=1; P.y=gy+.4;
   // 1. the hug: freeze frame, extreme close-up, slow push in
   impactFrame([[1,2],[2,2]]); Sound.sfx('doki'); Sound.sfx('kyun'); twHeartBurst(gx,gz,30); FX.flash=.4; grade.uniforms.flashCol.value.set(1,.6,.85);
-  const mx=(gx+C.x)/2; cineSet(mx+.4,gy+2.3,gz+3.4,mx,gy+1.6,gz); twBark('caotan',"GOTCHA, SENPAI! Hug level: MAXIMUM! ♡",true);
+  const mx=(gx+C.x)/2; cineSet(mx+.4,gy+2.3,gz+3.4,mx,gy+1.6,gz); twBark('caotan',"GOTCHA, SENPAI! Hug level: MAXIMUM! Your ribs: MINIMUM! ♡",true);
   yield cineTo([mx+.1,gy+2,gz+2.3],[mx,gy+1.7,gz],1,twEIO);
   // 2. the spin: two turns, the camera orbiting the other way
-  Sound.sfx('whoosh'); twBark('shayan',"LET GO OF ME, YOU WEIRDO!",true);
+  Sound.sfx('whoosh'); twBark('shayan',"LET GO OF ME! WHY ARE YOU SO MOIST?!",true);
   for(let t=0;t<1.1;t+=dt){ const u=t/1.1, a=u*Math.PI*4, r=.62; P.x=gx+Math.cos(a)*r; P.z=gz+Math.sin(a)*r*.6; C.x=gx-Math.cos(a)*r; C.z=gz-Math.sin(a)*r*.6; C.f=P.x>C.x?1:-1; P.y=gy+.4+u*.8;
     const ca=-u*Math.PI*1.2; cineSet(gx+Math.sin(ca)*4.4,gy+1.3+u,gz+Math.cos(ca)*4.4,gx,gy+1.5,gz); if(Math.random()<.7) twHeartBurst(gx,gz,2); yield wait(dt*.5); }
   // 3. the toss: straight up, the camera on the ground looking up
@@ -20,7 +20,7 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
   // 4. Omar above you, against the sky; the black hole opens on the ground below
   FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false); O.mv=null; O.x=gx+.5; O.z=gz-.2; O.hy=y1+2.2-groundY(O.x,O.z); O.y=y1+2.2; O.lockF=1; O.f=-1; O.scythe=1; O.swing=0; O.hide=0; Sound.sfx('dash'); FX.burst(O.x,O.y+1.4,O.z,30,0x140a1a,5,.45,false);
   const V=twHoleVis(gx,gy+1.3,gz,1.5,true), hk={k:0,t:0,live:1}; Game.fxUpd.push(d=>{ hk.t+=d; hk.k=hk.live?Math.min(1,hk.k+d*1.4):Math.max(0,hk.k-d*3); V.t=hk.t; V.set(hk.k); if(!hk.live&&hk.k<=0){ V.kill(); return false; } return true; }); Sound.sfx('void'); Sound.sfx('drone');
-  cineSet(gx+3.2,gy+1.2,gz+7.5,gx,y1+1.2,gz); twBark('omar',"Volleyball. I despise volleyball.",true);
+  cineSet(gx+3.2,gy+1.2,gz+7.5,gx,y1+1.2,gz); twBark('omar',"Volleyball. I despise volleyball. Too much teamwork. Too much sunlight.",true);
   yield cineTo([gx+2.4,gy+2,gz+6],[gx,y1+1.4,gz],.95,twEIO);
   // 5. the spike: a Getsuga point blank, you go straight down into the hole, the camera whips down with you
   O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); Sound.sfx('crossboom'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[3,2],[1,1]]); shake(.8);
@@ -37,7 +37,7 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
   FX.burst(gx,gy+1.3,gz,80,0x8a2aff,9,.5); twHeartBurst(gx,gz,40);
   P.hidden=false; P.cineFly=false; P.cineAnim=null; P.x=gx; P.z=gz; P.y=gy+.5; P.inv=0; P.dash=0; Cam.cine=null; Game.letterTo=0; C.lockF=0; O.lockF=0; O.scythe=0; if(A){ A.hold=0; A.face=null; }
   Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'TWIN EXECUTION',t:0,big:true,col:'#ff8ac8'}); F.grabbed=0;
-  twHoleEat(gx,gz,6); if(Game.state==='play'&&P.hp>0&&A&&!F.revQ) twBark('ali',"That was embarrassing. For all four of us.",true); }
+  twHoleEat(gx,gz,6); if(Game.state==='play'&&P.hp>0&&A&&!F.revQ) twBark('ali',"That was embarrassing. For all four of us. Five, counting the pillow.",true); }
 
 // ---------- falling scythes (Scythe Rain and Burnout) ----------
 function twSkyScythe(x,z,warn,o){ o=o||{}; const p=twClampXZ(x,z,.6), gy=groundY(p.x,p.z), m=o.mesh||twScytheMesh(false), s={t:0}; m.userData.tw=1; m.visible=!!o.mesh;
@@ -81,11 +81,11 @@ DUO.scytheRain=function*(C,O,ph){ const F=TW.fight, sp=twSp(O), list=TW.planted.
       Sound.sfx('swing'); if(w===2) twBark('caotan',"GO GERALD! GO GERALD!",true); if(w===6) twBark('omar',"Gerald. No. That is Phil. Phil, you're out of order.",true); yield .62/sp; }
     yield 1;
   } finally { halo.live=false; TW.storming=0; }
-  O.stun=Math.max(O.stun,2.6); O.state='stun'; O.cast=0; twBark('omar',"Fifty scythes... and I have to pick them all up again...",true); twBig('OMAR IS EXHAUSTED',{size:44,col:'#ffd45a',y:UH*.3,dur:1.3}); yield 2.6; };
+  O.stun=Math.max(O.stun,2.6); O.state='stun'; O.cast=0; twBark('omar',"Fifty scythes... and I have to pick them all up again... with my back...",true); twBig('OMAR IS EXHAUSTED',{size:44,col:'#ffd45a',y:UH*.3,dur:1.3}); yield 2.6; };
 function* twRainIntro(F,C,O,c,gy){ const P=Player, A=twAliAny(); Game.letterTo=.45; P.vx=P.vz=0; O.cast=3; O.scythe=0; if(A){ A.hold=1; A.face=O.x>A.x?1:-1; }
   cineSet(P.x+.8,P.y+1,P.z+5.5,O.x,O.y+1.6,O.z); Sound.sfx('howl'); Sound.sfx('gong'); twBark('omar',"Fifty scythes. Fifty names. Gerald... lead them.",true); yield wait(1.4);
-  Sound.sfx('charge'); Sound.sfx('drone'); twBark('caotan',"Not GERALD! Gerald's the sharp one!",true); yield cineTo([c.x,gy+2.2,c.z+14],[c.x,gy+9.5,c.z],1.5,twEIO);
-  if(A) twBark('ali',"Fifty. I counted. Move, blacksmith.",true); else twBark('shayan',"That's a LOT of scythes.",true); yield wait(1.1);
+  Sound.sfx('charge'); Sound.sfx('drone'); twBark('caotan',"Not GERALD! Gerald's the sharp one! Gerald has a CRIMINAL RECORD!",true); yield cineTo([c.x,gy+2.2,c.z+14],[c.x,gy+9.5,c.z],1.5,twEIO);
+  if(A) twBark('ali',"Fifty. I counted. Move, blacksmith. Or become a pincushion. Your call.",true); else twBark('shayan',"That's a LOT of scythes! Does he have a scythe GUY?!",true); yield wait(1.1);
   twBig('SCYTHE RAIN',{size:70,col:'#c08aff',y:UH*.3,dur:1.6,sub:'Red circles. Deflect the glowing ones back.'}); yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6);
   Cam.cine=null; Game.letterTo=0; if(A){ A.hold=0; A.face=null; } }
 
@@ -139,7 +139,7 @@ DUO.waltz=function*(C,O){ const F=TW.fight, c=twCenter(), gy=groundY(c.x,c.z), s
 function* twHorizonIntro(F,C,O,c,gy,HV){ const P=Player, A=twAliAny(); Game.letterTo=.5; P.vx=P.vz=0;
   Object.assign(O,{x:c.x+1.6,z:c.z-3,mv:null,lockF:1,f:-1,scythe:1}); Object.assign(C,{x:c.x-3.4,z:c.z-2.4,mv:null,lockF:1,f:1});
   Object.assign(P,{x:c.x-.8,z:c.z+4.2}); P.y=groundY(P.x,P.z); P.f=1; if(A){ A.hold=1; A.x=c.x+.9; A.z=c.z+4.4; A.face=-1; }
-  HV.k=0; HV.y=gy+12; cineSet(O.x+1.4,gy+.6,O.z+4.6,O.x,O.y+1.9,O.z); Sound.sfx('howl'); twBark('omar',"Brother. Hold my feelings.",true); yield wait(1.4);
+  HV.k=0; HV.y=gy+12; cineSet(O.x+1.4,gy+.6,O.z+4.6,O.x,O.y+1.9,O.z); Sound.sfx('howl'); twBark('omar',"Brother. Hold my feelings. Carefully. They bite.",true); yield wait(1.4);
   twBark('caotan',"I'm ALWAYS holding your feelings!",true); yield wait(1.1);
   // the Getsuga goes straight up and tears the sky
   O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); const g=twGetsugaMesh(3.4,0x9a4aff), k={y:O.y+1}; g.rotation.set(0,0,0);
@@ -149,7 +149,7 @@ function* twHorizonIntro(F,C,O,c,gy,HV){ const P=Player, A=twAliAny(); Game.lett
   // reverse shot: the heroes look up
   cineSet(P.x+.9,P.y+.9,P.z+3.4,(P.x+(A?A.x:P.x))/2,P.y+1.6,P.z); P.cineFly=true; P.cineAnim='idle';
   twBark('shayan',"Is that a BLACK HOLE?! In the FLOWER FIELD?!",true); yield wait(1.5);
-  if(A){ twBark('ali',"It's a small one. Don't get sucked in.",true); yield wait(1.3); } P.cineFly=false; P.cineAnim=null;
+  if(A){ twBark('ali',"It's a small one. Don't get sucked in. Or do. I'm not your father.",true); yield wait(1.3); } P.cineFly=false; P.cineAnim=null;
   twCutin('omar','EVENT HORIZON','Limit Break  ·  Everything falls in eventually','#3a0a6a',2); yield wait(.9);
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; O.lockF=C.lockF=0; O.swing=0; if(A){ A.hold=0; A.face=null; } }
 
@@ -204,8 +204,8 @@ function* twPrismIntro(F,C,O,c,gy,H){ const P=Player, A=twAliAny(); Game.letterT
   // she grows: a low hero shot, orbiting
   H.x=C.x+.8; H.z=C.z+.2; H.y=C.y+1; H.k=.4; Sound.sfx('sparkle'); Sound.sfx('choir'); Sound.sfx('fuse'); twAnim(H,{k:3.4,x:c.x,z:c.z-1,y:gy+4.6},1.8,twEIO);
   const orb=twOrbit({x:c.x,y:gy,z:c.z-1},11,1,-.8,.8,2.6,4.5); yield wait(1.9); shake(.8); impactFrame([[1,2],[3,2]]); Sound.sfx('slam'); twHikariBurst(H.x,H.y,H.z); yield wait(.8); orb.dead=1;
-  cineSet(P.x+.8,P.y+.8,P.z+3.2,P.x+.4,P.y+2,P.z); P.cineFly=true; P.cineAnim='idle'; twBark('shayan',"She's... HUGE.",true); yield wait(1.1);
-  if(A){ twBark('ali',"Her eyes follow you. I don't like it.",true); yield wait(1.4); } P.cineFly=false; P.cineAnim=null;
+  cineSet(P.x+.8,P.y+.8,P.z+3.2,P.x+.4,P.y+2,P.z); P.cineFly=true; P.cineAnim='idle'; twBark('shayan',"She's... HUGE. Why is the pillow THICC?!",true); yield wait(1.1);
+  if(A){ twBark('ali',"Her eyes follow you. I've cut a god. This bothers me more.",true); yield wait(1.4); } P.cineFly=false; P.cineAnim=null;
   cineSet(c.x,gy+1.2,c.z+9,c.x,gy+4.5,c.z-1); twBark('caotan',"Hikari-chan ULTIMATE FORM: PRISM MODE! ♡",true); twCutin('caotan','HIKARI PRISM','Limit Break  ·  forty feet of memory foam','#ff6ab0',2); yield wait(1.6);
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; C.lockF=0; if(A){ A.hold=0; A.face=null; } }
 
@@ -248,12 +248,12 @@ function* twDuo3Trans1(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   yield say('caotan',"Omar. It's TIME.",'angry'); yield say('omar',"...Fine.");
   twMoveTo(C,mx-1,mz,.4); C.x=mx-1; C.z=mz; O.x=mx+1; O.z=mz; yield wait(.4); Sound.sfx('whoosh'); yield wait(.3); Sound.sfx('block');
   yield say('',"They went for a high five. They missed. By a lot.");
-  yield say('caotan',"...We don't high five."); yield say('omar',"We DON'T high five.");
+  yield say('caotan',"...We don't high five. We're not that kind of found family."); yield say('omar',"We DON'T high five.");
   if(A) yield say('ali',"Are you done?"); yield say('shayan',"Let them have this, man.");
   Sound.sfx('slam'); FX.flash=1; grade.uniforms.flashCol.value.set(1,.8,1); impactFrame([[1,2],[3,2]]); shake(.8); yield say('',"The second high five connected. Somewhere, a thunderclap happened for no reason.");
   evaCard(['SYNC RATIO','400%'],1.8,1); yield wait(1.8); C.form=O.form=2; C.tint=0xffe8f4;
   // the clash scattered his scythes all over the field
-  yield say('omar',"The clash scattered my scythes everywhere. I will be using them. All of them."); }
+  yield say('omar',"The clash scattered my scythes everywhere. I will be using them. All of them. Without a tetanus shot."); }
 // II -> III: Caotan's domain (Hikari-chan's eyes glint, Ali takes the first one on his sword), then Omar's black hole eats the domain
 function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), dt=1/60;
   C.down=O.down=0; C.inv=O.inv=true; C.mv=O.mv=null; Object.assign(C,{x:c.x,z:c.z-3,lockF:1,f:1}); Object.assign(O,{x:c.x+5,z:c.z-4.5});
@@ -271,7 +271,7 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   const H=twGiantHikari(C.x,C.z-1.6); H.k=3; H.y=gy+4.4; H.put(); twCutin('caotan','INFINITE MEGANE VOID','Domain Expansion  ·  Hikari-chan is watching','#ff6ab0',2.4); Sound.sfx('skyopen'); grade.uniforms.tint.value.set(1.2,.85,1.1);
   yield say('caotan',"...INFINITE. MEGANE. VOID.",'angry');
   cineSet(H.x,gy+3,H.z+7,H.x,gy+4.2,H.z); yield say('caotan',"Inside my domain, every glint is GUARANTEED to hit. And Hikari-chan does the glinting now. She has CONSENTED.");
-  yield say('shayan',"She's a PILLOW!",'angry');
+  yield say('shayan',"She's a PILLOW! She can't CONSENT, she's POLYESTER!",'angry');
   // Ali steps in front and takes the first glint on his blade
   const ex=H.x, ey=H.y+2.3, ez=H.z+.3;
   if(A){ cineSet(P.x+2.4,P.y+1.4,P.z+3.6,P.x,P.y+1.5,P.z-1); aliGhost(A.x,A.y,A.z); A.x=P.x+.2; A.z=P.z-1; A.face=-1; Sound.sfx('dash'); yield say('ali',"Stay behind me.");
@@ -298,8 +298,8 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   const V=twHoleVis(c.x,gy+9,c.z-2,.1,true), hv={k:0,t:0,r:.1,live:1}; Game.fxUpd.push(d=>{ hv.t+=d; hv.r=hv.live?Math.min(2.6,hv.r+d*2.4):Math.max(0,hv.r-d*3); V.r=hv.r; V.t=hv.t; V.set(hv.r>0?1:0); if(!hv.live&&hv.r<=0){ V.kill(); return false; } return true; });
   Sound.sfx('void'); Sound.sfx('suck'); shake(.8); DM.eat=1; twAnim(H,{x:c.x,z:c.z-2,y:gy+9,k:.05},1.6,twEIn2);
   yield cineTo([c.x,gy+1.5,c.z+12],[c.x,gy+7.5,c.z-2],1.6,twEIO); H.kill(); DM.out=1; Sound.sfx('chomp'); impactFrame([[3,2],[1,2]]); shake(1); C.noGlasses=0; applyLook(L.look);
-  yield say('caotan',"MY DOMAIN! MY WAIFU! I had a SUBSCRIPTION!",'angry');
-  if(A) yield say('ali',"He ate her. Hm.");
+  yield say('caotan',"MY DOMAIN! MY WAIFU! I had a YEARLY SUBSCRIPTION! NON-REFUNDABLE!",'angry');
+  if(A) yield say('ali',"He ate her. Hm. Respect.");
   hv.live=0; C.lockF=0; C.down=O.down=1;
   yield say('caotan',"You wanna know why we look nothing alike?"); yield say('shayan',"Honestly? Yes. It's been bugging me all night.");
   yield say('omar',"We are not twins."); yield say('shayan',"...What?");
@@ -316,7 +316,7 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
 // =====================================================================
 function* twBurnoutIntro(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z); C.down=O.down=1; C.inv=O.inv=true; C.gen=O.gen=null; C.mv=O.mv=null;
   const mx=(C.x+O.x)/2, mz=(C.z+O.z)/2; yield cineTo([mx,gy+3.4,mz+10],[mx,gy+1.3,mz],.9,t=>t*(2-t)); yield wait(.3);
-  yield say('caotan',"We're at zero percent... but we still have... the power of SPITE!",'angry'); C.down=O.down=0;
+  yield say('caotan',"We're at zero percent... but we still have the power of SPITE! And an energy drink!",'angry'); C.down=O.down=0;
   yield say('omar',"Spite. My oldest friend. My only friend.",'angry');
   const aura={on:1}; Game.fxUpd.push(()=>{ if(!aura.on) return false; for(const T of [C,O]){ for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=rnd(.6,1.4); FX.spawn(T.x+Math.cos(a)*r,T.y+rnd(0,3),T.z+Math.sin(a)*r,0,rnd(2,4),0,.6,T===C?(i%2?0xff3a8a:0xffffff):(i%2?0x8a3aff:0x050208),.35,0,T===C); } } return true; });
   Sound.sfx('fuse'); Sound.sfx('howl'); twAnim(C,{hy:2.8},1.2); twAnim(O,{hy:2.8},1.2); const orb=twOrbit({x:mx,y:gy,z:mz},9,1.6,-1,1,2.6,2.6); yield wait(1.4);

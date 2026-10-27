@@ -136,7 +136,7 @@ function* twDuoGlomp(C,sp,tell,K){ const F=TW.fight, p=twTsunFar(C); twBlink(C,p
   let w=0; while(w<s.dur+.1&&!C.parried&&s.res!=='hit'){ yield .016; w+=.016; }
   C.lockF=0;
   if(s.res==='hit'&&F&&F.kind==='duo'&&Game.state==='play'){ C.heartEyes=1; run(function*(){ yield* twTwinExecution(F); }); yield .1; C.heartEyes=0; return 'grab'; }
-  C.heartEyes=0; if(C.parried){ C.stun=Math.max(C.stun,1.2); C.flash=.3; twBark('caotan',"Rejected... at point blank range...",true); } return s.res||'miss'; }
+  C.heartEyes=0; if(C.parried){ C.stun=Math.max(C.stun,1.2); C.flash=.3; twBark('caotan',"Rejected... at point blank range... it's middle school all over again...",true); } return s.res||'miss'; }
 // Omar teleports behind you and reaps on a steady beat (strict parry)
 function* twDuoReap(O,sp,K){ const from=Game.time+TW_STRICT.grace, P=Player, a=(P.ang||0)+Math.PI+rnd(-.6,.6), p=twClampXZ(P.x+Math.cos(a)*2.1,P.z+Math.sin(a)*2.1,.6); FX.marker(p.x,p.z,1,0x8a3aff,.45/sp);
   FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false); O.hide=1; Sound.sfx('dash'); yield .4/sp; O.x=p.x; O.z=p.z; O.y=groundY(p.x,p.z)+O.hy; O.mv=null; O.hide=0; FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false);
@@ -157,10 +157,10 @@ function* twCage(C,sp,cx,cz){ const P=Player; cx=cx!=null?cx:P.x; cz=cz!=null?cz
 // LOVE-HATE SANDWICH: Caotan glomps, Omar reaps behind you (twice in phase II+). Parry them all: both stunned.
 DUO.glompReap=function*(C,O,ph){ const sp=twSp(C), K={n:ph>=2?3:2,par:0}; twBark('caotan',"Love-Hate Sandwich! I hug, he stabs!",true);
   const r=yield* twDuoGlomp(C,sp,[0,.62,.52,.46][ph],K); if(r==='grab') return; yield .25;
-  for(let i=0;i<K.n-1;i++){ if(i===0) twBark('omar',"I am the bread. The sad bread.",true); yield* twDuoReap(O,sp,K); yield .12; }
-  if(twDuoBroken(C,O,K,3.2)) twBark('omar',"You ate the whole sandwich. Rude.",true); yield .3; };
+  for(let i=0;i<K.n-1;i++){ if(i===0) twBark('omar',"I am the bread. The sad, stale, gluten-free bread.",true); yield* twDuoReap(O,sp,K); yield .12; }
+  if(twDuoBroken(C,O,K,3.2)) twBark('omar',"You ate the whole sandwich. Not even a crumb for me. Typical.",true); yield .3; };
 // CROSSFIRE: two blue beams cross in an X on you (jump), then Omar's scythes curve in from both sides (deflect: they stick in the ground)
-DUO.crossfire=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,2,.13); twBark('caotan',"Crossfire! Omar, flank him!",true);
+DUO.crossfire=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,2,.13); twBark('caotan',"Crossfire! Omar, flank him! Like we practiced! ...We didn't practice this one!",true);
   for(let r=0;r<(ph>=3?2:1);r++){ const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x), cx=P.x, cz=P.z, w1=ph>=3?.32:.38; C.push=.3; Sound.sfx('ting');
     for(const k of [-.62,.62]) twBlue(cx,cz,a+k,{warn:w1}); yield w1+.12;
     O.cast=.6; for(const s of [-1,1]){ const hx=O.x+s*1.4, hz=O.z, P2=Player, y=groundY(hx,hz)+1.1, aa=Math.atan2(P2.z-hz,P2.x-hx), d=Math.max(3,Math.hypot(P2.x-hx,P2.z-hz)), off=.95*s, v=10*sp;
@@ -168,22 +168,22 @@ DUO.crossfire=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,2,.13); twBa
     yield .55; if(ph>=2){ const P3=Player; C.push=.3; Sound.sfx('ting'); twBlue(P3.x,P3.z,a,{warn:ph>=3?.42:.5}); yield .7; } }
   yield .4; };
 // SENPAI CAGE (Caotan's new laser pattern): walls in a #, a blue beam through your cell. Phase II+: Omar's hands chase you after. Phase III: a second cage.
-DUO.cage=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.12); twBark('caotan',"Senpai Cage! You're not leaving until you LOVE me!",true);
-  yield* twCage(C,sp); if(ph>=3){ twBark('caotan',"Encore cage!",true); yield* twCage(C,sp); }
-  if(ph>=2){ twBark('omar',"The graveyard would like a word.",true); O.cast=.6; yield* twHandChase(O,sp); } yield .4; };
+DUO.cage=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.12); twBark('caotan',"Senpai Cage! You're not leaving until you say I'm your favorite!",true);
+  yield* twCage(C,sp); if(ph>=3){ twBark('caotan',"ENCORE CAGE! The fans demanded it! The fans are me!",true); yield* twCage(C,sp); }
+  if(ph>=2){ twBark('omar',"The graveyard would like a word. The word is 'hello'. It is lonely.",true); O.cast=.6; yield* twHandChase(O,sp); } yield .4; };
 // GRAVEYARD VOLLEY: Omar throws a ring of scythes onto marked spots (they stay planted: +8/+10/+12). Caotan lobs goo in between.
-DUO.volley=function*(C,O,ph){ const sp=twSp(O), n=[0,8,10,12][ph]; twBark('omar',"Graveyard Volley. Every blade I throw... stays. Like regret.",true); O.cast=1; O.scythe=0;
+DUO.volley=function*(C,O,ph){ const sp=twSp(O), n=[0,8,10,12][ph]; twBark('omar',"Graveyard Volley. Every blade I throw stays in the ground. Like my self-esteem.",true); O.cast=1; O.scythe=0;
   const P=Player; for(let i=0;i<n;i++){ const a=i*6.283/n+rnd(-.2,.2), r=i===0?0:rnd(1.8,3.8), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), m=twScytheMesh(false);
     twThrow({x:O.x,y:O.y+2.2,z:O.z,tx:p.x,tz:p.z,dur:.95/sp,h:4,mesh:m,spin:16,r:.95,col:0x8a3aff,trail:0x8a3aff,onLand(x,z,play){ Sound.sfx('hit'); FX.burst(x,groundY(x,z)+.3,z,14,0x8a3aff,4,.3);
       if(play&&twInR(x,z,.95,2)) twHitP(2,x,z,{ub:true}); twPlantDrop(x,z,0,true); }}); Sound.sfx('swing'); yield .11/sp;
     if(i===3||i===7){ C.fire=.25; for(const k of [-1,0,1]) twAimBolt(C,'goo',C.x+C.f*.3,C.y+.95,C.z,9.5*sp,k*.2,{col:0xffffff}); Sound.sfx('squelch'); } }
   yield 1.2; };
 // SENTENCED TO SENPAI: the Death Sentence hovers over you; on every count Caotan fires a pink wall at you. At 0 it drops (one-shot): move.
-DUO.sentenceSnipe=function*(C,O,ph){ const sp=twSp(C); twBark('omar',"Your sentence is death. Caotan will read it out.",true); Sound.sfx('gong');
+DUO.sentenceSnipe=function*(C,O,ph){ const sp=twSp(C); twBark('omar',"Your sentence is death. Caotan will read it aloud. He insisted on doing voices.",true); Sound.sfx('gong');
   const S=TW.sentence={n:3,pulse:1}, hs=[twHoverScythe()]; if(ph>=3) hs.push(twHoverScythe());
   for(let n=3;n>=1;n--){ S.n=n; S.pulse=1; Sound.sfx('tick'); if(n===3) twBark('caotan',"Ahem. Count one: you're cute.",true); if(n===2) twBark('caotan',"Count two: you're DEAD.",true);
     yield .25/sp; const P=Player; C.push=.3; C.glintT=.3; Sound.sfx('ting'); twPink(C.x,C.z,Math.atan2(P.z+P.vz*.15-C.z,P.x+P.vx*.15-C.x),{warn:.55/sp}); yield .7/sp; }
-  S.n=0; Sound.sfx('gong'); hs[0].drop(); if(hs[1]){ yield .6; hs[1].drop(); twBark('omar',"Objection overruled.",true); } yield .9; TW.sentence=null; };
+  S.n=0; Sound.sfx('gong'); hs[0].drop(); if(hs[1]){ yield .6; hs[1].drop(); twBark('omar',"Objection overruled. The court of darkness has spoken. The court is me. In a cape.",true); } yield .9; TW.sentence=null; };
 // HIKARI REFRACTION (phase II+): Caotan throws Hikari-chan out and fires a pink beam into her. She splits it into a blue fan (jump),
 // then spins two blue beams. Omar blinks behind her and Getsugas her straight at you (jump her or dash through her).
 DUO.prism=function*(C,O,ph){ const sp=twSp(C), P=Player; twBark('caotan',"Hikari-chan! Prism formation! ♡",true);
@@ -192,17 +192,17 @@ DUO.prism=function*(C,O,ph){ const sp=twSp(C), P=Player; twBark('caotan',"Hikari
   yield .7; C.push=.4; C.glintT=.5; Sound.sfx('ting'); const ha=Math.atan2(H.z-C.z,H.x-C.x); twBeam({x:C.x,z:C.z,ang:ha,len:Math.hypot(H.x-C.x,H.z-C.z),w:1,warn:.45/sp,dur:.5,dmg:3,col:0xff9ad8,jump:false}); yield .45/sp;
   twHikariBurst(H.x,H.y,H.z); const P2=Player, b0=Math.atan2(P2.z-H.z,P2.x-H.x); for(const k of [-.64,-.32,0,.32,.64]) twBeam({x:H.x,z:H.z,ang:b0+k,len:20,w:1.1,warn:.55/sp,dur:.2,dmg:3,col:0x9fd8ff,jump:true,y:.45});
   yield .55/sp+.35; if(ph>=3){ const P3=Player, b1=Math.atan2(P3.z-H.z,P3.x-H.x); for(const k of [-.48,-.16,.16,.48]) twBeam({x:H.x,z:H.z,ang:b1+k,len:20,w:1.1,warn:.5/sp,dur:.2,dmg:3,col:0x9fd8ff,jump:true,y:.45}); yield .5/sp+.3; }
-  const dir=Math.random()<.5?1:-1, s0=rnd(0,6.28), spin=1.5*sp; twBark('caotan',"Spin, Hikari-chan!",true); for(let k=0;k<2;k++) twBeam({x:H.x,z:H.z,ang:t=>s0+k*Math.PI+Math.max(0,t-.6)*spin*dir,len:16,w:1,warn:.6,dur:2,dmg:3,col:0xbfe4ff});
+  const dir=Math.random()<.5?1:-1, s0=rnd(0,6.28), spin=1.5*sp; twBark('caotan',"Spin, Hikari-chan! Show him your good side! ALL your sides are good sides!",true); for(let k=0;k<2;k++) twBeam({x:H.x,z:H.z,ang:t=>s0+k*Math.PI+Math.max(0,t-.6)*spin*dir,len:16,w:1,warn:.6,dur:2,dmg:3,col:0xbfe4ff});
   twHz({upd(dt){ this.t+=dt; if(H.free) return false; H.spin+=dt*spin*dir; H.put(); return this.t<2.6; }}); yield 2.65;
   // Omar's follow-through: a Getsuga straight through her, toward you
   const P4=Player, ga=Math.atan2(P4.z-H.z,P4.x-H.x), bx=H.x-Math.cos(ga)*1.4, bz=H.z-Math.sin(ga)*1.4; FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false); twBlink(O,bx,bz); O.scythe=1; O.lockF=1; O.f=Math.cos(ga)>0?1:-1;
-  twBark('omar',"Fly, pillow. Be free.",true); FX.line(H.x,H.z,ga,18,2,0xff6ab0,.5); yield .5; O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); FX.arc(O.x,groundY(O.x,O.z),O.z,ga,0,true); H.free=1;
+  twBark('omar',"Fly, pillow. Be free. Unlike me.",true); FX.line(H.x,H.z,ga,18,2,0xff6ab0,.5); yield .5; O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); FX.arc(O.x,groundY(O.x,O.z),O.z,ga,0,true); H.free=1;
   const s={x:H.x,z:H.z,t:0,hit:false}; twHz({upd(dt,play){ if(!play) return true; s.t+=dt; s.x+=Math.cos(ga)*17*dt; s.z+=Math.sin(ga)*17*dt; const gy=groundY(s.x,s.z); H.x=s.x; H.z=s.z; H.y=gy+1.5; H.spin+=dt*20; H.put(); FX.spawn(s.x,gy+1.4,s.z,0,.5,0,.35,0xffd0ec,.3,0,true);
       const Pp=Player; if(!s.hit&&Math.hypot(Pp.x-s.x,Pp.z-s.z)<1.15&&Pp.y<gy+.9){ if(twHitP(3,s.x,s.z)!=='none') s.hit=true; } const A=twBounds(); return s.t<1.6&&s.x>A.x0-1&&s.x<A.x1+1&&s.z>A.z0-1&&s.z<A.z1+1; }, kill(){ H.kill(); }});
   if(ph>=2) twBark('caotan',"HIKARI-CHAAAN!",true); yield .9; O.scythe=0; O.lockF=0; O.swing=0; yield .3; };
 // EVENT HORIZON GLOMP (phase II+): Omar opens a black hole behind you; Caotan glomps you from the far side, toward it.
 // Parry him and he flies into the hole (it chokes on him and closes: both stunned). Dash against the pull between glomps.
-DUO.horizon=function*(C,O,ph){ const sp=twSp(C), P=Player, K={n:3,par:0}; twBark('omar',"Collapse. Brother, deliver him.",true);
+DUO.horizon=function*(C,O,ph){ const sp=twSp(C), P=Player, K={n:3,par:0}; twBark('omar',"Collapse. Brother, deliver him to the void. Express shipping.",true);
   let c=null; const A=twBounds(); for(let k=0;k<16&&!c;k++){ const a=(P.ang||0)+Math.PI+(k%2?1:-1)*Math.ceil(k/2)*Math.PI/8, x=P.x+Math.cos(a)*7.5, z=P.z+Math.sin(a)*7.5; if(x>A.x0+1.5&&x<A.x1-1.5&&z>A.z0+1.5&&z<A.z1-1.5) c={x,z}; }
   c=c||twClampXZ(P.x+4,P.z,1.5); O.cast=2; O.scythe=1; twBig('DASH!',{size:56,col:'#c08aff',y:UH*.26,dur:1.1,sub:'Keep out of the hole. Parry Caotan to feed HIM to it.'}); Sound.sfx('void');
   const hole=twMiniHole(c.x,c.z,{r:1.2,pull:ph>=3?8.6:7.6,range:16,dur:14,eat:1.1,dmg:6,disk:1,h:1.3}); TW.duoHole=hole;
@@ -218,10 +218,10 @@ DUO.horizon=function*(C,O,ph){ const sp=twSp(C), P=Player, K={n:3,par:0}; twBark
 // GETSUGA × DOUBLE TAKE (phase II+): three Getsugas fanned at you (sidestep or dash through), then Caotan's blue X
 DUO.getsugaLaser=function*(C,O,ph){ const sp=twSp(O); twBark('omar',"Getsuga... Tenshou. The edgy version. It has a hood.",true); O.scythe=1; O.cast=.5;
   for(const off of ph>=3?[0,.45,-.45,0]:[0,.42,-.42]){ const P=Player, a=Math.atan2(P.z-O.z,P.x-O.x)+off; O.lockF=1; O.f=Math.cos(a)>0?1:-1; O.swing=0; twGetsuga(O,a,{warn:.55/sp,sp:14*sp}); yield .5/sp; }
-  O.lockF=0; yield .3; yield* twGlint(C,2,.12); twBark('caotan',"Double take!",true); const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.62,.62]) twBlue(P.x,P.z,a+k,{warn:.4}); yield .6;
+  O.lockF=0; yield .3; yield* twGlint(C,2,.12); twBark('caotan',"Double take! Twice the lasers, half the dignity!",true); const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.62,.62]) twBlue(P.x,P.z,a+k,{warn:.4}); yield .6;
   const P2=Player; twBlue(P2.x,P2.z,a,{warn:.45}); yield .8; O.scythe=0; O.swing=0; };
 // GLINT RICOCHET (phase II+): a pink beam at you that bounces off the wall as a blue one; Omar's scythes (and his red rally scythe) at the same time
-DUO.ricochet=function*(C,O,ph){ const sp=twSp(C); twBark('caotan',"Glint Ricochet! I did the geometry homework!",true); twDuoAlso(O,TWK.omar.scythes(O,ph));
+DUO.ricochet=function*(C,O,ph){ const sp=twSp(C); twBark('caotan',"Glint Ricochet! I did the geometry homework! For the first time in my LIFE!",true); twDuoAlso(O,TWK.omar.scythes(O,ph));
   for(let r=0;r<3;r++){ yield* twGlint(C,1,.05); const P=Player, a=Math.atan2(P.z+P.vz*.2-C.z,P.x+P.vx*.2-C.x), ux=Math.cos(a), uz=Math.sin(a), w=twRayWall(C.x,C.z,ux,uz), len=Math.max(4,w.t);
     twBeam({x:C.x,z:C.z,ang:a,len,w:1.05,warn:.55/sp,dur:.22,dmg:3,col:0xffa0d8,jump:false});
     const hx=C.x+ux*len, hz=C.z+uz*len, ra=w.ax==='x'?Math.atan2(uz,-ux):Math.atan2(-uz,ux); twBeam({x:hx,z:hz,ang:ra,len:twRayWall(hx,hz,Math.cos(ra),Math.sin(ra)).t,w:1.2,warn:.75/sp,dur:.2,dmg:3,col:0x9fd8ff,jump:true,y:.45});
@@ -238,7 +238,7 @@ DUO.hikariGetsuga=function*(C,O,ph){ const sp=twSp(C), P=Player; twBark('caotan'
       H.x=s.x; H.z=s.z; H.y=gy+1.6; H.spin+=dt*22; H.put(); FX.spawn(s.x,gy+1.4,s.z,0,.5,0,.35,0xffd0ec,.3,0,true);
       const Pp=Player; if(s.hit<=0&&Math.hypot(Pp.x-s.x,Pp.z-s.z)<1.25&&Pp.y<gy+.95){ if(twHitP(3,s.x,s.z)!=='none') s.hit=.8; } if(s.hit>0) s.hit-=dt;
       return s.b<3; }, kill(){ H.kill(); }});
-  twBark('caotan',"HIKARI-CHAAAAAN!",true); let w=0; while(w<7&&!H.gone){ yield .1; w+=.1; } O.lockF=0; O.scythe=0; O.swing=0; twBark('caotan',"She's okay! She's memory foam!",true); yield .4; };
+  twBark('caotan',"HIKARI-CHAAAAAN!",true); let w=0; while(w<7&&!H.gone){ yield .1; w+=.1; } O.lockF=0; O.scythe=0; O.swing=0; twBark('caotan',"She's okay! She's memory foam! She'll remember this betrayal FOREVER!",true); yield .4; };
 // THE TEAR (phase III): Omar opens the sky rift and his six scars; Caotan snipes in the meantime
 DUO.tearRift=function*(C,O,ph){ if(TW.tear){ yield* DUO.cage(C,O,ph); return; } twDuoAlso(O,TWK.omar.tear(O,3)); yield 1.2;
-  twBark('caotan',"While he rips the sky, I'll rip your HEART!",true); yield* TWK.caotan.glint1(C,3); yield .5; yield* TWK.caotan.glint2(C,2); };
+  twBark('caotan',"While he rips the sky open, I'll rip your heart out! Romantically!",true); yield* TWK.caotan.glint1(C,3); yield .5; yield* TWK.caotan.glint2(C,2); };

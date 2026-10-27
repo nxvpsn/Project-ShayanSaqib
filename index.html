@@ -5081,7 +5081,7 @@ function twDrawFoes(){ const t=performance.now()/1000;
     S.glow(T.flash>0?.8:T.stun>0?.25+.2*Math.sin(t*20):T.inv?.35:T.phase>=3?.18:0); }
   for(const A of TW.allies){ if(A.gone) continue; const S=twSprOf(A); const vis=!A.hidden&&Game.state!=='title'&&!Game.mech; S.show(vis); if(!vis) continue;
     S.draw((c,cx,by)=>A.who==='caotan'?drawCaotanBoss(c,cx,by,A.f,A):A.who==='omar'?drawOmarBoss(c,cx,by,A.f,A):drawAliHD(c,cx,by,A.f,{t:A.t,anim:A.anim||'idle',flash:A.flash,ap:A.ap}));
-    S.mesh.scale.setScalar(1);
+    S.mesh.scale.setScalar(A.who==='ali'&&S._shS?S._shS:1); /* Ali's sprite model is drawn at 0.8, like the player's */
     S.place(A.x,A.y,A.z,groundY(A.x,A.z)); S.glow(A.flash>0?.7:.08); S.mesh.material.color.setHex(0xffffff); }
 }
 (function(){ const ds=drawSprites; drawSprites=function(){ ds(); if(!Game.mech) try{ twDrawFoes(); if(TW.giant) hzgDraw(); }catch(e){ console.error('twDraw',e); } }; })();
@@ -6421,7 +6421,7 @@ function drxAttach(d){ if(!d||!pxvRdy('drill_aura')) return; const o={any:true,x
 // =====================================================================
 const ALLY_BARK={caotan:["I got you, senpai!","Reload! I never run dry!","Pew pew! That's the sound of loyalty!","My aim is legendary! Mostly!","Push up glasses... FIRE!"],
   omar:["The darkness fights beside you. Today.","My scythe thirsts. For that guy, specifically.","Do not thank me. Thanks are for the light.","Reaping. Still reaping.","Edge assist."],
-  ali:["Too slow.","I'm only here because it's interesting.","Nothing personal.","Hm.","Don't die. It would be embarrassing for me."]};
+  ali:["Too slow.","I'm only here because the moon was busy.","Nothing personal.","Hm.","Don't die. It would be embarrassing. For me."]};
 const ALLY_HURT={caotan:["Ow! My glasses!","That one went straight to my heart. Wrong way.","I'm fine! I'm fine! I'm leaking!"],omar:["Pain... is an old friend.","My coat! I just ironed it. In the dark.","Hm. That stung my soul."],ali:["...Hm.","Interesting.","You got one. Don't get used to it."]};
 function twAddAlly(who){ if(TW.allies.find(A=>A.who===who)) return; const P=Player, mhp=who==='ali'?16:12;
   TW.allies.push({who,x:P.x-1.5,z:P.z+.5,y:P.y+1.3,hy:who==='ali'?0:1.3,t:rnd(0,3),f:1,cd:rnd(1.5,2.6),flash:0,glintT:0,push:0,cast:0,fire:0,form:1,n:0,barkT:rnd(6,10),spr:null,hidden:false,
@@ -6471,10 +6471,12 @@ function twUpdateAlly(A,dt,play){ const P=Player; A.t+=dt; A.flash=Math.max(0,A.
   if(!play||Player.hidden) return; twAllyThreats(A); if(!tg) return;
   A.barkT-=dt; if(A.barkT<=0){ A.barkT=rnd(10,16); const L2=ALLY_BARK[A.who]; twBark(A.who,L2[Math.floor(Math.random()*L2.length)]); }
   const o=tg.o;
-  if(A.who==='ali'){ // teleport around, burst Getsugas, ult on a long timer
+  if(A.who==='ali'){ // teleport around; his player kit at random (the 3-cut combo or a Getsuga), ult on a long timer
+    if(A.cmb){ twAliCombo(A,o,tg,dt); return; }
     A.blinkT-=dt; if(A.blinkT<=0){ A.blinkT=rnd(2.2,3.4); aliGhost(A.x,A.y,A.z); const a=rnd(0,6.28), p=twClampXZ(o.x+Math.cos(a)*4.6,o.z+Math.sin(a)*3.6,.8); A.x=p.x; A.z=p.z; FX.burst(A.x,A.y+1,A.z,20,0x0c0814,4,.3,false); Sound.sfx('dash'); }
     A.ultT-=dt; if(A.ultT<=0){ A.ultT=rnd(36,44); twAllyJC(A,tg); return; }
-    A.cd-=dt; if(A.cd<=0){ A.cd=rnd(1.6,2.1); A.flash=.15; Sound.sfx('beam'); for(let i=0;i<3;i++) twAllyShot(A,o,tg,0xff2a3a,.5,'crescent',i*.13); } return; }
+    A.cd-=dt; if(A.cd<=0){ A.cd=rnd(1.5,2); if(Math.random()<.5){ /* the combo: blink in close and cut */ const a=Math.atan2(A.z-o.z,A.x-o.x), p=twClampXZ(o.x+Math.cos(a)*2.2,o.z+Math.sin(a)*2.2,.8); aliGhost(A.x,A.y,A.z); A.x=p.x; A.z=p.z; Sound.sfx('dash'); A.cmb={n:0,t:0,fx:0,ang:Math.atan2(o.z-A.z,o.x-A.x)}; }
+      else { /* the right click: one Getsuga (2 in a row now and then), 1 damage each in the duo (his 1.1x included) */ A.flash=.15; A.anim='beam'; const n=Math.random()<.35?2:1; for(let i=0;i<n;i++) twAllyShot(A,o,tg,0xff2a3a,TW.fight&&TW.fight.kind==='duo'?1/1.1:1,'getsuga',i*.35); Sound.sfx('beam'); } } return; }
   A.cd-=dt; if(A.cd>0) return;
   if(A.who==='caotan'){ A.cd=rnd(3.3,3.9); A.push=.5; A.glintT=.5; A.glintN=1; Sound.sfx('ting'); const ang=Math.atan2(o.z-A.z,o.x-A.x); FX.line(A.x,A.z,ang,Math.hypot(o.x-A.x,o.z-A.z),.6,0xffb0e0,.3);
     const hold={t:0}; twHz({upd(dt2,pl){ if(pl) hold.t+=dt2; if(hold.t<.3) return true; if(A.down>0) return false; twAllyRay(A.x,A.y+1.9,A.z,o.x,(o.y||0)+tg.y,o.z,0xffb0e0); twAllyDeal(tg,2.2); return false; }}); }
@@ -6483,13 +6485,18 @@ function twUpdateAlly(A,dt,play){ const P=Player; A.t+=dt; A.flash=Math.max(0,A.
 function twAllyJC(A,tg){ const o=tg.o; twBark('ali',"Nothing personal.",true); Sound.sfx('secret'); let t=0,n=0; JC.flash=.5;
   Game.fxUpd.push(dt=>{ t+=dt; while(n<5&&t>.1+n*.08){ n++; const s=toScreen(o.x,(o.y||0)+1.4,o.z), a=rnd(0,Math.PI); JC.lines.push({x0:s[0]-Math.cos(a)*260,y0:s[1]-Math.sin(a)*260,x1:s[0]+Math.cos(a)*260,y1:s[1]+Math.sin(a)*260,t:0,ttl:.32});
       FX.cut(o.x,(o.y||0)+1.4,o.z); Sound.sfx('hit'); twAllyDeal(tg,1.1); } if(n>=5){ Sound.sfx('crossboom'); shake(.4); return false; } return true; }); }
+// AI Ali's 3-cut combo (his player combo: a long slash, a double cut, a spin), Judgement Cut tears and all
+function twAliCombo(A,o,tg,dt){ const M=A.cmb, C=ALI_COMBO[M.n]; M.t+=dt; A.anim=C.anim; A.ap=Math.min(1,M.t/C.dur); A.f=Math.cos(M.ang)>=0?1:-1;
+  C.hits.forEach(([t0],i)=>{ if(M.t>=t0&&!(M.fx>>i&1)){ M.fx|=1<<i; M.ang=Math.atan2(o.z-A.z,o.x-A.x); aliSlashFXAt(A.x,A.y,A.z,M.ang,M.n,i); if(Math.hypot(o.x-A.x,o.z-A.z)<ALI_R+tg.r) twAllyDeal(tg,C.dmg*.5); } });
+  if(M.t>=C.dur){ M.n++; M.t=0; M.fx=0; if(M.n>2){ A.cmb=null; A.ap=null; A.anim='idle'; } } }
 function twAllyShot(A,o,tg,col,dmg,kind,delay){ let mesh;
-  if(kind==='crescent'){ mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),new THREE.MeshBasicMaterial({map:CRESC,color:col,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})); mesh.rotation.x=TILT; }
+  let px=null; if(kind==='getsuga'){ mesh=new THREE.Group(); px=typeof pxvOk==='function'&&pxvOk('getsuga')?pxvAttach('getsuga',mesh,GS):null; if(px) px.dir={dx:1,dz:0}; else kind='crescent'; }
+  if(kind==='getsuga'){} else if(kind==='crescent'){ mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),new THREE.MeshBasicMaterial({map:CRESC,color:col,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})); mesh.rotation.x=TILT; }
   else { mesh=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshBasicMaterial({color:col})); }
   mesh.userData.tw=1; scene.add(mesh); const s={x:A.x,y:A.y+1.2,z:A.z}, dly=delay||0;
   twHz({upd(dt,play){ if(!play) return true; this.t+=dt; if(this.t<dly){ mesh.visible=false; return true; } mesh.visible=true; const tx=o.x, ty=(o.y||0)+tg.y, tz=o.z, dx=tx-s.x, dy=ty-s.y, dz=tz-s.z, d=Math.hypot(dx,dy,dz)||1, sp=16;
-    s.x+=dx/d*sp*dt; s.y+=dy/d*sp*dt; s.z+=dz/d*sp*dt; mesh.position.set(s.x,s.y,s.z); mesh.rotation.z+=dt*14; if(Math.random()<.7) FX.spawn(s.x,s.y,s.z,0,0,0,.25,col,.25,0,true);
-    if(d<tg.r+.3){ twAllyDeal(tg,dmg); FX.burst(s.x,s.y,s.z,10,col,3,.25); return false; } return this.t<3; }, kill(){ scene.remove(mesh); }}); }
+    s.x+=dx/d*sp*dt; s.y+=dy/d*sp*dt; s.z+=dz/d*sp*dt; mesh.position.set(s.x,s.y,s.z); if(px){ px.dir.dx=dx; px.dir.dz=dz; } else mesh.rotation.z+=dt*14; if(Math.random()<.7) FX.spawn(s.x,s.y,s.z,0,0,0,.25,col,.25,0,true);
+    if(d<tg.r+.3){ twAllyDeal(tg,dmg); if(px){ pxvStop(px); px=null; } FX.burst(s.x,s.y,s.z,10,col,3,.25); return false; } return this.t<3; }, kill(){ if(px) pxvStop(px); scene.remove(mesh); }}); }
 function twAllyRay(x0,y0,z0,x1,y1,z1,col){ const m=[beamMesh(col,.22),beamMesh(0xffffff,.08)]; m.forEach(o=>{ o.userData.tw=1; o.position.set(x0,y0,z0); o.lookAt(x1,y1,z1); o.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); });
   Sound.sfx('beam'); FX.burst(x1,y1,z1,16,col,4,.3); twHz({upd(dt){ this.t+=dt; const k=Math.max(0,1-this.t/.3); m.forEach(o=>{ o.scale.x=o.scale.y=Math.max(.01,k); }); return this.t<.3; }, kill(){ m.forEach(o=>scene.remove(o)); }}); }
 // little HP bars over the allies' heads
@@ -6822,7 +6829,7 @@ function twSpermTex(f){ if(TW_SPERM[f]) return TW_SPERM[f]; const W=48, H=18, cv
 // a sperm sprite on par (a projectile's group): it turns to the direction par moves on screen and wriggles its tail
 function twSperm(par,size){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:twSpermTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false})); s.scale.set(size,size*18/48,1); s.renderOrder=5; par.add(s);
   const last=new THREE.Vector3(), cur=new THREE.Vector3(); par.updateMatrixWorld(); par.getWorldPosition(last); let f=0, ft=0;
-  Game.fxUpd.push(dt=>{ try{ let o=par; while(o.parent) o=o.parent; if(o!==scene) return false; ft+=dt; if(ft>.055){ ft=0; f=(f+1)%4; s.material.map=twSpermTex(f); }
+  Game.fxUpd.push(dt=>{ try{ let o=par; for(let k=0;o.parent&&k<64;k++) o=o.parent; if(o!==scene) return false; ft+=dt; if(ft>.055){ ft=0; f=(f+1)%4; s.material.map=twSpermTex(f); }
       par.getWorldPosition(cur); const a=toScreen(last.x,last.y,last.z), b=toScreen(cur.x,cur.y,cur.z), dx=b[0]-a[0], dy=b[1]-a[1]; if(dx*dx+dy*dy>.04) s.material.rotation=Math.atan2(-dy,dx); last.copy(cur); return true; }catch(e){ console.error('sperm',e); return false; } });
   return s; }
 // white goo bolts (Caotan's volleys) become sperm instead of glowing orbs
@@ -8531,27 +8538,27 @@ function* hzgFinale(){ const G=TW.giant, P=Player, H=Game.hamza, C=TW.allies.fin
   yield* twTwinsTurn(); }
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2; cineSet((cx+ox)/2,P.y+3,(cz+oz)/2+10.5,(cx+ox)/2,P.y+2,(cz+oz)/2); yield wait(.6);
-  yield say('caotan',"So... the pig's dead.");
-  yield say('omar',"The Dog Lord is dead.");
-  yield say('caotan',"And the main character is... tired. Low HP. Very vulnerable.");
-  yield say('omar',"Shayan Saqib. The last thing standing between us... and the throne of Kennel Keep.");
+  yield say('caotan',"So... the pig's dead. Rest in pork.");
+  yield say('omar',"The Dog Lord is dead. I will mourn him later. Alone. In the rain. With a playlist.");
+  yield say('caotan',"And the main character is at one HP, sweaty and vulnerable. My three favorite things.");
+  yield say('omar',"Shayan Saqib. The last thing standing between us and the throne of Kennel Keep. And its excellent dental plan.");
   twCamP(6.2,1.2);
-  yield say('shayan',"I KNEW IT. I KNEW having two of you was too good to be true!",'angry');
-  yield say('caotan',"Sorry, senpai. It's not personal. It's... a plot twist! ♡",'happy');
-  yield say('omar',"Every story needs a betrayal. Ours just needed... two.");
+  yield say('shayan',"I KNEW IT! Nobody is THAT helpful without a betrayal arc!",'angry');
+  yield say('caotan',"Sorry, senpai! It's not personal! I just want your throne. And your body. Mostly the throne. ♡",'happy');
+  yield say('omar',"Every story needs a betrayal. I wrote ours in my journal. In blood. Well. Red gel pen.");
   twClearAllies(); twDuoStart(cx,cz,ox,oz); const D=TW.fight; D.noAttack=true; Game.state='cut';
   for(const T of TW.foes){ T.inv=true; } yield wait(.3); Sound.sfx('charge'); Sound.sfx('drone');
   cineSet(P.x-2,1.4,P.z+6,P.x,1.6,P.z); TW.foes.forEach(T=>{ T.cast=2; T.fire=2; }); yield wait(.7);
   // time stops. someone walks in.
   zwStart(); Sound.sfx('secret'); yield wait(.5); twAddAlly('ali'); const A=TW.allies[TW.allies.length-1]; A.x=P.x+1.6; A.z=P.z+.8; A.y=groundY(A.x,A.z);
   FX.burst(A.x,A.y+1,A.z,40,0xb0182a,5,.35); cineSet(A.x+.8,A.y+1.7,A.z+5.6,A.x,A.y+1.1,A.z); yield wait(.4);
-  yield say('ali',"Two on one? Hm.");
+  yield say('ali',"Two on one. Cowards.");
   yield say('ali',"Now it's two on two.");
   zwEnd(); twCamP(6.5,.5);
   yield say('shayan',"Who... who ARE you?!",'surprised');
-  yield say('ali',"Your rival. You just don't know it yet. Also, I was in the area. I'm always in the area.");
-  yield say('caotan',"Is that... the guy who CUT THE MOON?!",'surprised'); yield say('omar',"...Brother. I believe we should have stayed at the gate.");
-  if(mi) yield say('mira',"Okay, I don't know who that is, but he has a cool hat. Go get them, boys!",'happy');
+  yield say('ali',"Your rival. You don't know it yet. I was in the area. I'm always in the area. It's a lifestyle.");
+  yield say('caotan',"Straw hat. Red eye. Brooding. Is that the guy who CUT THE MOON?! Can he sign my BODY PILLOW?!",'surprised'); yield say('omar',"...Brother. He is edgier than me. I need to go lie face-down in a puddle.");
+  if(mi) yield say('mira',"I don't know who that is, but that hat is doing a LOT of work. Go get 'em, boys!",'happy');
   yield* twCoopChoice();
   evaCard(['SHAYAN & ALI','VS THE GATEKEEPER TWINS'],2.4,1); Sound.sfx('slam'); yield wait(2.4); card('Caotan & Omar','Tuesday\'s Children');
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); TW.foes.forEach(T=>{ T.inv=false; }); D.noAttack=true; D.director=1; Cam.cine=null; Game.letterTo=0; P.inv=1; Game.state='play'; Sound.play('boss'); }
@@ -8790,7 +8797,7 @@ DUO.tagTeam=function*(C,O,ph){ const sp=twSp(C); twBark('caotan',"Tag-team! You 
     FX.burst(T.x,T.y+1.4,T.z,20,T===O?0x140a1a:0xffb0e0,4,.4,T===C); T.hide=1; Sound.sfx('dash'); yield .16;
     twBlinkTo(T,side,1.6,T===O?0x140a1a:0xffb0e0); T.hide=0; if(T===O) T.scythe=1; const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x);
     FX.line(T.x,T.z,a,2.9,2.6,T===O?0xb06aff:0xff6ab0,tell); if(T===C){ T.push=.3; T.glintT=.3; Sound.sfx('ting'); } yield tell; hitWith(T,T===O?'#b06aff':'#ff9ad8'); yield .4; T.swing=0; T.lockF=0; }
-  O.scythe=0; if(K.par>=4){ for(const T of [C,O]){ T.stun=Math.max(T.stun,3.6); T.state='stun'; T.flash=.5; } twComboBroken((C.x+O.x)/2,(C.z+O.z)/2); twBark('omar',"We... practiced that for WEEKS.",true); return; }
+  O.scythe=0; if(K.par>=4){ for(const T of [C,O]){ T.stun=Math.max(T.stun,3.6); T.state='stun'; T.flash=.5; } twComboBroken((C.x+O.x)/2,(C.z+O.z)/2); twBark('omar',"We practiced that for WEEKS. In my mom's basement. She clapped.",true); return; }
   yield .4; };
 for(const k of [1,2,3]) DUO_POOL[k].push({duo:'tagTeam'});
 
@@ -9045,7 +9052,7 @@ function* twDuoGlomp(C,sp,tell,K){ const F=TW.fight, p=twTsunFar(C); twBlink(C,p
   let w=0; while(w<s.dur+.1&&!C.parried&&s.res!=='hit'){ yield .016; w+=.016; }
   C.lockF=0;
   if(s.res==='hit'&&F&&F.kind==='duo'&&Game.state==='play'){ C.heartEyes=1; run(function*(){ yield* twTwinExecution(F); }); yield .1; C.heartEyes=0; return 'grab'; }
-  C.heartEyes=0; if(C.parried){ C.stun=Math.max(C.stun,1.2); C.flash=.3; twBark('caotan',"Rejected... at point blank range...",true); } return s.res||'miss'; }
+  C.heartEyes=0; if(C.parried){ C.stun=Math.max(C.stun,1.2); C.flash=.3; twBark('caotan',"Rejected... at point blank range... it's middle school all over again...",true); } return s.res||'miss'; }
 // Omar teleports behind you and reaps on a steady beat (strict parry)
 function* twDuoReap(O,sp,K){ const from=Game.time+TW_STRICT.grace, P=Player, a=(P.ang||0)+Math.PI+rnd(-.6,.6), p=twClampXZ(P.x+Math.cos(a)*2.1,P.z+Math.sin(a)*2.1,.6); FX.marker(p.x,p.z,1,0x8a3aff,.45/sp);
   FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false); O.hide=1; Sound.sfx('dash'); yield .4/sp; O.x=p.x; O.z=p.z; O.y=groundY(p.x,p.z)+O.hy; O.mv=null; O.hide=0; FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false);
@@ -9066,10 +9073,10 @@ function* twCage(C,sp,cx,cz){ const P=Player; cx=cx!=null?cx:P.x; cz=cz!=null?cz
 // LOVE-HATE SANDWICH: Caotan glomps, Omar reaps behind you (twice in phase II+). Parry them all: both stunned.
 DUO.glompReap=function*(C,O,ph){ const sp=twSp(C), K={n:ph>=2?3:2,par:0}; twBark('caotan',"Love-Hate Sandwich! I hug, he stabs!",true);
   const r=yield* twDuoGlomp(C,sp,[0,.62,.52,.46][ph],K); if(r==='grab') return; yield .25;
-  for(let i=0;i<K.n-1;i++){ if(i===0) twBark('omar',"I am the bread. The sad bread.",true); yield* twDuoReap(O,sp,K); yield .12; }
-  if(twDuoBroken(C,O,K,3.2)) twBark('omar',"You ate the whole sandwich. Rude.",true); yield .3; };
+  for(let i=0;i<K.n-1;i++){ if(i===0) twBark('omar',"I am the bread. The sad, stale, gluten-free bread.",true); yield* twDuoReap(O,sp,K); yield .12; }
+  if(twDuoBroken(C,O,K,3.2)) twBark('omar',"You ate the whole sandwich. Not even a crumb for me. Typical.",true); yield .3; };
 // CROSSFIRE: two blue beams cross in an X on you (jump), then Omar's scythes curve in from both sides (deflect: they stick in the ground)
-DUO.crossfire=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,2,.13); twBark('caotan',"Crossfire! Omar, flank him!",true);
+DUO.crossfire=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,2,.13); twBark('caotan',"Crossfire! Omar, flank him! Like we practiced! ...We didn't practice this one!",true);
   for(let r=0;r<(ph>=3?2:1);r++){ const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x), cx=P.x, cz=P.z, w1=ph>=3?.32:.38; C.push=.3; Sound.sfx('ting');
     for(const k of [-.62,.62]) twBlue(cx,cz,a+k,{warn:w1}); yield w1+.12;
     O.cast=.6; for(const s of [-1,1]){ const hx=O.x+s*1.4, hz=O.z, P2=Player, y=groundY(hx,hz)+1.1, aa=Math.atan2(P2.z-hz,P2.x-hx), d=Math.max(3,Math.hypot(P2.x-hx,P2.z-hz)), off=.95*s, v=10*sp;
@@ -9077,22 +9084,22 @@ DUO.crossfire=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,2,.13); twBa
     yield .55; if(ph>=2){ const P3=Player; C.push=.3; Sound.sfx('ting'); twBlue(P3.x,P3.z,a,{warn:ph>=3?.42:.5}); yield .7; } }
   yield .4; };
 // SENPAI CAGE (Caotan's new laser pattern): walls in a #, a blue beam through your cell. Phase II+: Omar's hands chase you after. Phase III: a second cage.
-DUO.cage=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.12); twBark('caotan',"Senpai Cage! You're not leaving until you LOVE me!",true);
-  yield* twCage(C,sp); if(ph>=3){ twBark('caotan',"Encore cage!",true); yield* twCage(C,sp); }
-  if(ph>=2){ twBark('omar',"The graveyard would like a word.",true); O.cast=.6; yield* twHandChase(O,sp); } yield .4; };
+DUO.cage=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.12); twBark('caotan',"Senpai Cage! You're not leaving until you say I'm your favorite!",true);
+  yield* twCage(C,sp); if(ph>=3){ twBark('caotan',"ENCORE CAGE! The fans demanded it! The fans are me!",true); yield* twCage(C,sp); }
+  if(ph>=2){ twBark('omar',"The graveyard would like a word. The word is 'hello'. It is lonely.",true); O.cast=.6; yield* twHandChase(O,sp); } yield .4; };
 // GRAVEYARD VOLLEY: Omar throws a ring of scythes onto marked spots (they stay planted: +8/+10/+12). Caotan lobs goo in between.
-DUO.volley=function*(C,O,ph){ const sp=twSp(O), n=[0,8,10,12][ph]; twBark('omar',"Graveyard Volley. Every blade I throw... stays. Like regret.",true); O.cast=1; O.scythe=0;
+DUO.volley=function*(C,O,ph){ const sp=twSp(O), n=[0,8,10,12][ph]; twBark('omar',"Graveyard Volley. Every blade I throw stays in the ground. Like my self-esteem.",true); O.cast=1; O.scythe=0;
   const P=Player; for(let i=0;i<n;i++){ const a=i*6.283/n+rnd(-.2,.2), r=i===0?0:rnd(1.8,3.8), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), m=twScytheMesh(false);
     twThrow({x:O.x,y:O.y+2.2,z:O.z,tx:p.x,tz:p.z,dur:.95/sp,h:4,mesh:m,spin:16,r:.95,col:0x8a3aff,trail:0x8a3aff,onLand(x,z,play){ Sound.sfx('hit'); FX.burst(x,groundY(x,z)+.3,z,14,0x8a3aff,4,.3);
       if(play&&twInR(x,z,.95,2)) twHitP(2,x,z,{ub:true}); twPlantDrop(x,z,0,true); }}); Sound.sfx('swing'); yield .11/sp;
     if(i===3||i===7){ C.fire=.25; for(const k of [-1,0,1]) twAimBolt(C,'goo',C.x+C.f*.3,C.y+.95,C.z,9.5*sp,k*.2,{col:0xffffff}); Sound.sfx('squelch'); } }
   yield 1.2; };
 // SENTENCED TO SENPAI: the Death Sentence hovers over you; on every count Caotan fires a pink wall at you. At 0 it drops (one-shot): move.
-DUO.sentenceSnipe=function*(C,O,ph){ const sp=twSp(C); twBark('omar',"Your sentence is death. Caotan will read it out.",true); Sound.sfx('gong');
+DUO.sentenceSnipe=function*(C,O,ph){ const sp=twSp(C); twBark('omar',"Your sentence is death. Caotan will read it aloud. He insisted on doing voices.",true); Sound.sfx('gong');
   const S=TW.sentence={n:3,pulse:1}, hs=[twHoverScythe()]; if(ph>=3) hs.push(twHoverScythe());
   for(let n=3;n>=1;n--){ S.n=n; S.pulse=1; Sound.sfx('tick'); if(n===3) twBark('caotan',"Ahem. Count one: you're cute.",true); if(n===2) twBark('caotan',"Count two: you're DEAD.",true);
     yield .25/sp; const P=Player; C.push=.3; C.glintT=.3; Sound.sfx('ting'); twPink(C.x,C.z,Math.atan2(P.z+P.vz*.15-C.z,P.x+P.vx*.15-C.x),{warn:.55/sp}); yield .7/sp; }
-  S.n=0; Sound.sfx('gong'); hs[0].drop(); if(hs[1]){ yield .6; hs[1].drop(); twBark('omar',"Objection overruled.",true); } yield .9; TW.sentence=null; };
+  S.n=0; Sound.sfx('gong'); hs[0].drop(); if(hs[1]){ yield .6; hs[1].drop(); twBark('omar',"Objection overruled. The court of darkness has spoken. The court is me. In a cape.",true); } yield .9; TW.sentence=null; };
 // HIKARI REFRACTION (phase II+): Caotan throws Hikari-chan out and fires a pink beam into her. She splits it into a blue fan (jump),
 // then spins two blue beams. Omar blinks behind her and Getsugas her straight at you (jump her or dash through her).
 DUO.prism=function*(C,O,ph){ const sp=twSp(C), P=Player; twBark('caotan',"Hikari-chan! Prism formation! ♡",true);
@@ -9101,17 +9108,17 @@ DUO.prism=function*(C,O,ph){ const sp=twSp(C), P=Player; twBark('caotan',"Hikari
   yield .7; C.push=.4; C.glintT=.5; Sound.sfx('ting'); const ha=Math.atan2(H.z-C.z,H.x-C.x); twBeam({x:C.x,z:C.z,ang:ha,len:Math.hypot(H.x-C.x,H.z-C.z),w:1,warn:.45/sp,dur:.5,dmg:3,col:0xff9ad8,jump:false}); yield .45/sp;
   twHikariBurst(H.x,H.y,H.z); const P2=Player, b0=Math.atan2(P2.z-H.z,P2.x-H.x); for(const k of [-.64,-.32,0,.32,.64]) twBeam({x:H.x,z:H.z,ang:b0+k,len:20,w:1.1,warn:.55/sp,dur:.2,dmg:3,col:0x9fd8ff,jump:true,y:.45});
   yield .55/sp+.35; if(ph>=3){ const P3=Player, b1=Math.atan2(P3.z-H.z,P3.x-H.x); for(const k of [-.48,-.16,.16,.48]) twBeam({x:H.x,z:H.z,ang:b1+k,len:20,w:1.1,warn:.5/sp,dur:.2,dmg:3,col:0x9fd8ff,jump:true,y:.45}); yield .5/sp+.3; }
-  const dir=Math.random()<.5?1:-1, s0=rnd(0,6.28), spin=1.5*sp; twBark('caotan',"Spin, Hikari-chan!",true); for(let k=0;k<2;k++) twBeam({x:H.x,z:H.z,ang:t=>s0+k*Math.PI+Math.max(0,t-.6)*spin*dir,len:16,w:1,warn:.6,dur:2,dmg:3,col:0xbfe4ff});
+  const dir=Math.random()<.5?1:-1, s0=rnd(0,6.28), spin=1.5*sp; twBark('caotan',"Spin, Hikari-chan! Show him your good side! ALL your sides are good sides!",true); for(let k=0;k<2;k++) twBeam({x:H.x,z:H.z,ang:t=>s0+k*Math.PI+Math.max(0,t-.6)*spin*dir,len:16,w:1,warn:.6,dur:2,dmg:3,col:0xbfe4ff});
   twHz({upd(dt){ this.t+=dt; if(H.free) return false; H.spin+=dt*spin*dir; H.put(); return this.t<2.6; }}); yield 2.65;
   // Omar's follow-through: a Getsuga straight through her, toward you
   const P4=Player, ga=Math.atan2(P4.z-H.z,P4.x-H.x), bx=H.x-Math.cos(ga)*1.4, bz=H.z-Math.sin(ga)*1.4; FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false); twBlink(O,bx,bz); O.scythe=1; O.lockF=1; O.f=Math.cos(ga)>0?1:-1;
-  twBark('omar',"Fly, pillow. Be free.",true); FX.line(H.x,H.z,ga,18,2,0xff6ab0,.5); yield .5; O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); FX.arc(O.x,groundY(O.x,O.z),O.z,ga,0,true); H.free=1;
+  twBark('omar',"Fly, pillow. Be free. Unlike me.",true); FX.line(H.x,H.z,ga,18,2,0xff6ab0,.5); yield .5; O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); FX.arc(O.x,groundY(O.x,O.z),O.z,ga,0,true); H.free=1;
   const s={x:H.x,z:H.z,t:0,hit:false}; twHz({upd(dt,play){ if(!play) return true; s.t+=dt; s.x+=Math.cos(ga)*17*dt; s.z+=Math.sin(ga)*17*dt; const gy=groundY(s.x,s.z); H.x=s.x; H.z=s.z; H.y=gy+1.5; H.spin+=dt*20; H.put(); FX.spawn(s.x,gy+1.4,s.z,0,.5,0,.35,0xffd0ec,.3,0,true);
       const Pp=Player; if(!s.hit&&Math.hypot(Pp.x-s.x,Pp.z-s.z)<1.15&&Pp.y<gy+.9){ if(twHitP(3,s.x,s.z)!=='none') s.hit=true; } const A=twBounds(); return s.t<1.6&&s.x>A.x0-1&&s.x<A.x1+1&&s.z>A.z0-1&&s.z<A.z1+1; }, kill(){ H.kill(); }});
   if(ph>=2) twBark('caotan',"HIKARI-CHAAAN!",true); yield .9; O.scythe=0; O.lockF=0; O.swing=0; yield .3; };
 // EVENT HORIZON GLOMP (phase II+): Omar opens a black hole behind you; Caotan glomps you from the far side, toward it.
 // Parry him and he flies into the hole (it chokes on him and closes: both stunned). Dash against the pull between glomps.
-DUO.horizon=function*(C,O,ph){ const sp=twSp(C), P=Player, K={n:3,par:0}; twBark('omar',"Collapse. Brother, deliver him.",true);
+DUO.horizon=function*(C,O,ph){ const sp=twSp(C), P=Player, K={n:3,par:0}; twBark('omar',"Collapse. Brother, deliver him to the void. Express shipping.",true);
   let c=null; const A=twBounds(); for(let k=0;k<16&&!c;k++){ const a=(P.ang||0)+Math.PI+(k%2?1:-1)*Math.ceil(k/2)*Math.PI/8, x=P.x+Math.cos(a)*7.5, z=P.z+Math.sin(a)*7.5; if(x>A.x0+1.5&&x<A.x1-1.5&&z>A.z0+1.5&&z<A.z1-1.5) c={x,z}; }
   c=c||twClampXZ(P.x+4,P.z,1.5); O.cast=2; O.scythe=1; twBig('DASH!',{size:56,col:'#c08aff',y:UH*.26,dur:1.1,sub:'Keep out of the hole. Parry Caotan to feed HIM to it.'}); Sound.sfx('void');
   const hole=twMiniHole(c.x,c.z,{r:1.2,pull:ph>=3?8.6:7.6,range:16,dur:14,eat:1.1,dmg:6,disk:1,h:1.3}); TW.duoHole=hole;
@@ -9127,10 +9134,10 @@ DUO.horizon=function*(C,O,ph){ const sp=twSp(C), P=Player, K={n:3,par:0}; twBark
 // GETSUGA × DOUBLE TAKE (phase II+): three Getsugas fanned at you (sidestep or dash through), then Caotan's blue X
 DUO.getsugaLaser=function*(C,O,ph){ const sp=twSp(O); twBark('omar',"Getsuga... Tenshou. The edgy version. It has a hood.",true); O.scythe=1; O.cast=.5;
   for(const off of ph>=3?[0,.45,-.45,0]:[0,.42,-.42]){ const P=Player, a=Math.atan2(P.z-O.z,P.x-O.x)+off; O.lockF=1; O.f=Math.cos(a)>0?1:-1; O.swing=0; twGetsuga(O,a,{warn:.55/sp,sp:14*sp}); yield .5/sp; }
-  O.lockF=0; yield .3; yield* twGlint(C,2,.12); twBark('caotan',"Double take!",true); const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.62,.62]) twBlue(P.x,P.z,a+k,{warn:.4}); yield .6;
+  O.lockF=0; yield .3; yield* twGlint(C,2,.12); twBark('caotan',"Double take! Twice the lasers, half the dignity!",true); const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.62,.62]) twBlue(P.x,P.z,a+k,{warn:.4}); yield .6;
   const P2=Player; twBlue(P2.x,P2.z,a,{warn:.45}); yield .8; O.scythe=0; O.swing=0; };
 // GLINT RICOCHET (phase II+): a pink beam at you that bounces off the wall as a blue one; Omar's scythes (and his red rally scythe) at the same time
-DUO.ricochet=function*(C,O,ph){ const sp=twSp(C); twBark('caotan',"Glint Ricochet! I did the geometry homework!",true); twDuoAlso(O,TWK.omar.scythes(O,ph));
+DUO.ricochet=function*(C,O,ph){ const sp=twSp(C); twBark('caotan',"Glint Ricochet! I did the geometry homework! For the first time in my LIFE!",true); twDuoAlso(O,TWK.omar.scythes(O,ph));
   for(let r=0;r<3;r++){ yield* twGlint(C,1,.05); const P=Player, a=Math.atan2(P.z+P.vz*.2-C.z,P.x+P.vx*.2-C.x), ux=Math.cos(a), uz=Math.sin(a), w=twRayWall(C.x,C.z,ux,uz), len=Math.max(4,w.t);
     twBeam({x:C.x,z:C.z,ang:a,len,w:1.05,warn:.55/sp,dur:.22,dmg:3,col:0xffa0d8,jump:false});
     const hx=C.x+ux*len, hz=C.z+uz*len, ra=w.ax==='x'?Math.atan2(uz,-ux):Math.atan2(-uz,ux); twBeam({x:hx,z:hz,ang:ra,len:twRayWall(hx,hz,Math.cos(ra),Math.sin(ra)).t,w:1.2,warn:.75/sp,dur:.2,dmg:3,col:0x9fd8ff,jump:true,y:.45});
@@ -9147,10 +9154,10 @@ DUO.hikariGetsuga=function*(C,O,ph){ const sp=twSp(C), P=Player; twBark('caotan'
       H.x=s.x; H.z=s.z; H.y=gy+1.6; H.spin+=dt*22; H.put(); FX.spawn(s.x,gy+1.4,s.z,0,.5,0,.35,0xffd0ec,.3,0,true);
       const Pp=Player; if(s.hit<=0&&Math.hypot(Pp.x-s.x,Pp.z-s.z)<1.25&&Pp.y<gy+.95){ if(twHitP(3,s.x,s.z)!=='none') s.hit=.8; } if(s.hit>0) s.hit-=dt;
       return s.b<3; }, kill(){ H.kill(); }});
-  twBark('caotan',"HIKARI-CHAAAAAN!",true); let w=0; while(w<7&&!H.gone){ yield .1; w+=.1; } O.lockF=0; O.scythe=0; O.swing=0; twBark('caotan',"She's okay! She's memory foam!",true); yield .4; };
+  twBark('caotan',"HIKARI-CHAAAAAN!",true); let w=0; while(w<7&&!H.gone){ yield .1; w+=.1; } O.lockF=0; O.scythe=0; O.swing=0; twBark('caotan',"She's okay! She's memory foam! She'll remember this betrayal FOREVER!",true); yield .4; };
 // THE TEAR (phase III): Omar opens the sky rift and his six scars; Caotan snipes in the meantime
 DUO.tearRift=function*(C,O,ph){ if(TW.tear){ yield* DUO.cage(C,O,ph); return; } twDuoAlso(O,TWK.omar.tear(O,3)); yield 1.2;
-  twBark('caotan',"While he rips the sky, I'll rip your HEART!",true); yield* TWK.caotan.glint1(C,3); yield .5; yield* TWK.caotan.glint2(C,2); };
+  twBark('caotan',"While he rips the sky open, I'll rip your heart out! Romantically!",true); yield* TWK.caotan.glint1(C,3); yield .5; yield* TWK.caotan.glint2(C,2); };
 
 // ----- 57b_duo3cine.js -----
 // =====================================================================
@@ -9163,10 +9170,10 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
   C.mv=null; C.x=gx-f*.6; C.z=gz+.15; C.lockF=1; C.f=f; C.heartEyes=1; P.y=gy+.4;
   // 1. the hug: freeze frame, extreme close-up, slow push in
   impactFrame([[1,2],[2,2]]); Sound.sfx('doki'); Sound.sfx('kyun'); twHeartBurst(gx,gz,30); FX.flash=.4; grade.uniforms.flashCol.value.set(1,.6,.85);
-  const mx=(gx+C.x)/2; cineSet(mx+.4,gy+2.3,gz+3.4,mx,gy+1.6,gz); twBark('caotan',"GOTCHA, SENPAI! Hug level: MAXIMUM! ♡",true);
+  const mx=(gx+C.x)/2; cineSet(mx+.4,gy+2.3,gz+3.4,mx,gy+1.6,gz); twBark('caotan',"GOTCHA, SENPAI! Hug level: MAXIMUM! Your ribs: MINIMUM! ♡",true);
   yield cineTo([mx+.1,gy+2,gz+2.3],[mx,gy+1.7,gz],1,twEIO);
   // 2. the spin: two turns, the camera orbiting the other way
-  Sound.sfx('whoosh'); twBark('shayan',"LET GO OF ME, YOU WEIRDO!",true);
+  Sound.sfx('whoosh'); twBark('shayan',"LET GO OF ME! WHY ARE YOU SO MOIST?!",true);
   for(let t=0;t<1.1;t+=dt){ const u=t/1.1, a=u*Math.PI*4, r=.62; P.x=gx+Math.cos(a)*r; P.z=gz+Math.sin(a)*r*.6; C.x=gx-Math.cos(a)*r; C.z=gz-Math.sin(a)*r*.6; C.f=P.x>C.x?1:-1; P.y=gy+.4+u*.8;
     const ca=-u*Math.PI*1.2; cineSet(gx+Math.sin(ca)*4.4,gy+1.3+u,gz+Math.cos(ca)*4.4,gx,gy+1.5,gz); if(Math.random()<.7) twHeartBurst(gx,gz,2); yield wait(dt*.5); }
   // 3. the toss: straight up, the camera on the ground looking up
@@ -9175,7 +9182,7 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
   // 4. Omar above you, against the sky; the black hole opens on the ground below
   FX.burst(O.x,O.y+1.4,O.z,22,0x140a1a,4,.45,false); O.mv=null; O.x=gx+.5; O.z=gz-.2; O.hy=y1+2.2-groundY(O.x,O.z); O.y=y1+2.2; O.lockF=1; O.f=-1; O.scythe=1; O.swing=0; O.hide=0; Sound.sfx('dash'); FX.burst(O.x,O.y+1.4,O.z,30,0x140a1a,5,.45,false);
   const V=twHoleVis(gx,gy+1.3,gz,1.5,true), hk={k:0,t:0,live:1}; Game.fxUpd.push(d=>{ hk.t+=d; hk.k=hk.live?Math.min(1,hk.k+d*1.4):Math.max(0,hk.k-d*3); V.t=hk.t; V.set(hk.k); if(!hk.live&&hk.k<=0){ V.kill(); return false; } return true; }); Sound.sfx('void'); Sound.sfx('drone');
-  cineSet(gx+3.2,gy+1.2,gz+7.5,gx,y1+1.2,gz); twBark('omar',"Volleyball. I despise volleyball.",true);
+  cineSet(gx+3.2,gy+1.2,gz+7.5,gx,y1+1.2,gz); twBark('omar',"Volleyball. I despise volleyball. Too much teamwork. Too much sunlight.",true);
   yield cineTo([gx+2.4,gy+2,gz+6],[gx,y1+1.4,gz],.95,twEIO);
   // 5. the spike: a Getsuga point blank, you go straight down into the hole, the camera whips down with you
   O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); Sound.sfx('crossboom'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[3,2],[1,1]]); shake(.8);
@@ -9192,7 +9199,7 @@ function* twTwinExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), gx=P.x
   FX.burst(gx,gy+1.3,gz,80,0x8a2aff,9,.5); twHeartBurst(gx,gz,40);
   P.hidden=false; P.cineFly=false; P.cineAnim=null; P.x=gx; P.z=gz; P.y=gy+.5; P.inv=0; P.dash=0; Cam.cine=null; Game.letterTo=0; C.lockF=0; O.lockF=0; O.scythe=0; if(A){ A.hold=0; A.face=null; }
   Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'TWIN EXECUTION',t:0,big:true,col:'#ff8ac8'}); F.grabbed=0;
-  twHoleEat(gx,gz,6); if(Game.state==='play'&&P.hp>0&&A&&!F.revQ) twBark('ali',"That was embarrassing. For all four of us.",true); }
+  twHoleEat(gx,gz,6); if(Game.state==='play'&&P.hp>0&&A&&!F.revQ) twBark('ali',"That was embarrassing. For all four of us. Five, counting the pillow.",true); }
 
 // ---------- falling scythes (Scythe Rain and Burnout) ----------
 function twSkyScythe(x,z,warn,o){ o=o||{}; const p=twClampXZ(x,z,.6), gy=groundY(p.x,p.z), m=o.mesh||twScytheMesh(false), s={t:0}; m.userData.tw=1; m.visible=!!o.mesh;
@@ -9236,11 +9243,11 @@ DUO.scytheRain=function*(C,O,ph){ const F=TW.fight, sp=twSp(O), list=TW.planted.
       Sound.sfx('swing'); if(w===2) twBark('caotan',"GO GERALD! GO GERALD!",true); if(w===6) twBark('omar',"Gerald. No. That is Phil. Phil, you're out of order.",true); yield .62/sp; }
     yield 1;
   } finally { halo.live=false; TW.storming=0; }
-  O.stun=Math.max(O.stun,2.6); O.state='stun'; O.cast=0; twBark('omar',"Fifty scythes... and I have to pick them all up again...",true); twBig('OMAR IS EXHAUSTED',{size:44,col:'#ffd45a',y:UH*.3,dur:1.3}); yield 2.6; };
+  O.stun=Math.max(O.stun,2.6); O.state='stun'; O.cast=0; twBark('omar',"Fifty scythes... and I have to pick them all up again... with my back...",true); twBig('OMAR IS EXHAUSTED',{size:44,col:'#ffd45a',y:UH*.3,dur:1.3}); yield 2.6; };
 function* twRainIntro(F,C,O,c,gy){ const P=Player, A=twAliAny(); Game.letterTo=.45; P.vx=P.vz=0; O.cast=3; O.scythe=0; if(A){ A.hold=1; A.face=O.x>A.x?1:-1; }
   cineSet(P.x+.8,P.y+1,P.z+5.5,O.x,O.y+1.6,O.z); Sound.sfx('howl'); Sound.sfx('gong'); twBark('omar',"Fifty scythes. Fifty names. Gerald... lead them.",true); yield wait(1.4);
-  Sound.sfx('charge'); Sound.sfx('drone'); twBark('caotan',"Not GERALD! Gerald's the sharp one!",true); yield cineTo([c.x,gy+2.2,c.z+14],[c.x,gy+9.5,c.z],1.5,twEIO);
-  if(A) twBark('ali',"Fifty. I counted. Move, blacksmith.",true); else twBark('shayan',"That's a LOT of scythes.",true); yield wait(1.1);
+  Sound.sfx('charge'); Sound.sfx('drone'); twBark('caotan',"Not GERALD! Gerald's the sharp one! Gerald has a CRIMINAL RECORD!",true); yield cineTo([c.x,gy+2.2,c.z+14],[c.x,gy+9.5,c.z],1.5,twEIO);
+  if(A) twBark('ali',"Fifty. I counted. Move, blacksmith. Or become a pincushion. Your call.",true); else twBark('shayan',"That's a LOT of scythes! Does he have a scythe GUY?!",true); yield wait(1.1);
   twBig('SCYTHE RAIN',{size:70,col:'#c08aff',y:UH*.3,dur:1.6,sub:'Red circles. Deflect the glowing ones back.'}); yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6);
   Cam.cine=null; Game.letterTo=0; if(A){ A.hold=0; A.face=null; } }
 
@@ -9294,7 +9301,7 @@ DUO.waltz=function*(C,O){ const F=TW.fight, c=twCenter(), gy=groundY(c.x,c.z), s
 function* twHorizonIntro(F,C,O,c,gy,HV){ const P=Player, A=twAliAny(); Game.letterTo=.5; P.vx=P.vz=0;
   Object.assign(O,{x:c.x+1.6,z:c.z-3,mv:null,lockF:1,f:-1,scythe:1}); Object.assign(C,{x:c.x-3.4,z:c.z-2.4,mv:null,lockF:1,f:1});
   Object.assign(P,{x:c.x-.8,z:c.z+4.2}); P.y=groundY(P.x,P.z); P.f=1; if(A){ A.hold=1; A.x=c.x+.9; A.z=c.z+4.4; A.face=-1; }
-  HV.k=0; HV.y=gy+12; cineSet(O.x+1.4,gy+.6,O.z+4.6,O.x,O.y+1.9,O.z); Sound.sfx('howl'); twBark('omar',"Brother. Hold my feelings.",true); yield wait(1.4);
+  HV.k=0; HV.y=gy+12; cineSet(O.x+1.4,gy+.6,O.z+4.6,O.x,O.y+1.9,O.z); Sound.sfx('howl'); twBark('omar',"Brother. Hold my feelings. Carefully. They bite.",true); yield wait(1.4);
   twBark('caotan',"I'm ALWAYS holding your feelings!",true); yield wait(1.1);
   // the Getsuga goes straight up and tears the sky
   O.swing=1; Sound.sfx('swing'); Sound.sfx('beam'); const g=twGetsugaMesh(3.4,0x9a4aff), k={y:O.y+1}; g.rotation.set(0,0,0);
@@ -9304,7 +9311,7 @@ function* twHorizonIntro(F,C,O,c,gy,HV){ const P=Player, A=twAliAny(); Game.lett
   // reverse shot: the heroes look up
   cineSet(P.x+.9,P.y+.9,P.z+3.4,(P.x+(A?A.x:P.x))/2,P.y+1.6,P.z); P.cineFly=true; P.cineAnim='idle';
   twBark('shayan',"Is that a BLACK HOLE?! In the FLOWER FIELD?!",true); yield wait(1.5);
-  if(A){ twBark('ali',"It's a small one. Don't get sucked in.",true); yield wait(1.3); } P.cineFly=false; P.cineAnim=null;
+  if(A){ twBark('ali',"It's a small one. Don't get sucked in. Or do. I'm not your father.",true); yield wait(1.3); } P.cineFly=false; P.cineAnim=null;
   twCutin('omar','EVENT HORIZON','Limit Break  ·  Everything falls in eventually','#3a0a6a',2); yield wait(.9);
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; O.lockF=C.lockF=0; O.swing=0; if(A){ A.hold=0; A.face=null; } }
 
@@ -9359,8 +9366,8 @@ function* twPrismIntro(F,C,O,c,gy,H){ const P=Player, A=twAliAny(); Game.letterT
   // she grows: a low hero shot, orbiting
   H.x=C.x+.8; H.z=C.z+.2; H.y=C.y+1; H.k=.4; Sound.sfx('sparkle'); Sound.sfx('choir'); Sound.sfx('fuse'); twAnim(H,{k:3.4,x:c.x,z:c.z-1,y:gy+4.6},1.8,twEIO);
   const orb=twOrbit({x:c.x,y:gy,z:c.z-1},11,1,-.8,.8,2.6,4.5); yield wait(1.9); shake(.8); impactFrame([[1,2],[3,2]]); Sound.sfx('slam'); twHikariBurst(H.x,H.y,H.z); yield wait(.8); orb.dead=1;
-  cineSet(P.x+.8,P.y+.8,P.z+3.2,P.x+.4,P.y+2,P.z); P.cineFly=true; P.cineAnim='idle'; twBark('shayan',"She's... HUGE.",true); yield wait(1.1);
-  if(A){ twBark('ali',"Her eyes follow you. I don't like it.",true); yield wait(1.4); } P.cineFly=false; P.cineAnim=null;
+  cineSet(P.x+.8,P.y+.8,P.z+3.2,P.x+.4,P.y+2,P.z); P.cineFly=true; P.cineAnim='idle'; twBark('shayan',"She's... HUGE. Why is the pillow THICC?!",true); yield wait(1.1);
+  if(A){ twBark('ali',"Her eyes follow you. I've cut a god. This bothers me more.",true); yield wait(1.4); } P.cineFly=false; P.cineAnim=null;
   cineSet(c.x,gy+1.2,c.z+9,c.x,gy+4.5,c.z-1); twBark('caotan',"Hikari-chan ULTIMATE FORM: PRISM MODE! ♡",true); twCutin('caotan','HIKARI PRISM','Limit Break  ·  forty feet of memory foam','#ff6ab0',2); yield wait(1.6);
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; C.lockF=0; if(A){ A.hold=0; A.face=null; } }
 
@@ -9403,12 +9410,12 @@ function* twDuo3Trans1(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   yield say('caotan',"Omar. It's TIME.",'angry'); yield say('omar',"...Fine.");
   twMoveTo(C,mx-1,mz,.4); C.x=mx-1; C.z=mz; O.x=mx+1; O.z=mz; yield wait(.4); Sound.sfx('whoosh'); yield wait(.3); Sound.sfx('block');
   yield say('',"They went for a high five. They missed. By a lot.");
-  yield say('caotan',"...We don't high five."); yield say('omar',"We DON'T high five.");
+  yield say('caotan',"...We don't high five. We're not that kind of found family."); yield say('omar',"We DON'T high five.");
   if(A) yield say('ali',"Are you done?"); yield say('shayan',"Let them have this, man.");
   Sound.sfx('slam'); FX.flash=1; grade.uniforms.flashCol.value.set(1,.8,1); impactFrame([[1,2],[3,2]]); shake(.8); yield say('',"The second high five connected. Somewhere, a thunderclap happened for no reason.");
   evaCard(['SYNC RATIO','400%'],1.8,1); yield wait(1.8); C.form=O.form=2; C.tint=0xffe8f4;
   // the clash scattered his scythes all over the field
-  yield say('omar',"The clash scattered my scythes everywhere. I will be using them. All of them."); }
+  yield say('omar',"The clash scattered my scythes everywhere. I will be using them. All of them. Without a tetanus shot."); }
 // II -> III: Caotan's domain (Hikari-chan's eyes glint, Ali takes the first one on his sword), then Omar's black hole eats the domain
 function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), dt=1/60;
   C.down=O.down=0; C.inv=O.inv=true; C.mv=O.mv=null; Object.assign(C,{x:c.x,z:c.z-3,lockF:1,f:1}); Object.assign(O,{x:c.x+5,z:c.z-4.5});
@@ -9426,7 +9433,7 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   const H=twGiantHikari(C.x,C.z-1.6); H.k=3; H.y=gy+4.4; H.put(); twCutin('caotan','INFINITE MEGANE VOID','Domain Expansion  ·  Hikari-chan is watching','#ff6ab0',2.4); Sound.sfx('skyopen'); grade.uniforms.tint.value.set(1.2,.85,1.1);
   yield say('caotan',"...INFINITE. MEGANE. VOID.",'angry');
   cineSet(H.x,gy+3,H.z+7,H.x,gy+4.2,H.z); yield say('caotan',"Inside my domain, every glint is GUARANTEED to hit. And Hikari-chan does the glinting now. She has CONSENTED.");
-  yield say('shayan',"She's a PILLOW!",'angry');
+  yield say('shayan',"She's a PILLOW! She can't CONSENT, she's POLYESTER!",'angry');
   // Ali steps in front and takes the first glint on his blade
   const ex=H.x, ey=H.y+2.3, ez=H.z+.3;
   if(A){ cineSet(P.x+2.4,P.y+1.4,P.z+3.6,P.x,P.y+1.5,P.z-1); aliGhost(A.x,A.y,A.z); A.x=P.x+.2; A.z=P.z-1; A.face=-1; Sound.sfx('dash'); yield say('ali',"Stay behind me.");
@@ -9453,8 +9460,8 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   const V=twHoleVis(c.x,gy+9,c.z-2,.1,true), hv={k:0,t:0,r:.1,live:1}; Game.fxUpd.push(d=>{ hv.t+=d; hv.r=hv.live?Math.min(2.6,hv.r+d*2.4):Math.max(0,hv.r-d*3); V.r=hv.r; V.t=hv.t; V.set(hv.r>0?1:0); if(!hv.live&&hv.r<=0){ V.kill(); return false; } return true; });
   Sound.sfx('void'); Sound.sfx('suck'); shake(.8); DM.eat=1; twAnim(H,{x:c.x,z:c.z-2,y:gy+9,k:.05},1.6,twEIn2);
   yield cineTo([c.x,gy+1.5,c.z+12],[c.x,gy+7.5,c.z-2],1.6,twEIO); H.kill(); DM.out=1; Sound.sfx('chomp'); impactFrame([[3,2],[1,2]]); shake(1); C.noGlasses=0; applyLook(L.look);
-  yield say('caotan',"MY DOMAIN! MY WAIFU! I had a SUBSCRIPTION!",'angry');
-  if(A) yield say('ali',"He ate her. Hm.");
+  yield say('caotan',"MY DOMAIN! MY WAIFU! I had a YEARLY SUBSCRIPTION! NON-REFUNDABLE!",'angry');
+  if(A) yield say('ali',"He ate her. Hm. Respect.");
   hv.live=0; C.lockF=0; C.down=O.down=1;
   yield say('caotan',"You wanna know why we look nothing alike?"); yield say('shayan',"Honestly? Yes. It's been bugging me all night.");
   yield say('omar',"We are not twins."); yield say('shayan',"...What?");
@@ -9471,7 +9478,7 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
 // =====================================================================
 function* twBurnoutIntro(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z); C.down=O.down=1; C.inv=O.inv=true; C.gen=O.gen=null; C.mv=O.mv=null;
   const mx=(C.x+O.x)/2, mz=(C.z+O.z)/2; yield cineTo([mx,gy+3.4,mz+10],[mx,gy+1.3,mz],.9,t=>t*(2-t)); yield wait(.3);
-  yield say('caotan',"We're at zero percent... but we still have... the power of SPITE!",'angry'); C.down=O.down=0;
+  yield say('caotan',"We're at zero percent... but we still have the power of SPITE! And an energy drink!",'angry'); C.down=O.down=0;
   yield say('omar',"Spite. My oldest friend. My only friend.",'angry');
   const aura={on:1}; Game.fxUpd.push(()=>{ if(!aura.on) return false; for(const T of [C,O]){ for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=rnd(.6,1.4); FX.spawn(T.x+Math.cos(a)*r,T.y+rnd(0,3),T.z+Math.sin(a)*r,0,rnd(2,4),0,.6,T===C?(i%2?0xff3a8a:0xffffff):(i%2?0x8a3aff:0x050208),.35,0,T===C); } } return true; });
   Sound.sfx('fuse'); Sound.sfx('howl'); twAnim(C,{hy:2.8},1.2); twAnim(O,{hy:2.8},1.2); const orb=twOrbit({x:mx,y:gy,z:mz},9,1.6,-1,1,2.6,2.6); yield wait(1.4);
@@ -9577,16 +9584,46 @@ twDrawGraveyard=function(){}; // no counter: the rain just happens
 (function(){ const th=twHurt; twHurt=function(T,d,src){ const F=TW.fight; if(TW._ally&&F&&F.kind==='duo') d*=1.1; return th.call(this,T,d,src); }; })();
 // (installed when a duo fight starts, so it sits outside 58's three-revive wrapper and keeps it from ever running out)
 (function(){ const ds=twDuoStart; twDuoStart=function(){ if(!TW._odInf){ TW._odInf=1; const od=Game.onDeath; Game.onDeath=function(){ const F=TW.fight; if(F&&F.kind==='duo') F.heals=Math.min(F.heals||0,2); return od.apply(this,arguments); }; } return ds.apply(this,arguments); }; })();
-const TW_REV_BARKS=[["Don't move. I'm cutting through your injuries. They had it coming.","Did you just heal me... with a SWORD?!"],["I sliced your wounds in half. Both halves surrendered.","That is NOT how medicine works!"],
-  ["I cut the death off you. It was a sloppy death anyway.","...I'm not even gonna ask."],["Again? You're making this a hobby.","It's a lifestyle at this point."],["Get up. They're laughing at you.","They're laughing at EVERYTHING!"]];
-twAliRevive=function*(F){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sat=grade.uniforms.sat.value; F.revN=(F.revN||0)+1; const B=TW_REV_BARKS[(F.revN-1)%TW_REV_BARKS.length];
+// each revive: Ali's line, then Shayan's comeback (speaker pairs, so the voice builder finds them)
+const TW_REV_BARKS=[
+  [['ali',"Don't move. I'm cutting through your injuries. They had it coming."],['shayan',"Did you just heal me... with a SWORD?!"]],
+  [['ali',"I sliced your wounds in half. Both halves surrendered."],['shayan',"That is NOT how medicine works!"]],
+  [['ali',"I cut the death off you. It was a sloppy death anyway."],['shayan',"...I'm not even gonna ask."]],
+  [['ali',"Again? You're making this a hobby."],['shayan',"It's a lifestyle at this point."]],
+  [['ali',"Get up. They're laughing at you."],['shayan',"They're laughing at EVERYTHING!"]],
+  [['ali',"Your soul tried to leave. I cut it a new door back in."],['shayan',"Is that... is that LEGAL?!"]],
+  [['ali',"I've revived you more times than I've blinked today."],['shayan',"You BLINK?!"]],
+  [['ali',"Stand up. You're lying on my good side."],['shayan',"You don't HAVE a good side!"]],
+  [['ali',"Death called. I hung up. With a sword."],['shayan',"Can you stop saying it like it's NORMAL?!"]],
+  [['ali',"You died like a blacksmith. Loudly, and near a fire."],['shayan',"That's... weirdly specific."]],
+  [['ali',"I sharpened your health bar. It's pointier now."],['shayan',"That's not a thing! ...Is that a thing?!"]],
+  [['ali',"Die again and I'm keeping your sword."],['shayan',"You don't even LIKE my sword!"]],
+  [['ali',"Breathe. In through the nose. Out through the wound."],['shayan',"I don't HAVE a wound anymore!"]],
+  [['ali',"I cut the floor before you hit it. You're welcome."],['shayan',"How do you cut a FLOOR?!"]],
+  [['ali',"You owe me fourteen revives and a sandwich."],['shayan',"Since WHEN?!"]],
+  [['ali',"Mira's watching. Try dying less dramatically."],['shayan',"There's a LESS dramatic way?!"]],
+  [['ali',"The reaper came for you. I sent him home crying."],['shayan',"Dude, the reaper is RIGHT THERE! He's the boss!"]],
+  [['ali',"Hm. Your spirit has the structural integrity of wet bread."],['shayan',"Thanks?! I think?!"]],
+  [['ali',"I'm keeping a tally of your deaths on my sword."],['shayan',"Please don't make me a NOTCH!"]],
+  [['ali',"Your life flashed before your eyes. It was mostly hammering."],['shayan',"Hey! Hammering is a CRAFT!"]],
+  [['ali',"Up. The floor is not your girlfriend."],['shayan',"WHY does everyone keep saying that?!"]],
+  [['ali',"I've seen tofu with more fight in it."],['shayan',"I just took a LASER to the FACE!"]],
+  [['ali',"Get up. Caotan is taking pictures."],['shayan',"CAOTAN! DELETE THAT!"]],
+  [['ali',"I stitched you back together with spite. Mine."],['shayan',"I can feel it. I suddenly want to brood."]],
+  [['ali',"I didn't cut the moon so you could lose to two weebs."],['shayan',"One of them is a GOTH!"]],
+  [['ali',"You were dead for three seconds. Personal best."],['shayan',"That is NOT the record I wanted!"]],
+  [['ali',"Next time, die somewhere with shade."],['shayan',"I'll put it in my calendar!"]],
+  [['ali',"Stop dying near me. It's bad for my reputation."],['shayan',"YOUR reputation?! I'm the one DYING!"]],
+  [['ali',"Here. Your organs. Mostly in the right order."],['shayan',"MOSTLY?!"]],
+  [['ali',"Last time I'm doing this. ...That's a lie. Get up."],['shayan',"Love you too, man."]]];
+twAliRevive=function*(F){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sat=grade.uniforms.sat.value; F.revN=(F.revN||0)+1; if(!F.revBag||!F.revBag.length) F.revBag=TW_REV_BARKS.slice().sort(()=>Math.random()-.5); const B=F.revBag.pop(); /* a shuffled bag: no repeats until all 30 are used */
   if(!A){ P.hp=P.maxHp; P.inv=1; return; }
   Game.letterTo=.4; P.cineFly=true; P.cineAnim='hurt'; P.vx=P.vz=P.vy=0; P.y=gy; A.hold=1; A.down=0; A.hp=A.maxHp; grade.uniforms.sat.value=.25; Sound.sfx('drone');
   try{ cineSet(P.x+2.6,gy+2.4,P.z+8,P.x,gy+.9,P.z); yield wait(.4);
-    aliGhost(A.x,A.y,A.z); A.x=P.x-1.3; A.z=P.z+.35; A.face=1; FX.burst(A.x,A.y+1,A.z,30,0xb0182a,5,.35); Sound.sfx('dash'); twBark('ali',B[0],true); yield wait(1.4);
+    aliGhost(A.x,A.y,A.z); A.x=P.x-1.3; A.z=P.z+.35; A.face=1; FX.burst(A.x,A.y+1,A.z,30,0xb0182a,5,.35); Sound.sfx('dash'); twBark('ali',B[0][1],true); yield wait(1.4);
     Sound.sfx('secret'); JC.flash=.35; for(let i=0;i<6;i++){ twTinyJC(P.x,P.y+1,P.z,180+i*20); FX.cut(P.x,P.y+1,P.z); Sound.sfx(i%2?'swing':'hit'); yield wait(.06); }
     P.hp=P.maxHp; P.cineAnim='idle'; FX.ring(P.x,gy+.1,P.z,'#8affb0',3,.5); FX.burst(P.x,gy+1,P.z,40,0x8affb0,5,.3); Sound.sfx('heart'); FX.flash=.4; grade.uniforms.flashCol.value.set(.5,1,.6);
-    Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'ALI: GET UP',t:0,big:true,col:'#8affb0'}); twBark('shayan',B[1],true); yield wait(1.1);
+    Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'ALI: GET UP',t:0,big:true,col:'#8affb0'}); twBark('shayan',B[1][1],true); yield wait(1.1);
   } finally { grade.uniforms.sat.value=sat; P.hp=Math.max(P.hp,1); P.cineFly=false; P.cineAnim=null; A.hold=0; A.face=null; Cam.cine=null; Game.letterTo=0; P.inv=1.5; } };
 
 // ---------- co-op: the friend's Ali gets the assists (the host rolls them and briefly drives him) ----------
@@ -9626,7 +9663,7 @@ function twScytheRing(O,x,z,n,v,gapA,gapN,o){ o=o||{}; for(let i=0;i<n;i++){ if(
 // NEW MOVES
 // =====================================================================
 // LASER STORM: a dozen beams from every edge at you, alternating blue (jump) and pink (move); Omar's scythes in the gaps
-DUO.laserStorm=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.1); twBark('caotan',"LASER STORM! Every angle is my good angle!",true); const n=8+ph*2;
+DUO.laserStorm=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.1); twBark('caotan',"LASER STORM! Every angle is my good angle! ESPECIALLY from below!",true); const n=8+ph*2;
   for(let i=0;i<n;i++){ const P=Player, a=rnd(0,6.28); C.push=.25; Sound.sfx('ting'); if(i%2) twPink(P.x-Math.cos(a)*12,P.z-Math.sin(a)*12,a,{warn:.55/sp}); else twBlue(P.x,P.z,a,{warn:.5/sp});
     if(i%3===2){ O.cast=.4; const P2=Player; for(const s of [-1,1]) twAimBolt(O,'scythe',O.x+s*1.2,O.y+1.1,O.z,10*sp,s*.25,{col:0x8a3aff,storm:1}); Sound.sfx('swing'); }
     yield .3/sp; }
@@ -9758,7 +9795,7 @@ DUO.waltz=function*(C,O){ const F=TW.fight, c=F.center, gy=groundY(c.x,c.z), sp=
     const orb={a:rnd(0,6.28)};
     for(let k=0;k<5;k++){ const a=orb.a+k*6.283/5, h=twMiniHole(c.x+Math.cos(a)*rx,c.z+Math.sin(a)*rz,{r:.9,pull:2.2,range:6,dur:60,eat:1,dmg:4,disk:1,h:1.6}); holes.push(h); Sound.sfx('void'); shake(.3); FX.flash=.2; yield .3; }
     extra.push(twHz({upd(dt,play){ if(play) orb.a+=dt*.3; holes.forEach((h,k)=>{ if(!h.hole) return; const a=orb.a+k*6.283/5; h.hole.x=c.x+Math.cos(a)*rx; h.hole.z=c.z+Math.sin(a)*rz; }); return keep.on; }}));
-    twMoveTo(O,c.x,c.z,.6); twBark('caotan',"Five?! Omar, that's four too many holes!",true);
+    twMoveTo(O,c.x,c.z,.6); twBark('caotan',"Five?! Omar, that's four too many holes! Even for YOU!",true);
     let t=0, nG=0, nB=.9, g=0; while(g<10){ t+=.05; if(t>=nG){ nG+=.85/sp; g++; if(g%3===1){ const e=twEdgePt(8); twBlink(O,e.x,e.z); } const P2=Player, a=Math.atan2(P2.z-O.z,P2.x-O.x)+(g%2?.16:-.16); O.lockF=1; O.f=Math.cos(a)>0?1:-1; O.swing=0; twGetsuga(O,a,{warn:.5,sp:15*sp,len:24}); }
       if(t>=nB){ nB+=1.45/sp; C.push=.3; C.glintT=.3; Sound.sfx('ting'); const P3=Player; twBlue(P3.x,P3.z,rnd(0,Math.PI),{warn:.55}); } yield .05; }
     O.lockF=0; yield .9;
@@ -9785,7 +9822,7 @@ DUO.waltz=function*(C,O){ const F=TW.fight, c=F.center, gy=groundY(c.x,c.z), sp=
     big.live=false; Sound.sfx('crossboom'); Sound.sfx('skyopen'); FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.3,1); impactFrame([[2,2],[1,2],[3,1]]); shake(1.3);
     twBig('JUMP!',{size:80,col:'#ff4a5a',y:UH*.3,dur:1.6}); for(const [sp2,dl] of [[7,0],[9,.6],[11,1.2],[13,1.8]]) twWave(c.x,c.z,{col:0xb06aff,sp:sp2,max:18,dmg:3,delay:dl,r0:2.5}); yield 3;
   } finally { TW.lcCleanup=null; cleanup(); }
-  twBark('caotan',"My glasses! It ate my SPARE glasses!",true); twBig('EVENT HORIZON SURVIVED',{size:54,col:'#ffd45a',sub:'Both twins are dizzy. Go!'});
+  twBark('caotan',"My glasses! It ate my SPARE glasses! And my SPARE spare glasses!",true); twBig('EVENT HORIZON SURVIVED',{size:54,col:'#ffd45a',sub:'Both twins are dizzy. Go!'});
   F.lc=0; F.lcDone[2]=1; F.busy=0; for(const T of [C,O]){ T.inv=false; T.stun=4.5; T.state='stun'; if(T.hp<=0) T.hp=.1; } yield 4.5; };
 
 // =====================================================================
@@ -9844,12 +9881,12 @@ DUO.fusion=function*(C,O){ const F=TW.fight, c=F.center, gy=groundY(c.x,c.z), sp
     const nb=[beamMesh(0xbfe4ff,3.5),beamMesh(0xffffff,1.6)]; nb.forEach(o=>{ o.userData.tw=1; o.position.set(C.x,C.y+2,C.z); o.lookAt(C.x,C.y+30,C.z); o.scale.set(1,1,40); });
     extra.push(twHz({upd(dt){ this.t+=dt; const k=Math.max(0,1-this.t/1.2); nb.forEach(o=>{ o.scale.x=o.scale.y=Math.max(.01,k*(1+Math.sin(this.t*50)*.1)); }); return this.t<1.2; }, kill(){ nb.forEach(o=>scene.remove(o)); }}));
     for(let k=0;k<5;k++) FX.ring(C.x,groundY(C.x,C.z)+.1,C.z,k%2?'#ffffff':'#9fd8ff',6+k*4,.6+k*.1);
-    const Pl=Player; if(Math.hypot(Pl.x-safe.x,Pl.z-safe.z)>1.7){ TW.caoSafe=null; if(TW.god) Game.dmgNums.push({x:Pl.x,y:Pl.y+2.4,z:Pl.z,n:'∞ HP',t:0,col:'#7affb0'}); else { Pl.inv=0; Pl.dash=0; hurtPlayer(99,C.x,C.z); } twBark('caotan',"Should've hugged the pillow, senpai.",true); }
+    const Pl=Player; if(Math.hypot(Pl.x-safe.x,Pl.z-safe.z)>1.7){ TW.caoSafe=null; if(TW.god) Game.dmgNums.push({x:Pl.x,y:Pl.y+2.4,z:Pl.z,n:'∞ HP',t:0,col:'#7affb0'}); else { Pl.inv=0; Pl.dash=0; hurtPlayer(99,C.x,C.z); } twBark('caotan',"Should've hugged the pillow, senpai. She was RIGHT THERE. Waiting. Like always.",true); }
     else Game.dmgNums.push({x:Pl.x,y:Pl.y+2.4,z:Pl.z,n:'SHIELDED BY WAIFU',t:0,big:true,col:'#bfe4ff'});
     TW.caoSafe=null; drag.upd=()=>false; scene.remove(ring); ring=null; yield 1.2;
     // the hole eats her
     twAnim(H,{x:bc.x,z:bc.z,k:.05,y:groundY(bc.x,bc.z)+1.3},.9,twEIn2); Sound.sfx('suck'); twBark('caotan',"HIKARI-CHAAAAAN! NOOOOO!",true); yield 1; Sound.sfx('chomp'); hole.upd=()=>false; H.kill();
-    twBark('omar',"...She was delicious. Mostly feathers.",true); yield 1;
+    twBark('omar',"...She was delicious. Mostly feathers. Slightly... sticky.",true); yield 1;
   } finally { TW.lcCleanup=null; cleanup(); }
   C.cracked=1; twBig('MEGANE APOCALYPSE SURVIVED',{size:52,col:'#ffd45a',sub:'Caotan is in mourning. Omar is full. Go!'}); F.lc=0; F.lcDone[3]=1; F.busy=0; for(const T of [C,O]){ T.inv=false; T.stun=5; T.state='stun'; if(T.hp<=0) T.hp=.1; } yield 5; };
 
@@ -9893,7 +9930,7 @@ function twAliKick(F,A,K){ const T=K.who==='caotan'?F.C:F.O, o=T===F.C?F.O:F.C, 
   Game.dmgNums.push({x:T.x,y:gy+3.4,z:T.z,n:'KICKED DOWN',t:0,big:true,col:'#ff6a7a'}); TW._ally=1; try{ twHurt(T,3,'ally'); } finally{ TW._ally=0; }
   o.stun=Math.max(o.stun,.9); o.state='stun';
   const r=Math.floor(Math.random()*3); if(r===0) twBark('ali',"Sit.",true); else if(r===1) twBark('ali',"No.",true); else twBark('ali',"Down. Stay.",true);
-  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES!",true); else twBark('omar',"I have been... grounded.",true); } if(up.t>=2.4){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
+  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=2.4){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
 
 // ---------- the guard: Ali parries for Shayan ----------
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const F=TW.fight, P=Player, G=F&&F.kind==='duo'?F.guard:null;
@@ -10986,11 +11023,12 @@ function maSparks(){ const nb=typeof NB!=='undefined'&&NB&&NB.alive?NB:null; if(
 // The camera rolls so world +x (toward Hamza) is screen-up and looks straight down the fight plane (z=0):
 // field coords (u right, v up) map to world x=TH.CX+v, y=-u. Only the middle strip is the play field;
 // the UI canvas covers the sides with Touhou-style panels (score, lives, drill, power, graze, boss info).
-// Two phases, each a rotation of spell cards (patterns yield seconds), with piglets and eldritch minions.
+// Two phases, each a rotation of attack patterns (they yield seconds; no spell-card naming on screen), with piglets and eldritch minions.
 // When a phase ends the camera zooms into Nathan and rolls back into the cutscene's first shot; the next
 // phase starts with the reverse. Hits use a tiny hitbox (the dot); grazing fills the drill gauge.
-// Controls: move, dash (3 charges, i-frames), focus (hold magic: slow, tighter bits), shoot (hold attack;
-// a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge).
+// Controls: move, focus (hold magic: slow, tighter bits), shoot (hold attack;
+// a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
+// The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes on his last life, it explodes when he dies.
 // =====================================================================
 const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,170,210]};
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
@@ -11025,7 +11063,7 @@ function thTouchButtons(on){ try{ const a=document.getElementById('tbAttack'), g
     g.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>'; g.setAttribute('aria-label','Focus: hold to slow down'); }
   else if(a.dataset.thOrig!=null){ a.innerHTML=a.dataset.thOrig; a.setAttribute('aria-label',a.dataset.thLab); delete a.dataset.thOrig; } }catch(e){} }
 function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return; thClear(G.th);
-  const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:G.thPower||1,graze:G.thGraze||0,
+  const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:2,graze:G.thGraze||0,
     fire:0,hold:0,pk:1,cam:null,panel:animate?0:1,ready:!animate,miss:0,spellMiss:0,bonus:null,tip:null,shield:0};
   const B=G.boss; if(B){ B.hp=B.maxHp=TH.HP[ph]||TH.HP[2]; B.vuln=true; }
   N.tu=0; N.tv=-8; N.x=TH.CX+N.tv; N.y=-N.tu; N.vx=N.vy=0; N.qb=0; N.inv=animate?99:2; N.boostN=3; N.charge=N.shot=0; N.atk=null; N.pull=0; N.show=1; N.sp=N.sp||0;
@@ -11041,9 +11079,7 @@ function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return
 // ---------- player ----------
 function thPlayer(dt){ const N=NAT, G=Game.mech, T=G.th, ctl=Game.state==='play'&&!Game.dlg&&!G.busy&&T.ready&&!T.drill; N.t+=dt; N.inv=Math.max(0,N.inv-dt); N.flash=Math.max(0,N.flash-dt);
   let [ix,iz]=ctl?inputVec():[0,0]; const iv=-iz, foc=ctl&&!!held.block; T.focus=foc;
-  N.boostCd-=dt; if(N.boostN<3){ N.boostT+=dt; if(N.boostT>1.05){ N.boostN++; N.boostT=0; } }
-  if(ctl&&consume('dash')&&N.boostN>0&&N.boostCd<=0){ let du=ix,dv=iv; if(Math.abs(du)<.2&&Math.abs(dv)<.2){ du=0; dv=1; } const m=Math.hypot(du,dv); N.qbx=du/m; N.qby=dv/m; N.qb=.14; N.inv=Math.max(N.inv,.3); N.boostN--; N.boostCd=.16;
-    Sound.sfx('quickboost'); for(let i=0;i<12;i++){ const [x,y]=thW(N.tu,N.tv); FX.spawn(x,y,.3,-N.qby*rnd(6,12),N.qbx*rnd(6,12),0,.3,i%2?0x3ff4ff:0xffffff,.3,0,true); } }
+  consume('dash'); /* no dash in the bullet hell */
   const sp=foc?4.8:11.5; let vu,vv; if(N.qb>0){ N.qb-=dt; vu=N.qbx*34; vv=N.qby*34; } else { vu=ix*sp; vv=iv*sp; }
   N.tu=clamp(N.tu+vu*dt,-TH.W+.45,TH.W-.45); N.tv=clamp(N.tv+vv*dt,-TH.H+.7,TH.VH-6.5*TH.K-2.2);
   [N.x,N.y]=thW(N.tu,N.tv);
@@ -11069,8 +11105,8 @@ function thHurt(){ const N=NAT, G=Game.mech, T=G.th; if(N.inv>0||Game.state!=='p
   N.flash=.3; shake(.6); Sound.sfx('hurt'); Sound.sfx('crash'); thFx(N.tu,N.tv,40,0xff5a8a,8,.35); thFx(N.tu,N.tv,24,0xffffff,6,.3); FX.flash=.25; grade.uniforms.flashCol.value.set(1,.2,.3);
   // Touhou-style: losing a life clears the bullets around you
   for(const b of T.eb) if(Math.hypot(b.u-N.tu,b.v-N.tv)<5){ b.dead=1; thFx(b.u,b.v,2,0xffffff,1,.15); }
-  if(!TW.god) T.lives--; T.power=Math.max(1,T.power-.5); N.inv=2.4;
-  if(T.lives<0){ T.lives=0; thFx(N.tu,N.tv,90,0x3ff4ff,12,.5); Sound.sfx('crossboom'); N.show=0; G.thScore=0; Game.onDeath(); }
+  if(!TW.god) T.lives--; N.inv=2.4; T.hitT=performance.now();
+  if(T.lives<0){ T.lives=0; T.deadT=performance.now(); thFx(N.tu,N.tv,90,0x3ff4ff,12,.5); Sound.sfx('crossboom'); N.show=0; G.thScore=0; Game.onDeath(); }
   else if(Math.random()<.4) Voice.bark(Math.random()<.5?'nhurt1':'nhurt2'); }
 
 // ---------- the Heavenly Drill: one line, the drill grows over his head, then flies up and hits the whole screen ----------
@@ -11095,7 +11131,7 @@ function* thDrill(){ const N=NAT, G=Game.mech, T=G.th, B=G.boss; if(!T) return; 
 function thMinion(kind,u,v,fn,o){ const T=Game.mech.th, TX=thTex(); const pig=kind==='pig', mesh=thPlane(pig?1.5:2.1,pig?pigletTex()[0]:TX.eld[0]);
   const m=Object.assign({kind,u,v,vu:0,vv:0,hp:pig?1.3:6,maxHp:pig?1.3:6,r:pig?.6:.95,t:0,mesh,fn,cd:rnd(.6,1.4),flash:0},o||{}); T.mn.push(m); thFx(u,v,8,pig?0xff8aa8:0xb06aff,3,.25); return m; }
 function thKill(m){ const T=Game.mech.th; m.hp=0; thFx(m.u,m.v,26,m.kind==='pig'?0xff5a8a:0xb06aff,6,.35); thFx(m.u,m.v,10,0x1a0420,4,.4); Sound.sfx('gore'); T.score+=m.kind==='pig'?2000:6000; NAT.sp=Math.min(100,NAT.sp+(m.kind==='pig'?3:8));
-  for(let i=0;i<(m.kind==='pig'?2:5);i++) T.items.push({u:m.u+rnd(-.6,.6),v:m.v+rnd(-.4,.6),vv:rnd(2,4),k:i%2?'s':'p',t:0}); }
+ }
 function thMinions(dt){ const T=Game.mech.th, TX=thTex(), sl=T.slow||1;
   for(const m of T.mn){ if(m.hp<=0) continue; m.t+=dt*sl; m.flash=Math.max(0,m.flash-dt); if(m.fn) m.fn(m,dt*sl); m.u+=m.vu*dt*sl; m.v+=m.vv*dt*sl;
     if(m.kind==='eld') m.mesh.material.map=TX.eld[Math.floor(m.t*4)%2]; else m.mesh.material.map=pigletTex()[Math.floor(m.t*6)%2];
@@ -11114,10 +11150,10 @@ function thEldHover(tu,tv,o){ o=o||{}; return (m,dt)=>{ m.vu=(tu-m.u)*2.5; m.vv=
   if(m.k%2){ for(let i=0;i<16;i++) thB(m.u,m.v,i/16*6.283+m.k*.2,3.6,{col:0xb06aff,r:.26}); } else { const a=thAim(m.u,m.v); for(let j=0;j<7;j++) thB(m.u,m.v,a,5+j*.7,{col:0xff3aff,r:.2}); }
   if(o.leave&&m.t>o.leave){ m.fn=(mm)=>{ mm.vv=6; }; } }; }
 
-// ---------- spell cards ----------
+// ---------- attack patterns (TH_SPELLS: name, seconds, pattern key; names only show in Debug Mode) ----------
 const TH_SPELLS={
-  1:[['Gluttony Sign「Snout Spiral」',22,'spiral'],['Graze Sign「Feeding Trough」',16,'trough'],['Swine Sign「Oink-Oink Crossfire」',22,'cross'],['Litter「Piglet Parade」',22,'parade'],['Hunger Sign「Bacon Downpour」',22,'rain'],['Devour Sign「Event Horizon」',22,'horizon']],
-  2:[['Abyss Sign「Eight Billion Lullabies」',24,'lullaby'],['Eldritch Ward「Eyes That Keep the Pig」',30,'ward'],['Graze Sign「Narrow Throat」',18,'throat'],['Gluttony「Mitosis」',22,'mitosis'],['Wing Sign「Six Skeletal Wings」',24,'wings'],['Final Course「Oink Oink Oink」',99,'final']]};
+  1:[['Snout Spiral',22,'spiral'],['Feeding Trough',16,'trough'],['Oink-Oink Crossfire',22,'cross'],['Piglet Parade',22,'parade'],['Bacon Downpour',22,'rain'],['Event Horizon',22,'horizon']],
+  2:[['Eight Billion Lullabies',24,'lullaby'],['Eyes That Keep the Pig',30,'ward'],['Narrow Throat',18,'throat'],['Mitosis',22,'mitosis'],['Six Skeletal Wings',24,'wings'],['Oink Oink Oink',99,'final']]};
 const TH_PAT={
   *spiral(T){ let a=0; for(;;){ const m=thMouth(); T.jaw=.5; for(let k=0;k<5;k++) thB(m.u,m.v,a+k*1.2566,5.2,{col:0xff5a8a,r:.28}); for(let k=0;k<5;k++) thB(m.u,m.v,-a*1.3+k*1.2566+.6,3.8,{col:0xb06aff,r:.22}); a+=.21; yield .1; } },
   *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=.85+k*.8, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
@@ -11134,7 +11170,13 @@ const TH_PAT={
       if(w%12===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.12,8,{col:0xffffff,r:.2}); } } yield .1; } },
   *ward(T){ T.tip='Hamza is shielded: kill the eyes!'; Sound.sfx('howl'); for(let i=0;i<4;i++) thMinion('eld',-6+i*4,TH.H+1,thEldHover(-6+i*4,3.2+(i%2)*1.4,{rate:2.1}),{shield:1,hp:7,maxHp:7});
       for(let w=0;;w++){ if(!T.shield&&w>4) break; if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); const m=thMouth(); for(let j=0;j<14;j++) thB(m.u,m.v,j/14*6.283+w*.2,3,{col:0xff8ab0,r:.24}); yield .8; }
-      const B=Game.mech.boss; if(B){ B.flash=1; } T.tip=null; Sound.sfx('glass'); Game.dmgNums.push({x:TH.CX+TH.VH,y:0,z:0,n:'SHIELD BROKEN',t:0,big:true,col:'#ffd45a'}); T.stun=4; for(;;) yield 1; },
+      const B=Game.mech.boss; if(B){ B.flash=1; } T.tip=null; Sound.sfx('glass'); Game.dmgNums.push({x:TH.CX+TH.VH,y:0,z:0,n:'SHIELD BROKEN',t:0,big:true,col:'#ffd45a'}); T.stun=4; yield 1.6; yield* TH_PAT.meatball(T); },
+  // MEATBALL MAYHEM (after the shield breaks): he is FURIOUS; big meatballs bounce off the walls three times and burst into rings on every bounce,
+  // while the eyes curl white fans in from the sides
+  *meatball(T){ T.tip='He is FURIOUS. Meatballs bounce off the walls!'; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(), a=thAim(m.u,m.v)+rnd(-.55,.55); T.jaw=1;
+      thB(m.u,m.v,a,5.4,{col:0xc0603a,r:.72,bounce:3,life:14,onB:b=>{ for(let j=0;j<9;j++) thB(b.u,b.v,j/9*6.283+b.t,2.5,{col:0xffb08a,r:.2}); thFx(b.u,b.v,8,0xff8a5a,3,.2); Sound.sfx('squelch'); }});
+      if(w%2===1){ for(const i of [-1,1]){ const e=thEye(i); for(let k=0;k<4;k++) thB(e.u,e.v,-Math.PI/2+i*(.3+k*.22),4.6,{col:0xffffff,r:.21,curl:-i*.28}); } }
+      if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); yield 1.05; } },
   *throat(T){ T.tip='Focus ('+K('block')+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*1.35)*5.2+Math.sin(t*.55)*1.6, gw=1.05;
       for(let k=0;;k++){ const o=gw+k*.75, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); }
       t+=.085; yield .085; } },
@@ -11148,8 +11190,8 @@ function* thBossLoop(T){ const B=Game.mech.boss, list=TH_SPELLS[T.ph]||TH_SPELLS
   for(let n=0;;n++){ let i=n%(list.length-(T.ph===2?1:0)); if(T.ph===2&&B&&B.hp<=B.maxHp*.28) i=list.length-1; let ent=list[i]; if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } const [name,dur,key]=ent; // debug mode can pick the spell
     T.spell={name,dur,t:0,key}; T.spellMiss=0; T.tip=null; T.pull=0; T.stun=0; Sound.sfx('secret'); Game.cineMark='spell';
     const g=TH_PAT[key](T); let el=0; for(;;){ const s=g.next(); if(s.done) break; const w=s.value||.1; yield w; el+=w; if(el>=dur) break; if(key!=='final'&&T.ph===2&&B&&B.hp<=B.maxHp*.28&&!T.dbgSpell) break; }
-    // spell over: cancel the bullets into points, a bonus if no life was lost
-    for(const b of T.eb){ if(Math.random()<.3) T.items.push({u:b.u,v:b.v,vv:1,k:'s',t:0,auto:1}); } T.eb=[]; T.pull=0; T.tip=null; for(const m of T.mn){ if(m.hp>0) thFx(m.u,m.v,8,0xb06aff,3,.25); m.gone=1; }
+    // pattern over: the bullets fizzle, a bonus if no life was lost
+    for(const b of T.eb){ if(Math.random()<.3) thFx(b.u,b.v,2,0xffffff,1,.2); } T.eb=[]; T.pull=0; T.tip=null; for(const m of T.mn){ if(m.hp>0) thFx(m.u,m.v,8,0xb06aff,3,.25); m.gone=1; }
     if(!T.spellMiss&&key!=='final'){ const bonus=(T.ph*1000000)+Math.round(Math.max(0,dur-el)*20000); T.score+=bonus; T.bonus={t:0,n:bonus}; Sound.sfx('ready'); } T.spell=null; yield 1.3; } }
 
 // ---------- per-frame ----------
@@ -11166,7 +11208,9 @@ function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const 
   const hu=N.tu, hv=N.tv; for(const b of T.eb){ b.t+=dt*sl;
     if(b.curl){ const a=Math.atan2(b.vv,b.vu)+b.curl*dt*sl, s=Math.hypot(b.vu,b.vv); b.vu=Math.cos(a)*s; b.vv=Math.sin(a)*s; }
     if(b.split&&b.t>=b.split){ b.dead=1; const n=b.r>.7?14:9; for(let i=0;i<n;i++) thB(b.u,b.v,i/n*6.283+rnd(0,.4),2.6+rnd(0,1),{col:b.r>.7?0xff8aa8:0xffe08a,r:.22}); thFx(b.u,b.v,8,b.col,3,.2); continue; }
-    b.u+=b.vu*dt*sl; b.v+=b.vv*dt*sl; if(b.u<-TH.W-1.5||b.u>TH.W+1.5||b.v<-TH.H-1.5||b.v>TH.H+3||(b.life&&b.t>b.life)) { b.dead=1; continue; }
+    b.u+=b.vu*dt*sl; b.v+=b.vv*dt*sl;
+    if(b.bounce>0){ let hit=0; if((b.u<-TH.W+b.r&&b.vu<0)||(b.u>TH.W-b.r&&b.vu>0)){ b.vu=-b.vu; hit=1; } if(b.v<-TH.H+b.r&&b.vv<0){ b.vv=-b.vv; hit=1; } if(hit){ b.bounce--; if(b.onB) b.onB(b); } }
+    if(b.u<-TH.W-1.5||b.u>TH.W+1.5||b.v<-TH.H-1.5||b.v>TH.H+3||(b.life&&b.t>b.life)) { b.dead=1; continue; }
     if(N.show&&Game.state==='play'){ const d=Math.hypot(b.u-hu,b.v-hv); if(d<b.r*.6+TH.HIT){ b.dead=1; thHurt(); }
       else if(!b.gz&&d<b.r+TH.GRAZE&&T.ready){ b.gz=1; T.graze++; T.score+=500; N.sp=Math.min(100,N.sp+.9); if(T.graze%2===0) Sound.tone('square',2200,2600,.025,.035); const [x,y]=thW(hu+(b.u-hu)*.5,hv+(b.v-hv)*.5); FX.spawn(x,y,.4,rnd(-3,3),rnd(-3,3),0,.15,0xffffff,.16,0,true); } }
     [b.x,b.y]=thW(b.u,b.v); b.z=0; }
@@ -11220,37 +11264,32 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   D.strokeStyle='rgba(176,106,255,.08)'; D.lineWidth=1; for(let i=-UH;i<UW;i+=26){ D.beginPath(); D.moveTo(i,0); D.lineTo(i+UH,UH); D.stroke(); }
   D.fillStyle='rgba(8,4,14,1)'; D.fillRect(fx,0,fw,Math.max(0,fy)); D.fillRect(fx,fy+fh,fw,UH-fy-fh); // keep the panels neat if the field is shorter than the screen
   D.strokeStyle='#e3b65a'; D.lineWidth=2; D.strokeRect(fx-1,fy-1,fw+2,fh+2); D.strokeStyle='rgba(227,182,90,.3)'; D.lineWidth=1; D.strokeRect(fx-6,fy-6,fw+12,fh+12);
-  // right panel: score, lives, drill, power, graze, boosts
+  // right panel: score, lives, drill, graze, shot, and Nathan's cockpit
   const tch=IS_TOUCH(), ps=tch?1.3:1; let R0=fx+fw+28, RW=UW-R0-28; let y=46; D.save(); if(tch){ D.translate(R0,0); D.scale(ps,ps); R0=0; RW=RW/ps; } const row=(lab,val,col)=>{ uText(lab,R0,y,`700 15px ${FB}`,'#b9a8d8'); uText(val,R0+RW,y,`800 18px ${FB}`,col||'#fff','right'); y+=30; };
   uText('東方大豚',R0,y,`900 26px ${FB}`,'#f6dca0'); uText('~ The Endless Hunger',R0+2,y+20,`italic 600 13px ${FB}`,'#b9a8d8'); y+=60;
   const fmt=n=>String(Math.floor(n)).padStart(10,'0'); row('HiScore',fmt(Math.max(SAVE.settings.thHi||0,T.score)),'#d8d0f0'); row('Score',fmt(T.score)); y+=8;
   uText('Player',R0,y,`700 15px ${FB}`,'#b9a8d8'); for(let i=0;i<TH.LIVES;i++){ thStar(R0+RW-10-i*22,y-6,8,i<T.lives?'#ff6ab0':'rgba(255,255,255,.12)'); } y+=30;
   uText('Drill',R0,y,`700 15px ${FB}`,'#b9a8d8'); const dw=RW-60; uRR(R0+60,y-11,dw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(R0+60,y-11,Math.max(6,dw*N.sp/100),12,6); D.fillStyle=N.sp>=100?`hsl(${195+Math.sin(T.t*8)*20},100%,65%)`:'#3a8aff'; D.fill(); y+=22;
   uText(N.sp>=100?K('special')+'  HEAVENLY DRILL READY':Math.floor(N.sp)+'%',R0+RW,y,`800 12px ${FB}`,N.sp>=100?'#9ff8ff':'#8f95ab','right'); y+=26;
-  row('Power',T.power.toFixed(2)+' / 4.00','#ff8a8a'); row('Graze',String(T.graze),'#fff');
-  uText('Boost',R0,y,`700 15px ${FB}`,'#b9a8d8'); for(let i=0;i<3;i++){ D.fillStyle=i<N.boostN?'#3ff4ff':'rgba(255,255,255,.12)'; D.beginPath(); D.arc(R0+RW-8-i*20,y-5,6,0,7); D.fill(); } y+=30;
+  row('Graze',String(T.graze),'#fff');
   uText('Shot',R0,y,`700 15px ${FB}`,'#b9a8d8'); const cw=RW-60, ck=clamp(T.hold/TH.FULL,0,1); uRR(R0+60,y-11,cw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); if(ck>0){ uRR(R0+60,y-11,Math.max(6,cw*ck),12,6); D.fillStyle=ck>=1?'#9ff8ff':'#5a8aff'; D.fill(); }
-  y+=22; uText(ck>=1?'POWER SHOT · release':tch?'hold Shoot to charge':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); D.restore();
+  y+=22; uText(ck>=1?'POWER SHOT · release':tch?'hold Shoot to charge':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); y+=18;
+  try{ const ch=Math.min(RW*.8,(tch?UH/ps:UH)-y-24); if(ch>60) thCockpit(R0,y,RW,ch,T,N); }catch(e){ console.error('cockpit',e); } D.restore();
   // left panel: the boss and the controls
   let L0=28, LW=fx-56, ly=46; D.save(); if(tch){ D.translate(L0,0); D.scale(ps,ps); L0=0; LW=LW/ps; } uCaps('BOSS',L0,ly,'#b9a8d8',11); ly+=34; uText('Hamza',L0,ly,`900 30px ${FD}`,'#f6dca0'); ly+=22; uText('the Endless Hunger',L0,ly,`italic 600 14px ${FB}`,'#b9a8d8'); ly+=30;
   uText('Phase '+['','I','II'][T.ph]+(T.ph===1?' · Gluttony':' · The Devourer'),L0,ly,`700 15px ${FB}`,'#fff'); ly+=34;
   if(T.shield){ uText('◆ SHIELDED · kill the eyes',L0,ly,`800 13px ${FB}`,'#ff8aff'); ly+=24; } else if(T.stun>0){ uText('◆ STUNNED · 1.5× damage',L0,ly,`800 13px ${FB}`,'#ffd45a'); ly+=24; }
-  if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shoot fires by itself','Hold Shoot: Power Shot','Hold Focus: slow + hitbox','Dash · Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
-  else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('dash'),'Dash'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
+  if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shoot fires by itself','Hold Shoot: Power Shot','Hold Focus: slow + hitbox','Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
+  else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
   D.restore();
   // boss bar across the top of the field
   const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
     if(T.ph===2){ D.fillStyle='#ffd45a'; D.fillRect(bx+bw*.28-1,byy-3,2,13); } uText('HAMZA',bx,byy+24,`800 12px ${FB}`,'#ffd0e0'); }
-  // spell card name + timer
-  if(T.spell){ const S=T.spell, rem=Math.max(0,S.dur-S.t), sx=fx+fw-12; D.font=`800 14px ${FB}`; const sw=D.measureText(S.name).width+24, sy=fy+30+Math.max(0,(1-S.t*2.5))*fh*.6;
-    D.fillStyle='rgba(20,6,30,.75)'; D.fillRect(sx-sw,sy,sw,24); D.fillStyle='#ff6ab0'; D.fillRect(sx-sw,sy+23,sw,1); uText(S.name,sx-12,sy+17,`800 14px ${FB}`,'#fff','right');
-    if(S.key!=='final') uText(rem.toFixed(1),fx+fw-12,fy+60+Math.max(0,(1-S.t*2.5))*fh*.6,`800 13px ${FB}`,rem<5?'#ff8a8a':'#d8d0f0','right'); }
-  if(T.bonus){ const k=T.bonus.t; D.globalAlpha=a*Math.min(1,(2.6-k)*2); uText('Spell Card Bonus!',fx+fw/2,fy+fh*.32,`900 26px ${FB}`,'#ffd45a','center'); uText('+'+T.bonus.n.toLocaleString(),fx+fw/2,fy+fh*.32+28,`800 18px ${FB}`,'#fff','center'); D.globalAlpha=a; }
+  if(T.bonus){ const k=T.bonus.t; D.globalAlpha=a*Math.min(1,(2.6-k)*2); uText('No-Hit Bonus!',fx+fw/2,fy+fh*.32,`900 26px ${FB}`,'#ffd45a','center'); uText('+'+T.bonus.n.toLocaleString(),fx+fw/2,fy+fh*.32+28,`800 18px ${FB}`,'#fff','center'); D.globalAlpha=a; }
   if(T.tip&&T.ready){ uText(T.tip,fx+fw/2,fy+fh-18,`700 14px ${FB}`,'#bfe8ff','center'); }
   D.restore();
-  // field furniture: items, the focus sigil, the hitbox dot
+  // field furniture: the focus sigil, the hitbox dot
   D.save(); D.beginPath(); D.rect(fx,fy,fw,fh); D.clip();
-  for(const it of T.items){ const [x,y]=thW(it.u,it.v), [sx,sy,z]=toScreen(x,y,0); if(z>1) continue; D.fillStyle=it.k==='p'?'#ff3a4a':'#3a7aff'; D.fillRect(sx-5,sy-5,10,10); D.fillStyle='#fff'; D.font=`900 9px ${FB}`; D.textAlign='center'; D.fillText(it.k==='p'?'P':'点',sx,sy+3); }
   if(N.show&&T.ready){ const [sx,sy]=toScreen(N.x,N.y,0), [gx]=toScreen(N.x,N.y-TH.GRAZE,0), gr=Math.abs(gx-sx);
     if(T.focus){ D.save(); D.translate(sx,sy); D.rotate(T.t*1.6); D.strokeStyle='rgba(255,106,176,.75)'; D.lineWidth=1.5; D.strokeRect(-gr*.72,-gr*.72,gr*1.44,gr*1.44); D.rotate(-T.t*3.2); D.strokeRect(-gr*.72,-gr*.72,gr*1.44,gr*1.44); D.restore();
       D.strokeStyle='rgba(255,255,255,.35)'; D.beginPath(); D.arc(sx,sy,gr,0,7); D.stroke(); }
@@ -11274,6 +11313,38 @@ function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++
   const em=exitMech; exitMech=function(q){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; camera.up.set(0,1,0); } thTouchButtons(false); return em(q); };
   // the drill and the death-retry may clear temp scene objects: rebuild on respawn
   const mr=mechRespawn; mechRespawn=function(){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; } return mr(); }; })();
+// ---------- Nathan's cockpit (right panel): flinches when hit, smokes on his last life, explodes when he dies ----------
+function thCockpit(x,y,w,h,T,N){ thCockpitOn(D,x,y,w,h,T,N); }
+function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hitK=T.hitT?Math.max(0,1-(now-T.hitT)/550):0, dead=T.deadT?(now-T.deadT)/1000:-1, last=T.lives<=0&&dead<0;
+  let jx=0, jy=0; if(hitK>0){ jx=rnd(-6,6)*hitK; jy=rnd(-4,4)*hitK; } if(dead>=0&&dead<1.2){ jx=rnd(-9,9)*(1-dead/1.2); jy=rnd(-7,7)*(1-dead/1.2); }
+  D.save(); D.translate(Math.round(x+jx),Math.round(y+jy)); uCaps('COCKPIT',0,-4,'#b9a8d8',11);
+  D.beginPath(); D.rect(0,4,w,h-4); D.clip();
+  // space through the canopy, stars streaking past
+  const g=D.createLinearGradient(0,4,0,h); g.addColorStop(0,'#05030f'); g.addColorStop(1,'#1a0a2e'); D.fillStyle=g; D.fillRect(0,4,w,h);
+  for(let i=0;i<26;i++){ const sx=(twP5Rand(i)*w+t*(60+twP5Rand(i+3)*90))%w, sy=4+twP5Rand(i+7)*h*.7; D.fillStyle=i%5?'rgba(220,220,255,.5)':'#ffffff'; D.fillRect(Math.round(sx),Math.round(sy),i%5?2:3,1); }
+  if(dead<0||dead<.15){
+    // Nathan in the seat (his portrait, pixel-scaled): flinches when hit, sweats on his last life
+    const ex=hitK>.3?'surprised':last?'worried':'normal', pc=portrait('nathan',ex), ps=Math.max(1,Math.floor(Math.min(w*.62,h*.78)/56)), pw=56*ps, px=Math.round(w/2-pw/2+(hitK>0?-hitK*8:0)), py=Math.round(h-pw-h*.14+(hitK>0?hitK*4:0));
+    D.fillStyle='#120c1c'; D.fillRect(Math.round(w/2-pw*.42),py+pw*.2,Math.round(pw*.84),h); /* the seat */
+    D.imageSmoothingEnabled=false; if(pc&&pc.width) D.drawImage(pc,px,py,pw,pw);
+    if(hitK>0){ D.fillStyle=`rgba(255,40,60,${(.45*hitK).toFixed(3)})`; D.fillRect(0,4,w,h); }
+    // the console across the bottom, lights blinking (red when it is going badly)
+    const cy=Math.round(h-h*.16); D.fillStyle='#1c1428'; D.fillRect(0,cy,w,h-cy); D.fillStyle='#2e2440'; D.fillRect(0,cy,w,3);
+    for(let i=0;i<10;i++){ const on=(Math.floor(t*(last?6:2)+i*1.7)%3)>0; D.fillStyle=last?(on?'#ff3a3a':'#5a1010'):(on?(i%3?'#3ff4ff':'#8aff8a'):'#1a3a3a'); D.fillRect(Math.round(8+i*(w-16)/10),cy+8,6,4); }
+    // canopy struts
+    D.strokeStyle='#3a2e4e'; D.lineWidth=5; D.beginPath(); D.moveTo(0,cy); D.lineTo(w*.18,4); D.moveTo(w,cy); D.lineTo(w*.82,4); D.stroke(); D.strokeStyle='rgba(180,220,255,.12)'; D.lineWidth=2; D.beginPath(); D.moveTo(w*.3,10); D.lineTo(w*.1,cy-8); D.stroke();
+    if(last){ // smoke and sparks out of the console, and the alarm
+      T.ck=T.ck||[]; if(Math.random()<.5) T.ck.push({x:w*(.15+Math.random()*.7),y:cy,r:6+Math.random()*7,vy:-(22+Math.random()*30),vx:rnd(-8,8),a:.9,sp:Math.random()<.25});
+      for(const p of T.ck){ p.y+=p.vy/60; p.x+=p.vx/60; p.r+=.25; p.a-=.009; } T.ck=T.ck.filter(p=>p.a>0&&p.y>-20);
+      for(const p of T.ck){ if(p.sp){ D.fillStyle=`rgba(255,210,90,${Math.max(0,p.a).toFixed(3)})`; D.fillRect(Math.round(p.x),Math.round(p.y),2,2); } else { D.fillStyle=`rgba(52,48,60,${Math.max(0,p.a*.9).toFixed(3)})`; D.beginPath(); D.arc(p.x,p.y,Math.max(0,p.r),0,7); D.fill(); } }
+      if(Math.floor(t*3)%2){ D.fillStyle='rgba(255,30,40,.18)'; D.fillRect(0,4,w,h); uText('⚠ WARNING',w/2,22,`900 15px ${FB}`,'#ff4a4a','center'); } }
+  }
+  if(dead>=0){ // the cockpit blows up, then the feed dies
+    if(dead<1.4){ const k=dead/1.4; for(let i=0;i<7;i++){ const a=i*.9+1, r=Math.max(0,(18+i*9)*Math.min(1,dead*3)*(1-k*.3)); D.fillStyle=['#ffffff','#ffe08a','#ff9a3a','#ff4a2a','#5a2a1a'][Math.min(4,Math.floor(k*4+i%2))]; D.beginPath(); D.arc(w/2+Math.cos(a*3)*i*7,h*.55+Math.sin(a*2)*i*5,r,0,7); D.fill(); }
+      for(let i=0;i<14;i++){ const a=i/14*6.283, d=dead*(90+twP5Rand(i)*80); D.fillStyle=i%2?'#3a2e4e':'#ffb04a'; D.fillRect(Math.round(w/2+Math.cos(a)*d),Math.round(h*.55+Math.sin(a)*d+dead*dead*60),4,3); } }
+    else { D.fillStyle='#08060c'; D.fillRect(0,4,w,h); for(let i=0;i<220;i++){ const v=Math.floor(Math.random()*80); D.fillStyle=`rgb(${v},${v},${v})`; D.fillRect(Math.floor(Math.random()*w),4+Math.floor(Math.random()*h),2,1); } uText('SIGNAL LOST',w/2,h/2,`900 18px ${FB}`,'#ff6a6a','center'); } }
+  D.restore(); D.save(); D.strokeStyle='#e3b65a'; D.lineWidth=2; D.strokeRect(Math.round(x+jx)-1,Math.round(y+jy)+3,w+2,h-2); D.restore(); }
+
 
 // ----- 80_misc.js -----
 // ---------- small glue ----------
@@ -13304,8 +13375,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH='Oct 27: light-blue outline on the rally scythe you send back';
-const DBG_NEW=['omar:scythes'];
+const DBG_PATCH='Oct 27: bullet hell without spell cards, items or dash; Meatball Mayhem; Nathan cockpit';
+const DBG_NEW=['mech:*','mech:ward'];
 const DBG={on:false,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Grimmaw ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

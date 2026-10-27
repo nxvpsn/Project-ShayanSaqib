@@ -60,7 +60,7 @@ DUO.tagTeam=function*(C,O,ph){ const sp=twSp(C); twBark('caotan',"Tag-team! You 
     FX.burst(T.x,T.y+1.4,T.z,20,T===O?0x140a1a:0xffb0e0,4,.4,T===C); T.hide=1; Sound.sfx('dash'); yield .16;
     twBlinkTo(T,side,1.6,T===O?0x140a1a:0xffb0e0); T.hide=0; if(T===O) T.scythe=1; const P=Player, a=Math.atan2(P.z-T.z,P.x-T.x);
     FX.line(T.x,T.z,a,2.9,2.6,T===O?0xb06aff:0xff6ab0,tell); if(T===C){ T.push=.3; T.glintT=.3; Sound.sfx('ting'); } yield tell; hitWith(T,T===O?'#b06aff':'#ff9ad8'); yield .4; T.swing=0; T.lockF=0; }
-  O.scythe=0; if(K.par>=4){ for(const T of [C,O]){ T.stun=Math.max(T.stun,3.6); T.state='stun'; T.flash=.5; } twComboBroken((C.x+O.x)/2,(C.z+O.z)/2); twBark('omar',"We... practiced that for WEEKS.",true); return; }
+  O.scythe=0; if(K.par>=4){ for(const T of [C,O]){ T.stun=Math.max(T.stun,3.6); T.state='stun'; T.flash=.5; } twComboBroken((C.x+O.x)/2,(C.z+O.z)/2); twBark('omar',"We practiced that for WEEKS. In my mom's basement. She clapped.",true); return; }
   yield .4; };
 for(const k of [1,2,3]) DUO_POOL[k].push({duo:'tagTeam'});
 

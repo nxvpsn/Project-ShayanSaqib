@@ -3,11 +3,12 @@
 // The camera rolls so world +x (toward Hamza) is screen-up and looks straight down the fight plane (z=0):
 // field coords (u right, v up) map to world x=TH.CX+v, y=-u. Only the middle strip is the play field;
 // the UI canvas covers the sides with Touhou-style panels (score, lives, drill, power, graze, boss info).
-// Two phases, each a rotation of spell cards (patterns yield seconds), with piglets and eldritch minions.
+// Two phases, each a rotation of attack patterns (they yield seconds; no spell-card naming on screen), with piglets and eldritch minions.
 // When a phase ends the camera zooms into Nathan and rolls back into the cutscene's first shot; the next
 // phase starts with the reverse. Hits use a tiny hitbox (the dot); grazing fills the drill gauge.
-// Controls: move, dash (3 charges, i-frames), focus (hold magic: slow, tighter bits), shoot (hold attack;
-// a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge).
+// Controls: move, focus (hold magic: slow, tighter bits), shoot (hold attack;
+// a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
+// The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes on his last life, it explodes when he dies.
 // =====================================================================
 const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,170,210]};
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
@@ -42,7 +43,7 @@ function thTouchButtons(on){ try{ const a=document.getElementById('tbAttack'), g
     g.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>'; g.setAttribute('aria-label','Focus: hold to slow down'); }
   else if(a.dataset.thOrig!=null){ a.innerHTML=a.dataset.thOrig; a.setAttribute('aria-label',a.dataset.thLab); delete a.dataset.thOrig; } }catch(e){} }
 function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return; thClear(G.th);
-  const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:G.thPower||1,graze:G.thGraze||0,
+  const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:2,graze:G.thGraze||0,
     fire:0,hold:0,pk:1,cam:null,panel:animate?0:1,ready:!animate,miss:0,spellMiss:0,bonus:null,tip:null,shield:0};
   const B=G.boss; if(B){ B.hp=B.maxHp=TH.HP[ph]||TH.HP[2]; B.vuln=true; }
   N.tu=0; N.tv=-8; N.x=TH.CX+N.tv; N.y=-N.tu; N.vx=N.vy=0; N.qb=0; N.inv=animate?99:2; N.boostN=3; N.charge=N.shot=0; N.atk=null; N.pull=0; N.show=1; N.sp=N.sp||0;
@@ -58,9 +59,7 @@ function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return
 // ---------- player ----------
 function thPlayer(dt){ const N=NAT, G=Game.mech, T=G.th, ctl=Game.state==='play'&&!Game.dlg&&!G.busy&&T.ready&&!T.drill; N.t+=dt; N.inv=Math.max(0,N.inv-dt); N.flash=Math.max(0,N.flash-dt);
   let [ix,iz]=ctl?inputVec():[0,0]; const iv=-iz, foc=ctl&&!!held.block; T.focus=foc;
-  N.boostCd-=dt; if(N.boostN<3){ N.boostT+=dt; if(N.boostT>1.05){ N.boostN++; N.boostT=0; } }
-  if(ctl&&consume('dash')&&N.boostN>0&&N.boostCd<=0){ let du=ix,dv=iv; if(Math.abs(du)<.2&&Math.abs(dv)<.2){ du=0; dv=1; } const m=Math.hypot(du,dv); N.qbx=du/m; N.qby=dv/m; N.qb=.14; N.inv=Math.max(N.inv,.3); N.boostN--; N.boostCd=.16;
-    Sound.sfx('quickboost'); for(let i=0;i<12;i++){ const [x,y]=thW(N.tu,N.tv); FX.spawn(x,y,.3,-N.qby*rnd(6,12),N.qbx*rnd(6,12),0,.3,i%2?0x3ff4ff:0xffffff,.3,0,true); } }
+  consume('dash'); /* no dash in the bullet hell */
   const sp=foc?4.8:11.5; let vu,vv; if(N.qb>0){ N.qb-=dt; vu=N.qbx*34; vv=N.qby*34; } else { vu=ix*sp; vv=iv*sp; }
   N.tu=clamp(N.tu+vu*dt,-TH.W+.45,TH.W-.45); N.tv=clamp(N.tv+vv*dt,-TH.H+.7,TH.VH-6.5*TH.K-2.2);
   [N.x,N.y]=thW(N.tu,N.tv);
@@ -86,8 +85,8 @@ function thHurt(){ const N=NAT, G=Game.mech, T=G.th; if(N.inv>0||Game.state!=='p
   N.flash=.3; shake(.6); Sound.sfx('hurt'); Sound.sfx('crash'); thFx(N.tu,N.tv,40,0xff5a8a,8,.35); thFx(N.tu,N.tv,24,0xffffff,6,.3); FX.flash=.25; grade.uniforms.flashCol.value.set(1,.2,.3);
   // Touhou-style: losing a life clears the bullets around you
   for(const b of T.eb) if(Math.hypot(b.u-N.tu,b.v-N.tv)<5){ b.dead=1; thFx(b.u,b.v,2,0xffffff,1,.15); }
-  if(!TW.god) T.lives--; T.power=Math.max(1,T.power-.5); N.inv=2.4;
-  if(T.lives<0){ T.lives=0; thFx(N.tu,N.tv,90,0x3ff4ff,12,.5); Sound.sfx('crossboom'); N.show=0; G.thScore=0; Game.onDeath(); }
+  if(!TW.god) T.lives--; N.inv=2.4; T.hitT=performance.now();
+  if(T.lives<0){ T.lives=0; T.deadT=performance.now(); thFx(N.tu,N.tv,90,0x3ff4ff,12,.5); Sound.sfx('crossboom'); N.show=0; G.thScore=0; Game.onDeath(); }
   else if(Math.random()<.4) Voice.bark(Math.random()<.5?'nhurt1':'nhurt2'); }
 
 // ---------- the Heavenly Drill: one line, the drill grows over his head, then flies up and hits the whole screen ----------
@@ -112,7 +111,7 @@ function* thDrill(){ const N=NAT, G=Game.mech, T=G.th, B=G.boss; if(!T) return; 
 function thMinion(kind,u,v,fn,o){ const T=Game.mech.th, TX=thTex(); const pig=kind==='pig', mesh=thPlane(pig?1.5:2.1,pig?pigletTex()[0]:TX.eld[0]);
   const m=Object.assign({kind,u,v,vu:0,vv:0,hp:pig?1.3:6,maxHp:pig?1.3:6,r:pig?.6:.95,t:0,mesh,fn,cd:rnd(.6,1.4),flash:0},o||{}); T.mn.push(m); thFx(u,v,8,pig?0xff8aa8:0xb06aff,3,.25); return m; }
 function thKill(m){ const T=Game.mech.th; m.hp=0; thFx(m.u,m.v,26,m.kind==='pig'?0xff5a8a:0xb06aff,6,.35); thFx(m.u,m.v,10,0x1a0420,4,.4); Sound.sfx('gore'); T.score+=m.kind==='pig'?2000:6000; NAT.sp=Math.min(100,NAT.sp+(m.kind==='pig'?3:8));
-  for(let i=0;i<(m.kind==='pig'?2:5);i++) T.items.push({u:m.u+rnd(-.6,.6),v:m.v+rnd(-.4,.6),vv:rnd(2,4),k:i%2?'s':'p',t:0}); }
+ }
 function thMinions(dt){ const T=Game.mech.th, TX=thTex(), sl=T.slow||1;
   for(const m of T.mn){ if(m.hp<=0) continue; m.t+=dt*sl; m.flash=Math.max(0,m.flash-dt); if(m.fn) m.fn(m,dt*sl); m.u+=m.vu*dt*sl; m.v+=m.vv*dt*sl;
     if(m.kind==='eld') m.mesh.material.map=TX.eld[Math.floor(m.t*4)%2]; else m.mesh.material.map=pigletTex()[Math.floor(m.t*6)%2];
@@ -131,10 +130,10 @@ function thEldHover(tu,tv,o){ o=o||{}; return (m,dt)=>{ m.vu=(tu-m.u)*2.5; m.vv=
   if(m.k%2){ for(let i=0;i<16;i++) thB(m.u,m.v,i/16*6.283+m.k*.2,3.6,{col:0xb06aff,r:.26}); } else { const a=thAim(m.u,m.v); for(let j=0;j<7;j++) thB(m.u,m.v,a,5+j*.7,{col:0xff3aff,r:.2}); }
   if(o.leave&&m.t>o.leave){ m.fn=(mm)=>{ mm.vv=6; }; } }; }
 
-// ---------- spell cards ----------
+// ---------- attack patterns (TH_SPELLS: name, seconds, pattern key; names only show in Debug Mode) ----------
 const TH_SPELLS={
-  1:[['Gluttony Sign「Snout Spiral」',22,'spiral'],['Graze Sign「Feeding Trough」',16,'trough'],['Swine Sign「Oink-Oink Crossfire」',22,'cross'],['Litter「Piglet Parade」',22,'parade'],['Hunger Sign「Bacon Downpour」',22,'rain'],['Devour Sign「Event Horizon」',22,'horizon']],
-  2:[['Abyss Sign「Eight Billion Lullabies」',24,'lullaby'],['Eldritch Ward「Eyes That Keep the Pig」',30,'ward'],['Graze Sign「Narrow Throat」',18,'throat'],['Gluttony「Mitosis」',22,'mitosis'],['Wing Sign「Six Skeletal Wings」',24,'wings'],['Final Course「Oink Oink Oink」',99,'final']]};
+  1:[['Snout Spiral',22,'spiral'],['Feeding Trough',16,'trough'],['Oink-Oink Crossfire',22,'cross'],['Piglet Parade',22,'parade'],['Bacon Downpour',22,'rain'],['Event Horizon',22,'horizon']],
+  2:[['Eight Billion Lullabies',24,'lullaby'],['Eyes That Keep the Pig',30,'ward'],['Narrow Throat',18,'throat'],['Mitosis',22,'mitosis'],['Six Skeletal Wings',24,'wings'],['Oink Oink Oink',99,'final']]};
 const TH_PAT={
   *spiral(T){ let a=0; for(;;){ const m=thMouth(); T.jaw=.5; for(let k=0;k<5;k++) thB(m.u,m.v,a+k*1.2566,5.2,{col:0xff5a8a,r:.28}); for(let k=0;k<5;k++) thB(m.u,m.v,-a*1.3+k*1.2566+.6,3.8,{col:0xb06aff,r:.22}); a+=.21; yield .1; } },
   *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=.85+k*.8, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
@@ -151,7 +150,13 @@ const TH_PAT={
       if(w%12===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.12,8,{col:0xffffff,r:.2}); } } yield .1; } },
   *ward(T){ T.tip='Hamza is shielded: kill the eyes!'; Sound.sfx('howl'); for(let i=0;i<4;i++) thMinion('eld',-6+i*4,TH.H+1,thEldHover(-6+i*4,3.2+(i%2)*1.4,{rate:2.1}),{shield:1,hp:7,maxHp:7});
       for(let w=0;;w++){ if(!T.shield&&w>4) break; if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); const m=thMouth(); for(let j=0;j<14;j++) thB(m.u,m.v,j/14*6.283+w*.2,3,{col:0xff8ab0,r:.24}); yield .8; }
-      const B=Game.mech.boss; if(B){ B.flash=1; } T.tip=null; Sound.sfx('glass'); Game.dmgNums.push({x:TH.CX+TH.VH,y:0,z:0,n:'SHIELD BROKEN',t:0,big:true,col:'#ffd45a'}); T.stun=4; for(;;) yield 1; },
+      const B=Game.mech.boss; if(B){ B.flash=1; } T.tip=null; Sound.sfx('glass'); Game.dmgNums.push({x:TH.CX+TH.VH,y:0,z:0,n:'SHIELD BROKEN',t:0,big:true,col:'#ffd45a'}); T.stun=4; yield 1.6; yield* TH_PAT.meatball(T); },
+  // MEATBALL MAYHEM (after the shield breaks): he is FURIOUS; big meatballs bounce off the walls three times and burst into rings on every bounce,
+  // while the eyes curl white fans in from the sides
+  *meatball(T){ T.tip='He is FURIOUS. Meatballs bounce off the walls!'; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(), a=thAim(m.u,m.v)+rnd(-.55,.55); T.jaw=1;
+      thB(m.u,m.v,a,5.4,{col:0xc0603a,r:.72,bounce:3,life:14,onB:b=>{ for(let j=0;j<9;j++) thB(b.u,b.v,j/9*6.283+b.t,2.5,{col:0xffb08a,r:.2}); thFx(b.u,b.v,8,0xff8a5a,3,.2); Sound.sfx('squelch'); }});
+      if(w%2===1){ for(const i of [-1,1]){ const e=thEye(i); for(let k=0;k<4;k++) thB(e.u,e.v,-Math.PI/2+i*(.3+k*.22),4.6,{col:0xffffff,r:.21,curl:-i*.28}); } }
+      if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); yield 1.05; } },
   *throat(T){ T.tip='Focus ('+K('block')+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*1.35)*5.2+Math.sin(t*.55)*1.6, gw=1.05;
       for(let k=0;;k++){ const o=gw+k*.75, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); }
       t+=.085; yield .085; } },
@@ -165,8 +170,8 @@ function* thBossLoop(T){ const B=Game.mech.boss, list=TH_SPELLS[T.ph]||TH_SPELLS
   for(let n=0;;n++){ let i=n%(list.length-(T.ph===2?1:0)); if(T.ph===2&&B&&B.hp<=B.maxHp*.28) i=list.length-1; let ent=list[i]; if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } const [name,dur,key]=ent; // debug mode can pick the spell
     T.spell={name,dur,t:0,key}; T.spellMiss=0; T.tip=null; T.pull=0; T.stun=0; Sound.sfx('secret'); Game.cineMark='spell';
     const g=TH_PAT[key](T); let el=0; for(;;){ const s=g.next(); if(s.done) break; const w=s.value||.1; yield w; el+=w; if(el>=dur) break; if(key!=='final'&&T.ph===2&&B&&B.hp<=B.maxHp*.28&&!T.dbgSpell) break; }
-    // spell over: cancel the bullets into points, a bonus if no life was lost
-    for(const b of T.eb){ if(Math.random()<.3) T.items.push({u:b.u,v:b.v,vv:1,k:'s',t:0,auto:1}); } T.eb=[]; T.pull=0; T.tip=null; for(const m of T.mn){ if(m.hp>0) thFx(m.u,m.v,8,0xb06aff,3,.25); m.gone=1; }
+    // pattern over: the bullets fizzle, a bonus if no life was lost
+    for(const b of T.eb){ if(Math.random()<.3) thFx(b.u,b.v,2,0xffffff,1,.2); } T.eb=[]; T.pull=0; T.tip=null; for(const m of T.mn){ if(m.hp>0) thFx(m.u,m.v,8,0xb06aff,3,.25); m.gone=1; }
     if(!T.spellMiss&&key!=='final'){ const bonus=(T.ph*1000000)+Math.round(Math.max(0,dur-el)*20000); T.score+=bonus; T.bonus={t:0,n:bonus}; Sound.sfx('ready'); } T.spell=null; yield 1.3; } }
 
 // ---------- per-frame ----------
@@ -183,7 +188,9 @@ function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const 
   const hu=N.tu, hv=N.tv; for(const b of T.eb){ b.t+=dt*sl;
     if(b.curl){ const a=Math.atan2(b.vv,b.vu)+b.curl*dt*sl, s=Math.hypot(b.vu,b.vv); b.vu=Math.cos(a)*s; b.vv=Math.sin(a)*s; }
     if(b.split&&b.t>=b.split){ b.dead=1; const n=b.r>.7?14:9; for(let i=0;i<n;i++) thB(b.u,b.v,i/n*6.283+rnd(0,.4),2.6+rnd(0,1),{col:b.r>.7?0xff8aa8:0xffe08a,r:.22}); thFx(b.u,b.v,8,b.col,3,.2); continue; }
-    b.u+=b.vu*dt*sl; b.v+=b.vv*dt*sl; if(b.u<-TH.W-1.5||b.u>TH.W+1.5||b.v<-TH.H-1.5||b.v>TH.H+3||(b.life&&b.t>b.life)) { b.dead=1; continue; }
+    b.u+=b.vu*dt*sl; b.v+=b.vv*dt*sl;
+    if(b.bounce>0){ let hit=0; if((b.u<-TH.W+b.r&&b.vu<0)||(b.u>TH.W-b.r&&b.vu>0)){ b.vu=-b.vu; hit=1; } if(b.v<-TH.H+b.r&&b.vv<0){ b.vv=-b.vv; hit=1; } if(hit){ b.bounce--; if(b.onB) b.onB(b); } }
+    if(b.u<-TH.W-1.5||b.u>TH.W+1.5||b.v<-TH.H-1.5||b.v>TH.H+3||(b.life&&b.t>b.life)) { b.dead=1; continue; }
     if(N.show&&Game.state==='play'){ const d=Math.hypot(b.u-hu,b.v-hv); if(d<b.r*.6+TH.HIT){ b.dead=1; thHurt(); }
       else if(!b.gz&&d<b.r+TH.GRAZE&&T.ready){ b.gz=1; T.graze++; T.score+=500; N.sp=Math.min(100,N.sp+.9); if(T.graze%2===0) Sound.tone('square',2200,2600,.025,.035); const [x,y]=thW(hu+(b.u-hu)*.5,hv+(b.v-hv)*.5); FX.spawn(x,y,.4,rnd(-3,3),rnd(-3,3),0,.15,0xffffff,.16,0,true); } }
     [b.x,b.y]=thW(b.u,b.v); b.z=0; }
@@ -237,37 +244,32 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   D.strokeStyle='rgba(176,106,255,.08)'; D.lineWidth=1; for(let i=-UH;i<UW;i+=26){ D.beginPath(); D.moveTo(i,0); D.lineTo(i+UH,UH); D.stroke(); }
   D.fillStyle='rgba(8,4,14,1)'; D.fillRect(fx,0,fw,Math.max(0,fy)); D.fillRect(fx,fy+fh,fw,UH-fy-fh); // keep the panels neat if the field is shorter than the screen
   D.strokeStyle='#e3b65a'; D.lineWidth=2; D.strokeRect(fx-1,fy-1,fw+2,fh+2); D.strokeStyle='rgba(227,182,90,.3)'; D.lineWidth=1; D.strokeRect(fx-6,fy-6,fw+12,fh+12);
-  // right panel: score, lives, drill, power, graze, boosts
+  // right panel: score, lives, drill, graze, shot, and Nathan's cockpit
   const tch=IS_TOUCH(), ps=tch?1.3:1; let R0=fx+fw+28, RW=UW-R0-28; let y=46; D.save(); if(tch){ D.translate(R0,0); D.scale(ps,ps); R0=0; RW=RW/ps; } const row=(lab,val,col)=>{ uText(lab,R0,y,`700 15px ${FB}`,'#b9a8d8'); uText(val,R0+RW,y,`800 18px ${FB}`,col||'#fff','right'); y+=30; };
   uText('東方大豚',R0,y,`900 26px ${FB}`,'#f6dca0'); uText('~ The Endless Hunger',R0+2,y+20,`italic 600 13px ${FB}`,'#b9a8d8'); y+=60;
   const fmt=n=>String(Math.floor(n)).padStart(10,'0'); row('HiScore',fmt(Math.max(SAVE.settings.thHi||0,T.score)),'#d8d0f0'); row('Score',fmt(T.score)); y+=8;
   uText('Player',R0,y,`700 15px ${FB}`,'#b9a8d8'); for(let i=0;i<TH.LIVES;i++){ thStar(R0+RW-10-i*22,y-6,8,i<T.lives?'#ff6ab0':'rgba(255,255,255,.12)'); } y+=30;
   uText('Drill',R0,y,`700 15px ${FB}`,'#b9a8d8'); const dw=RW-60; uRR(R0+60,y-11,dw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(R0+60,y-11,Math.max(6,dw*N.sp/100),12,6); D.fillStyle=N.sp>=100?`hsl(${195+Math.sin(T.t*8)*20},100%,65%)`:'#3a8aff'; D.fill(); y+=22;
   uText(N.sp>=100?K('special')+'  HEAVENLY DRILL READY':Math.floor(N.sp)+'%',R0+RW,y,`800 12px ${FB}`,N.sp>=100?'#9ff8ff':'#8f95ab','right'); y+=26;
-  row('Power',T.power.toFixed(2)+' / 4.00','#ff8a8a'); row('Graze',String(T.graze),'#fff');
-  uText('Boost',R0,y,`700 15px ${FB}`,'#b9a8d8'); for(let i=0;i<3;i++){ D.fillStyle=i<N.boostN?'#3ff4ff':'rgba(255,255,255,.12)'; D.beginPath(); D.arc(R0+RW-8-i*20,y-5,6,0,7); D.fill(); } y+=30;
+  row('Graze',String(T.graze),'#fff');
   uText('Shot',R0,y,`700 15px ${FB}`,'#b9a8d8'); const cw=RW-60, ck=clamp(T.hold/TH.FULL,0,1); uRR(R0+60,y-11,cw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); if(ck>0){ uRR(R0+60,y-11,Math.max(6,cw*ck),12,6); D.fillStyle=ck>=1?'#9ff8ff':'#5a8aff'; D.fill(); }
-  y+=22; uText(ck>=1?'POWER SHOT · release':tch?'hold Shoot to charge':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); D.restore();
+  y+=22; uText(ck>=1?'POWER SHOT · release':tch?'hold Shoot to charge':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); y+=18;
+  try{ const ch=Math.min(RW*.8,(tch?UH/ps:UH)-y-24); if(ch>60) thCockpit(R0,y,RW,ch,T,N); }catch(e){ console.error('cockpit',e); } D.restore();
   // left panel: the boss and the controls
   let L0=28, LW=fx-56, ly=46; D.save(); if(tch){ D.translate(L0,0); D.scale(ps,ps); L0=0; LW=LW/ps; } uCaps('BOSS',L0,ly,'#b9a8d8',11); ly+=34; uText('Hamza',L0,ly,`900 30px ${FD}`,'#f6dca0'); ly+=22; uText('the Endless Hunger',L0,ly,`italic 600 14px ${FB}`,'#b9a8d8'); ly+=30;
   uText('Phase '+['','I','II'][T.ph]+(T.ph===1?' · Gluttony':' · The Devourer'),L0,ly,`700 15px ${FB}`,'#fff'); ly+=34;
   if(T.shield){ uText('◆ SHIELDED · kill the eyes',L0,ly,`800 13px ${FB}`,'#ff8aff'); ly+=24; } else if(T.stun>0){ uText('◆ STUNNED · 1.5× damage',L0,ly,`800 13px ${FB}`,'#ffd45a'); ly+=24; }
-  if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shoot fires by itself','Hold Shoot: Power Shot','Hold Focus: slow + hitbox','Dash · Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
-  else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('dash'),'Dash'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
+  if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shoot fires by itself','Hold Shoot: Power Shot','Hold Focus: slow + hitbox','Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
+  else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
   D.restore();
   // boss bar across the top of the field
   const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
     if(T.ph===2){ D.fillStyle='#ffd45a'; D.fillRect(bx+bw*.28-1,byy-3,2,13); } uText('HAMZA',bx,byy+24,`800 12px ${FB}`,'#ffd0e0'); }
-  // spell card name + timer
-  if(T.spell){ const S=T.spell, rem=Math.max(0,S.dur-S.t), sx=fx+fw-12; D.font=`800 14px ${FB}`; const sw=D.measureText(S.name).width+24, sy=fy+30+Math.max(0,(1-S.t*2.5))*fh*.6;
-    D.fillStyle='rgba(20,6,30,.75)'; D.fillRect(sx-sw,sy,sw,24); D.fillStyle='#ff6ab0'; D.fillRect(sx-sw,sy+23,sw,1); uText(S.name,sx-12,sy+17,`800 14px ${FB}`,'#fff','right');
-    if(S.key!=='final') uText(rem.toFixed(1),fx+fw-12,fy+60+Math.max(0,(1-S.t*2.5))*fh*.6,`800 13px ${FB}`,rem<5?'#ff8a8a':'#d8d0f0','right'); }
-  if(T.bonus){ const k=T.bonus.t; D.globalAlpha=a*Math.min(1,(2.6-k)*2); uText('Spell Card Bonus!',fx+fw/2,fy+fh*.32,`900 26px ${FB}`,'#ffd45a','center'); uText('+'+T.bonus.n.toLocaleString(),fx+fw/2,fy+fh*.32+28,`800 18px ${FB}`,'#fff','center'); D.globalAlpha=a; }
+  if(T.bonus){ const k=T.bonus.t; D.globalAlpha=a*Math.min(1,(2.6-k)*2); uText('No-Hit Bonus!',fx+fw/2,fy+fh*.32,`900 26px ${FB}`,'#ffd45a','center'); uText('+'+T.bonus.n.toLocaleString(),fx+fw/2,fy+fh*.32+28,`800 18px ${FB}`,'#fff','center'); D.globalAlpha=a; }
   if(T.tip&&T.ready){ uText(T.tip,fx+fw/2,fy+fh-18,`700 14px ${FB}`,'#bfe8ff','center'); }
   D.restore();
-  // field furniture: items, the focus sigil, the hitbox dot
+  // field furniture: the focus sigil, the hitbox dot
   D.save(); D.beginPath(); D.rect(fx,fy,fw,fh); D.clip();
-  for(const it of T.items){ const [x,y]=thW(it.u,it.v), [sx,sy,z]=toScreen(x,y,0); if(z>1) continue; D.fillStyle=it.k==='p'?'#ff3a4a':'#3a7aff'; D.fillRect(sx-5,sy-5,10,10); D.fillStyle='#fff'; D.font=`900 9px ${FB}`; D.textAlign='center'; D.fillText(it.k==='p'?'P':'点',sx,sy+3); }
   if(N.show&&T.ready){ const [sx,sy]=toScreen(N.x,N.y,0), [gx]=toScreen(N.x,N.y-TH.GRAZE,0), gr=Math.abs(gx-sx);
     if(T.focus){ D.save(); D.translate(sx,sy); D.rotate(T.t*1.6); D.strokeStyle='rgba(255,106,176,.75)'; D.lineWidth=1.5; D.strokeRect(-gr*.72,-gr*.72,gr*1.44,gr*1.44); D.rotate(-T.t*3.2); D.strokeRect(-gr*.72,-gr*.72,gr*1.44,gr*1.44); D.restore();
       D.strokeStyle='rgba(255,255,255,.35)'; D.beginPath(); D.arc(sx,sy,gr,0,7); D.stroke(); }
@@ -291,3 +293,35 @@ function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++
   const em=exitMech; exitMech=function(q){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; camera.up.set(0,1,0); } thTouchButtons(false); return em(q); };
   // the drill and the death-retry may clear temp scene objects: rebuild on respawn
   const mr=mechRespawn; mechRespawn=function(){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; } return mr(); }; })();
+// ---------- Nathan's cockpit (right panel): flinches when hit, smokes on his last life, explodes when he dies ----------
+function thCockpit(x,y,w,h,T,N){ thCockpitOn(D,x,y,w,h,T,N); }
+function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hitK=T.hitT?Math.max(0,1-(now-T.hitT)/550):0, dead=T.deadT?(now-T.deadT)/1000:-1, last=T.lives<=0&&dead<0;
+  let jx=0, jy=0; if(hitK>0){ jx=rnd(-6,6)*hitK; jy=rnd(-4,4)*hitK; } if(dead>=0&&dead<1.2){ jx=rnd(-9,9)*(1-dead/1.2); jy=rnd(-7,7)*(1-dead/1.2); }
+  D.save(); D.translate(Math.round(x+jx),Math.round(y+jy)); uCaps('COCKPIT',0,-4,'#b9a8d8',11);
+  D.beginPath(); D.rect(0,4,w,h-4); D.clip();
+  // space through the canopy, stars streaking past
+  const g=D.createLinearGradient(0,4,0,h); g.addColorStop(0,'#05030f'); g.addColorStop(1,'#1a0a2e'); D.fillStyle=g; D.fillRect(0,4,w,h);
+  for(let i=0;i<26;i++){ const sx=(twP5Rand(i)*w+t*(60+twP5Rand(i+3)*90))%w, sy=4+twP5Rand(i+7)*h*.7; D.fillStyle=i%5?'rgba(220,220,255,.5)':'#ffffff'; D.fillRect(Math.round(sx),Math.round(sy),i%5?2:3,1); }
+  if(dead<0||dead<.15){
+    // Nathan in the seat (his portrait, pixel-scaled): flinches when hit, sweats on his last life
+    const ex=hitK>.3?'surprised':last?'worried':'normal', pc=portrait('nathan',ex), ps=Math.max(1,Math.floor(Math.min(w*.62,h*.78)/56)), pw=56*ps, px=Math.round(w/2-pw/2+(hitK>0?-hitK*8:0)), py=Math.round(h-pw-h*.14+(hitK>0?hitK*4:0));
+    D.fillStyle='#120c1c'; D.fillRect(Math.round(w/2-pw*.42),py+pw*.2,Math.round(pw*.84),h); /* the seat */
+    D.imageSmoothingEnabled=false; if(pc&&pc.width) D.drawImage(pc,px,py,pw,pw);
+    if(hitK>0){ D.fillStyle=`rgba(255,40,60,${(.45*hitK).toFixed(3)})`; D.fillRect(0,4,w,h); }
+    // the console across the bottom, lights blinking (red when it is going badly)
+    const cy=Math.round(h-h*.16); D.fillStyle='#1c1428'; D.fillRect(0,cy,w,h-cy); D.fillStyle='#2e2440'; D.fillRect(0,cy,w,3);
+    for(let i=0;i<10;i++){ const on=(Math.floor(t*(last?6:2)+i*1.7)%3)>0; D.fillStyle=last?(on?'#ff3a3a':'#5a1010'):(on?(i%3?'#3ff4ff':'#8aff8a'):'#1a3a3a'); D.fillRect(Math.round(8+i*(w-16)/10),cy+8,6,4); }
+    // canopy struts
+    D.strokeStyle='#3a2e4e'; D.lineWidth=5; D.beginPath(); D.moveTo(0,cy); D.lineTo(w*.18,4); D.moveTo(w,cy); D.lineTo(w*.82,4); D.stroke(); D.strokeStyle='rgba(180,220,255,.12)'; D.lineWidth=2; D.beginPath(); D.moveTo(w*.3,10); D.lineTo(w*.1,cy-8); D.stroke();
+    if(last){ // smoke and sparks out of the console, and the alarm
+      T.ck=T.ck||[]; if(Math.random()<.5) T.ck.push({x:w*(.15+Math.random()*.7),y:cy,r:6+Math.random()*7,vy:-(22+Math.random()*30),vx:rnd(-8,8),a:.9,sp:Math.random()<.25});
+      for(const p of T.ck){ p.y+=p.vy/60; p.x+=p.vx/60; p.r+=.25; p.a-=.009; } T.ck=T.ck.filter(p=>p.a>0&&p.y>-20);
+      for(const p of T.ck){ if(p.sp){ D.fillStyle=`rgba(255,210,90,${Math.max(0,p.a).toFixed(3)})`; D.fillRect(Math.round(p.x),Math.round(p.y),2,2); } else { D.fillStyle=`rgba(52,48,60,${Math.max(0,p.a*.9).toFixed(3)})`; D.beginPath(); D.arc(p.x,p.y,Math.max(0,p.r),0,7); D.fill(); } }
+      if(Math.floor(t*3)%2){ D.fillStyle='rgba(255,30,40,.18)'; D.fillRect(0,4,w,h); uText('⚠ WARNING',w/2,22,`900 15px ${FB}`,'#ff4a4a','center'); } }
+  }
+  if(dead>=0){ // the cockpit blows up, then the feed dies
+    if(dead<1.4){ const k=dead/1.4; for(let i=0;i<7;i++){ const a=i*.9+1, r=Math.max(0,(18+i*9)*Math.min(1,dead*3)*(1-k*.3)); D.fillStyle=['#ffffff','#ffe08a','#ff9a3a','#ff4a2a','#5a2a1a'][Math.min(4,Math.floor(k*4+i%2))]; D.beginPath(); D.arc(w/2+Math.cos(a*3)*i*7,h*.55+Math.sin(a*2)*i*5,r,0,7); D.fill(); }
+      for(let i=0;i<14;i++){ const a=i/14*6.283, d=dead*(90+twP5Rand(i)*80); D.fillStyle=i%2?'#3a2e4e':'#ffb04a'; D.fillRect(Math.round(w/2+Math.cos(a)*d),Math.round(h*.55+Math.sin(a)*d+dead*dead*60),4,3); } }
+    else { D.fillStyle='#08060c'; D.fillRect(0,4,w,h); for(let i=0;i<220;i++){ const v=Math.floor(Math.random()*80); D.fillStyle=`rgb(${v},${v},${v})`; D.fillRect(Math.floor(Math.random()*w),4+Math.floor(Math.random()*h),2,1); } uText('SIGNAL LOST',w/2,h/2,`900 18px ${FB}`,'#ff6a6a','center'); } }
+  D.restore(); D.save(); D.strokeStyle='#e3b65a'; D.lineWidth=2; D.strokeRect(Math.round(x+jx)-1,Math.round(y+jy)+3,w+2,h-2); D.restore(); }
+

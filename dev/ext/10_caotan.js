@@ -185,7 +185,7 @@ function twSpermTex(f){ if(TW_SPERM[f]) return TW_SPERM[f]; const W=48, H=18, cv
 // a sperm sprite on par (a projectile's group): it turns to the direction par moves on screen and wriggles its tail
 function twSperm(par,size){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:twSpermTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false})); s.scale.set(size,size*18/48,1); s.renderOrder=5; par.add(s);
   const last=new THREE.Vector3(), cur=new THREE.Vector3(); par.updateMatrixWorld(); par.getWorldPosition(last); let f=0, ft=0;
-  Game.fxUpd.push(dt=>{ try{ let o=par; while(o.parent) o=o.parent; if(o!==scene) return false; ft+=dt; if(ft>.055){ ft=0; f=(f+1)%4; s.material.map=twSpermTex(f); }
+  Game.fxUpd.push(dt=>{ try{ let o=par; for(let k=0;o.parent&&k<64;k++) o=o.parent; if(o!==scene) return false; ft+=dt; if(ft>.055){ ft=0; f=(f+1)%4; s.material.map=twSpermTex(f); }
       par.getWorldPosition(cur); const a=toScreen(last.x,last.y,last.z), b=toScreen(cur.x,cur.y,cur.z), dx=b[0]-a[0], dy=b[1]-a[1]; if(dx*dx+dy*dy>.04) s.material.rotation=Math.atan2(-dy,dx); last.copy(cur); return true; }catch(e){ console.error('sperm',e); return false; } });
   return s; }
 // white goo bolts (Caotan's volleys) become sperm instead of glowing orbs
