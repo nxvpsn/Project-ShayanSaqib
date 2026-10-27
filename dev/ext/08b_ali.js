@@ -13,7 +13,9 @@
 // Base-game hooks are patched in build.py (aliInput is called from updatePlayer).
 // =====================================================================
 const ALI_R=3.8; // reach: double Shayan's swing
-const ALI_COMBO=[{dur:.32,hits:[[.06,.15]],dmg:1.3,arc:1.25,anim:'aliS1'},{dur:.38,hits:[[.05,.12],[.18,.25]],dmg:1,arc:1.25,anim:'aliS2'},{dur:.44,hits:[[.08,.24]],dmg:2,arc:3.3,anim:'aliSpin'}];
+// each swing as quick as Shayan's (0.24s; it was .32/.38/.44), its hit windows scaled to match; the AI Ali in the twins' fight keeps the old pace (ALI_COMBO_AI)
+const ALI_COMBO_AI=[{dur:.32,hits:[[.06,.15]],dmg:1.3,arc:1.25,anim:'aliS1'},{dur:.38,hits:[[.05,.12],[.18,.25]],dmg:1,arc:1.25,anim:'aliS2'},{dur:.44,hits:[[.08,.24]],dmg:2,arc:3.3,anim:'aliSpin'}];
+const ALI_COMBO=ALI_COMBO_AI.map(C=>{ const k=.24/C.dur; return Object.assign({},C,{dur:.24,hits:C.hits.map(([a,b])=>[+(a*k).toFixed(3),+(b*k).toFixed(3)])}); });
 function aliCombo(n){ const P=Player, tg=nearestFoe(ALI_R+1); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1; P.combo=n; P.swingT=Game.time;
   P.aliAtk={n,t:0,u:0,q:false,f0:P.f,ang:P.ang,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0; P.gAct='b';
   if(P.onGround&&n<2&&!(Game.twins&&Game.twins.active)){ P.vx+=Math.cos(P.ang)*3; P.vz+=Math.sin(P.ang)*3; } }

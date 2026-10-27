@@ -71,7 +71,7 @@ function twAllyJC(A,tg){ const o=tg.o; twBark('ali',"Nothing personal.",true); S
   Game.fxUpd.push(dt=>{ t+=dt; while(n<5&&t>.1+n*.08){ n++; const s=toScreen(o.x,(o.y||0)+1.4,o.z), a=rnd(0,Math.PI); JC.lines.push({x0:s[0]-Math.cos(a)*260,y0:s[1]-Math.sin(a)*260,x1:s[0]+Math.cos(a)*260,y1:s[1]+Math.sin(a)*260,t:0,ttl:.32});
       FX.cut(o.x,(o.y||0)+1.4,o.z); Sound.sfx('hit'); twAllyDeal(tg,1.1); } if(n>=5){ Sound.sfx('crossboom'); shake(.4); return false; } return true; }); }
 // AI Ali's 3-cut combo (his player combo: a long slash, a double cut, a spin), Judgement Cut tears and all
-function twAliCombo(A,o,tg,dt){ const M=A.cmb, C=ALI_COMBO[M.n]; M.t+=dt; A.anim=C.anim; A.ap=Math.min(1,M.t/C.dur); A.f=Math.cos(M.ang)>=0?1:-1;
+function twAliCombo(A,o,tg,dt){ const M=A.cmb, C=ALI_COMBO_AI[M.n]; M.t+=dt; A.anim=C.anim; A.ap=Math.min(1,M.t/C.dur); A.f=Math.cos(M.ang)>=0?1:-1;
   C.hits.forEach(([t0],i)=>{ if(M.t>=t0&&!(M.fx>>i&1)){ M.fx|=1<<i; M.ang=Math.atan2(o.z-A.z,o.x-A.x); aliSlashFXAt(A.x,A.y,A.z,M.ang,M.n,i); if(Math.hypot(o.x-A.x,o.z-A.z)<ALI_R+tg.r) twAllyDeal(tg,C.dmg*.5); } });
   if(M.t>=C.dur){ M.n++; M.t=0; M.fx=0; if(M.n>2){ A.cmb=null; A.ap=null; A.anim='idle'; } } }
 function twAllyShot(A,o,tg,col,dmg,kind,delay){ let mesh;
