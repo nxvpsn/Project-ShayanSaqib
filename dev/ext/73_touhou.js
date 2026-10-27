@@ -10,7 +10,7 @@
 // a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
 // The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes at 3-4 hearts and burns at 1-2 (his face follows), it explodes when he dies. The bits turn red (and ding) when the Power Shot is charged; the shot also fires four red bit lasers (minions first).
 // =====================================================================
-const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,170,210]};
+const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,213,263]};   // +25% (was 170, 210)
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
 function thOn(){ return !!(Game.mech&&Game.mech.th); }
 function thW(u,v){ return [TH.CX+v,-u,0]; }

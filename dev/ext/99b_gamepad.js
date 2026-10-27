@@ -86,9 +86,8 @@ function twPadMenu(ctx,nav,dn){
     if(dn(0)) tlActivate('warp');
     else if(dn(1)||dn(9)) twTimelineClose(null);
     else if(dn(3)){ if(CT.open&&!CT.fromMenu){ CT.fromMenu=true; CT.focus='mode:pad'; Sound.sfx('blip'); } else tlActivate('controls'); }
-    else if(dn(2)){ if(TLM.esc) tlActivate('unstuck'); }
     else if(dn(4)||dn(5)) tlTab(TLM.tab+(dn(5)?1:-1));
-    else if(dn(6)||dn(7)){ Sound.unlock(); Sound.setVol(clamp(Math.round((twVolNow()+(dn(7)?.1:-.1))*10)/10,0,1)); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} Sound.sfx('blip'); }
+    else if(dn(6)||dn(7)){ Sound.unlock(); mixSet('all',MIX.all+(dn(7)?5:-5)); Sound.sfx('blip'); }
     else if(dn(8)) tlActivate('title');
     return; }
   if(ctx==='dom'){ const d=MP.ui, els=[...d.querySelectorAll('button,input')]; if(!els.length) return; let i=els.indexOf(document.activeElement);
@@ -181,8 +180,8 @@ function twPadTx(s){ let r=PAD_TXC.get(s); if(r!==undefined) return r; r=s;
 (function(){ const tp=drawTalkPrompt; drawTalkPrompt=function(){ PAD.talk=true; try{ return tp.apply(this,arguments); } finally{ PAD.talk=false; } }; })();
 // the timeline: a pad version of its key hint, and the button for each of its own buttons
 (function(){ const tw0=tlWrap; tlWrap=function(text){ if(twPadOn()&&/^Arrows select/.test(text)){ const n=twPadName; text='D-pad selects · '+n(0)+' warps · '+n(4)+' / '+n(5)+' tab · '+n(6)+' / '+n(7)+' volume · '+n(3)+' controls · '+n(1)+' closes'; arguments[0]=text; } return tw0.apply(this,arguments); };
-  const TLB={close:1,controls:3,unstuck:2,title:8,warp:0};
-  const tb=tlBtn; tlBtn=function(x,y,w,h,label,on,id){ tb.apply(this,arguments); if(twPadOn()&&TLB[id]!=null&&(id!=='unstuck'||TLM.esc)) twPadBadge(TLB[id],x-4,y+6); }; })();
+  const TLB={close:1,controls:3,title:8,warp:0};
+  const tb=tlBtn; tlBtn=function(x,y,w,h,label,on,id){ tb.apply(this,arguments); if(twPadOn()&&TLB[id]!=null) twPadBadge(TLB[id],x-4,y+6); }; })();
 // the tutorial's Leave button shows Share while Share is free
 (function(){ const dt=twDrawTut; twDrawTut=function(){ dt.apply(this,arguments); if(twPadOn()&&TW.tut&&Game.state!=='title'&&!PAD.map[8]) twPadBadge(8,TUT_BTN.x-6,TUT_BTN.y+6); }; })();
 // opening the menu tucks away the town copy of the card (the menu's own Controls button brings it back, focused)

@@ -64,17 +64,23 @@ function mobRoad(x0,cw,H){ mobSeg(x0,8,cw,42,[['htab:0','Shayan'],['htab:1','Ali
   if(TW.unlockMode){ const ch=TL.filter(hubCheatable), all=ch.length>0&&ch.every(twNodeOpen); uBtn(bx,py+14,bw,38,all?'Lock all':'Unlock all',{id:'chk:all',size:14,on:all}); }
   if(open) uBtn(bx,py+ph-16-54,bw,54,n.root?'Start here':n.final?'Face Paul':'Warp here',{kind:'primary',id:'warp',size:17});
   else { mobLock(bx+bw/2,py+ph-56,UIC.dim); uText('Locked',bx+bw/2,py+ph-26,`700 15px ${FB}`,UIC.dim,'center'); } }
-function mobOptions(x0,cw,H){ const rows=[['vol','Volume','Music, voices and effects'],['voices','Voice acting','Spoken dialogue'],['mute','Mute','Silence everything'],['input','Play with','Touch, or a connected controller']];
-  let y=8; for(const [k,l,sub] of rows){ uRR(x0,y,cw,50,10); D.fillStyle='rgba(255,255,255,.04)'; D.fill(); uText(l,x0+16,y+23,`800 16px ${FB}`,UIC.text); uText(sub,x0+16,y+41,`500 12px ${FB}`,UIC.mut); const cx=x0+cw-16, cy=y+25;
-    if(k==='vol'){ const B=TLV.box; B.w=170; B.x=cx-B.w-54; B.y=cy-18; B.h=36; const v=twVolNow(); uRR(B.x,cy-4,B.w,8,4); D.fillStyle='rgba(255,255,255,.12)'; D.fill(); if(v>0){ uRR(B.x,cy-4,B.w*v,8,4); D.fillStyle=UIC.acc; D.fill(); }
-      D.fillStyle=TLV.drag?'#fff':UIC.accL; D.beginPath(); D.arc(B.x+B.w*v,cy,13,0,7); D.fill(); uText(v<=0?'Off':Math.round(v*100)+'%',cx,cy+6,`800 15px ${FB}`,UIC.text,'right'); }
-    else if(k==='voices') mobToggle(cx-56,cy-15,!!Voice.on,'opt:voices'); else if(k==='mute') mobToggle(cx-56,cy-15,!!Sound.muted,'opt:mute');
+function mobOptions(x0,cw,H){ let y=8;
+  // sound: the four sliders in one card (2 x 2); 50 is the normal mix
+  uRR(x0,y,cw,112,10); D.fillStyle='rgba(255,255,255,.04)'; D.fill(); const cwc=(cw-30)/2;
+  MIX_KEYS.forEach(([k,l],i)=>{ const cx0=x0+10+(i%2)*(cwc+10), cy0=y+6+Math.floor(i/2)*52, v=Sound.muted&&k==='all'?0:MIX[k];
+    uText(l,cx0+6,cy0+18,`800 15px ${FB}`,UIC.text); uText(v<=0?'Off':String(v),cx0+cwc-6,cy0+18,`800 15px ${FB}`,v===50?UIC.text:UIC.accL,'right');
+    mixSlider(k,cx0+12,cy0+36,cwc-24,{th:4,r:11,hh:18}); });
+  y+=118;
+  const rows=[['voices','Voice acting','Spoken dialogue'],['mute','Mute','Silence everything'],['input','Play with','Touch, or a connected controller']];
+  for(const [k,l,sub] of rows){ uRR(x0,y,cw,48,10); D.fillStyle='rgba(255,255,255,.04)'; D.fill(); uText(l,x0+16,y+21,`800 16px ${FB}`,UIC.text); uText(sub,x0+16,y+39,`500 12px ${FB}`,UIC.mut); const cx=x0+cw-16, cy=y+24;
+    if(k==='voices') mobToggle(cx-56,cy-15,!!Voice.on,'opt:voices'); else if(k==='mute') mobToggle(cx-56,cy-15,!!Sound.muted,'opt:mute');
     else { const sw=200, sx=cx-sw; uRR(sx,cy-18,sw,36,10); D.fillStyle='rgba(255,255,255,.05)'; D.fill(); D.strokeStyle=UIC.line2; D.lineWidth=1; D.stroke();
       [['opt:input:kbm','Touch'],['opt:input:pad','Controller']].forEach(([id,lb],i)=>{ const on=id==='opt:input:'+PAD.mode, bx2=sx+i*sw/2; if(on){ uRR(bx2+3,cy-15,sw/2-6,30,8); D.fillStyle=UIC.acc; D.fill(); }
         uText(lb,bx2+sw/4,cy+5,`800 14px ${FB}`,on?'#1a1408':UIC.text,'center'); TLM.rects.push({x:bx2,y:cy-22,w:sw/2,h:44,id}); }); }
-    y+=56; }
-  y+=4; const acts=[['Unstuck','unstuck','redo','ghost'],['Exit to Title','title','exit','danger'],['Cheats','mob:cheats',null,'ghost'],['Debug Mode','mob:debug',null,DBG.on?'primary':'ghost']], bw=(cw-10)/2;
-  acts.forEach(([l,id,ic,kind],i)=>uBtn(x0+(i%2)*(bw+10),y+Math.floor(i/2)*54,bw,46,l,{id,icon:ic,kind,size:16})); }
+    y+=52; }
+  // Cheats and Debug as a pair on the left, the destructive Exit to Title set apart on the right
+  const acts=[['Cheats','mob:cheats',null,'ghost'],['Debug','mob:debug',null,DBG.on?'primary':'ghost'],['Exit to Title','title','exit','danger']], bw=(cw-24)/3;
+  acts.forEach(([l,id,ic,kind],i)=>uBtn(x0+i*(bw+6)+(i===2?12:0),y,bw,46,l,{id,kind,size:14})); }
 function mobControls(x0,cw,H){ mobSeg(x0,8,cw,42,[['mob:ct:0','Touch controls'],['mob:ct:1','How to play']],'mob:ct:'+MOB.ct);
   const top=60, vh=H-top-8, c=MOB.ct; MOB.list={x:x0,y:top,w:cw,h:vh}; uPanel(x0,top,cw,vh,UIC.well,UIC.line,12);
   D.save(); D.beginPath(); D.rect(x0,top+1,cw,vh-2); D.clip(); const y0=top+12; let y=y0-MOB.sy[c];
@@ -92,9 +98,9 @@ function mobCheats(W,H){ TLM.rects.push({x:0,y:0,w:W,h:H,id:'mob:block'}); D.fil
 function mobHub(alpha){ const k=MOB.k, W=UW/k, H=UH/k; TLM.rects=[];
   if(CT.open&&CT.fromMenu){ CT.open=false; CT.fromMenu=false; CT.listen=null; } // the touch Controls page is drawn here
   if(HUB.sec!=='road'&&!TLM.esc) HUB.sec='road';
-  D.save(); D.globalAlpha=alpha; D.fillStyle='rgba(5,6,12,.97)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999; D.scale(k,k);
+  D.save(); D.globalAlpha=alpha; D.fillStyle='rgba(5,6,12,.97)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999; TLV.mix={}; D.scale(k,k);
   mobRail(H); const x0=144, cw=W-x0-8; if(HUB.sec==='road') mobRoad(x0,cw,H); else if(HUB.sec==='options') mobOptions(x0,cw,H); else mobControls(x0,cw,H); if(MOB.cheats) mobCheats(W,H);
-  D.restore(); mobRects(TLM.rects,k); if(TLV.box.x>-9000){ const B=TLV.box; B.x*=k; B.y*=k; B.w*=k; B.h*=k; } }
+  D.restore(); mobRects(TLM.rects,k); if(TLV.box.x>-9000){ const B=TLV.box; B.x*=k; B.y*=k; B.w*=k; B.h*=k; } for(const q in TLV.mix){ const B=TLV.mix[q]; B.x*=k; B.y*=k; B.w*=k; B.h*=k; } }
 function mobTap(id){ if(!id) return; const tb=TLM.tab;
   if(id==='mob:resume'){ twTimelineClose(null); mobFullAgain(); return; }
   if(id.startsWith('mob:card:')){ const nid=id.slice(9); if(TLM.sel!==nid){ TLM.sel=nid; Sound.sfx('blip'); } return; }
@@ -167,7 +173,7 @@ addEventListener('pagehide',()=>{ try{ if(Sound.ctx&&Sound.ctx.state==='running'
 addEventListener('pointerdown',e=>{ if(!IS_TOUCH()||e.target!==ui) return; const [ux,uy]=tlPt(e);
   if(TLM.open){ e.preventDefault(); e.stopImmediatePropagation(); const k=MOB.k, vx=ux/k, vy=uy/k, zone=MOB.cheats?null:HUB.sec==='road'&&mobIn(MOB.strip,vx,vy)?'strip':HUB.sec==='controls'&&mobIn(MOB.list,vx,vy)?'list':null;
     MOB.drag={id:e.pointerId,x:vx,y:vy,moved:false,hit:tlHit(ux,uy),zone,s0:zone==='strip'?MOB.sx[TLM.tab]:MOB.sy[MOB.ct]}; return; }
-  if(Game.state==='paused'&&!DBG.topen){ e.preventDefault(); e.stopImmediatePropagation(); const r=MOB.prects.find(q=>ux>=q.x&&ux<=q.x+q.w&&uy>=q.y&&uy<=q.y+q.h); if(!r) return;
+  if(Game.state==='paused'&&!DBG.open){ e.preventDefault(); e.stopImmediatePropagation(); const r=MOB.prects.find(q=>ux>=q.x&&ux<=q.x+q.w&&uy>=q.y&&uy<=q.y+q.h); if(!r) return;
     if(r.id==='p:resume') mobResume(); else { mobResume(); if(twEscOk()) twEscOpen(); } return; }
   const d=Game.dlg; if(d&&d.type==='choice'&&Game.dlgRows){ const i=Game.dlgRows.findIndex(([rx,ry,rw,rh])=>ux>=rx&&ux<=rx+rw&&uy>=ry&&uy<=ry+rh); if(i>=0){ e.preventDefault(); e.stopImmediatePropagation(); d.sel=i; Sound.unlock(); tapKey('confirm'); } } },true);
 addEventListener('pointermove',e=>{ const g=MOB.drag; if(!g||e.pointerId!==g.id) return; if(!TLM.open){ MOB.drag=null; return; } const [ux,uy]=tlPt(e), dx=ux/MOB.k-g.x, dy=uy/MOB.k-g.y;
@@ -188,23 +194,9 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 (function(){ try{ const old=document.getElementById('tbPause'); if(!old||!old.replaceWith||!old.cloneNode) return; const b=old.cloneNode(false); b.id='tbPause'; b.className='tb'; b.setAttribute('aria-label','Menu');
   b.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg><span>Menu</span>'; old.replaceWith(b);
   b.addEventListener('pointerdown',e=>e.stopPropagation()); b.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
-  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); if(Game.state==='title') return; if(DBG.topen){ dbgTouch(false); return; } if(TLM.open){ twTimelineClose(null); return; } if(Game.state==='paused'&&!TLM.open) mobResume(); if(twEscOk()) twEscOpen(); }); }catch(e){} })();
+  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); if(Game.state==='title') return; if(DBG.open){ dbgOpen(false); return; } if(TLM.open){ twTimelineClose(null); return; } if(Game.state==='paused'&&!TLM.open) mobResume(); if(twEscOk()) twEscOpen(); }); }catch(e){} })();
 
-// ---------- Debug Mode on touch: a Debug button opens the panel as a paused pop-up ----------
-function dbgTouch(open){ if(open===!!DBG.topen) return; releaseTouchKeys(); clearHits();
-  if(open){ DBG.tprev=Game.state==='paused'?(Game.prev||'play'):Game.state; Game.prev=DBG.tprev; Game.state='paused'; DBG.topen=true; DBG.page=DBG.page||0; }
-  else { DBG.topen=false; if(Game.state==='paused') Game.state=DBG.tprev||'play'; } }
-function mobDebug(){ const k=1.6, W=UW/k, H=UH/k; D.save(); D.fillStyle='rgba(3,4,10,.6)'; D.fillRect(0,0,UW,UH); D.scale(k,k);
-  const w=600, h=H-16, x=(W-w)/2, y=8, ix=x+20, iw=w-40; uPanel(x,y,w,h,'rgba(10,12,22,.97)',UIC.line2,12);
-  let yy=dbgHead(ix,y+28,iw,'tclose'); ['Setup','Boss','Moves'].forEach((l,i)=>dbgBtn(ix+i*(iw/3),yy,iw/3-6,30,l,'tpage:'+i,{on:(DBG.page||0)===i})); yy+=42;
-  const pg=DBG.page||0; if(pg===0) dbgSecSetup(ix,yy,iw); else if(pg===1) dbgSecBoss(ix,yy,iw); else dbgSecMoves(ix,yy,iw,3);
-  uText(DBG.msg&&DBG.msg.t&&performance.now()-DBG.msg.at<4000?DBG.msg.t:'',ix,y+h-12,`700 12px ${FB}`,'#9ff8ff');
-  D.restore(); mobRects(DBG.rects,k); }
-(function(){ const dd=dbgDraw; dbgDraw=function(){ if(!IS_TOUCH()) return dd(); DBG.rects=[]; if(!DBG.on){ DBG.topen=false; return; } if(!DBG.topen||Game.state==='title'||TLM.open) return; mobDebug(); };
-  const da=dbgAct; dbgAct=function(id){ if(!IS_TOUCH()) return da(id);
-    if(id==='tclose'||id==='hide'){ dbgTouch(false); Sound.sfx('blip'); return; } if(id.startsWith('tpage:')){ DBG.page=+id.slice(6); Sound.sfx('blip'); return; }
-    const closeAfter=/^(boss|move|lc|kill|despawn|off)/.test(id); const r=da(id); if(closeAfter&&DBG.topen) dbgTouch(false); return r; };
-  const dp=drawPause; drawPause=function(){ if(DBG.topen&&IS_TOUCH()) return; return dp.apply(this,arguments); }; })();
+// ---------- Debug Mode on touch: the Debug button opens the shared panel (99e_debug.js), which pauses the game ----------
 (function(){ try{ const T=document.getElementById('touch'); if(!T||!T.appendChild) return; const b=document.createElement('button'); b.className='tb'; b.id='tbDebug'; b.textContent='Debug'; b.hidden=true; T.appendChild(b);
   const st=document.createElement('style'); st.textContent='#tbDebug{top:calc(22% + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));width:auto;height:40px;border-radius:20px;padding:0 16px;font:800 14px var(--body);border-color:#ff8aa8;color:#ffd0dc}'
     +'body.hubopen #tbPause,body.hubopen #tbFull{display:none!important}'
@@ -212,7 +204,7 @@ function mobDebug(){ const k=1.6, W=UW/k, H=UH/k; D.save(); D.fillStyle='rgba(3,
     +'#tbPause{width:auto!important;height:44px!important;border-radius:22px!important;padding:0 16px 0 12px!important;gap:6px;font:800 15px var(--body)!important;letter-spacing:0!important}#tbPause svg{width:20px;height:20px}'
     +'body.mobchoice #tbNext{display:none!important}'; document.head.appendChild(st);
   b.addEventListener('pointerdown',e=>e.stopPropagation()); b.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
-  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); dbgTouch(!DBG.topen); Sound.sfx('blip'); }); MOB.dbgBtn=b; }catch(e){} })();
+  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); dbgOpen(!DBG.open); Sound.sfx('blip'); }); MOB.dbgBtn=b; }catch(e){} })();
 // every frame: the Debug button shows only in debug mode; the corner buttons hide while the Esc menu (with its own Resume) is open
 (function(){ const du=drawUI; drawUI=function(){ du(); try{ if(MOB.dbgBtn) MOB.dbgBtn.hidden=!(DBG.on&&IS_TOUCH()&&Game.state!=='title'&&!TLM.open);
     const on=!!TLM.open; if(MOB.hub!==on){ MOB.hub=on; document.body.classList.toggle('hubopen',on); }

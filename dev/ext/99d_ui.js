@@ -1,6 +1,6 @@
 // =====================================================================
 // UI: one clean look for the title screen, the pause screen, the Esc menu and the Controls card.
-// The Esc menu is a single screen with no nested menus: a left rail (Resume / Unstuck / Exit to Title,
+// The Esc menu is a single screen with no nested menus: a left rail (Resume / Exit to Title,
 // progress, key hints) and five tabs on top: Shayan's Road · Ali's Road · Miscellaneous (the timeline),
 // Controls and Options. Q / Tab (L1 / R1) switch tabs, arrows (D-pad) move, Enter picks, Esc resumes.
 // Paul's own timeline uses the same screen with only the three road tabs.
@@ -119,8 +119,7 @@ function hubRail(){ const R=RAIL; uPanel(R.x,R.y,R.w,R.h,UIC.panel,UIC.line,12);
   uCaps("THE MOONSINGER'S BELL",R.x+20,R.y+34,UIC.dim,10); uText(TLM.esc?'Paused':'Timeline',R.x+20,R.y+70,`900 28px ${FD}`,UIC.accL);
   let y=R.y+96; const bw=R.w-40;
   uBtn(R.x+20,y,bw,44,TLM.esc?'Resume':'Close',{kind:'primary',id:'close',icon:TLM.esc?'play':'close',hint:twPadOn()?null:'Esc',pad:twPadOn()?1:null}); y+=54;
-  if(TLM.esc){ uBtn(R.x+20,y,bw,40,'Unstuck',{id:'unstuck',icon:'redo',pad:twPadOn()?2:null}); y+=50;
-    uBtn(R.x+20,y,bw,40,'Exit to Title',{id:'title',icon:'exit',kind:'danger',pad:twPadOn()?8:null}); y+=50; }
+  if(TLM.esc){ uBtn(R.x+20,y,bw,40,'Exit to Title',{id:'title',icon:'exit',kind:'danger',pad:twPadOn()?8:null}); y+=50; }
   // progress
   y+=14; D.fillStyle=UIC.line; D.fillRect(R.x+20,y,bw,1); y+=30; uCaps('PROGRESS',R.x+20,y,UIC.mut);
   const tot=TL_CHECKS.length, done=TL_CHECKS.filter(id=>TWS.done[id]).length; y+=30; uText(done+' / '+tot,R.x+20,y,`800 24px ${FB}`,UIC.text); uText('checkpoints cleared',R.x+20+D.measureText(done+' / '+tot).width+8,y,`500 13px ${FB}`,UIC.mut);
@@ -169,22 +168,24 @@ function hubRoad(){ const t=TLM.t, M=MAP; uPanel(M.x,M.y,M.w,M.h,UIC.well,UIC.li
   else uText('Locked',bx+95,Dt.y+Dt.h-33,`italic 600 15px ${FB}`,UIC.dim,'center');
   uText('Warping replays a checkpoint',bx+95,Dt.y+34,`500 12px ${FB}`,UIC.dim,'center'); uText('from its start.',bx+95,Dt.y+50,`500 12px ${FB}`,UIC.dim,'center'); }
 // options
-function hubOptRows(){ return [{k:'vol',lab:'Volume',sub:'Music, voices and effects'},{k:'voices',lab:'Voice acting',sub:'Spoken dialogue during cutscenes'},{k:'mute',lab:'Mute',sub:'Silence everything'},{k:'full',lab:'Fullscreen',sub:'Fill the whole screen'},
+function hubOptRows(){ return [{k:'mix:all',lab:'All Sound',sub:'',grp:'SOUND'},{k:'mix:music',lab:'Music',sub:''},{k:'mix:sfx',lab:'SFX',sub:''},{k:'mix:voice',lab:'Voices',sub:''},
+  {k:'voices',lab:'Voice acting',sub:'Spoken dialogue during cutscenes',grp:'GAME'},{k:'mute',lab:'Mute',sub:'Silence everything'},{k:'full',lab:'Fullscreen',sub:'Fill the whole screen'},
   {k:'input',lab:'Input device',sub:'Keyboard and mouse, or a controller (USB or Bluetooth)'},{k:'glyph',lab:'Button prompts',sub:'How controller buttons are shown'}]; }
 function hubOptions(){ const C=CONT, rows=hubOptRows(), x=C.x, w=C.w; uPanel(x,C.y,w,C.h,UIC.well,UIC.line,12); uCaps('OPTIONS',x+28,C.y+38,UIC.mut);
-  const kb=!twPadOn()&&!IS_TOUCH(); let y=C.y+58;
-  rows.forEach((r,i)=>{ const foc=(twPadOn()||HUB.kbFoc)&&HUB.of===i, rh=66; uRR(x+16,y,w-32,rh-8,10); D.fillStyle=foc?'rgba(227,182,90,.08)':'rgba(255,255,255,.03)'; D.fill(); if(foc){ D.strokeStyle='rgba(227,182,90,.6)'; D.lineWidth=1.5; D.stroke(); }
-    uText(r.lab,x+40,y+26,`700 17px ${FB}`,UIC.text); uText(r.sub,x+40,y+46,`500 13px ${FB}`,UIC.mut); const cx=x+w-48, cy=y+(rh-8)/2;
-    if(r.k==='vol'){ const B=TLV.box; B.x=cx-320; B.y=cy-15; B.w=260; B.h=30; const v=twVolNow(), ty=cy; uRR(B.x,ty-3,B.w,6,3); D.fillStyle='rgba(255,255,255,.1)'; D.fill(); if(v>0){ uRR(B.x,ty-3,B.w*v,6,3); D.fillStyle=UIC.acc; D.fill(); }
-      D.fillStyle=TLV.drag?'#fff':UIC.accL; D.beginPath(); D.arc(B.x+B.w*v,ty,9,0,7); D.fill(); uText(v<=0?'Muted':Math.round(v*100)+'%',cx,ty+5,`700 15px ${FB}`,UIC.text,'right'); }
-    else if(r.k==='voices') uToggle(cx-46,cy-12,!!Voice.on,'opt:voices',foc);
+  const kb=!twPadOn()&&!IS_TOUCH(); let y=C.y+50;
+  rows.forEach((r,i)=>{ if(r.grp){ uCaps(r.grp,x+28,y+16,UIC.dim,10); y+=22; }
+    const mix=r.k.startsWith('mix:'), rh=mix?44:50, foc=(twPadOn()||HUB.kbFoc)&&HUB.of===i; uRR(x+16,y,w-32,rh-6,10); D.fillStyle=foc?'rgba(227,182,90,.08)':'rgba(255,255,255,.03)'; D.fill(); if(foc){ D.strokeStyle='rgba(227,182,90,.6)'; D.lineWidth=1.5; D.stroke(); }
+    const cx=x+w-48, cy=y+(rh-6)/2;
+    if(mix){ const k=r.k.slice(4); uText(r.lab,x+40,cy+6,`700 17px ${FB}`,UIC.text); mixSlider(k,cx-420,cy,360); const v=Sound.muted&&k==='all'?0:MIX[k]; uText(v<=0?'Off':String(v),cx,cy+6,`700 16px ${FB}`,v===50?UIC.text:UIC.accL,'right'); }
+    else { uText(r.lab,x+40,y+21,`700 17px ${FB}`,UIC.text); uText(r.sub,x+40,y+38,`500 13px ${FB}`,UIC.mut); }
+    if(r.k==='voices') uToggle(cx-46,cy-12,!!Voice.on,'opt:voices',foc);
     else if(r.k==='mute') uToggle(cx-46,cy-12,!!Sound.muted,'opt:mute',foc);
     else if(r.k==='full') uToggle(cx-46,cy-12,!!inFull(),'opt:full',foc);
     else if(r.k==='input') uSeg(cx-300,cy-17,300,34,[['opt:input:kbm','Keyboard & Mouse'],['opt:input:pad','Controller']],'opt:input:'+PAD.mode,foc);
     else if(r.k==='glyph') uSeg(cx-300,cy-17,300,34,[['opt:glyph:ps','PlayStation'],['opt:glyph:xb','Xbox']],'opt:glyph:'+twPadSet(),foc);
-    TLM.rects.unshift({x:x+16,y,w:w-32,h:rh-8,id:'orow:'+i}); y+=rh; });
-  uText(kb?'Arrows choose a row and change it  ·  Enter toggles':'',x+28,C.y+C.h-22,`500 13px ${FB}`,UIC.dim); }
-function hubOptAct(k,dir){ if(k==='vol'){ Sound.unlock(); Sound.setVol(clamp(Math.round((twVolNow()+(dir||1)*.05)*20)/20,0,1)); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} Sound.sfx('blip'); return; }
+    TLM.rects.unshift({x:x+16,y,w:w-32,h:rh-6,id:'orow:'+i}); y+=rh; });
+  uText(kb?'Arrows choose a row and change it  ·  Enter toggles, or puts a slider back to 50  ·  50 is the normal mix':'50 is the normal mix',x+28,C.y+C.h-16,`500 13px ${FB}`,UIC.dim); }
+function hubOptAct(k,dir){ if(k.startsWith('mix:')){ const m=k.slice(4); Sound.unlock(); mixSet(m,dir==null?50:MIX[m]+5*dir); Sound.sfx('blip'); return; }
   if(k==='voices'){ Voice.on=dir?dir>0:!Voice.on; if(!Voice.on) Voice.stop(); }
   else if(k==='mute'){ if(dir==null||(dir>0)!==!!Sound.muted) Sound.toggleMute(); }
   else if(k==='full'){ if(dir==null||(dir>0)!==!!inFull()) toggleFull(); }
@@ -192,7 +193,7 @@ function hubOptAct(k,dir){ if(k==='vol'){ Sound.unlock(); Sound.setVol(clamp(Mat
   else if(k==='glyph'){ PAD.glyph=dir==null?(twPadSet()==='ps'?'xb':'ps'):dir>0?'xb':'ps'; twPadSave(); }
   Sound.sfx('select'); }
 twDrawTimeline=function(){ if(!TLM.open) return; TLM.t+=1/60; TLM.rects=[]; D.save(); D.globalAlpha=Math.min(1,TLM.t*6);
-  D.fillStyle='rgba(4,5,11,.9)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999;
+  D.fillStyle='rgba(4,5,11,.9)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999; TLV.mix={};
   if(HUB.sec!=='road'&&!TLM.esc) HUB.sec='road';
   if(HUB.sec==='controls'&&!CT.open) twControlsShow(true);
   hubRail(); hubTabBar();

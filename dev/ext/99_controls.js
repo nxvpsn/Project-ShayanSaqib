@@ -86,15 +86,13 @@ addEventListener('pointermove',e=>{ if(!CT.open||!CT.box) return; const [x,y]=tl
   const tt=toTitle; toTitle=function(){ twControlsHide(); return tt.apply(this,arguments); }; })();
 
 // ---------- Esc timeline: Controls button, volume slider, one-click Unstuck ----------
-const TLV={drag:false,lines:0,box:{x:44,y:486,w:246,h:30}};
-function twVolNow(){ return Sound.muted?0:Sound.vol; }
-function twVolSet(px){ const B=TLV.box, v=clamp((px-B.x)/B.w,0,1); Sound.unlock(); Sound.setVol(Math.round(v*100)/100); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} }
+const TLV={drag:false,lines:0,box:{x:44,y:486,w:246,h:30},mix:{},mixDrag:null};
+function twVolNow(){ return Sound.muted?0:MIX.all/100; }
+function twVolSet(px){ const B=TLV.box, v=clamp((px-B.x)/B.w,0,1); Sound.unlock(); mixSet('all',v*100); }
 (function(){ const dt=twDrawTimeline; twDrawTimeline=function(){ dt(); if(!TLM.open) return; D.save();
     // below the checkpoint text: room for the longest description there is (Paul's), so nothing ever overlaps it
     D.font=`500 15px ${FB}`; const n=TLV.lines||(TLV.lines=Math.max(4,wrap(TL_BY.paul.desc,250).length)), top=Math.min(486,366+(n-1)*21+12);
-    tlBtn(44,top,TLM.esc?121:246,28,'Controls',CT.open,'controls');
-    // Unstuck only makes sense from the Esc menu (not when Paul is showing you his timeline mid-conversation)
-    if(TLM.esc) tlBtn(169,top,121,28,'Unstuck',false,'unstuck');
+    tlBtn(44,top,246,28,'Controls',CT.open,'controls');
     // volume: a wide slider
     TLV.box.y=top+36; const B=TLV.box, v=twVolNow(), ty=B.y+22; D.font=`700 13px ${FB}`; D.fillStyle='#a8906a'; D.textAlign='left'; D.fillText('VOLUME',B.x,B.y+8); D.textAlign='right'; D.fillStyle='#ffe6b0'; D.fillText(v<=0?'Muted':Math.round(v*100)+'%',B.x+B.w,B.y+8); D.textAlign='left';
     D.fillStyle='rgba(10,8,12,.9)'; D.fillRect(B.x,ty-5,B.w,10); D.fillStyle='#c9a24a'; D.fillRect(B.x,ty-5,B.w*v,10); D.strokeStyle='#8a6a3a'; D.lineWidth=1.5; D.strokeRect(B.x,ty-5,B.w,10);

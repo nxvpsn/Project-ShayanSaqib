@@ -1,13 +1,13 @@
 // =====================================================================
 // SAVE: one versioned entry in localStorage ('msSave') holds everything:
-//   {v, progress:{done,unl,paulDone,met,last}, settings:{vol,binds,pad}}
+//   {v, progress:{done,unl,paulDone,met,last}, settings:{vol,mix:{all,music,sfx,voice},binds,pad}}
 // progress is null until a game has been started (that is what Continue checks).
 // Older builds kept separate keys (msTimeline, msVol, msBinds, msPadMode/Map/Glyph):
 // they are folded in once, then removed. A future layout change bumps SAVE_V and
 // adds one step to SAVE_MIG, so old saves are upgraded instead of lost.
 // =====================================================================
-const SAVE_KEY='msSave', SAVE_V=1, SAVE_OLD=['msTimeline','msVol','msBinds','msPadMode','msPadMap','msPadGlyph'];
-const SAVE_MIG={ /* 1:o=>{ ...; o.v=2; return o; } */ };
+const SAVE_KEY='msSave', SAVE_V=2, SAVE_OLD=['msTimeline','msVol','msBinds','msPadMode','msPadMap','msPadGlyph'];
+const SAVE_MIG={ 1:o=>{ o.settings=o.settings&&typeof o.settings==='object'?o.settings:{}; o.settings.mix={all:50,music:50,sfx:50,voice:50}; o.settings.vol=1; o.v=2; return o; } }; // v2: the volume mixer (everything back to the 50 baseline)
 const SAVE=(function(){ let s=null, bad=false;
   try{ const raw=localStorage.getItem(SAVE_KEY);
     if(raw){ let o=JSON.parse(raw); while(o&&typeof o==='object'&&o.v<SAVE_V&&SAVE_MIG[o.v]) o=SAVE_MIG[o.v](o);

@@ -5,13 +5,14 @@
 // =====================================================================
 const TW_SONG={omar:'audio/omar.mp3',caotan:'audio/caotan.mp3',hamza:'audio/hamza.mp3'};
 const TW_SONG_VOL=.5; // the song's level under the game's master volume (was .75: too loud)
+const TW_SONG_LVL={hamza:.55}; // per-song trim on top of TW_SONG_VOL (the Hamza bullet-hell song was too loud)
 const MP3={el:null,g:null,name:null,want:null,seek:null};
 function twMp3Ready(){ if(MP3.g) return true; if(!Sound.ctx||typeof Audio==='undefined') return false;
-  try{ const el=new Audio(); el.loop=true; el.preload='auto'; const src=Sound.ctx.createMediaElementSource(el), g=Sound.ctx.createGain(); g.gain.value=0; src.connect(g); g.connect(Sound.master);
+  try{ const el=new Audio(); el.loop=true; el.preload='auto'; const src=Sound.ctx.createMediaElementSource(el), g=Sound.ctx.createGain(); g.gain.value=0; src.connect(g); g.connect(Sound.musicVol||Sound.master);
     el.addEventListener('loadedmetadata',()=>{ if(MP3.seek!=null){ try{ el.currentTime=MP3.seek; }catch(e){} MP3.seek=null; } }); MP3.el=el; MP3.g=g; }catch(e){ return false; } return true; }
 function twMp3Play(name,at){ MP3.want={name,at}; if(!twMp3Ready()) return; const el=MP3.el, c=Sound.ctx, g=MP3.g.gain;
   if(MP3.name!==name){ MP3.name=name; MP3.seek=at||0; el.src=TW_SONG[name]; } else if(at!=null){ if(el.readyState>=1){ try{ el.currentTime=at; }catch(e){} } else MP3.seek=at; }
-  const p=el.play(); if(p&&p.catch) p.catch(()=>{}); g.cancelScheduledValues(c.currentTime); g.setValueAtTime(g.value,c.currentTime); g.linearRampToValueAtTime(TW_SONG_VOL,c.currentTime+.6); }
+  const p=el.play(); if(p&&p.catch) p.catch(()=>{}); g.cancelScheduledValues(c.currentTime); g.setValueAtTime(g.value,c.currentTime); g.linearRampToValueAtTime(TW_SONG_VOL*(TW_SONG_LVL[name]||1),c.currentTime+.6); }
 function twMp3Stop(){ MP3.want=null; if(!MP3.g) return; const c=Sound.ctx, g=MP3.g.gain, el=MP3.el; g.cancelScheduledValues(c.currentTime); g.setValueAtTime(g.value,c.currentTime); g.linearRampToValueAtTime(0,c.currentTime+.6);
   setTimeout(()=>{ if(!MP3.want) el.pause(); },700); }
 (function(){ const pl=Sound.play, st=Sound.stop;

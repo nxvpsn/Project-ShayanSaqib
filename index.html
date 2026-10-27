@@ -6081,6 +6081,80 @@ function twSweep(full){ scene.children.filter(o=>o.userData&&(o.userData.temp||o
   const rs=respawn; respawn=function(){ Game.fxUpd=[]; twSweep(false); Object.assign(Player,{cineFly:false,cineAnim:null,charge:0}); return rs(); };
   const ll=loadLevel; loadLevel=function(k,o){ twSweep(false); return ll(k,o); }; })();
 
+// ----- 05b_townpolish.js -----
+// =====================================================================
+// TOWN + STARFALL RIDGE POLISH (same pixel style, more detail):
+// - ground tiles (both maps): grass blades, clumps and pebbles, worn paths with shaded pebbles and cracks,
+//   cobbles with moss in the joints and a highlight per stone;
+// - Lanternbrook houses: flower boxes under every window (they follow the wall texture's windows), a stone door
+//   step, eave trim and a ridge cap on the roof, chimney smoke, barrels and crates by the walls (all part of the
+//   house: smashing it takes them down too); strings of paper lanterns between the lamp posts;
+// - Starfall Ridge (where the mobs ambush you): dark green grass and tufts, ferns, mushrooms by the trees.
+// The first village of a session is built before ext.js runs; New Game / Continue rebuild it with all of this.
+// =====================================================================
+Object.assign(PAL.meadow,{g:['#2f6a2c','#285e27','#3b7a35','#4f8f42'],flower:['#fff','#d9e6ff','#f6c8e0','#f2c14e']});
+function polishTiles(T,biome){ const P=PAL[biome], S=32, px=(c,x,y,w,h,col)=>{ c.fillStyle=col; c.fillRect(x,y,w,h); }, dk=cShade(P.g[1],-.28), hi=cShade(P.g[3],.12);
+  // grass: blades (highlight over a shadow pixel), darker clumps, the odd pebble
+  { const c=T.grass.image.getContext('2d'); for(let i=0;i<5;i++){ const x=Math.floor(hash(i,41)*28)+1, y=Math.floor(hash(41,i)*28)+2; px(c,x,y,4,2,dk); px(c,x+1,y-1,2,1,dk); }
+    for(let i=0;i<34;i++){ const x=Math.floor(hash(i,43)*31), y=Math.floor(hash(43,i)*29)+1, h=1+Math.floor(hash(i,44)*3); px(c,x,y,1,h,i%3?P.g[3]:hi); px(c,x,y+h,1,1,P.g[1]); if(i%4===0) px(c,x+1,y+h-1,1,1,dk); }
+    for(let i=0;i<2;i++){ const x=Math.floor(hash(i,47)*28)+2, y=Math.floor(hash(47,i)*28)+2; px(c,x,y,2,1,P.stone[2]); px(c,x,y+1,2,1,P.stone[1]); }
+    T.grass.needsUpdate=true; }
+  // paths: shaded pebbles, hairline cracks, darker wheel wear
+  { const c=T.path.image.getContext('2d'); for(let i=0;i<3;i++){ const y=6+i*11+Math.floor(hash(i,51)*3); for(let x=0;x<S;x++) if(hash(x,y+i)>.45) px(c,x,y,1,1,cShade(P.path[1],-.12)); }
+    for(let i=0;i<9;i++){ const x=Math.floor(hash(i,53)*29), y=Math.floor(hash(53,i)*29); px(c,x,y,2,2,P.stone[i%3]); px(c,x,y,1,1,'rgba(255,255,255,.35)'); px(c,x,y+2,2,1,'rgba(0,0,0,.25)'); }
+    for(let i=0;i<2;i++){ let x=Math.floor(hash(i,57)*24)+4, y=Math.floor(hash(57,i)*24)+4; for(let k=0;k<5;k++){ px(c,x,y,1,1,'rgba(60,40,20,.35)'); x+=hash(k,i)>.5?1:-1; y+=1; } }
+    T.path.needsUpdate=true; }
+  // cobbles: moss in the joints, a highlight on each stone
+  { const c=T.cobble.image.getContext('2d'); [[0,0,15,9],[16,0,16,7],[0,10,10,10],[11,8,12,12],[24,8,8,11],[0,21,13,11],[14,21,9,11],[24,20,8,12]].forEach(([x,y,w,h],i)=>{ px(c,x+2,y+2,2,1,'rgba(255,255,255,.28)'); px(c,x+w-2,y+h-2,1,1,'rgba(0,0,0,.25)');
+      if(i%2===0){ px(c,x,y+Math.floor(h/2),1,2,'rgba(90,140,70,.85)'); px(c,x+Math.floor(w/2),y,2,1,'rgba(90,140,70,.75)'); } });
+    T.cobble.needsUpdate=true; }
+  // dirt: little roots and shaded stones
+  { const c=T.dirt.image.getContext('2d'); for(let i=0;i<4;i++){ let x=Math.floor(hash(i,71)*26)+3, y=Math.floor(hash(71,i)*20)+4; for(let k=0;k<4;k++){ px(c,x,y,1,1,cShade(P.d[1],-.3)); x+=1; y+=hash(k,i+3)>.5?1:0; } }
+    for(let i=0;i<6;i++){ const x=Math.floor(hash(i,3)*28), y=Math.floor(hash(3,i)*28); px(c,x,y+3,4,1,'rgba(0,0,0,.25)'); }
+    T.dirt.needsUpdate=true; }
+  return T; }
+(function(){ const mt=makeTileTextures; makeTileTextures=function(biome){ const T=mt.apply(this,arguments); try{ if(biome==='village'||biome==='meadow') polishTiles(T,biome); }catch(e){ console.error('tiles',e); } return T; }; })();
+
+// ---------- the houses ----------
+const TPM={};   // shared materials
+function tpMat(k){ if(TPM[k]) return TPM[k]; const M={plank:0x7a5232,plankD:0x5a3a22,stone:0x9a9286,iron:0x2d2a30,barrel:0x8a5a34,band:0x3a3530,crate:0xa8784a,soil:0x4a3424,beam:0x4a3020,cap:0x2c3550};
+  return TPM[k]=k.startsWith('fl')?new THREE.MeshLambertMaterial({color:[0xf2c14e,0xec8fb0,0xffffff,0x9fd0ff,0xe85a5a,0xb88aff][+k.slice(2)%6],emissive:0x201010}):new THREE.MeshLambertMaterial({color:M[k]}); }
+function tpFlowerBox(G,cx,y,z,w){ addBox(G,w,.13,.2,tpMat('plankD'),cx,y,z,false); addBox(G,w-.06,.04,.16,tpMat('soil'),cx,y+.12,z,false);
+  const n=Math.max(2,Math.round(w/.13)); for(let i=0;i<n;i++){ const fx=cx-w/2+.07+i*(w-.14)/(n-1); addBox(G,.03,.08,.03,tpMat('plank'),fx,y+.14,z,false); addBox(G,.08,.07,.08,tpMat('fl'+Math.floor(hash(Math.round(fx*10),Math.round(z*10))*6)),fx,y+.2,z+(i%2?.03:-.03),false); } }
+function tpBarrel(G,x,z){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.27,.24,.62,10),tpMat('barrel')); m.position.set(x,.31,z); m.castShadow=true; G.root.add(m);
+  for(const y of [.12,.5]){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.05,10),tpMat('band')); b.position.set(x,y,z); G.root.add(b); } }
+(function(){ const ah=addHouse; addHouse=function(G,x,z,w,d,h,seed){ const r=ah.apply(this,arguments); try{ if(G.key==='village'||(G.biome==='village')) tpHouse(G,x,z,w,d,h,seed); }catch(e){ console.error('house polish',e); } return r; }; })();
+function tpHouse(G,x,z,w,d,h,seed){ const hu=Math.ceil(h), fz=z+d+.1, rh=d*.55;
+  // flower boxes under the windows the wall texture painted (same hash rule as wallTexture)
+  for(let u=0;u<w;u++){ const door=u===Math.floor(w/2), cx=x+u+.5;
+    if(!door&&hash(u,seed)>.25) tpFlowerBox(G,cx,h*(11/(hu*32))-.04,fz,.62);
+    if(hu>2&&hash(seed,u)>.2) tpFlowerBox(G,cx,h*(1-27/(hu*32))-.04,fz,.62);
+    if(door){ addBox(G,1.1,.1,.55,tpMat('stone'),cx,0,z+d+.28); addBox(G,.9,.08,.3,tpMat('stone'),cx,.1,z+d+.16,false); } }
+  // eave trim and the ridge cap
+  addBox(G,w+.8,.12,.12,tpMat('beam'),x+w/2,h-.06,z+d+.42,false); addBox(G,w+.8,.14,.22,tpMat('cap'),x+w/2,h+rh-.05,z+d/2,false);
+  // barrels and a crate stack at one side (alternating sides)
+  const sd=seed%2?-1:1, bx=sd>0?x+w+.35:x-.35; tpBarrel(G,bx,z+d-.5); tpBarrel(G,bx+sd*.05,z+d-1.1);
+  addBox(G,.5,.45,.5,tpMat('crate'),bx,0,z+d-1.75); addBox(G,.38,.34,.38,tpMat('crate'),bx,.45,z+d-1.72);
+  // chimney smoke
+  const sx=x+w*.75, sy=h+rh+.85, sz=z+d*.4; G.anim.push(()=>{ if(Math.random()<.12) FX.spawn(sx+rnd(-.1,.1),sy,sz+rnd(-.1,.1),rnd(-.2,.3),rnd(.6,1.1),0,rnd(1.6,2.4),Math.random()<.5?0xb8b0a8:0x8a8480,rnd(.25,.4),-.15,false); }); }
+// strings of paper lanterns between the lamp posts (each string belongs to the post it starts at: smash it and it falls)
+(function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ tpLanternStrings(G); }catch(e){ console.error('lantern strings',e); } return G; }; })();
+function tpLanternStrings(G){ const posts=[[7,10],[15.5,10.2],[24.5,10.2],[33,10]], cols=[0xff6a5a,0xffc04a,0xff8ab0,0x8ad0ff], cord=new THREE.MeshBasicMaterial({color:0x2a2420});
+  for(let i=0;i<posts.length-1;i++){ const [x0,z0]=posts[i], [x1,z1]=posts[i+1], p=(G.destr||[]).find(q=>q.kind==='lantern'&&Math.abs(q.cx-(x0+.25))<.6&&Math.abs(q.cz-z0)<.5); const n0=G.root.children.length, N=10;
+    for(let k=0;k<=N*3;k++){ const u=k/(N*3), x=lerp(x0+.5,x1+.5,u), z=lerp(z0,z1,u), y=2.3-Math.sin(u*Math.PI)*.55; const c=new THREE.Mesh(new THREE.BoxGeometry(.06,.03,.03),cord); c.position.set(x,y,z); G.root.add(c); }
+    for(let k=1;k<N;k++){ const u=k/N, x=lerp(x0+.5,x1+.5,u), z=lerp(z0,z1,u), y=2.3-Math.sin(u*Math.PI)*.55, col=cols[(k+i)%cols.length];
+      const m=new THREE.Mesh(new THREE.BoxGeometry(.18,.22,.18),new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:.9})); m.position.set(x,y-.16,z); G.root.add(m);
+      const cap=new THREE.Mesh(new THREE.BoxGeometry(.2,.04,.2),cord); cap.position.set(x,y-.04,z); G.root.add(cap); }
+    if(p){ const add=G.root.children.slice(n0); p.meshes.push(...add); p.base.push(...add.map(m=>m.position.clone())); } } }
+
+// ---------- Starfall Ridge: darker tufts, ferns, mushrooms by the trees ----------
+(function(){ const st=scatterTufts; scatterTufts=function(G,n,kinds){ if(G&&G.biome==='meadow'&&Array.isArray(kinds)) kinds=kinds.map(k=>k.kind==='flower'?k:Object.assign({},k,{cols:(k.cols||[]).map(c=>cShade(c,-.38))})); return st.call(this,G,n,kinds,...[].slice.call(arguments,3)); }; })();
+(function(){ const mb=LEVELDEF.meadow; LEVELDEF.meadow=function(){ const G=mb.apply(this,arguments); try{ tpRidge(G); }catch(e){ console.error('ridge polish',e); } return G; }; })();
+function tpRidge(G){ scatterTufts(G,0,[{kind:'fern',cols:['#2a5a2a','#3a7036'],n:140,s:1.2},{kind:'tall',cols:['#25502a','#336a30'],n:160,s:1.35},{kind:'grass',cols:['#2f6228','#3e7a34','#4f8c40'],n:420,s:1}],[1,6,80,22]);
+  const cap=new THREE.MeshLambertMaterial({color:0xd8443a}), stem=new THREE.MeshLambertMaterial({color:0xf0e6d0}), dot=new THREE.MeshBasicMaterial({color:0xffffff});
+  for(const [x,z] of [[3.4,6.9],[7.6,7.1],[17.4,6.9],[21.6,7],[29.5,6.9],[45.4,6.8],[48.5,7.1]]){ for(let k=0;k<3;k++){ const mx=x+k*.22-.2, mz=z+(k%2)*.12, s=.7+hash(k,Math.round(x))*.5, gy=groundY(mx,mz);
+      addBox(G,.06*s,.14*s,.06*s,stem,mx,gy,mz,false); addBox(G,.2*s,.08*s,.2*s,cap,mx,gy+.14*s,mz,false); addBox(G,.04,.02,.04,dot,mx-.04*s,gy+.22*s,mz,false); } } }
+
 // ----- 06_combat.js -----
 // =====================================================================
 // NEW COMBAT: Shayan's fireballs, melee parries, Full Counter, Ali's mini Judgement Cut
@@ -8342,13 +8416,14 @@ function twArenaRestore(){ TWT.circle=null; TWT.snow=false; const M=TWT.mural; i
 // =====================================================================
 const TW_SONG={omar:'audio/omar.mp3',caotan:'audio/caotan.mp3',hamza:'audio/hamza.mp3'};
 const TW_SONG_VOL=.5; // the song's level under the game's master volume (was .75: too loud)
+const TW_SONG_LVL={hamza:.55}; // per-song trim on top of TW_SONG_VOL (the Hamza bullet-hell song was too loud)
 const MP3={el:null,g:null,name:null,want:null,seek:null};
 function twMp3Ready(){ if(MP3.g) return true; if(!Sound.ctx||typeof Audio==='undefined') return false;
-  try{ const el=new Audio(); el.loop=true; el.preload='auto'; const src=Sound.ctx.createMediaElementSource(el), g=Sound.ctx.createGain(); g.gain.value=0; src.connect(g); g.connect(Sound.master);
+  try{ const el=new Audio(); el.loop=true; el.preload='auto'; const src=Sound.ctx.createMediaElementSource(el), g=Sound.ctx.createGain(); g.gain.value=0; src.connect(g); g.connect(Sound.musicVol||Sound.master);
     el.addEventListener('loadedmetadata',()=>{ if(MP3.seek!=null){ try{ el.currentTime=MP3.seek; }catch(e){} MP3.seek=null; } }); MP3.el=el; MP3.g=g; }catch(e){ return false; } return true; }
 function twMp3Play(name,at){ MP3.want={name,at}; if(!twMp3Ready()) return; const el=MP3.el, c=Sound.ctx, g=MP3.g.gain;
   if(MP3.name!==name){ MP3.name=name; MP3.seek=at||0; el.src=TW_SONG[name]; } else if(at!=null){ if(el.readyState>=1){ try{ el.currentTime=at; }catch(e){} } else MP3.seek=at; }
-  const p=el.play(); if(p&&p.catch) p.catch(()=>{}); g.cancelScheduledValues(c.currentTime); g.setValueAtTime(g.value,c.currentTime); g.linearRampToValueAtTime(TW_SONG_VOL,c.currentTime+.6); }
+  const p=el.play(); if(p&&p.catch) p.catch(()=>{}); g.cancelScheduledValues(c.currentTime); g.setValueAtTime(g.value,c.currentTime); g.linearRampToValueAtTime(TW_SONG_VOL*(TW_SONG_LVL[name]||1),c.currentTime+.6); }
 function twMp3Stop(){ MP3.want=null; if(!MP3.g) return; const c=Sound.ctx, g=MP3.g.gain, el=MP3.el; g.cancelScheduledValues(c.currentTime); g.setValueAtTime(g.value,c.currentTime); g.linearRampToValueAtTime(0,c.currentTime+.6);
   setTimeout(()=>{ if(!MP3.want) el.pause(); },700); }
 (function(){ const pl=Sound.play, st=Sound.stop;
@@ -11925,7 +12000,7 @@ function maSparks(){ const nb=typeof NB!=='undefined'&&NB&&NB.alive?NB:null; if(
 // a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
 // The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes at 3-4 hearts and burns at 1-2 (his face follows), it explodes when he dies. The bits turn red (and ding) when the Power Shot is charged; the shot also fires four red bit lasers (minions first).
 // =====================================================================
-const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,170,210]};
+const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,213,263]};   // +25% (was 170, 210)
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
 function thOn(){ return !!(Game.mech&&Game.mech.th); }
 function thW(u,v){ return [TH.CX+v,-u,0]; }
@@ -12280,14 +12355,14 @@ function twClampPlayer(){ const F=TW.fight; if(!F||!F.lock) return; const P=Play
 // ----- 84_save.js -----
 // =====================================================================
 // SAVE: one versioned entry in localStorage ('msSave') holds everything:
-//   {v, progress:{done,unl,paulDone,met,last}, settings:{vol,binds,pad}}
+//   {v, progress:{done,unl,paulDone,met,last}, settings:{vol,mix:{all,music,sfx,voice},binds,pad}}
 // progress is null until a game has been started (that is what Continue checks).
 // Older builds kept separate keys (msTimeline, msVol, msBinds, msPadMode/Map/Glyph):
 // they are folded in once, then removed. A future layout change bumps SAVE_V and
 // adds one step to SAVE_MIG, so old saves are upgraded instead of lost.
 // =====================================================================
-const SAVE_KEY='msSave', SAVE_V=1, SAVE_OLD=['msTimeline','msVol','msBinds','msPadMode','msPadMap','msPadGlyph'];
-const SAVE_MIG={ /* 1:o=>{ ...; o.v=2; return o; } */ };
+const SAVE_KEY='msSave', SAVE_V=2, SAVE_OLD=['msTimeline','msVol','msBinds','msPadMode','msPadMap','msPadGlyph'];
+const SAVE_MIG={ 1:o=>{ o.settings=o.settings&&typeof o.settings==='object'?o.settings:{}; o.settings.mix={all:50,music:50,sfx:50,voice:50}; o.settings.vol=1; o.v=2; return o; } }; // v2: the volume mixer (everything back to the 50 baseline)
 const SAVE=(function(){ let s=null, bad=false;
   try{ const raw=localStorage.getItem(SAVE_KEY);
     if(raw){ let o=JSON.parse(raw); while(o&&typeof o==='object'&&o.v<SAVE_V&&SAVE_MIG[o.v]) o=SAVE_MIG[o.v](o);
@@ -12309,6 +12384,41 @@ function savePersist(){ try{ if(navigator.storage&&navigator.storage.persist) na
 // volume lives in the save too (the base game wrote its own key)
 (function(){ const v=SAVE.settings.vol; if(typeof v==='number'&&isFinite(v)) Sound.vol=clamp(v,0,1);
   const sv=Sound.setVol; Sound.setVol=function(v){ const r=sv.apply(this,arguments); try{ localStorage.removeItem('msVol'); }catch(e){} SAVE.settings.vol=this.vol; saveWrite(); return r; }; })();
+
+// ----- 84b_mix.js -----
+// =====================================================================
+// VOLUME MIXER: All Sound, Music, SFX, Voices (0-100). 50 is the baseline the game is tuned to (each slider is a gain
+// of value/50 on top of the game's own levels, so 100 doubles it). Saved in SAVE.settings.mix; the Options page and the
+// phone menu draw the four sliders (mixSlider), controllers/arrows step them by 5, Enter resets one to 50.
+// Music = the synth tracks and the boss songs (mp3s); SFX = every effect; Voices = spoken lines.
+// =====================================================================
+const MIX={all:50,music:50,sfx:50,voice:50}, MIX_KEYS=[['all','All Sound'],['music','Music'],['sfx','SFX'],['voice','Voices']];
+(function(){ const m=SAVE.settings.mix; if(m&&typeof m==='object') for(const k in MIX){ const v=m[k]; if(typeof v==='number'&&isFinite(v)) MIX[k]=clamp(Math.round(v),0,100); } })();
+function mixGain(k){ return MIX[k]/50; }
+function mixApply(){ Sound.vol=mixGain('all'); if(!Sound.ctx) return; const t=Sound.ctx.currentTime;
+  if(Sound.musicVol) Sound.musicVol.gain.setTargetAtTime(mixGain('music'),t,.05); if(Sound.sfxVol) Sound.sfxVol.gain.setTargetAtTime(mixGain('sfx'),t,.05); if(Sound.voiceVol) Sound.voiceVol.gain.setTargetAtTime(mixGain('voice'),t,.05);
+  Sound.applyVol(); }
+function mixSet(k,v){ MIX[k]=clamp(Math.round(v),0,100); if(k==='all'&&MIX.all>0&&Sound.muted){ Sound.muted=false; } SAVE.settings.mix=Object.assign({},MIX); SAVE.settings.vol=mixGain('all'); saveWrite(); mixApply(); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} }
+// the game's three buses each get a user gain stage before the master (the music's echo is rebuilt after its stage)
+(function(){ const ul=Sound.unlock; Sound.unlock=function(){ const r=ul.apply(this,arguments); try{ if(this.ctx&&!this.musicVol){ const c=this.ctx;
+      this.musicVol=c.createGain(); this.sfxVol=c.createGain(); this.voiceVol=c.createGain();
+      this.music.disconnect(); this.music.connect(this.musicVol); this.musicVol.connect(this.master);
+      const dl=c.createDelay(); dl.delayTime.value=.23; const fb=c.createGain(); fb.gain.value=.28; const wet=c.createGain(); wet.gain.value=.22; this.musicVol.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(this.master);
+      this.sfxBus.disconnect(); this.sfxBus.connect(this.sfxVol); this.sfxVol.connect(this.master);
+      this.voiceBus.disconnect(); this.voiceBus.connect(this.voiceVol); this.voiceVol.connect(this.master);
+      this.musicVol.gain.value=mixGain('music'); this.sfxVol.gain.value=mixGain('sfx'); this.voiceVol.gain.value=mixGain('voice'); mixApply(); } }catch(e){ console.error('mix',e); } return r; };
+  // the old single volume (base slider, 0-1) is All Sound
+  Sound.setVol=function(v){ mixSet('all',clamp(v,0,1)*100); };
+  Sound.vol=mixGain('all'); })();
+// one slider row: label, track, value. Registers its track in TLV.mix[k] for dragging; foc = keyboard/controller focus
+function mixSlider(k,x,y,w,o){ o=o||{}; const v=Sound.muted&&k==='all'?0:MIX[k]/100, B=TLV.mix[k]={x,y:y-(o.hh||16),w,h:(o.hh||16)*2};
+  uRR(x,y-(o.th||3),w,(o.th||3)*2,o.th||3); D.fillStyle='rgba(255,255,255,.1)'; D.fill(); if(v>0){ uRR(x,y-(o.th||3),w*v,(o.th||3)*2,o.th||3); D.fillStyle=UIC.acc; D.fill(); }
+  D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(Math.round(x+w*.5)-1,y-(o.th||3)-4,2,(o.th||3)*2+8); /* the 50 baseline tick */
+  D.fillStyle=TLV.mixDrag===k?'#fff':UIC.accL; D.beginPath(); D.arc(x+w*v,y,o.r||9,0,7); D.fill(); return B; }
+(function(){ const sx=k=>{ const B=TLV.mix&&TLV.mix[k]; return B; };
+  addEventListener('pointerdown',e=>{ if(!TLM.open||!TLV.mix) return; const [x,y]=tlPt(e); for(const k in TLV.mix){ const B=TLV.mix[k]; if(x>=B.x-12&&x<=B.x+B.w+12&&y>=B.y&&y<=B.y+B.h){ e.preventDefault(); e.stopImmediatePropagation(); Sound.unlock(); TLV.mixDrag=k; mixSet(k,(x-B.x)/B.w*100); return; } } },true);
+  addEventListener('pointermove',e=>{ const k=TLV.mixDrag; if(!k) return; if(!TLM.open){ TLV.mixDrag=null; return; } const B=sx(k); if(B) mixSet(k,(tlPt(e)[0]-B.x)/B.w*100); },true);
+  addEventListener('pointerup',()=>{ if(TLV.mixDrag){ TLV.mixDrag=null; Sound.sfx('blip'); } },true); })();
 
 // ----- 85_progress.js -----
 // =====================================================================
@@ -13805,15 +13915,13 @@ addEventListener('pointermove',e=>{ if(!CT.open||!CT.box) return; const [x,y]=tl
   const tt=toTitle; toTitle=function(){ twControlsHide(); return tt.apply(this,arguments); }; })();
 
 // ---------- Esc timeline: Controls button, volume slider, one-click Unstuck ----------
-const TLV={drag:false,lines:0,box:{x:44,y:486,w:246,h:30}};
-function twVolNow(){ return Sound.muted?0:Sound.vol; }
-function twVolSet(px){ const B=TLV.box, v=clamp((px-B.x)/B.w,0,1); Sound.unlock(); Sound.setVol(Math.round(v*100)/100); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} }
+const TLV={drag:false,lines:0,box:{x:44,y:486,w:246,h:30},mix:{},mixDrag:null};
+function twVolNow(){ return Sound.muted?0:MIX.all/100; }
+function twVolSet(px){ const B=TLV.box, v=clamp((px-B.x)/B.w,0,1); Sound.unlock(); mixSet('all',v*100); }
 (function(){ const dt=twDrawTimeline; twDrawTimeline=function(){ dt(); if(!TLM.open) return; D.save();
     // below the checkpoint text: room for the longest description there is (Paul's), so nothing ever overlaps it
     D.font=`500 15px ${FB}`; const n=TLV.lines||(TLV.lines=Math.max(4,wrap(TL_BY.paul.desc,250).length)), top=Math.min(486,366+(n-1)*21+12);
-    tlBtn(44,top,TLM.esc?121:246,28,'Controls',CT.open,'controls');
-    // Unstuck only makes sense from the Esc menu (not when Paul is showing you his timeline mid-conversation)
-    if(TLM.esc) tlBtn(169,top,121,28,'Unstuck',false,'unstuck');
+    tlBtn(44,top,246,28,'Controls',CT.open,'controls');
     // volume: a wide slider
     TLV.box.y=top+36; const B=TLV.box, v=twVolNow(), ty=B.y+22; D.font=`700 13px ${FB}`; D.fillStyle='#a8906a'; D.textAlign='left'; D.fillText('VOLUME',B.x,B.y+8); D.textAlign='right'; D.fillStyle='#ffe6b0'; D.fillText(v<=0?'Muted':Math.round(v*100)+'%',B.x+B.w,B.y+8); D.textAlign='left';
     D.fillStyle='rgba(10,8,12,.9)'; D.fillRect(B.x,ty-5,B.w,10); D.fillStyle='#c9a24a'; D.fillRect(B.x,ty-5,B.w*v,10); D.strokeStyle='#8a6a3a'; D.lineWidth=1.5; D.strokeRect(B.x,ty-5,B.w,10);
@@ -13921,9 +14029,8 @@ function twPadMenu(ctx,nav,dn){
     if(dn(0)) tlActivate('warp');
     else if(dn(1)||dn(9)) twTimelineClose(null);
     else if(dn(3)){ if(CT.open&&!CT.fromMenu){ CT.fromMenu=true; CT.focus='mode:pad'; Sound.sfx('blip'); } else tlActivate('controls'); }
-    else if(dn(2)){ if(TLM.esc) tlActivate('unstuck'); }
     else if(dn(4)||dn(5)) tlTab(TLM.tab+(dn(5)?1:-1));
-    else if(dn(6)||dn(7)){ Sound.unlock(); Sound.setVol(clamp(Math.round((twVolNow()+(dn(7)?.1:-.1))*10)/10,0,1)); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} Sound.sfx('blip'); }
+    else if(dn(6)||dn(7)){ Sound.unlock(); mixSet('all',MIX.all+(dn(7)?5:-5)); Sound.sfx('blip'); }
     else if(dn(8)) tlActivate('title');
     return; }
   if(ctx==='dom'){ const d=MP.ui, els=[...d.querySelectorAll('button,input')]; if(!els.length) return; let i=els.indexOf(document.activeElement);
@@ -14016,8 +14123,8 @@ function twPadTx(s){ let r=PAD_TXC.get(s); if(r!==undefined) return r; r=s;
 (function(){ const tp=drawTalkPrompt; drawTalkPrompt=function(){ PAD.talk=true; try{ return tp.apply(this,arguments); } finally{ PAD.talk=false; } }; })();
 // the timeline: a pad version of its key hint, and the button for each of its own buttons
 (function(){ const tw0=tlWrap; tlWrap=function(text){ if(twPadOn()&&/^Arrows select/.test(text)){ const n=twPadName; text='D-pad selects · '+n(0)+' warps · '+n(4)+' / '+n(5)+' tab · '+n(6)+' / '+n(7)+' volume · '+n(3)+' controls · '+n(1)+' closes'; arguments[0]=text; } return tw0.apply(this,arguments); };
-  const TLB={close:1,controls:3,unstuck:2,title:8,warp:0};
-  const tb=tlBtn; tlBtn=function(x,y,w,h,label,on,id){ tb.apply(this,arguments); if(twPadOn()&&TLB[id]!=null&&(id!=='unstuck'||TLM.esc)) twPadBadge(TLB[id],x-4,y+6); }; })();
+  const TLB={close:1,controls:3,title:8,warp:0};
+  const tb=tlBtn; tlBtn=function(x,y,w,h,label,on,id){ tb.apply(this,arguments); if(twPadOn()&&TLB[id]!=null) twPadBadge(TLB[id],x-4,y+6); }; })();
 // the tutorial's Leave button shows Share while Share is free
 (function(){ const dt=twDrawTut; twDrawTut=function(){ dt.apply(this,arguments); if(twPadOn()&&TW.tut&&Game.state!=='title'&&!PAD.map[8]) twPadBadge(8,TUT_BTN.x-6,TUT_BTN.y+6); }; })();
 // opening the menu tucks away the town copy of the card (the menu's own Controls button brings it back, focused)
@@ -14054,7 +14161,7 @@ function twPadStuns(){ const L=[]; for(const T of TW.foes||[]) L.push([T,T.stun>
 // ----- 99d_ui.js -----
 // =====================================================================
 // UI: one clean look for the title screen, the pause screen, the Esc menu and the Controls card.
-// The Esc menu is a single screen with no nested menus: a left rail (Resume / Unstuck / Exit to Title,
+// The Esc menu is a single screen with no nested menus: a left rail (Resume / Exit to Title,
 // progress, key hints) and five tabs on top: Shayan's Road · Ali's Road · Miscellaneous (the timeline),
 // Controls and Options. Q / Tab (L1 / R1) switch tabs, arrows (D-pad) move, Enter picks, Esc resumes.
 // Paul's own timeline uses the same screen with only the three road tabs.
@@ -14173,8 +14280,7 @@ function hubRail(){ const R=RAIL; uPanel(R.x,R.y,R.w,R.h,UIC.panel,UIC.line,12);
   uCaps("THE MOONSINGER'S BELL",R.x+20,R.y+34,UIC.dim,10); uText(TLM.esc?'Paused':'Timeline',R.x+20,R.y+70,`900 28px ${FD}`,UIC.accL);
   let y=R.y+96; const bw=R.w-40;
   uBtn(R.x+20,y,bw,44,TLM.esc?'Resume':'Close',{kind:'primary',id:'close',icon:TLM.esc?'play':'close',hint:twPadOn()?null:'Esc',pad:twPadOn()?1:null}); y+=54;
-  if(TLM.esc){ uBtn(R.x+20,y,bw,40,'Unstuck',{id:'unstuck',icon:'redo',pad:twPadOn()?2:null}); y+=50;
-    uBtn(R.x+20,y,bw,40,'Exit to Title',{id:'title',icon:'exit',kind:'danger',pad:twPadOn()?8:null}); y+=50; }
+  if(TLM.esc){ uBtn(R.x+20,y,bw,40,'Exit to Title',{id:'title',icon:'exit',kind:'danger',pad:twPadOn()?8:null}); y+=50; }
   // progress
   y+=14; D.fillStyle=UIC.line; D.fillRect(R.x+20,y,bw,1); y+=30; uCaps('PROGRESS',R.x+20,y,UIC.mut);
   const tot=TL_CHECKS.length, done=TL_CHECKS.filter(id=>TWS.done[id]).length; y+=30; uText(done+' / '+tot,R.x+20,y,`800 24px ${FB}`,UIC.text); uText('checkpoints cleared',R.x+20+D.measureText(done+' / '+tot).width+8,y,`500 13px ${FB}`,UIC.mut);
@@ -14223,22 +14329,24 @@ function hubRoad(){ const t=TLM.t, M=MAP; uPanel(M.x,M.y,M.w,M.h,UIC.well,UIC.li
   else uText('Locked',bx+95,Dt.y+Dt.h-33,`italic 600 15px ${FB}`,UIC.dim,'center');
   uText('Warping replays a checkpoint',bx+95,Dt.y+34,`500 12px ${FB}`,UIC.dim,'center'); uText('from its start.',bx+95,Dt.y+50,`500 12px ${FB}`,UIC.dim,'center'); }
 // options
-function hubOptRows(){ return [{k:'vol',lab:'Volume',sub:'Music, voices and effects'},{k:'voices',lab:'Voice acting',sub:'Spoken dialogue during cutscenes'},{k:'mute',lab:'Mute',sub:'Silence everything'},{k:'full',lab:'Fullscreen',sub:'Fill the whole screen'},
+function hubOptRows(){ return [{k:'mix:all',lab:'All Sound',sub:'',grp:'SOUND'},{k:'mix:music',lab:'Music',sub:''},{k:'mix:sfx',lab:'SFX',sub:''},{k:'mix:voice',lab:'Voices',sub:''},
+  {k:'voices',lab:'Voice acting',sub:'Spoken dialogue during cutscenes',grp:'GAME'},{k:'mute',lab:'Mute',sub:'Silence everything'},{k:'full',lab:'Fullscreen',sub:'Fill the whole screen'},
   {k:'input',lab:'Input device',sub:'Keyboard and mouse, or a controller (USB or Bluetooth)'},{k:'glyph',lab:'Button prompts',sub:'How controller buttons are shown'}]; }
 function hubOptions(){ const C=CONT, rows=hubOptRows(), x=C.x, w=C.w; uPanel(x,C.y,w,C.h,UIC.well,UIC.line,12); uCaps('OPTIONS',x+28,C.y+38,UIC.mut);
-  const kb=!twPadOn()&&!IS_TOUCH(); let y=C.y+58;
-  rows.forEach((r,i)=>{ const foc=(twPadOn()||HUB.kbFoc)&&HUB.of===i, rh=66; uRR(x+16,y,w-32,rh-8,10); D.fillStyle=foc?'rgba(227,182,90,.08)':'rgba(255,255,255,.03)'; D.fill(); if(foc){ D.strokeStyle='rgba(227,182,90,.6)'; D.lineWidth=1.5; D.stroke(); }
-    uText(r.lab,x+40,y+26,`700 17px ${FB}`,UIC.text); uText(r.sub,x+40,y+46,`500 13px ${FB}`,UIC.mut); const cx=x+w-48, cy=y+(rh-8)/2;
-    if(r.k==='vol'){ const B=TLV.box; B.x=cx-320; B.y=cy-15; B.w=260; B.h=30; const v=twVolNow(), ty=cy; uRR(B.x,ty-3,B.w,6,3); D.fillStyle='rgba(255,255,255,.1)'; D.fill(); if(v>0){ uRR(B.x,ty-3,B.w*v,6,3); D.fillStyle=UIC.acc; D.fill(); }
-      D.fillStyle=TLV.drag?'#fff':UIC.accL; D.beginPath(); D.arc(B.x+B.w*v,ty,9,0,7); D.fill(); uText(v<=0?'Muted':Math.round(v*100)+'%',cx,ty+5,`700 15px ${FB}`,UIC.text,'right'); }
-    else if(r.k==='voices') uToggle(cx-46,cy-12,!!Voice.on,'opt:voices',foc);
+  const kb=!twPadOn()&&!IS_TOUCH(); let y=C.y+50;
+  rows.forEach((r,i)=>{ if(r.grp){ uCaps(r.grp,x+28,y+16,UIC.dim,10); y+=22; }
+    const mix=r.k.startsWith('mix:'), rh=mix?44:50, foc=(twPadOn()||HUB.kbFoc)&&HUB.of===i; uRR(x+16,y,w-32,rh-6,10); D.fillStyle=foc?'rgba(227,182,90,.08)':'rgba(255,255,255,.03)'; D.fill(); if(foc){ D.strokeStyle='rgba(227,182,90,.6)'; D.lineWidth=1.5; D.stroke(); }
+    const cx=x+w-48, cy=y+(rh-6)/2;
+    if(mix){ const k=r.k.slice(4); uText(r.lab,x+40,cy+6,`700 17px ${FB}`,UIC.text); mixSlider(k,cx-420,cy,360); const v=Sound.muted&&k==='all'?0:MIX[k]; uText(v<=0?'Off':String(v),cx,cy+6,`700 16px ${FB}`,v===50?UIC.text:UIC.accL,'right'); }
+    else { uText(r.lab,x+40,y+21,`700 17px ${FB}`,UIC.text); uText(r.sub,x+40,y+38,`500 13px ${FB}`,UIC.mut); }
+    if(r.k==='voices') uToggle(cx-46,cy-12,!!Voice.on,'opt:voices',foc);
     else if(r.k==='mute') uToggle(cx-46,cy-12,!!Sound.muted,'opt:mute',foc);
     else if(r.k==='full') uToggle(cx-46,cy-12,!!inFull(),'opt:full',foc);
     else if(r.k==='input') uSeg(cx-300,cy-17,300,34,[['opt:input:kbm','Keyboard & Mouse'],['opt:input:pad','Controller']],'opt:input:'+PAD.mode,foc);
     else if(r.k==='glyph') uSeg(cx-300,cy-17,300,34,[['opt:glyph:ps','PlayStation'],['opt:glyph:xb','Xbox']],'opt:glyph:'+twPadSet(),foc);
-    TLM.rects.unshift({x:x+16,y,w:w-32,h:rh-8,id:'orow:'+i}); y+=rh; });
-  uText(kb?'Arrows choose a row and change it  ·  Enter toggles':'',x+28,C.y+C.h-22,`500 13px ${FB}`,UIC.dim); }
-function hubOptAct(k,dir){ if(k==='vol'){ Sound.unlock(); Sound.setVol(clamp(Math.round((twVolNow()+(dir||1)*.05)*20)/20,0,1)); try{ if(window.syncVolUI) syncVolUI(); }catch(e){} Sound.sfx('blip'); return; }
+    TLM.rects.unshift({x:x+16,y,w:w-32,h:rh-6,id:'orow:'+i}); y+=rh; });
+  uText(kb?'Arrows choose a row and change it  ·  Enter toggles, or puts a slider back to 50  ·  50 is the normal mix':'50 is the normal mix',x+28,C.y+C.h-16,`500 13px ${FB}`,UIC.dim); }
+function hubOptAct(k,dir){ if(k.startsWith('mix:')){ const m=k.slice(4); Sound.unlock(); mixSet(m,dir==null?50:MIX[m]+5*dir); Sound.sfx('blip'); return; }
   if(k==='voices'){ Voice.on=dir?dir>0:!Voice.on; if(!Voice.on) Voice.stop(); }
   else if(k==='mute'){ if(dir==null||(dir>0)!==!!Sound.muted) Sound.toggleMute(); }
   else if(k==='full'){ if(dir==null||(dir>0)!==!!inFull()) toggleFull(); }
@@ -14246,7 +14354,7 @@ function hubOptAct(k,dir){ if(k==='vol'){ Sound.unlock(); Sound.setVol(clamp(Mat
   else if(k==='glyph'){ PAD.glyph=dir==null?(twPadSet()==='ps'?'xb':'ps'):dir>0?'xb':'ps'; twPadSave(); }
   Sound.sfx('select'); }
 twDrawTimeline=function(){ if(!TLM.open) return; TLM.t+=1/60; TLM.rects=[]; D.save(); D.globalAlpha=Math.min(1,TLM.t*6);
-  D.fillStyle='rgba(4,5,11,.9)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999;
+  D.fillStyle='rgba(4,5,11,.9)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999; TLV.mix={};
   if(HUB.sec!=='road'&&!TLM.esc) HUB.sec='road';
   if(HUB.sec==='controls'&&!CT.open) twControlsShow(true);
   hubRail(); hubTabBar();
@@ -14332,8 +14440,10 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // ----- 99e_debug.js -----
 // =====================================================================
 // DEBUG MODE (secret, numpad 5): a sandbox in the flower field for playtesting bosses.
-// Left panel: character, cheats, which boss to spawn, AI mode (Idle / Active / Loop the chosen
-// mechanic), phase, boss HP, limit cuts. Right panel: every mechanic of that boss; click one to run it.
+// One panel (Tab, or the bar / the touch Debug button) that PAUSES the game while it is open: Setup (hero, cheats, boss),
+// Boss (AI mode, HP, kill) and Mechanics grouped in phase tabs (each tab: that phase's limit cuts / phase changes,
+// then the moves of that phase's pool). Picking a mechanic closes the panel and plays it; the bar at the bottom left
+// stays up during play: Again (R) repeats the last mechanic, Panel (Tab) reopens it. Esc closes the panel.
 // Final defeats never advance the story here: the boss just leaves and can be spawned again.
 //
 // DBG_NEW lists what the latest patch added or changed; those rows (and their boss) show a NEW tag.
@@ -14342,7 +14452,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // =====================================================================
 const DBG_PATCH="Oct 27: the duo v5 (mixes, new limit cuts, Burnout); He's Day Old Kojima replaces Grimmaw; bit lasers in the bullet hell";
 const DBG_NEW=['duo:*','duo:laserMix','duo:omarMix','duo:duoMix','duo:scytheRain','duo:burnout','grimmaw:*','mech:*'];
-const DBG={on:false,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
+const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
 function dbgName(k){ const S=[...(TH_SPELLS[1]||[]),...(TH_SPELLS[2]||[])].find(s=>s[2]===k); if(DBG.boss==='mech'&&S){ const m=S[0].match(/「(.*)」/); return m?m[1]:S[0]; }
@@ -14350,32 +14460,41 @@ function dbgName(k){ const S=[...(TH_SPELLS[1]||[]),...(TH_SPELLS[2]||[])].find(
 function dbgSay(t){ DBG.msg={t,at:performance.now()}; }
 
 // ---------- what is on the field ----------
+function dbgKJ(){ return DBG.boss==='grimmaw'&&Game.boss&&Game.boss.state!=='dead'?Game.boss:null; }
 function dbgSolo(){ return TW.fight&&TW.fight.kind==='solo'?TW.foes[0]:null; }
 function dbgDuo(){ return TW.fight&&TW.fight.kind==='duo'?TW.fight:null; }
-function dbgPhases(){ return {caotan:3,omar:3,duo:3,hamza:2,nathan:4,mech:2}[DBG.boss]||0; }
+function dbgPhases(){ return {caotan:3,omar:3,duo:3,hamza:2,nathan:4,mech:2,grimmaw:3}[DBG.boss]||0; }
 function dbgPhase(){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); return T?T.phase:0; } if(b==='duo'){ const F=dbgDuo(); return F?F.phase:0; }
-  if(b==='hamza') return TW.giant?TW.giant.phase:0; if(b==='nathan') return NB?NB.phase:0; if(b==='mech') return Game.mech?Game.mech.phase:0; return 0; }
+  if(b==='hamza') return TW.giant?TW.giant.phase:0; if(b==='nathan') return NB?NB.phase:0; if(b==='mech') return Game.mech?Game.mech.phase:0; if(b==='grimmaw'){ const K=dbgKJ(); return K?K.phase||1:0; } return 0; }
 function dbgHP(){ const b=DBG.boss; let h=null,m=1; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(T){ h=T.hp; m=T.maxHp; } } else if(b==='duo'){ const F=dbgDuo(); if(F){ h=F.C.hp+F.O.hp; m=F.C.maxHp+F.O.maxHp; } }
-  else if(b==='hamza'&&TW.giant){ h=TW.giant.hp; m=TW.giant.maxHp; } else if(b==='nathan'&&NB){ const p=NB.phase, top=NB_PHASES[p-1], bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; h=NB.bars-bot; m=top-bot; } else if(b==='mech'&&Game.mech&&Game.mech.boss){ h=Game.mech.boss.hp; m=Game.mech.boss.maxHp; }
+  else if(b==='hamza'&&TW.giant){ h=TW.giant.hp; m=TW.giant.maxHp; } else if(b==='nathan'&&NB){ const p=NB.phase, top=NB_PHASES[p-1], bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; h=NB.bars-bot; m=top-bot; } else if(b==='mech'&&Game.mech&&Game.mech.boss){ h=Game.mech.boss.hp; m=Game.mech.boss.maxHp; } else if(b==='grimmaw'&&dbgKJ()){ h=Game.boss.hp; m=Game.boss.maxHp||1; }
   return h==null?null:clamp(h/m,0,1); }
-function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)];
+// the pool of one phase (what the boss can pick there), in a stable order
+function dbgPool(ph){ const b=DBG.boss, u=a=>[...new Set(a||[])];
+  if(b==='caotan'||b==='omar') return u(TWPOOL[b][ph]).filter(k=>TWK[b][k]); if(b==='duo') return u((DUO3_POOL[ph]||[]).concat(ph===3?['scytheRain']:[])).filter(k=>DUO[k]);
+  if(b==='hamza') return u(HZG_POOL[ph]).filter(k=>HZG[k]); if(b==='nathan') return u(NB_POOL[ph]); if(b==='mech') return (TH_SPELLS[ph]||[]).map(s=>s[2]);
+  if(b==='grimmaw') return u((KJ_POOL[ph]||[]).concat(['rush'])); return []; }
+function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw') return uniq([1,2,3].flatMap(dbgPool));
   if(b==='caotan'||b==='omar') return uniq([1,2,3].flatMap(p=>TWPOOL[b][p]||[])).filter(k=>TWK[b][k]);
   if(b==='duo') return uniq([1,2,3].flatMap(p=>DUO3_POOL[p]||[]).concat(['scytheRain'])).filter(k=>DUO[k]);
   if(b==='hamza') return uniq(HZG_POOL[1].concat(HZG_POOL[2])).filter(k=>HZG[k]);
   if(b==='nathan') return uniq([1,2,3,4].flatMap(p=>NB_POOL[p]||[]));
   if(b==='mech') return TH_SPELLS[1].concat(TH_SPELLS[2]).map(s=>s[2]); return []; }
-function dbgLCs(){ return {caotan:[['Limit cut · II','lc',2],['Limit cut · III','lc',3]],omar:[['Limit cut · II','lc',2],['Limit cut · III','lc',3]],duo:[['Waltz · II','lc',2],['Fusion · III','lc',3]],
-  hamza:[['Buffet · II','buffet',2],['Frenzy (finale)','frenzy',2]],nathan:[['Storm · II','storm',2],['Heaven · III','heaven',3],['Overdrive (finale)','over',4]],mech:[]}[DBG.boss]||[]; }
+// limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
+function dbgLCs(){ return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
+  duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
+  hamza:[['Buffet (limit cut)','buffet',2],['Frenzy (finale)','frenzy',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
+  grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Armor dome (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
 // ---------- actions ----------
-function dbgToggle(){ if(TLM.open) twTimelineClose(null); if(DBG.on){ DBG.on=false; dbgSay(''); return false; } DBG.on=true; DBG.hide=false; DBG.ali=ALI(); if(TW.god==null) TW.god=true; TW.god=true; dbgArena(null); return true; }
+function dbgToggle(){ if(TLM.open) twTimelineClose(null); if(DBG.on){ dbgOpen(false); DBG.on=false; dbgSay(''); return false; } DBG.on=true; DBG.hide=false; DBG.tab=DBG.boss?'moves':'setup'; DBG.wantOpen=1; DBG.ali=ALI(); if(TW.god==null) TW.god=true; TW.god=true; dbgArena(null); return true; }
 function dbgArena(then){ Object.assign(Game,{script:null,wait:null,dlg:null,timeScale:1,slowT:0,banner:null,card:null,evaCard:null}); Voice.stop(); Cam.cine=null; Game.letterTo=0;
   // already in the field as the right hero: just clear it (instant respawns); otherwise reload it
   if(L&&L.key==='flowers'&&!Game.mech&&ALI()===DBG.ali){ twEndFight(); TW.giant=null; if(typeof hzgClearBabies==='function') hzgClearBabies(); nbRemove(); twClearAllies(); Game.boss=null; Game.bossBar=0; JC.lines=[]; Game.fxUpd=[];
     Game.state='play'; Game.arena=null; Cam.focus=null; Cam.zoom=1; Player.hidden=false; if(!DBG.ali&&DBG.blade) Game.flags.aliSword=1; if(then) then(); return; }
   run(function*(){ twWarpReset(DBG.ali); yield* twWarpFlowers({noHamza:1}); Game.state='play'; Game.arena=null; Cam.zoom=1; if(!DBG.ali&&DBG.blade) Game.flags.aliSword=1; if(then) then(); }); }
 function dbgSpawn(id){ DBG.boss=id; DBG.move=null;
-  if(id==='grimmaw'||id==='paul'){ dbgSay('Warping (with its intro cutscene)'); Object.assign(Game,{script:null,wait:null,dlg:null}); run(function*(){ yield* twWarp(id==='paul'?'paul':(DBG.ali?'al_cao_g':'sh_cao_g')); }); return; }
+  if(id==='grimmaw'||id==='paul'){ dbgSay(id==='paul'?'Warping (with its intro cutscene)':'Warping to Kojima (his intro plays; the controls work once he is on the field)'); Object.assign(Game,{script:null,wait:null,dlg:null}); run(function*(){ yield* twWarp(id==='paul'?'paul':(DBG.ali?'al_cao_g':'sh_cao_g')); }); return; }
   if(id==='mech'){ Object.assign(Game,{script:null,wait:null,dlg:null}); run(function*(){ twWarpReset(false); yield fadeOut(); enterMech(); NAT.x=-14; NAT.y=0; NAT.show=1; Game.mech.st='fight'; Game.mech._resp=1; Game.fade=1; Game.fadeTo=0; startMechPhase(1); dbgApplyMode(); }); return; }
   dbgArena(()=>{ const c=L.zone?{x:L.zone.x,z:L.zone.z}:{x:Player.x,z:Player.z};
     if(id==='caotan'||id==='omar'){ const T=twStartSolo(id); T.cd=1.2; }
@@ -14386,15 +14505,17 @@ function dbgSpawn(id){ DBG.boss=id; DBG.move=null;
 function dbgDespawn(){ DBG.move=null; if(Game.mech||DBG.boss==='grimmaw'||DBG.boss==='paul') dbgArena(null); else { twEndFight(); TW.giant=null; if(typeof hzgClearBabies==='function') hzgClearBabies(); nbRemove(); Game.arena=null; Cam.focus=null; Cam.zoom=1; Game.bossBar=0; } }
 // the AI mode is enforced every frame in dbgTick; this just cancels what the boss is doing when you pick Idle
 function dbgApplyMode(){ if(DBG.mode!=='idle') return; const T=dbgSolo(), F=dbgDuo(); if(T){ T.gen=null; T.state='idle'; } if(F){ F.C.gen=F.O.gen=null; F.busy=0; } if(TW.giant) TW.giant.gen=null; if(NB){ NB.gen=null; NB.busyAtk=0; } twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; });
-  const Tm=Game.mech&&Game.mech.th; if(Tm){ Tm.gen=null; Tm.eb=[]; Tm.spell=null; } }
-function dbgRun(k){ const b=DBG.boss; DBG.move=k; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
+  const Tm=Game.mech&&Game.mech.th; if(Tm){ Tm.gen=null; Tm.eb=[]; Tm.spell=null; } const K=dbgKJ(); if(K&&['kj','twcombo'].includes(K.state)){ K.kjg=null; K.twg=null; K.state='recover'; K.st=0; } }
+function dbgRun(k,ph){ const b=DBG.boss; if(ph&&b!=='grimmaw'&&dbgPhase()&&dbgPhase()!==ph) dbgSetPhase(ph); DBG.move=k; DBG.last={a:'move',k,ph}; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T||!TWK[b][k]) return; T.stun=0; T.state='atk'; T.last=k; T.gen=TWK[b][k](T,T.phase); T.wait=0; }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; F.lc=0; F.busy=0; F.C.stun=F.O.stun=0; if(k==='scytheRain'&&!TW.planted.length) dbgSay('Scythe Rain needs planted scythes: run Volley first'); twDuo3Begin(F,k); }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; G.mv=null; G.gen=HZG[k](G,G.phase); G.wait=0; }
   else if(b==='nathan'){ if(!NB) return; NB.gen=nbPattern(k); NB.wait=0; NB.busyAtk=1; }
   else if(b==='mech'){ const T=Game.mech&&Game.mech.th; if(!T) return; T.dbgSpell=k; T.gen=null; T.wait=0; T.eb=[]; T.spell=null; }
-  dbgSay('Running: '+dbgName(k)); }
-function dbgSetPhase(n){ const b=DBG.boss; DBG.move=null; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
+  else if(b==='grimmaw'){ const K=dbgKJ(); if(!K||['rain','clash','frenzy','special','dome','dome_in','intro'].includes(K.state)){ dbgSay('Kojima is busy (a phase change or cutscene)'); return; } K.kjg=null; K.twg=null; K.vanish=0; if(K.spr) K.spr.show(true); K.vx=K.vz=0;
+    const q=ph||K.phase||1; if(k==='rush'){ K.state='twcombo'; K.st=0; K.twg=grimRush(K); K.tww=0; } else if(KJM[k]){ K.state='kj'; K.st=0; K.kjg=KJM[k](K,q); K.kjw=0; } else { K.chain=k==='slash'?Math.min(2,q):1; if(k==='blink'){ K.chain=1; K.rush=0; } K.state=k+'_w'; K.st=0; } }
+  dbgSay('Running: '+dbgName(k)+(ph?'  (phase '+['','I','II','III','IV'][ph]+')':'')); }
+function dbgSetPhase(n){ const b=DBG.boss; if(b==='grimmaw'){ dbgSay("Kojima's phases change arenas: use his phase-change buttons"); return; } DBG.move=null; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; const hp=twHPFor(n,b); Object.assign(T,{phase:n,hp,maxHp:hp,form:n,gen:null,state:'idle',inv:false,stun:0,bag:[],down:0,dying:0,cd:1}); T.lcDone[n]=0; twMeta(T); Sound.play(TW_MUSIC[b][n]); }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; F.phase=n; F.lc=0; F.lcDone[n]=0; F.bag=[]; F.busy=0; F.pend=null; for(const T of [F.C,F.O]) Object.assign(T,{phase:n,hp:DUO_HP[n],maxHp:DUO_HP[n],form:n,down:0,inv:false,stun:0,gen:null,state:'idle',bag:[]}); }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; Object.assign(G,{phase:n,hp:HZG_HP[n],maxHp:HZG_HP[n],bag:[],lcDone:0,inv:false,gen:null,pend:null,frenzied:0}); }
@@ -14403,30 +14524,42 @@ function dbgSetPhase(n){ const b=DBG.boss; DBG.move=null; twClearHz(); BOLTS.for
   dbgSay('Phase '+['','I','II','III','IV'][n]); }
 function dbgSetHP(k){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(T) T.hp=Math.max(.1,T.maxHp*k); } else if(b==='duo'){ const F=dbgDuo(); if(F) for(const T of [F.C,F.O]){ T.hp=Math.max(.1,T.maxHp*k); T.down=0; T.inv=false; } }
   else if(b==='hamza'&&TW.giant){ TW.giant.hp=Math.max(.1,TW.giant.maxHp*k); } else if(b==='nathan'&&NB){ const p=NB.phase, top=NB_PHASES[p-1], bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; NB.bars=NB.hp=bot+(top-bot)*Math.max(.01,k); }
-  else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss; B.hp=Math.max(.1,B.maxHp*k); } }
+  else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss; B.hp=Math.max(.1,B.maxHp*k); } else if(b==='grimmaw'&&dbgKJ()){ const K=Game.boss; K.hp=Math.max(.1,(K.maxHp||1)*k); } }
 // kill = deal exactly the bar's remaining HP through the normal damage path, so phase changes play as in the game
 function dbgKill(){ const b=DBG.boss, ot=TW.otk; TW.otk=false;
   try{ if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(T){ T.lcDone[T.phase]=1; T.inv=false; T.state='idle'; twHurt(T,T.hp+1,'test'); } }
     else if(b==='duo'){ const F=dbgDuo(); if(F){ F.lcDone[F.phase]=1; for(const T of [F.C,F.O]){ T.inv=false; if(T.hp>0) twHurt(T,T.hp+1,'test'); } } }
     else if(b==='hamza'&&TW.giant){ const G=TW.giant; G.lcDone=1; G.inv=false; hzgHurt(G.hp+1,'test'); }
     else if(b==='nathan'&&NB){ NB.lcA=NB.lcB=1; NB.inv=false; const p=NB.phase, bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; nbDamage(NB.bars-bot+.01); }
-    else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss; B.vuln=true; mechDamage(B.hp+1,0,0,0,true); } } finally{ TW.otk=ot; } }
-function dbgLC(kind,ph){ const b=DBG.boss; if(dbgPhase()!==ph&&kind!=='frenzy'&&kind!=='over') dbgSetPhase(ph); twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
+    else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss; B.vuln=true; mechDamage(B.hp+1,0,0,0,true); }
+    else if(b==='grimmaw'&&dbgKJ()){ const K=Game.boss; if(K.state==='dome'){ K.armor=0; damageBoss(1); } else { K.inv=false; if(['kj','twcombo'].includes(K.state)){ K.state='idle'; K.kjg=K.twg=null; } damageBoss(K.hp+1); } } } finally{ TW.otk=ot; } }
+function dbgLC(kind,ph){ const b=DBG.boss; DBG.last={a:'lc',k:kind,ph}; if(kind==='kill'){ if(dbgPhase()!==ph) dbgSetPhase(ph); dbgKill(); dbgSay('Phase change'); return; }
+  if(b==='grimmaw'){ dbgKJLC(kind,ph); return; }
+  if(dbgPhase()!==ph&&kind!=='frenzy'&&kind!=='over') dbgSetPhase(ph); twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; T.hp=T.maxHp/2; T.state='lc'; T.lcDone[ph]=1; T.gen=TWK[b]['lc'+(ph-1)](T); T.wait=0; }
-  else if(b==='duo'){ const F=dbgDuo(); if(!F) return; const C=F.C, O=F.O; F.lcDone[ph]=1; F.lc=1; F.busy=1; twLCPrep(C); twLCPrep(O); C.down=O.down=0; C.gen=(ph===2?DUO.waltz:DUO.fusion)(C,O); C.wait=0; O.gen=twWaitFor(C)(); O.wait=0; }
+  else if(b==='duo'){ const F=dbgDuo(); if(!F) return; const C=F.C, O=F.O; if(F.d5) d5OmarLCClean(F); if(F.d5c) d5CaoLCClean(F); TW.lcCleanup=null; F.director=0; F.busy=1; C.gen=O.gen=null;
+    if(kind==='omarlc') run(function*(){ yield* d5OmarLCIntro(F,C,O,true); });
+    else if(kind==='caolc'){ F.caoLC=0; run(function*(){ yield* d5CaoLCIntro(F,C,O,true); }); }
+    else if(kind==='burnout'){ F.caoLC=1; F.burned=0; C.hp=O.hp=0; twBurnoutGo(F,C,O); } }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; if(kind==='buffet'){ G.lcDone=1; G.inv=true; G.mv=null; G.gen=hzgBuffet(G); G.wait=0; } else { G.frenzied=1; G.gen=null; run(function*(){ yield* hzgFrenzy(G); if(TW.giant===G){ G.inv=false; G.hp=Math.max(G.hp,G.maxHp*.2); Game.state='play'; Game.letterTo=0; Cam.cine=null; } }); } }
   else if(b==='nathan'){ if(!NB) return; if(kind==='over'){ NB.over=1; run(function*(){ yield* nbOverdrive(); if(NB){ NB.alive=true; yield* nbBeginPhase(NB.phase); } }); }
     else { if(kind==='storm') NB.lcA=1; else NB.lcB=1; NB.inv=true; nbClear(); NB.pend=kind==='storm'?nbStorm:nbHeaven; nbPend(); } }
-  dbgSay('Limit cut: '+kind); }
+  dbgSay('Running: '+((dbgLCs().find(q=>q[1]===kind&&q[2]===ph)||[kind])[0])); }
+// Kojima's phase changes run his real scripts (they also move him to the next arena)
+function dbgKJLC(kind,ph){ const K=dbgKJ(); if(!K){ dbgSay('Kojima is not on the field yet'); return; } twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; }); K.kjg=K.twg=null;
+  if(kind==='kjdome'){ if(K.phase!==3){ dbgSay('The dome is phase III (Garden of Stars): use the II → III change first'); return; } if(K.domeDone){ dbgSay('The dome already broke this fight'); return; } K.state='idle'; K.hp=Math.min(K.hp,K.maxHp/2); startDome(K); }
+  else { if((K.phase||1)!==ph){ dbgSay('That change starts from phase '+['','I','II','III'][ph]+'; he is in phase '+['','I','II','III'][K.phase||1]); return; } K.state='idle'; startSpecial(K); }
+  dbgSay('Running: '+((dbgLCs().find(q=>q[1]===kind&&q[2]===ph)||[kind])[0])); }
 
 // ---------- every frame: enforce the AI mode, loop the chosen mechanic, slow-mo ----------
 function dbgBusy(){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); return !T||!!T.gen||T.stun>0||T.state==='lc'||!!TW.fight.pend; } if(b==='duo'){ const F=dbgDuo(); return !F||F.busy||!!F.C.gen||!!F.O.gen||F.lc||!!F.pend; }
-  if(b==='hamza'){ const G=TW.giant; return !G||!!G.gen||G.inv||!!G.pend; } if(b==='nathan') return !NB||!!NB.gen||NB.inv||!!NB.pend; return true; }
-function dbgTick(){ if(!DBG.on) return; const idle=DBG.mode==='idle', loop=DBG.mode==='loop'&&DBG.move; const F=TW.fight;
+  if(b==='hamza'){ const G=TW.giant; return !G||!!G.gen||G.inv||!!G.pend; } if(b==='nathan') return !NB||!!NB.gen||NB.inv||!!NB.pend; if(b==='grimmaw'){ const K=dbgKJ(); return !K||K.state!=='idle'; } return true; }
+function dbgTick(){ if(!DBG.on) return; if(DBG.wantOpen&&Game.state==='play'&&!Game.script&&!Game.dlg){ DBG.wantOpen=0; dbgOpen(true); } const idle=DBG.mode==='idle', loop=DBG.mode==='loop'&&DBG.move; const F=TW.fight;
   if(F&&F.kind==='solo') F.noAttack=idle||loop; if(F&&F.kind==='duo'&&!F.lc&&!F.pend) F.director=(idle||loop)?0:1; if(TW.giant) TW.giant.noAttack=idle||loop;
   if(NB&&(idle||loop)){ NB.cd=Math.max(NB.cd,.5); NB.dodgeCd=Math.max(NB.dodgeCd||0,.5); }
+  const K=dbgKJ(); if(K&&(idle||loop)&&K.state==='idle') K.cd=Math.max(K.cd||0,.5);
   const Tm=Game.mech&&Game.mech.th; if(Game.mech) Game.mech.dbgIdle=idle; if(Tm&&DBG.boss==='mech') Tm.dbgLoop=DBG.mode==='loop';
-  if(loop&&Game.state==='play'&&!Game.script&&DBG.boss!=='mech'&&!dbgBusy()){ DBG.loopT=(DBG.loopT||0)+1/60; if(DBG.loopT>.6){ DBG.loopT=0; const k=DBG.move; dbgRun(k); } } else DBG.loopT=0;
+  if(loop&&Game.state==='play'&&!Game.script&&DBG.boss!=='mech'&&!dbgBusy()){ DBG.loopT=(DBG.loopT||0)+1/60; if(DBG.loopT>.6){ DBG.loopT=0; dbgRun(DBG.move,DBG.last&&DBG.last.a==='move'?DBG.last.ph:0); } } else DBG.loopT=0;
   if(DBG.slow&&Game.state==='play') Game.timeScale=Math.min(Game.timeScale||1,.5); }
 (function(){ const uw=updateWorld; updateWorld=function(dt){ const r=uw.apply(this,arguments); try{ dbgTick(); }catch(e){ console.error('debug',e); } return r; }; })();
 // final defeats leave the story alone here
@@ -14439,62 +14572,118 @@ function* dbgDefeated(){ twEndFight(); TW.giant=null; if(typeof hzgClearBabies==
   const sb=soulburn; soulburn=function*(){ if(DBG.on){ Game.letterTo=0; startMechPhase(2); return; } yield* sb.apply(this,arguments); };
   const cb=cosmicBlade; cosmicBlade=function*(){ if(DBG.on){ yield* dbgDefeated(); return; } yield* cb.apply(this,arguments); }; })();
 
-// ---------- the panels ----------
-const DBP={L:{x:12,y:12,w:316},R:{x:UW-12-300,y:12,w:300}};
-function dbgBtn(x,y,w,h,label,id,o){ o=o||{}; const hov=DBG.hov===id; uRR(x,y,w,h,6); D.fillStyle=o.on?'rgba(227,182,90,.9)':hov?'rgba(255,255,255,.14)':'rgba(255,255,255,.06)'; D.fill(); D.strokeStyle=o.on?UIC.acc:UIC.line2; D.lineWidth=1; D.stroke();
-  D.font=`700 12px ${FB}`; let t=label; while(D.measureText(t).width>w-(o.nw?44:14)&&t.length>3) t=t.slice(0,-2)+'…'; if(t!==label&&!t.endsWith('…')) t+='…';
-  uText(t,o.nw?x+8:x+w/2,y+h/2+4,`700 12px ${FB}`,o.on?'#1a1408':o.dim?UIC.dim:UIC.text,o.nw?'left':'center');
+// ---------- the panel (pauses the game) and the bar (always on screen while debugging) ----------
+// open/close: Tab (or numpad 4), the bar's Panel button, the touch Debug button; Esc closes. Again: R (or numpad 6).
+function dbgOpen(on){ if(on===!!DBG.open||!DBG.on) return; if(typeof releaseTouchKeys==='function') releaseTouchKeys(); clearHits();
+  if(on){ DBG.prev=Game.state==='paused'?(Game.prev||'play'):Game.state; Game.prev=DBG.prev; Game.state='paused'; DBG.open=true; DBG.mph=0; DBG.sc=0; }
+  else { DBG.open=false; if(Game.state==='paused') Game.state=DBG.prev||'play'; } }
+function dbgAgain(){ const L=DBG.last; if(!L){ dbgSay('Nothing to repeat yet: pick a mechanic in the panel'); return; } if(L.a==='move') dbgRun(L.k,L.ph); else dbgLC(L.k,L.ph); }
+const DBK={k:1,bh:24,fs:12,oy:0};   // scale and sizes: bigger on touch (phone-first)
+function dbgBtn(x,y,w,h,label,id,o){ o=o||{}; const hov=DBG.hov===id; uRR(x,y,w,h,6); D.fillStyle=o.on?'rgba(227,182,90,.9)':o.red?'rgba(255,74,122,.22)':hov?'rgba(255,255,255,.14)':'rgba(255,255,255,.06)'; D.fill(); D.strokeStyle=o.on?UIC.acc:o.red?'#ff4a7a':UIC.line2; D.lineWidth=1; D.stroke();
+  const fs=o.fs||DBK.fs; D.font=`700 ${fs}px ${FB}`; let t=label; const room=w-(o.nw?44:14); while(D.measureText(t).width>room&&t.length>3) t=t.slice(0,-2)+'…';
+  uText(t,o.left||o.nw?x+8:x+w/2,y+h/2+fs*.36,`700 ${fs}px ${FB}`,o.on?'#1a1408':o.dim?UIC.dim:UIC.text,o.left||o.nw?'left':'center');
   if(o.nw){ uRR(x+w-38,y+h/2-8,32,16,8); D.fillStyle='#ff4a7a'; D.fill(); uText('NEW',x+w-22,y+h/2+4,`900 9px ${FB}`,'#fff','center'); }
-  DBG.rects.push({x,y,w,h,id}); }
-function dbgChk(x,y,on,label,id){ uRR(x,y,14,14,3); D.fillStyle=on?UIC.acc:'rgba(0,0,0,.4)'; D.fill(); D.strokeStyle=UIC.line2; D.stroke(); if(on){ D.strokeStyle='#1a1408'; D.lineWidth=2; D.beginPath(); D.moveTo(x+3,y+7.5); D.lineTo(x+6,y+10.5); D.lineTo(x+11,y+4); D.stroke(); }
-  uText(label,x+20,y+11,`600 12px ${FB}`,on?UIC.text:UIC.mut); DBG.rects.push({x:x-2,y:y-3,w:140,h:20,id}); }
-// the sections: the desktop shows two side panels (setup + boss on the left, moves on the right); phones show one paged panel (99f_mobile.js)
-function dbgHead(x,y,w,closeId){ uText('DEBUG MODE',x,y,`900 16px ${FB}`,'#ff8aa8'); if(closeId) dbgBtn(x+w-62,y-16,28,22,'–','hide'); dbgBtn(x+w-30,y-16,30,22,'✕',closeId||'off');
-  y+=16; uText(DBG_PATCH,x,y,`600 11px ${FB}`,UIC.mut); uRR(x+w-38,y-11,32,15,7); D.fillStyle='#ff4a7a'; D.fill(); uText('NEW',x+w-22,y,`900 9px ${FB}`,'#fff','center'); return y+20; }
-function dbgSecSetup(x,y,w){ uCaps('PLAYER',x,y,UIC.dim,10); y+=8; dbgBtn(x,y,w/2-3,24,'Shayan','ali:0',{on:!DBG.ali}); dbgBtn(x+w/2+3,y,w/2-3,24,'Ali','ali:1',{on:DBG.ali}); y+=32;
-  dbgChk(x,y,!!TW.god,'Infinite HP','t:god'); dbgChk(x+w/2,y,!!TW.otk,'One-hit kill','t:otk'); y+=22; dbgChk(x,y,!!TW.infFC,ALI()?'Infinite JC':'Infinite Full Counter','t:fc'); dbgChk(x+w/2,y,DBG.slow,'Slow-mo ½','t:slow'); y+=22;
-  if(!ALI()){ dbgChk(x,y,!!Game.flags.aliSword,"Ali's blade (10× Nathan)",'t:blade'); y+=22; }
-  dbgBtn(x,y,(w-12)/3,24,'Heal','heal'); dbgBtn(x+(w-12)/3+6,y,(w-12)/3,24,'Full meter','meter'); dbgBtn(x+2*(w-12)/3+12,y,(w-12)/3,24,'Clear hazards','clear'); y+=34;
-  uCaps('SPAWN A BOSS',x,y,UIC.dim,10); y+=8; DBG_BOSSES.forEach(([id,nm],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,nm,'boss:'+id,{on:DBG.boss===id,nw:dbgNew(id)}); if(col) y+=28; }); return y+6; }
-function dbgCtl(){ const b=DBG.boss; return b&&b!=='grimmaw'&&b!=='paul'; }
-function dbgSecBoss(x,y,w){ const b=DBG.boss;
-  if(!b){ uText('Spawn a boss first.',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y+20; }
-  if(!dbgCtl()){ uText('Warped to the real fight (intro included).',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y+20; }
-  const ph=dbgPhase(), hp=dbgHP(); uText(DBG_BOSSES.find(q=>q[0]===b)[1]+(ph?'  ·  phase '+['','I','II','III','IV'][ph]:'  ·  not on the field'),x,y+4,`700 13px ${FB}`,UIC.accL); if(hp!=null) uText(Math.round(hp*100)+'%',x+w,y+4,`700 13px ${FB}`,UIC.text,'right'); y+=12;
+  const k=DBK.k, oy=DBK.oy||0; DBG.rects.push({x:x*k,y:(y-oy)*k,w:w*k,h:h*k,id}); }
+function dbgChk(x,y,on,label,id,w){ const s=DBK.bh>24?18:14; uRR(x,y,s,s,3); D.fillStyle=on?UIC.acc:'rgba(0,0,0,.4)'; D.fill(); D.strokeStyle=UIC.line2; D.stroke(); if(on){ D.strokeStyle='#1a1408'; D.lineWidth=2; D.beginPath(); D.moveTo(x+s*.22,y+s*.54); D.lineTo(x+s*.43,y+s*.75); D.lineTo(x+s*.78,y+s*.28); D.stroke(); }
+  uText(label,x+s+6,y+s*.8,`600 ${DBK.fs}px ${FB}`,on?UIC.text:UIC.mut); const k=DBK.k, oy=DBK.oy||0; DBG.rects.push({x:(x-2)*k,y:(y-4-oy)*k,w:(w||150)*k,h:(s+12)*k,id}); }
+function dbgCtl(){ const b=DBG.boss; return !!b&&b!=='paul'; }
+function dbgBossName(){ const q=DBG_BOSSES.find(q=>q[0]===DBG.boss); return q?q[1].replace(' ↗',''):''; }
+function dbgSecSetup(x,y,w){ const bh=DBK.bh;
+  uCaps('PLAYER',x,y,UIC.dim,10); y+=8; dbgBtn(x,y,w/2-3,bh,'Shayan','ali:0',{on:!DBG.ali}); dbgBtn(x+w/2+3,y,w/2-3,bh,'Ali','ali:1',{on:DBG.ali}); y+=bh+8;
+  const r=DBK.bh>24?30:22; dbgChk(x,y,!!TW.god,'Infinite HP','t:god',w/2-4); dbgChk(x+w/2,y,!!TW.otk,'One-hit kill','t:otk',w/2); y+=r; dbgChk(x,y,!!TW.infFC,ALI()?'Infinite JC':'Infinite Full Counter','t:fc',w/2-4); dbgChk(x+w/2,y,DBG.slow,'Slow-mo ½','t:slow',w/2); y+=r;
+  if(!ALI()){ dbgChk(x,y,!!Game.flags.aliSword,"Ali's blade (10× Nathan)",'t:blade',w); y+=r; }
+  const b3=(w-12)/3; dbgBtn(x,y,b3,bh,'Heal','heal'); dbgBtn(x+b3+6,y,b3,bh,'Full meter','meter'); dbgBtn(x+2*b3+12,y,b3,bh,'Clear hazards','clear'); y+=bh+12;
+  uCaps('SPAWN A BOSS',x,y,UIC.dim,10); y+=8; DBG_BOSSES.forEach(([id,nm],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,bh,nm,'boss:'+id,{on:DBG.boss===id,nw:dbgNew(id)}); if(col) y+=bh+4; }); return y+8; }
+function dbgSecBoss(x,y,w){ const b=DBG.boss, bh=DBK.bh;
+  if(!b){ uText('Spawn a boss first (Setup).',x,y+4,`italic 600 ${DBK.fs}px ${FB}`,UIC.mut); return y+20; }
+  if(!dbgCtl()){ uText("Paul's raid is the real fight: no controls here.",x,y+4,`italic 600 ${DBK.fs}px ${FB}`,UIC.mut); return y+20; }
+  const ph=dbgPhase(), hp=dbgHP(); uText(dbgBossName()+(ph?'  ·  phase '+['','I','II','III','IV'][ph]:'  ·  not on the field yet'),x,y+4,`700 ${DBK.fs+1}px ${FB}`,UIC.accL); if(hp!=null) uText(Math.round(hp*100)+'%',x+w,y+4,`700 ${DBK.fs+1}px ${FB}`,UIC.text,'right'); y+=12;
   if(hp!=null){ uRR(x,y,w,5,2); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); uRR(x,y,Math.max(3,w*hp),5,2); D.fillStyle='#ff4a7a'; D.fill(); } y+=14;
-  uCaps('AI',x,y,UIC.dim,10); y+=8; [['idle','Idle'],['active','Active'],['loop','Loop move']].forEach(([m,l],i)=>dbgBtn(x+i*(w/3+1),y,w/3-3,24,l,'mode:'+m,{on:DBG.mode===m})); y+=30;
-  if(DBG.mode==='loop') { uText(DBG.move?'Looping: '+dbgName(DBG.move):'Pick a mechanic to loop it',x,y+4,`italic 600 11px ${FB}`,UIC.mut); y+=16; }
-  uCaps('PHASE',x,y,UIC.dim,10); y+=8; const n=dbgPhases(); for(let i=1;i<=n;i++) dbgBtn(x+(i-1)*(w/n),y,w/n-4,24,['','I','II','III','IV'][i],'phase:'+i,{on:ph===i}); y+=30;
-  uCaps('BOSS HP',x,y,UIC.dim,10); y+=8; [['100%',1],['50%',.5],['10%',.1]].forEach(([l,k],i)=>dbgBtn(x+i*(w/4),y,w/4-4,24,l,'hp:'+k)); dbgBtn(x+3*(w/4),y,w/4,24,'Kill bar','kill'); y+=30;
-  const lcs=dbgLCs(); if(lcs.length){ uCaps('LIMIT CUTS',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=w/2-3; dbgBtn(x+col*(bw+6),y,bw,24,l,'lc:'+k+':'+p,{nw:dbgNew(b,k)}); if(col||i===lcs.length-1) y+=28; }); y+=2; }
-  dbgBtn(x,y,w,24,'Despawn boss','despawn'); return y+30; }
-function dbgSecMoves(x,y,w,cols){ const b=DBG.boss, moves=dbgMoves(); if(!moves.length){ uText(dbgCtl()?'':'Spawn a boss first.',x,y+4,`italic 600 12px ${FB}`,UIC.mut); return y; }
-  uText(DBG.mode==='loop'?'tap one to loop it':'tap one to run it now',x,y,`600 11px ${FB}`,UIC.mut); y+=12;
-  const ph=dbgPhase(), inPool=k=>{ if(b==='caotan'||b==='omar') return (TWPOOL[b][ph]||[]).includes(k); if(b==='duo') return (DUO3_POOL[ph]||[]).includes(k)||k==='scytheRain'; if(b==='hamza') return (HZG_POOL[ph]||[]).includes(k); if(b==='nathan') return (NB_POOL[ph]||[]).includes(k); if(b==='mech') return (TH_SPELLS[ph]||[]).some(s=>s[2]===k); return true; };
-  const nc=cols||(moves.length>22?2:1), cw=(w-(nc-1)*6)/nc, rh=nc>1?24:26; moves.forEach((k,i)=>{ const col=i%nc, row=Math.floor(i/nc); dbgBtn(x+col*(cw+6),y+row*(rh+3),cw,rh,dbgName(k),'move:'+k,{on:DBG.move===k,nw:dbgNew(b,k),dim:!inPool(k)}); });
-  const rows=Math.ceil(moves.length/nc); y+=rows*(rh+3)+16; uText('Dimmed = not in this phase\'s pool (still runnable)',x,y,`500 11px ${FB}`,UIC.dim); return y; }
-function dbgDraw(){ if(!DBG.on||Game.state==='title'||TLM.open) return; DBG.rects=[]; D.save();
-  if(DBG.hide){ dbgBtn(12,12,128,26,'DEBUG ▸ show','show'); D.restore(); return; }
-  const Lp=DBP.L, x=Lp.x+14, w=Lp.w-28; uPanel(Lp.x,Lp.y,Lp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10);
-  let y=dbgHead(x,Lp.y+26,w,null); y=dbgSecSetup(x,y,w); dbgSecBoss(x,y,w);
-  y=UH-12-58; uText(DBG.msg&&DBG.msg.t&&performance.now()-DBG.msg.at<4000?DBG.msg.t:'',x,y,`700 12px ${FB}`,'#9ff8ff');
-  uText('Numpad 5 leaves debug mode · Esc menu still works',x,y+22,`500 11px ${FB}`,UIC.dim); uText('Hidden numpad: 0 HP · 1 FC · 2 OHK · 3 timeline',x,y+38,`500 11px ${FB}`,UIC.dim);
-  if(dbgCtl()){ const Rp=DBP.R, rx=Rp.x+12, rw=Rp.w-24; uPanel(Rp.x,Rp.y,Rp.w,UH-24,'rgba(10,12,22,.9)',UIC.line2,10); uText('Mechanics',rx,Rp.y+26,`900 16px ${FB}`,UIC.accL); dbgSecMoves(rx,Rp.y+42,rw); }
+  uCaps('AI',x,y,UIC.dim,10); y+=8; [['idle','Idle'],['active','Active'],['loop','Loop last']].forEach(([m,l],i)=>dbgBtn(x+i*(w/3+1),y,w/3-3,bh,l,'mode:'+m,{on:DBG.mode===m})); y+=bh+4;
+  uText(DBG.mode==='idle'?'He stands still until you run a mechanic.':DBG.mode==='loop'?(DBG.move?'Looping: '+dbgName(DBG.move):'Run a mechanic and it repeats.'):'He fights normally.',x,y+11,`500 ${DBK.fs-1}px ${FB}`,UIC.mut); y+=22;
+  if(b!=='grimmaw'){ uCaps('JUMP TO PHASE',x,y,UIC.dim,10); y+=8; const n=dbgPhases(); for(let i=1;i<=n;i++) dbgBtn(x+(i-1)*(w/n),y,w/n-4,bh,['','I','II','III','IV'][i],'phase:'+i,{on:ph===i}); y+=bh+8; }
+  uCaps('BOSS HP',x,y,UIC.dim,10); y+=8; [['100%',1],['50%',.5],['10%',.1]].forEach(([l,k],i)=>dbgBtn(x+i*(w/4),y,w/4-4,bh,l,'hp:'+k)); dbgBtn(x+3*(w/4),y,w/4,bh,'Kill bar','kill',{red:1}); y+=bh+4;
+  uText('Kill bar plays the real phase change / finale.',x,y+11,`500 ${DBK.fs-1}px ${FB}`,UIC.mut); y+=22;
+  dbgBtn(x,y,w,bh,'Despawn boss','despawn'); return y+bh+6; }
+// mechanics, grouped by phase: tabs, then that phase's limit cuts / phase changes, then its moves
+function dbgSecMoves(x,y,w,cols){ const b=DBG.boss, bh=DBK.bh;
+  if(!b||!dbgCtl()){ uText(b?'':'Spawn a boss first (Setup).',x,y+4,`italic 600 ${DBK.fs}px ${FB}`,UIC.mut); return y; }
+  const n=dbgPhases(), cur=dbgPhase(), sel=Math.min(n,DBG.mph||cur||1);
+  for(let i=1;i<=n;i++){ const tw=(w-(n-1)*6)/n, lbl='Phase '+['','I','II','III','IV'][i]+(cur===i?'  ●':''); dbgBtn(x+(i-1)*(tw+6),y,tw,bh+4,lbl,'mph:'+i,{on:sel===i,nw:dbgPool(i).some(k=>dbgNew(b,k))&&!DBG_NEW.includes(b+':*')}); } y+=bh+14;
+  const lcs=dbgLCs().filter(q=>q[2]===sel);
+  if(lcs.length){ uCaps('LIMIT CUTS · PHASE CHANGES',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=(w-6)/2; dbgBtn(x+col*(bw+6),y,bw,bh,l,'lc:'+k+':'+p,{nw:dbgNew(b,k),left:1,red:1}); if(col||i===lcs.length-1) y+=bh+4; }); y+=8; }
+  const pool=dbgPool(sel); uCaps('MOVES IN THIS PHASE ('+pool.length+')',x,y,UIC.dim,10); y+=8;
+  const nc=cols||3, cw=(w-(nc-1)*6)/nc; pool.forEach((k,i)=>{ const col=i%nc, row=Math.floor(i/nc); dbgBtn(x+col*(cw+6),y+row*(bh+4),cw,bh,dbgName(k),'move:'+k+':'+sel,{on:DBG.move===k,nw:dbgNew(b,k),left:1}); });
+  y+=Math.ceil(pool.length/nc)*(bh+4)+10;
+  if(b==='duo') { uText('Scythe Rain needs planted scythes: run Volley first.',x,y+4,`500 ${DBK.fs-1}px ${FB}`,UIC.dim); y+=18; }
+  if(sel!==cur&&cur&&b!=='grimmaw'){ uText('Picking a move here switches the boss to phase '+['','I','II','III','IV'][sel]+' first.',x,y+4,`500 ${DBK.fs-1}px ${FB}`,UIC.dim); y+=18; }
+  return y; }
+function dbgHead(x,y,w){ const bh=DBK.bh; uText('DEBUG MODE',x,y,`900 ${DBK.fs+4}px ${FB}`,'#ff8aa8');
+  dbgBtn(x+w-250,y-bh+6,140,bh,'Leave debug','off',{red:1}); dbgBtn(x+w-104,y-bh+6,104,bh,'Close  ✕','close',{on:1});
+  y+=18; uText(DBG_PATCH,x,y,`600 ${DBK.fs-1}px ${FB}`,UIC.mut); return y+16; }
+function dbgPanel(){ const tch=IS_TOUCH(), k=tch?2:1; DBK.k=k; DBK.bh=tch?34:24; DBK.fs=tch?14:12; DBK.oy=0; const W=UW/k, H=UH/k;
+  D.save(); D.fillStyle='rgba(3,4,10,.55)'; D.fillRect(0,0,UW,UH); D.scale(k,k);
+  const pw=tch?W-16:Math.min(W-40,880), x=(W-pw)/2, y=tch?6:20, ph=H-(tch?12:40), ix=x+18, iw=pw-36; uPanel(x,y,pw,ph,'rgba(10,12,22,.97)',UIC.line2,12);
+  let yy=dbgHead(ix,y+30,iw);
+  dbgChk(ix,yy,DBG.autoClose,'Close the panel when a mechanic starts','t:auto',iw/2); yy+=DBK.bh>24?30:24;
+  if(tch){ // phones: three tabs
+    [['setup','Setup'],['boss','Boss'],['moves','Mechanics']].forEach(([t,l],i)=>dbgBtn(ix+i*(iw/3),yy,iw/3-6,DBK.bh,l,'tab:'+t,{on:DBG.tab===t})); yy+=DBK.bh+10;
+    // the tab's content scrolls (drag it); only what is inside the window can be tapped
+    const top=yy, bot=y+ph-34, n0=DBG.rects.length, sc=DBG.sc||0; D.save(); D.beginPath(); D.rect(x,top,pw,bot-top); D.clip(); D.translate(0,-sc); DBK.oy=sc;
+    const end=DBG.tab==='setup'?dbgSecSetup(ix,top+6,iw):DBG.tab==='boss'?dbgSecBoss(ix,top+6,iw):dbgSecMoves(ix,top+6,iw,2); D.restore(); DBK.oy=0;
+    const max=Math.max(0,end-bot+10); DBG.scMax=max; if(sc>max) DBG.sc=max; DBG.clip={y0:top*k,y1:bot*k};
+    DBG.rects=DBG.rects.filter((q,i)=>i<n0||(q.y+q.h/2>=top*k&&q.y+q.h/2<=bot*k));
+    if(max>0){ const th=(bot-top)*(bot-top)/(bot-top+max), ty=top+(bot-top-th)*(sc/max); uRR(x+pw-8,ty,4,th,2); D.fillStyle='rgba(255,255,255,.35)'; D.fill(); uText(sc<max?'drag for more ▾':'',x+pw-14,bot+14,`600 ${DBK.fs-2}px ${FB}`,UIC.dim,'right'); } }
+  else { // desktop: setup + boss on the left, mechanics on the right
+    const lw=300; let ly=dbgSecSetup(ix,yy,lw); D.fillStyle=UIC.line2; D.fillRect(ix,ly-2,lw,1); dbgSecBoss(ix,ly+14,lw);
+    D.fillStyle=UIC.line2; D.fillRect(ix+lw+18,yy-6,1,ph-(yy-y)-30); const mx=ix+lw+38, mw=iw-lw-38; uText('Mechanics',mx,yy+8,`900 ${DBK.fs+4}px ${FB}`,UIC.accL); dbgSecMoves(mx,yy+20,mw,3); }
+  uText(DBG.msg&&DBG.msg.t&&performance.now()-DBG.msg.at<4000?DBG.msg.t:'',ix,y+ph-26,`700 ${DBK.fs}px ${FB}`,'#9ff8ff');
+  uText(tch?'The game is paused while this is open.':'Paused while open  ·  Tab opens/closes  ·  R repeats the last mechanic  ·  Esc closes  ·  Numpad 5 leaves debug',ix,y+ph-10,`500 ${DBK.fs-1}px ${FB}`,UIC.dim);
   D.restore(); }
-(function(){ const du=drawUI; drawUI=function(){ du(); try{ dbgDraw(); }catch(e){ console.error('debug ui',e); } }; })();
+// the bar: what is running, Again, Panel (bottom left on desktop, top centre on phones)
+function dbgBar(){ const tch=IS_TOUCH(), k=tch?2:1; DBK.k=k; DBK.bh=tch?30:24; DBK.fs=tch?13:12; DBK.oy=0; D.save(); D.scale(k,k);
+  const W=UW/k, H=UH/k, loop=DBG.mode==='loop'&&DBG.move, L=DBG.last, bw=tch?300:420, bx=tch?(W-bw)/2:12, by=tch?6:H-12-62;
+  uPanel(bx,by,bw,62,'rgba(10,12,22,.82)','#ff8aa8',10); const ph=dbgPhase(), hp=dbgHP();
+  uText('DEBUG',bx+10,by+17,`900 11px ${FB}`,'#ff8aa8'); uText(DBG.boss?dbgBossName()+(ph?' · '+['','I','II','III','IV'][ph]:'')+(hp!=null?' · '+Math.round(hp*100)+'%':''):'no boss',bx+58,by+17,`700 12px ${FB}`,UIC.text);
+  const lt=L?(L.a==='move'?dbgName(L.k):((dbgLCs().find(q=>q[1]===L.k&&q[2]===L.ph)||[L.k])[0])):'—'; uText((loop?'Looping: ':'Last: ')+lt+'  ·  AI '+DBG.mode,bx+bw-10,by+17,`500 11px ${FB}`,UIC.mut,'right');
+  const n=loop?3:2, gw=(bw-20-(n-1)*6)/n; dbgBtn(bx+10,by+26,gw,DBK.bh,tch?'Again':'Again  (R)','again',{on:!!L}); dbgBtn(bx+10+gw+6,by+26,gw,DBK.bh,tch?'Panel':'Panel  (Tab)','open');
+  if(loop) dbgBtn(bx+10+2*(gw+6),by+26,gw,DBK.bh,'Stop loop','mode:active',{red:1});
+  D.restore(); }
+function dbgDraw(){ DBG.rects=[]; if(!DBG.on||Game.state==='title'||TLM.open){ return; }
+  if(DBG.open&&Game.state!=='paused') DBG.open=false; /* something else resumed the game */
+  try{ if(DBG.open) dbgPanel(); else dbgBar(); }catch(e){ console.error('debug ui',e); DBK.k=1; } DBK.k=1; }
+(function(){ const du=drawUI; drawUI=function(){ du(); try{ dbgDraw(); }catch(e){ console.error('debug ui',e); } };
+  const dp=drawPause; drawPause=function(){ if(DBG.open) return; return dp.apply(this,arguments); }; })();
+// which clicks close the panel (when "close the panel when a mechanic starts" is on)
+const DBG_CLOSE=/^(move|lc|kill|boss)$/;
 function dbgAct(id){ Sound.sfx('blip'); const [a,v,w]=id.split(':');
-  if(a==='show'){ DBG.hide=false; return; } if(a==='hide'){ DBG.hide=true; return; } if(a==='off'){ dbgToggle(); twCheatToast('DEBUG MODE: OFF',false); return; }
+  if(a==='open'){ dbgOpen(true); return; } if(a==='close'){ dbgOpen(false); return; } if(a==='again'){ dbgAgain(); return; }
+  if(a==='tab'){ DBG.tab=v; DBG.sc=0; return; } if(a==='mph'){ DBG.mph=+v; return; }
+  if(a==='off'){ dbgOpen(false); dbgToggle(); twCheatToast('DEBUG MODE: OFF',false); return; }
   if(a==='ali'){ DBG.ali=v==='1'; dbgArena(()=>{ if(DBG.boss&&DBG.boss!=='grimmaw'&&DBG.boss!=='paul'&&DBG.boss!=='mech') dbgSpawn(DBG.boss); }); return; }
-  if(a==='t'){ if(v==='god') TW.god=!TW.god; else if(v==='otk') TW.otk=!TW.otk; else if(v==='fc'){ TW.infFC=!TW.infFC; if(!TW.infFC) Player.counter=0; } else if(v==='slow'){ DBG.slow=!DBG.slow; if(!DBG.slow) Game.timeScale=1; } else if(v==='blade'){ DBG.blade=!Game.flags.aliSword; if(DBG.blade) Game.flags.aliSword=1; else delete Game.flags.aliSword; } return; }
+  if(a==='t'){ if(v==='god') TW.god=!TW.god; else if(v==='otk') TW.otk=!TW.otk; else if(v==='auto') DBG.autoClose=!DBG.autoClose; else if(v==='fc'){ TW.infFC=!TW.infFC; if(!TW.infFC) Player.counter=0; } else if(v==='slow'){ DBG.slow=!DBG.slow; if(!DBG.slow) Game.timeScale=1; } else if(v==='blade'){ DBG.blade=!Game.flags.aliSword; if(DBG.blade) Game.flags.aliSword=1; else delete Game.flags.aliSword; } return; }
   if(a==='heal'){ const P=Player; P.hp=P.maxHp; if(NAT){ NAT.ap=NAT.maxAp; if(Game.mech&&Game.mech.th) Game.mech.th.lives=TH.LIVES; } return; }
   if(a==='meter'){ Player.sp=20; if(NAT) NAT.sp=100; return; } if(a==='clear'){ twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); if(Game.mech&&Game.mech.th) Game.mech.th.eb=[]; return; }
-  if(a==='boss'){ dbgSpawn(v); return; } if(a==='despawn'){ dbgDespawn(); DBG.boss=null; return; }
-  if(a==='mode'){ DBG.mode=v; dbgApplyMode(); return; } if(a==='phase'){ dbgSetPhase(+v); return; } if(a==='hp'){ dbgSetHP(+v); return; } if(a==='kill'){ dbgKill(); return; }
-  if(a==='lc'){ dbgLC(v,+w); return; } if(a==='move'){ dbgRun(v); return; } }
-ui.addEventListener('pointerdown',e=>{ if(!DBG.on||TLM.open||Game.state==='title') return; const [x,y]=tlPt(e), r=DBG.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h);
-  // phones: the panel is a paused pop-up (99f_mobile.js) and takes every tap while it is open
-  const tch=IS_TOUCH(); if(tch&&!DBG.topen) return; const inL=!tch&&!DBG.hide&&x<DBP.L.x+DBP.L.w&&y<UH-12, inR=!tch&&!DBG.hide&&dbgMoves().length&&x>DBP.R.x&&y<UH-12; if(!r&&!inL&&!inR&&!tch) return; e.preventDefault(); e.stopImmediatePropagation(); if(r) dbgAct(r.id); },true);
-ui.addEventListener('pointermove',e=>{ if(!DBG.on) return; const [x,y]=tlPt(e), r=DBG.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h); DBG.hov=r?r.id:null; },true);
+  if(a==='despawn'){ dbgDespawn(); DBG.boss=null; DBG.last=null; return; } if(a==='mode'){ DBG.mode=v; dbgApplyMode(); return; }
+  if(a==='phase'){ dbgSetPhase(+v); DBG.mph=+v; return; } if(a==='hp'){ dbgSetHP(+v); return; }
+  const closing=DBG.open&&DBG.autoClose&&DBG_CLOSE.test(a); if(closing) dbgOpen(false);
+  if(a==='boss'){ DBG.last=null; DBG.tab='moves'; dbgSpawn(v); return; } if(a==='kill'){ DBG.last={a:'lc',k:'kill',ph:dbgPhase()}; dbgKill(); return; }
+  if(a==='lc'){ dbgLC(v,+w); return; } if(a==='move'){ dbgRun(v,+w||0); return; } }
+// clicks: the open panel takes every click (the game is paused); the closed bar only takes its own buttons
+function dbgHit(x,y){ return DBG.rects.find(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h); }
+ui.addEventListener('pointerdown',e=>{ if(!DBG.on||TLM.open||Game.state==='title') return; const [x,y]=tlPt(e), r=dbgHit(x,y);
+  if(!r&&!DBG.open) return; e.preventDefault(); e.stopImmediatePropagation();
+  if(DBG.open&&e.pointerType!=='mouse'){ DBG.drag={y,sc:DBG.sc||0,moved:false,x}; return; } if(r) dbgAct(r.id); },true);
+ui.addEventListener('pointermove',e=>{ if(!DBG.on) return; const [x,y]=tlPt(e);
+  if(DBG.drag){ const dy=y-DBG.drag.y; if(Math.abs(dy)>10) DBG.drag.moved=true; if(DBG.drag.moved) DBG.sc=clamp(DBG.drag.sc-dy/(DBK.k||1),0,DBG.scMax||0); e.preventDefault(); return; }
+  const r=dbgHit(x,y); DBG.hov=r?r.id:null; },true);
+ui.addEventListener('pointerup',e=>{ const g=DBG.drag; if(!g) return; DBG.drag=null; e.preventDefault(); e.stopImmediatePropagation(); if(g.moved) return; const r=dbgHit(g.x,g.y); if(r) dbgAct(r.id); },true);
+ui.addEventListener('pointercancel',()=>{ DBG.drag=null; },true);
+// keys while debugging: Tab / numpad 4 = panel, R / numpad 6 = again, Esc closes the panel
+window.addEventListener('keydown',e=>{ if(!DBG.on||Game.state==='title'||TLM.open||e.repeat) return; const c=e.code;
+  if(c==='Tab'||c==='Numpad4'){ e.preventDefault(); e.stopImmediatePropagation(); dbgOpen(!DBG.open); Sound.sfx('blip'); return; }
+  if(DBG.open&&c==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); dbgOpen(false); return; }
+  if(!DBG.open&&(c==='Numpad6'||(c==='KeyR'&&!Object.values(BIND).includes('KeyR')))){ e.preventDefault(); e.stopImmediatePropagation(); dbgAgain(); } },true);
 
 // ----- 99f_mobile.js -----
 // =====================================================================
@@ -14563,17 +14752,23 @@ function mobRoad(x0,cw,H){ mobSeg(x0,8,cw,42,[['htab:0','Shayan'],['htab:1','Ali
   if(TW.unlockMode){ const ch=TL.filter(hubCheatable), all=ch.length>0&&ch.every(twNodeOpen); uBtn(bx,py+14,bw,38,all?'Lock all':'Unlock all',{id:'chk:all',size:14,on:all}); }
   if(open) uBtn(bx,py+ph-16-54,bw,54,n.root?'Start here':n.final?'Face Paul':'Warp here',{kind:'primary',id:'warp',size:17});
   else { mobLock(bx+bw/2,py+ph-56,UIC.dim); uText('Locked',bx+bw/2,py+ph-26,`700 15px ${FB}`,UIC.dim,'center'); } }
-function mobOptions(x0,cw,H){ const rows=[['vol','Volume','Music, voices and effects'],['voices','Voice acting','Spoken dialogue'],['mute','Mute','Silence everything'],['input','Play with','Touch, or a connected controller']];
-  let y=8; for(const [k,l,sub] of rows){ uRR(x0,y,cw,50,10); D.fillStyle='rgba(255,255,255,.04)'; D.fill(); uText(l,x0+16,y+23,`800 16px ${FB}`,UIC.text); uText(sub,x0+16,y+41,`500 12px ${FB}`,UIC.mut); const cx=x0+cw-16, cy=y+25;
-    if(k==='vol'){ const B=TLV.box; B.w=170; B.x=cx-B.w-54; B.y=cy-18; B.h=36; const v=twVolNow(); uRR(B.x,cy-4,B.w,8,4); D.fillStyle='rgba(255,255,255,.12)'; D.fill(); if(v>0){ uRR(B.x,cy-4,B.w*v,8,4); D.fillStyle=UIC.acc; D.fill(); }
-      D.fillStyle=TLV.drag?'#fff':UIC.accL; D.beginPath(); D.arc(B.x+B.w*v,cy,13,0,7); D.fill(); uText(v<=0?'Off':Math.round(v*100)+'%',cx,cy+6,`800 15px ${FB}`,UIC.text,'right'); }
-    else if(k==='voices') mobToggle(cx-56,cy-15,!!Voice.on,'opt:voices'); else if(k==='mute') mobToggle(cx-56,cy-15,!!Sound.muted,'opt:mute');
+function mobOptions(x0,cw,H){ let y=8;
+  // sound: the four sliders in one card (2 x 2); 50 is the normal mix
+  uRR(x0,y,cw,112,10); D.fillStyle='rgba(255,255,255,.04)'; D.fill(); const cwc=(cw-30)/2;
+  MIX_KEYS.forEach(([k,l],i)=>{ const cx0=x0+10+(i%2)*(cwc+10), cy0=y+6+Math.floor(i/2)*52, v=Sound.muted&&k==='all'?0:MIX[k];
+    uText(l,cx0+6,cy0+18,`800 15px ${FB}`,UIC.text); uText(v<=0?'Off':String(v),cx0+cwc-6,cy0+18,`800 15px ${FB}`,v===50?UIC.text:UIC.accL,'right');
+    mixSlider(k,cx0+12,cy0+36,cwc-24,{th:4,r:11,hh:18}); });
+  y+=118;
+  const rows=[['voices','Voice acting','Spoken dialogue'],['mute','Mute','Silence everything'],['input','Play with','Touch, or a connected controller']];
+  for(const [k,l,sub] of rows){ uRR(x0,y,cw,48,10); D.fillStyle='rgba(255,255,255,.04)'; D.fill(); uText(l,x0+16,y+21,`800 16px ${FB}`,UIC.text); uText(sub,x0+16,y+39,`500 12px ${FB}`,UIC.mut); const cx=x0+cw-16, cy=y+24;
+    if(k==='voices') mobToggle(cx-56,cy-15,!!Voice.on,'opt:voices'); else if(k==='mute') mobToggle(cx-56,cy-15,!!Sound.muted,'opt:mute');
     else { const sw=200, sx=cx-sw; uRR(sx,cy-18,sw,36,10); D.fillStyle='rgba(255,255,255,.05)'; D.fill(); D.strokeStyle=UIC.line2; D.lineWidth=1; D.stroke();
       [['opt:input:kbm','Touch'],['opt:input:pad','Controller']].forEach(([id,lb],i)=>{ const on=id==='opt:input:'+PAD.mode, bx2=sx+i*sw/2; if(on){ uRR(bx2+3,cy-15,sw/2-6,30,8); D.fillStyle=UIC.acc; D.fill(); }
         uText(lb,bx2+sw/4,cy+5,`800 14px ${FB}`,on?'#1a1408':UIC.text,'center'); TLM.rects.push({x:bx2,y:cy-22,w:sw/2,h:44,id}); }); }
-    y+=56; }
-  y+=4; const acts=[['Unstuck','unstuck','redo','ghost'],['Exit to Title','title','exit','danger'],['Cheats','mob:cheats',null,'ghost'],['Debug Mode','mob:debug',null,DBG.on?'primary':'ghost']], bw=(cw-10)/2;
-  acts.forEach(([l,id,ic,kind],i)=>uBtn(x0+(i%2)*(bw+10),y+Math.floor(i/2)*54,bw,46,l,{id,icon:ic,kind,size:16})); }
+    y+=52; }
+  // Cheats and Debug as a pair on the left, the destructive Exit to Title set apart on the right
+  const acts=[['Cheats','mob:cheats',null,'ghost'],['Debug','mob:debug',null,DBG.on?'primary':'ghost'],['Exit to Title','title','exit','danger']], bw=(cw-24)/3;
+  acts.forEach(([l,id,ic,kind],i)=>uBtn(x0+i*(bw+6)+(i===2?12:0),y,bw,46,l,{id,kind,size:14})); }
 function mobControls(x0,cw,H){ mobSeg(x0,8,cw,42,[['mob:ct:0','Touch controls'],['mob:ct:1','How to play']],'mob:ct:'+MOB.ct);
   const top=60, vh=H-top-8, c=MOB.ct; MOB.list={x:x0,y:top,w:cw,h:vh}; uPanel(x0,top,cw,vh,UIC.well,UIC.line,12);
   D.save(); D.beginPath(); D.rect(x0,top+1,cw,vh-2); D.clip(); const y0=top+12; let y=y0-MOB.sy[c];
@@ -14591,9 +14786,9 @@ function mobCheats(W,H){ TLM.rects.push({x:0,y:0,w:W,h:H,id:'mob:block'}); D.fil
 function mobHub(alpha){ const k=MOB.k, W=UW/k, H=UH/k; TLM.rects=[];
   if(CT.open&&CT.fromMenu){ CT.open=false; CT.fromMenu=false; CT.listen=null; } // the touch Controls page is drawn here
   if(HUB.sec!=='road'&&!TLM.esc) HUB.sec='road';
-  D.save(); D.globalAlpha=alpha; D.fillStyle='rgba(5,6,12,.97)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999; D.scale(k,k);
+  D.save(); D.globalAlpha=alpha; D.fillStyle='rgba(5,6,12,.97)'; D.fillRect(0,0,UW,UH); TLV.box.x=-9999; TLV.mix={}; D.scale(k,k);
   mobRail(H); const x0=144, cw=W-x0-8; if(HUB.sec==='road') mobRoad(x0,cw,H); else if(HUB.sec==='options') mobOptions(x0,cw,H); else mobControls(x0,cw,H); if(MOB.cheats) mobCheats(W,H);
-  D.restore(); mobRects(TLM.rects,k); if(TLV.box.x>-9000){ const B=TLV.box; B.x*=k; B.y*=k; B.w*=k; B.h*=k; } }
+  D.restore(); mobRects(TLM.rects,k); if(TLV.box.x>-9000){ const B=TLV.box; B.x*=k; B.y*=k; B.w*=k; B.h*=k; } for(const q in TLV.mix){ const B=TLV.mix[q]; B.x*=k; B.y*=k; B.w*=k; B.h*=k; } }
 function mobTap(id){ if(!id) return; const tb=TLM.tab;
   if(id==='mob:resume'){ twTimelineClose(null); mobFullAgain(); return; }
   if(id.startsWith('mob:card:')){ const nid=id.slice(9); if(TLM.sel!==nid){ TLM.sel=nid; Sound.sfx('blip'); } return; }
@@ -14666,7 +14861,7 @@ addEventListener('pagehide',()=>{ try{ if(Sound.ctx&&Sound.ctx.state==='running'
 addEventListener('pointerdown',e=>{ if(!IS_TOUCH()||e.target!==ui) return; const [ux,uy]=tlPt(e);
   if(TLM.open){ e.preventDefault(); e.stopImmediatePropagation(); const k=MOB.k, vx=ux/k, vy=uy/k, zone=MOB.cheats?null:HUB.sec==='road'&&mobIn(MOB.strip,vx,vy)?'strip':HUB.sec==='controls'&&mobIn(MOB.list,vx,vy)?'list':null;
     MOB.drag={id:e.pointerId,x:vx,y:vy,moved:false,hit:tlHit(ux,uy),zone,s0:zone==='strip'?MOB.sx[TLM.tab]:MOB.sy[MOB.ct]}; return; }
-  if(Game.state==='paused'&&!DBG.topen){ e.preventDefault(); e.stopImmediatePropagation(); const r=MOB.prects.find(q=>ux>=q.x&&ux<=q.x+q.w&&uy>=q.y&&uy<=q.y+q.h); if(!r) return;
+  if(Game.state==='paused'&&!DBG.open){ e.preventDefault(); e.stopImmediatePropagation(); const r=MOB.prects.find(q=>ux>=q.x&&ux<=q.x+q.w&&uy>=q.y&&uy<=q.y+q.h); if(!r) return;
     if(r.id==='p:resume') mobResume(); else { mobResume(); if(twEscOk()) twEscOpen(); } return; }
   const d=Game.dlg; if(d&&d.type==='choice'&&Game.dlgRows){ const i=Game.dlgRows.findIndex(([rx,ry,rw,rh])=>ux>=rx&&ux<=rx+rw&&uy>=ry&&uy<=ry+rh); if(i>=0){ e.preventDefault(); e.stopImmediatePropagation(); d.sel=i; Sound.unlock(); tapKey('confirm'); } } },true);
 addEventListener('pointermove',e=>{ const g=MOB.drag; if(!g||e.pointerId!==g.id) return; if(!TLM.open){ MOB.drag=null; return; } const [ux,uy]=tlPt(e), dx=ux/MOB.k-g.x, dy=uy/MOB.k-g.y;
@@ -14687,23 +14882,9 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 (function(){ try{ const old=document.getElementById('tbPause'); if(!old||!old.replaceWith||!old.cloneNode) return; const b=old.cloneNode(false); b.id='tbPause'; b.className='tb'; b.setAttribute('aria-label','Menu');
   b.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg><span>Menu</span>'; old.replaceWith(b);
   b.addEventListener('pointerdown',e=>e.stopPropagation()); b.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
-  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); if(Game.state==='title') return; if(DBG.topen){ dbgTouch(false); return; } if(TLM.open){ twTimelineClose(null); return; } if(Game.state==='paused'&&!TLM.open) mobResume(); if(twEscOk()) twEscOpen(); }); }catch(e){} })();
+  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); if(Game.state==='title') return; if(DBG.open){ dbgOpen(false); return; } if(TLM.open){ twTimelineClose(null); return; } if(Game.state==='paused'&&!TLM.open) mobResume(); if(twEscOk()) twEscOpen(); }); }catch(e){} })();
 
-// ---------- Debug Mode on touch: a Debug button opens the panel as a paused pop-up ----------
-function dbgTouch(open){ if(open===!!DBG.topen) return; releaseTouchKeys(); clearHits();
-  if(open){ DBG.tprev=Game.state==='paused'?(Game.prev||'play'):Game.state; Game.prev=DBG.tprev; Game.state='paused'; DBG.topen=true; DBG.page=DBG.page||0; }
-  else { DBG.topen=false; if(Game.state==='paused') Game.state=DBG.tprev||'play'; } }
-function mobDebug(){ const k=1.6, W=UW/k, H=UH/k; D.save(); D.fillStyle='rgba(3,4,10,.6)'; D.fillRect(0,0,UW,UH); D.scale(k,k);
-  const w=600, h=H-16, x=(W-w)/2, y=8, ix=x+20, iw=w-40; uPanel(x,y,w,h,'rgba(10,12,22,.97)',UIC.line2,12);
-  let yy=dbgHead(ix,y+28,iw,'tclose'); ['Setup','Boss','Moves'].forEach((l,i)=>dbgBtn(ix+i*(iw/3),yy,iw/3-6,30,l,'tpage:'+i,{on:(DBG.page||0)===i})); yy+=42;
-  const pg=DBG.page||0; if(pg===0) dbgSecSetup(ix,yy,iw); else if(pg===1) dbgSecBoss(ix,yy,iw); else dbgSecMoves(ix,yy,iw,3);
-  uText(DBG.msg&&DBG.msg.t&&performance.now()-DBG.msg.at<4000?DBG.msg.t:'',ix,y+h-12,`700 12px ${FB}`,'#9ff8ff');
-  D.restore(); mobRects(DBG.rects,k); }
-(function(){ const dd=dbgDraw; dbgDraw=function(){ if(!IS_TOUCH()) return dd(); DBG.rects=[]; if(!DBG.on){ DBG.topen=false; return; } if(!DBG.topen||Game.state==='title'||TLM.open) return; mobDebug(); };
-  const da=dbgAct; dbgAct=function(id){ if(!IS_TOUCH()) return da(id);
-    if(id==='tclose'||id==='hide'){ dbgTouch(false); Sound.sfx('blip'); return; } if(id.startsWith('tpage:')){ DBG.page=+id.slice(6); Sound.sfx('blip'); return; }
-    const closeAfter=/^(boss|move|lc|kill|despawn|off)/.test(id); const r=da(id); if(closeAfter&&DBG.topen) dbgTouch(false); return r; };
-  const dp=drawPause; drawPause=function(){ if(DBG.topen&&IS_TOUCH()) return; return dp.apply(this,arguments); }; })();
+// ---------- Debug Mode on touch: the Debug button opens the shared panel (99e_debug.js), which pauses the game ----------
 (function(){ try{ const T=document.getElementById('touch'); if(!T||!T.appendChild) return; const b=document.createElement('button'); b.className='tb'; b.id='tbDebug'; b.textContent='Debug'; b.hidden=true; T.appendChild(b);
   const st=document.createElement('style'); st.textContent='#tbDebug{top:calc(22% + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));width:auto;height:40px;border-radius:20px;padding:0 16px;font:800 14px var(--body);border-color:#ff8aa8;color:#ffd0dc}'
     +'body.hubopen #tbPause,body.hubopen #tbFull{display:none!important}'
@@ -14711,7 +14892,7 @@ function mobDebug(){ const k=1.6, W=UW/k, H=UH/k; D.save(); D.fillStyle='rgba(3,
     +'#tbPause{width:auto!important;height:44px!important;border-radius:22px!important;padding:0 16px 0 12px!important;gap:6px;font:800 15px var(--body)!important;letter-spacing:0!important}#tbPause svg{width:20px;height:20px}'
     +'body.mobchoice #tbNext{display:none!important}'; document.head.appendChild(st);
   b.addEventListener('pointerdown',e=>e.stopPropagation()); b.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
-  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); dbgTouch(!DBG.topen); Sound.sfx('blip'); }); MOB.dbgBtn=b; }catch(e){} })();
+  b.addEventListener('click',e=>{ e.stopPropagation(); Sound.unlock(); dbgOpen(!DBG.open); Sound.sfx('blip'); }); MOB.dbgBtn=b; }catch(e){} })();
 // every frame: the Debug button shows only in debug mode; the corner buttons hide while the Esc menu (with its own Resume) is open
 (function(){ const du=drawUI; drawUI=function(){ du(); try{ if(MOB.dbgBtn) MOB.dbgBtn.hidden=!(DBG.on&&IS_TOUCH()&&Game.state!=='title'&&!TLM.open);
     const on=!!TLM.open; if(MOB.hub!==on){ MOB.hub=on; document.body.classList.toggle('hubopen',on); }
