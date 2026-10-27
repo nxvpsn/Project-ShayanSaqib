@@ -62,13 +62,29 @@ twSetScr('twinsDown',function*(){ const P=Player, C=TW.foes.find(T=>T.who==='cao
   yield say('omar',"Because nothing ELSE rhymes with it, Caotan!",'angry');
   if(Game.hamza) yield say('hamza',"Bismillah, just pick one. We're burning moonlight.",'happy');
   twCamP(6.8,-1.2);
-  const c=yield choose(ALI()?[{t:"Caotan. You talk too much."},{t:"Omar. You're not edgy. You're dull."},{act:1,t:"What if there was another way..."}]
-    :[{t:"Kill Caotan."},{t:"Kill Omar."},{act:1,t:"What if there was another way..."}]);
+  // the merciful option opens only once both twins' betrayal fights are beaten on this road; the twins notice when it does
+  const pact=twPactOpen(), rk=ALI()?'al':'sh'; TWS.pactSeen=TWS.pactSeen||{};
+  if(pact&&!TWS.pactSeen[rk]){ TWS.pactSeen[rk]=1; twSave(); yield* twPactUnlockTalk(C,O); }
+  else if(!pact&&!(TWS.pactTease||{})[rk]){ TWS.pactTease=TWS.pactTease||{}; TWS.pactTease[rk]=1; twSave(); twCam2(C,O,9.5,1.5); yield say('caotan',"Hey! Why is the nice option GRAY?! Who designed this?!",'angry'); yield say('omar',"Mercy is a premium feature, brother. It unlocks after two funerals. Ours.",'sad'); }
+  const c=yield choose(ALI()?[{t:"Caotan. You talk too much."},{t:"Omar. You're not edgy. You're dull."},{act:1,t:"What if there was another way...",lock:!pact,why:"Locked: beat both twins' betrayal fights on Ali's road first"}]
+    :[{t:"Kill Caotan."},{t:"Kill Omar."},{act:1,t:"What if there was another way...",lock:!pact,why:"Locked: beat both twins' betrayal fights on Shayan's road first"}]);
   if(c===2){ yield* twPactTalk(C,O); }
   else { const V=c===0?C:O, S=c===0?O:C; yield* twExecute(V,S); }
   Game.flags.twinsDone=1; twEndFight(); Game.arena=null; Cam.focus=null;
   yield* SCR.keepGate(); });
 
+// both betrayal fights beaten on this road (the timeline cheat counts too)
+function twPactOpen(){ const r=ALI()?'al':'sh'; return twDone(r+'_omar_f')&&twDone(r+'_cao_f'); }
+function* twPactUnlockTalk(C,O){ twCam2(C,O,9.5,1.5); Sound.sfx('secret');
+  if(ALI()){ yield say('caotan',"Rice hat! Rice hat! The third option! It's not gray anymore! It's GLOWING!",'happy');
+    yield say('omar',"You have cut us down in two separate timelines. The menu noticed. Now it lets you be merciful.");
+    yield say('ali',"Hm. I preferred the gray.");
+    yield say('caotan',"HE PREFERRED THE GRAY?!",'surprised'); yield say('omar',"Choose wisely, wanderer. We remember the other save files. We remember EVERYTHING.",'sad'); }
+  else { yield say('caotan',"Senpai. SENPAI. Do you see it? The third option! It's not gray anymore!",'happy');
+    yield say('omar',"You killed us both. In separate timelines. We remember. We talk about it in the loading screens.",'sad');
+    yield say('shayan',"...Are you two reading the MENU?",'surprised');
+    yield say('caotan',"We've been reading it for a while. You hover over 'Kill Caotan' a LOT.",'sad');
+    yield say('omar',"Pick the nice one. Or don't. Either way, we've already seen how it ends."); } }
 function* twExecute(V,S){ const P=Player, H=HERO(), vc=V.who==='caotan';
   twCamT(V,7); yield say(V.who,vc?"Wait wait wait, I have a body pillow at home! Who's gonna feed her?!":"So be it. Tell my poems... I'm sorry.",vc?'surprised':'normal');
   if(ALI()){ twCamT(V,8,3); zwStart(); Sound.sfx('dash'); aliGhost(P.x,P.y,P.z); P.x=V.x+(V.x>P.x?1.6:-1.6); P.z=V.z+.3; P.f=P.x<V.x?-1:1; P.cineFly=true; P.cineAnim='idle'; yield wait(.5);
@@ -89,11 +105,11 @@ function* twPactTalk(C,O){ const P=Player, H=HERO(); Sound.play('romance');
   twCam2(C,O,10.5,.5); yield wait(.4);
   yield say('caotan',"...Another way?",'surprised'); yield say('omar',"There is no other way. There is only the edge. And the... other edge.");
   twCamP(6.2,1);
-  if(ALI()){ yield say('ali',"Grimmaw is the real problem. You two are... a speed bump. A loud one.");
-    yield say('ali',"Help me reach the Dog Lord, and you both walk away. Two weaklings are better than zero weaklings. Barely.");
+  if(ALI()){ yield say('ali',"The baby is the real problem. You two are... a speed bump. A loud one.");
+    yield say('ali',"Help me reach the baby, and you both walk away. Two weaklings are better than zero weaklings. Barely.");
     yield say('caotan',"He called us weaklings! He's warming up to us!",'happy'); }
-  else { yield say('shayan',"The Dog Lord is the real problem. He's the one who took Mira. You guys just... guard a door.");
-    yield say('shayan',"Help me save her, and you both walk away. Nobody has to die tonight. Except maybe the dog guy."); }
+  else { yield say('shayan',"The baby is the real problem. He's the one who took Mira. You guys just... guard a door.");
+    yield say('shayan',"Help me save her, and you both walk away. Nobody has to die tonight. Except maybe the baby guy."); }
   twCam2(C,O,10,-1);
   yield say('caotan',"Like... a team? Like a FRIEND GROUP? With a group chat?!",'happy');
   yield say('omar',"I do not do friends. I do... allies of convenience.");
@@ -104,13 +120,18 @@ function* twPactTalk(C,O){ const P=Player, H=HERO(); Sound.play('romance');
   [C,O].forEach(T=>{ T.down=0; twAddAlly(T.who); const A=TW.allies[TW.allies.length-1]; A.x=T.x; A.z=T.z; A.y=T.y; FX.burst(T.x,T.y+1.4,T.z,24,T.who==='caotan'?0xffd0ec:0xa070ff,4,.35); });
   twRemoveFoe(C); twRemoveFoe(O); Game.flags.twinAlly='both'; Game.flags.twinPact=1; Sound.sfx('secret'); evaCard(['THE GATEKEEPER TWINS','HAVE JOINED YOUR PARTY'],2.2,1); yield wait(2.2); }
 
-// ---------- the twins chime in during the Grimmaw fight ----------
+// ---------- the twins chime in during the Kojima fight (the old Grimmaw) ----------
 function twAllySays(cao,om){ return function*(){ const has=w=>TW.allies.some(A=>A.who===w); if(has('caotan')&&cao) yield say('caotan',cao); if(has('omar')&&om) yield say('omar',om); }; }
-twWrapScr('p1special',twAllySays("Hounds from the sky?! Senpai, stay close! I'll shoot anything with a tail!","It is raining dogs. Finally, a weather that matches my mood."));
-twWrapScr('p2special',twAllySays("A nine-headed dog?! That's eight too many heads! Go, go, go!","Nine heads. Nine funerals. I'll write the eulogies later."));
-twWrapScr('p3special',twAllySays("He's on fire! Like, actually! Not in a hot way!","Let him burn. Fire is just loud darkness."));
+twWrapScr('p1special',twAllySays("Soldiers falling out of the sky?! In BOXES?! Senpai, stay close!","It is raining men. In sneaking suits. The forecast did not mention this."));
+twWrapScr('p2special',twAllySays("Nine of the same guy?! Is that a HYDRA of GRANDPAS?! Go, go, go!","Nine Snakes. Nine mullets. One shared bandana. Respect."));
+twWrapScr('p3special',twAllySays("The baby is on FIRE! Like, actually! Not in a hot way!","Let him burn. Fire is just loud darkness. And he is just a loud baby."));
 function* twAllyReactHamza(){ const has=w=>TW.allies.some(A=>A.who===w);
   if(has('caotan')) yield say('caotan',"He just... he cut the PIG. In HALF. Without LOOKING.",'surprised');
   if(has('omar')) yield say('omar',"I want to be him when I grow up.");
   yield say('ali',"Get in line."); }
 function twAllyLeave(){ if(!TW.allies.length) return; TW.allies.forEach(A=>{ FX.burst(A.x,A.y+1.4,A.z,30,A.who==='caotan'?0xffd0ec:0x2a0a3a,5,.4,A.who==='caotan'); }); twClearAllies(); }
+// ---------- locked choices ({lock:true, why}): drawn grayed out; picking one only says why ----------
+(function(){ const ud=updateDialog; updateDialog=function(dt){ const d=Game.dlg;
+    if(d&&d.type==='choice'&&d.opts[d.sel]&&d.opts[d.sel].lock&&d.t>.3){ const tap=Game.pendTap&&performance.now()-Game.pendTap<1500;
+      if(tap||consume('confirm')||consume('attack')||consume('jump')){ Game.pendTap=0; clearHits(); Sound.sfx('block'); shake(.1); Game.banner={name:'Locked',sub:d.opts[d.sel].why||'Not yet',t:0,small:1}; d.t+=dt; return; } }
+    return ud.apply(this,arguments); }; })();

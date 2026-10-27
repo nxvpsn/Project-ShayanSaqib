@@ -50,7 +50,7 @@ function uCheck(x,y,on,label,id){ uRR(x,y,16,16,4); D.fillStyle=on?UIC.acc:'rgba
 
 // ---------- title screen: New Game / Continue ----------
 function twTitleSub(o){ if(o.id==='new') return 'Start the story from the beginning';
-  if(!saveHas()) return 'No save on this device'; const n=TL_BY[TWS.last]; return n?'Resume at: '+(n.root?n.name:n.name):'Resume from the start of the story'; }
+  if(!saveHas()) return 'No save on this device'; const n=TL_BY[TWS.last]; return n?'Resume at: '+n.name:/_g$/.test(TWS.last||'')?"Resume at: He's Day Old Kojima":'Resume from the start of the story'; }
 drawTitle=function(){ const t=performance.now()/1000, k=IS_TOUCH()?1.3:1, W=UW/k, H=UH/k, x=IS_TOUCH()?64:96; D.save(); D.scale(k,k);
   const g=D.createLinearGradient(0,0,W*.7,0); g.addColorStop(0,'rgba(4,5,12,.9)'); g.addColorStop(.6,'rgba(4,5,12,.5)'); g.addColorStop(1,'rgba(4,5,12,0)'); D.fillStyle=g; D.fillRect(0,0,W,H);
   uCaps('A SHAYAN SAQIB TALE',x,150,UIC.acc,13);
@@ -64,7 +64,7 @@ drawTitle=function(){ const t=performance.now()/1000, k=IS_TOUCH()?1.3:1, W=UW/k
     uText(o.t,x+dx,y,`800 30px ${FD}`,on?UIC.accL:(o.id==='cont'&&!saveHas()?UIC.dim:'#d9d6e4'));
     uText(twTitleSub(o),x+dx,y+22,`500 14px ${FB}`,on?'#d9cfb4':UIC.mut); });
   const T=IS_TOUCH(); D.globalAlpha=.75; uText(T?'Tap an option':twPadOn()?'D-pad to choose  ·  '+twPadName(0)+' to select':'↑ ↓ or mouse to choose  ·  Enter or click to select',x,H-30,`600 14px ${FB}`,UIC.mut);
-  uText('About 25 minutes  ·  Fully voiced  ·  Sound on',W-30,H-30,`600 14px ${FB}`,UIC.mut,'right'); D.globalAlpha=1; D.restore();
+  D.globalAlpha=1; D.restore();
   for(const r of TM.rows){ r.x*=k; r.y*=k; r.w*=k; r.h*=k; }
   twDrawModal(); };
 // the modal box (title screen confirmations)
@@ -89,7 +89,7 @@ twTitleMenu=function(dt){ const M=HUB.modal;
 function twTitleNewAsk(){ if(!saveHas()){ twFreshStart(); return; }
   twModal('Start a new game?','Are you sure? This will override your local save.',[{t:'Cancel'},{t:'Yes, start over',kind:'danger',go:twFreshStart}],0); }
 function twTitleContinue(){ if(!saveHas()){ twModal('Save file corrupted','Save file corrupted, please start a new game.',[{t:'Back'},{t:'New Game',kind:'primary',go:twFreshStart}],1); return; }
-  savePersist(); const id=TWS.last; if(!(id&&TL_BY[id])){ twStartGame(); return; }
+  savePersist(); const id=TWS.last; if(!(id&&(TL_BY[id]||/_g$/.test(id)))){ twStartGame(); return; }
   twStartGame(); Object.assign(Game,{script:null,wait:null,dlg:null,timeScale:1,slowT:0,banner:null,card:null,evaCard:null}); Voice.stop(); Cam.cine=null; Game.letterTo=0; twControlsHide();
   run(function*(){ yield* twWarp(id); }); }
 // remember where the player was: checkpoints reached (twMark) and warps
@@ -100,7 +100,7 @@ TM.sel=saveHas()?1:0;
 // ---------- pause screen ----------
 drawPause=function(){ D.fillStyle='rgba(4,5,12,.78)'; D.fillRect(0,0,UW,UH); if(IS_TOUCH()) return twDrawPauseTouch(); const w=820, h=470, x=(UW-w)/2, y=(UH-h)/2; uPanel(x,y,w,h,UIC.panel,UIC.line2,14);
   uText('Paused',x+36,y+58,`900 32px ${FD}`,UIC.accL); uText('Controls at a glance',x+36,y+84,`500 15px ${FB}`,UIC.mut);
-  const ali=ALI(), rows=ali?[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (hold: ride a Getsuga)'],['Attack',K('attack')+'  (3-cut combo)'],['Getsuga Tenshou',K('block')],['Black Getsuga','Hold '+K('block')+', release'],['Parry','Attack just before a hit'],['Teleport',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu',K('menu')],['Voices · Mute',K('voices')+' · '+K('mute')]]
+  const ali=ALI(), rows=ali?[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (hold: ride a Getsuga)'],['Attack',K('attack')+'  (3-cut combo)'],['Getsuga Tenshou',K('block')],['Black Getsuga','Hold '+K('block')+', release'],['Cut, Getsuga, repeat',K('attack')+', '+K('block')+', '+K('attack')+', '+K('block')+'  (Getsugas grow)'],['Parry','Attack just before a hit'],['Teleport',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu',K('menu')],['Voices · Mute',K('voices')+' · '+K('mute')]]
     :[['Move','WASD / arrow keys'],['Jump',K('jump')+'  (twice: double jump)'],['Glide','Hold '+K('jump')+' after the double jump'],['Attack',K('attack')+'  (3-hit combo)'],['Getsuga Tenshou','Hold '+K('attack')+', release'],['Fireball',K('block')+'  (hold for a big one)'],['Parry','Attack just before a hit'],['Dash',K('dash')],['Special',K('special')+'  (full blue gauge)'],['Talk / advance',K('confirm')],['Fast-forward','Hold '+K('ff')],['Menu · Voices · Mute',K('menu')+' · '+K('voices')+' · '+K('mute')]];
   const half=Math.ceil(rows.length/2); rows.forEach(([a,b],i)=>{ const col=i<half?0:1, r=i%half, cx=x+36+col*384, cy=y+130+r*44; uRR(cx,cy-24,364,36,8); D.fillStyle='rgba(255,255,255,.035)'; D.fill();
     uText(a,cx+14,cy,`700 15px ${FB}`,UIC.mut); uText(b,cx+350,cy,`700 15px ${FB}`,UIC.text,'right'); });

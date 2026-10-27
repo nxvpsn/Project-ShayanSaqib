@@ -17,37 +17,31 @@ function twAllyKey(){ const a=Game.flags.twinAlly; return a==='both'?'both':a===
 
 // ---------- the map ----------
 const TL=[
-  // Shayan's road
-  {id:'sh_root',tab:0,col:0,row:1,root:1,name:"Shayan's Road",desc:"A blacksmith, a pig fairy, and a girl in a cage. What could go wrong?"},
-  {id:'sh_twins',tab:0,col:1,row:1,par:['sh_root'],name:'Twin Peaks of Cringe',desc:"Two gatekeepers who look nothing alike. They don't talk about it."},
-  {id:'sh_dec',tab:0,col:2,row:1,par:['sh_twins'],name:'THE DECISION',desc:"They're on their knees, blaming each other. Somebody has to pick."},
-  {id:'sh_omar',tab:0,col:3,row:0,par:['sh_dec'],name:'Omar Lives, Pillows Weep',desc:"Caotan eats a Getsuga. Omar joins you. Emotionally unavailable, but punctual."},
-  {id:'sh_cao',tab:0,col:3,row:1,par:['sh_dec'],name:'Caotan Lives, The Dark Is Unemployed',desc:"Omar is gone. Caotan joins: ranged DPS and emotional support."},
-  {id:'sh_both',tab:0,col:3,row:2,par:['sh_dec'],name:'The Group Chat Is Born',desc:"What if there was another way? Both twins join. Nobody is happy about it."},
-  {id:'sh_omar_g',tab:0,col:4,row:0,par:['sh_omar'],name:'Dog Lord vs. Edge Lord',desc:"Grimmaw, with Omar reaping things beside you."},
-  {id:'sh_cao_g',tab:0,col:4,row:1,par:['sh_cao'],name:'Senpai vs. The Dog Lord',desc:"Grimmaw, with Caotan sniping from the back row."},
-  {id:'sh_both_g',tab:0,col:4,row:2,par:['sh_both'],name:'Four Idiots and a Kennel',desc:"Grimmaw versus the entire squad."},
-  {id:'sh_omar_f',tab:0,col:5,row:0,par:['sh_omar_g'],name:'The Edge Betrays (As Foretold)',desc:"Omar turns on you among the white flowers. He ate the moon."},
-  {id:'sh_cao_f',tab:0,col:5,row:1,par:['sh_cao_g'],name:'Senpai Noticed You (Violently)',desc:"Caotan turns on you. Ten glints. One body pillow. No mercy."},
-  {id:'sh_both_f',tab:0,col:5,row:2,par:['sh_both_g'],name:'Big Back Hamza',desc:"Hamza tries to eat you. The twins say no. Then they say yes, to eating you, sort of."},
-  {id:'sh_hamza',tab:0,col:6,row:0.5,par:['sh_omar_f','sh_cao_f'],name:'Eight Billion Lullabies',desc:"The pig ate the world. Nathan the Nasty does not accept this. Now in 3D."},
-  {id:'sh_duo',tab:0,col:6,row:2,par:['sh_both_f'],name:"Tuesday's Children",desc:"Shayan and a mysterious samurai versus both twins at once. Fusion included."},
+  // Shayan's road (the Grimmaw fight sits inside each "twin stays" panel: it plays the choice's cutscene, then the keep)
+  {id:'sh_root',tab:0,col:0,row:1,root:1,name:"Shayan's Road",desc:"A blacksmith, a pig named Hamza, and a girl in a cage. What could possibly go wrong?"},
+  {id:'sh_twins',tab:0,col:1,row:1,par:['sh_root'],name:'The Gatekeeper Twins',desc:"A laser weeb and an edgelord guard the gate. Both of them think they're the main character."},
+  {id:'sh_dec',tab:0,col:2,row:1,par:['sh_twins'],name:'Pick a Twin',desc:"They're on their knees, blaming each other. Somebody has to choose. You're somebody."},
+  {id:'sh_omar',tab:0,col:3,row:0,par:['sh_dec'],name:'The Edgelord Stays',desc:"Caotan eats a Getsuga. Omar joins you, and the three of you walk straight into Grimmaw's keep."},
+  {id:'sh_cao',tab:0,col:3,row:1,par:['sh_dec'],name:'The Weeb Stays',desc:"Omar is gone. Caotan joins with Hikari-chan in tow, and Grimmaw is waiting at the keep."},
+  {id:'sh_both',tab:0,col:3,row:2,par:['sh_dec'],name:'The Group Chat Is Born',desc:"Nobody dies. Both twins join. Grimmaw gets the whole squad, and nobody is happy about it."},
+  {id:'sh_omar_f',tab:0,col:4,row:0,par:['sh_omar'],name:'Moon Eater',desc:"Among the white flowers, Omar turns on you, eats the moon, and waits for applause."},
+  {id:'sh_cao_f',tab:0,col:4,row:1,par:['sh_cao'],name:'Senpai Noticed You',desc:"Caotan turns on you among the flowers. Glints, lasers, and one body pillow with a grudge."},
+  {id:'sh_both_f',tab:0,col:4,row:2,par:['sh_both'],name:'All You Can Eat',desc:"Big Back Hamza tries to eat the world. The twins say no. Then they say yes, to eating you."},
+  {id:'sh_hamza',tab:0,col:5,row:0.5,par:['sh_omar_f','sh_cao_f'],name:'Eight Billion Lullabies',desc:"The pig ate the world. Nathan the Nasty takes his mech into the pig's sky for a bullet hell with a burning cockpit."},
+  {id:'sh_duo',tab:0,col:5,row:2,par:['sh_both_f'],name:'The Other Way',desc:"The twins turn. A samurai cuts Mira out of her cage. Black holes, a tree of blades, and a pillow the size of the sky."},
   // Ali's road
-  {id:'al_root',tab:1,col:0,row:1,root:1,name:"Ali's Road",desc:"A wanderer who counts to ten. Slowly. On purpose."},
-  {id:'al_twins',tab:1,col:1,row:1,par:['al_root'],name:'Butter Knives in Coats',desc:"The gatekeepers try very hard. Ali tries less."},
-  {id:'al_dec',tab:1,col:2,row:1,par:['al_twins'],name:'THE DECISION',desc:"Two twins, one sword, zero patience."},
-  {id:'al_omar',tab:1,col:3,row:0,par:['al_dec'],name:'One Slash, One Twin',desc:"Caotan is gone. Omar follows the samurai. He calls it 'research'."},
-  {id:'al_cao',tab:1,col:3,row:1,par:['al_dec'],name:'Uwu Survives',desc:"Omar is gone. Caotan follows Ali around like a lost puppy with glasses."},
-  {id:'al_both',tab:1,col:3,row:2,par:['al_dec'],name:'Ali Adopts Two Weaklings',desc:"Two weaklings are better than zero weaklings. Barely."},
-  {id:'al_omar_g',tab:1,col:4,row:0,par:['al_omar'],name:'Dog Lord: Eleven Seconds',desc:"Grimmaw, with Omar. Ali counted."},
-  {id:'al_cao_g',tab:1,col:4,row:1,par:['al_cao'],name:'Senpai and the Samurai',desc:"Grimmaw, with Caotan."},
-  {id:'al_both_g',tab:1,col:4,row:2,par:['al_both'],name:'Kennel Club Field Trip',desc:"Grimmaw versus Ali and his two new emotional support twins."},
-  {id:'al_omar_f',tab:1,col:5,row:0,par:['al_omar_g'],name:'Butter Knife Betrayal',desc:"Omar studied your moveset. He read the wiki."},
-  {id:'al_cao_f',tab:1,col:5,row:1,par:['al_cao_g'],name:'Friendzoned by a Samurai',desc:"Caotan's dating sim, but the protagonist says 'Hm.' to everything."},
-  {id:'al_nathan',tab:1,col:6,row:0.5,par:['al_omar_f','al_cao_f'],name:'Your Tragic Arc Was Mid',desc:"Nathan crosses timelines to fight the pig. Ali already cut the pig in half."},
-  {id:'al_nathan_both',tab:1,col:5.5,row:2,par:['al_both_g'],name:'Nathan vs. The Group Chat',desc:"Nathan the Nasty versus Ali and two twins who will not stop talking."},
+  {id:'al_root',tab:1,col:0,row:1,root:1,name:"Ali's Road",desc:"He cut the moon, fell out of the sky and landed in your story. He counts to ten. Slowly."},
+  {id:'al_twins',tab:1,col:1,row:1,par:['al_root'],name:'Two Coats, One Gate',desc:"The gatekeepers try very hard. Ali tries less."},
+  {id:'al_dec',tab:1,col:2,row:1,par:['al_twins'],name:'Hm.',desc:"Two twins on their knees, one sword, zero patience."},
+  {id:'al_omar',tab:1,col:3,row:0,par:['al_dec'],name:'Research Partner',desc:"Caotan is gone. Omar follows the samurai into Grimmaw's keep. He calls it 'research'."},
+  {id:'al_cao',tab:1,col:3,row:1,par:['al_dec'],name:'Uwu Survives',desc:"Omar is gone. Caotan follows Ali to the keep like a lost puppy with glasses."},
+  {id:'al_both',tab:1,col:3,row:2,par:['al_dec'],name:'Emotional Support Twins',desc:"Two weaklings are better than zero weaklings. Barely. Grimmaw gets all three."},
+  {id:'al_omar_f',tab:1,col:4,row:0,par:['al_omar'],name:'Butter Knife Betrayal',desc:"Omar studied Ali's moveset. He read the wiki. It did not help."},
+  {id:'al_cao_f',tab:1,col:4,row:1,par:['al_cao'],name:'Friendzoned by a Samurai',desc:"Caotan's dating sim, except the love interest only says 'Hm.'"},
+  {id:'al_nathan',tab:1,col:5,row:0.5,par:['al_omar_f','al_cao_f'],name:'Your Tragic Arc Was Mid',desc:"Nathan crosses timelines to fight the pig. Ali already cut the pig in half. So Nathan fights Ali."},
+  {id:'al_nathan_both',tab:1,col:4.5,row:2,par:['al_both'],name:'Reply All',desc:"Nathan the Nasty versus Ali and two twins who will not stop talking."},
   // oddities
-  {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Protagonist',desc:"Shayan versus Nathan. This was never supposed to happen. Paul loves it."},
+  {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Turn',desc:"Shayan versus Nathan. This was never supposed to happen. Paul loves it."},
   {id:'paul',tab:2,col:4,row:1,par:[],final:1,name:'Paul Extreme: Code Review',desc:"Paul's own fight. Everyone loses their powers, nobody loses their dignity (they lose that later). Opens once every other checkpoint is cleared, or with the 9 key."}];
 const TL_BY={}; TL.forEach(n=>TL_BY[n.id]=n);
 const TL_CHECKS=TL.filter(n=>!n.root&&!n.final).map(n=>n.id);
@@ -64,8 +58,8 @@ function twNodeOpen(n){ return n.root||(n.final?(twAllDone()||!!TWS.unl[n.id]):t
   const de=twDuoEnding; twDuoEnding=function*(F,C,O){ twMark('sh_duo'); yield* de(F,C,O); };
   const bh=blackHoleFinale; blackHoleFinale=function*(){ if(!ALI()) twMark('sh_hamza'); yield* bh(); };
   const nf=nbFinale; nbFinale=function*(){ if(ALI()) twMark(Game.flags.twinPact?'al_nathan_both':'al_nathan'); else twMark('sh_nathan'); yield* nf(); }; })();
-function twMarkGrimmaw(){ const k=twAllyKey(); if(k) twMark(twRP()+'_'+k+'_g'); }
 
+function twMarkGrimmaw(){ const k=twAllyKey(); if(k) twMark(twRP()+'_'+k+'_g'); } // the Grimmaw/Kojima win (no panel any more; kept for old saves)
 // ---------- warps ----------
 function twWarpReset(ali){ const P=Player; Voice.stop(); if(Game.mech) exitMech(); nbRemove(); twEndFight(); twClearAllies(); TW.giant=null; TW.giantRespawn=null; clearGibs(); endClash();
   if(Game.boss&&Game.boss.spr) Game.boss.spr.dispose(); Game.boss=null; Game.bossBar=0; if(Game.zw) zwEnd(); JC.lines=[]; Game.arena=null; Game.fxUpd=[]; twSweep(false); clearTwins();
@@ -79,7 +73,7 @@ function* twWarpFlowers(o){ o=o||{}; yield fadeOut(); const fl=Game.flags, aff=G
   if(o.mira){ Game.mira={x:P.x+1.4,y:P.y,z:P.z+.4,f:-1,anim:'idle',t:0,follow:false,vis:true}; makeMiraSprite(); if(mSprite) mSprite.show(true); }
   if(o.noHamza){ Game.hamza=null; if(hSprite) hSprite.show(false); } Game.fade=1; yield fadeIn(); }
 function twSetParty(k){ Game.flags.twinsDone=1; if(k==='both'){ Game.flags.twinAlly='both'; Game.flags.twinPact=1; twAddAlly('caotan'); twAddAlly('omar'); } else { Game.flags.twinAlly=k==='cao'?'caotan':'omar'; Game.flags.twinPact=0; twAddAlly(Game.flags.twinAlly); } }
-function* twWarp(id){ const n=TL_BY[id]; if(!n) return; const ali=id.startsWith('al_'); const parts=id.split('_'); twWarpReset(ali); const P=Player;
+function* twWarp(id){ const n=TL_BY[id]; if(!n&&!/_g$/.test(id)) return; /* '_g' (straight to Grimmaw) has no panel, Debug Mode still uses it */ const ali=id.startsWith('al_'); const parts=id.split('_'); twWarpReset(ali); const P=Player;
   if(id==='sh_nathan'){ yield* paulWarp(false,'nathan'); return; }
   if(id==='paul'){ yield* twPaulIntro(); return; }
   const step=parts[1], k=parts[1], tail=parts[2];
@@ -126,9 +120,6 @@ const ART={
   sh_omar(c){ artBG(c,'#100818','#3a1030','#2a2030'); OM_(c,130,100,.55,-1); SH_(c,48,100,.9,1,'beam'); artBeam(c,62,74,100,60,'#ff3a5a',5); artHearts(c,8); artText(c,'RIP CAOTAN',10,18,'#ffd0ec'); },
   sh_cao(c){ artBG(c,'#100818','#3a1030','#2a2030'); CA_(c,130,100,.55,-1,{glintT:.5}); SH_(c,48,100,.9,1,'beam'); artText(c,'RIP OMAR',10,18,'#c08aff'); artText(c,'(HE WROTE POEMS)',8,32,'#c08aff'); },
   sh_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); CA_(c,70,100,.5,1,{heartEyes:1}); OM_(c,122,100,.5,-1); SH_(c,170,100,.8,-1); artText(c,'SQUAAAD!!',60,20,'#ffd45a'); },
-  sh_omar_g(c){ artBG(c,'#0a0306','#3a1018','#2a1418'); GR_(c,128,102,.6,-1); OM_(c,56,100,.45,1,{scythe:1}); SH_(c,26,100,.75,1,'attack'); },
-  sh_cao_g(c){ artBG(c,'#0a0306','#3a1018','#2a1418'); GR_(c,128,102,.6,-1); CA_(c,56,100,.45,1,{glintT:.5}); SH_(c,26,100,.75,1,'attack'); artBeam(c,62,54,118,52,'#bfe4ff',3); },
-  sh_both_g(c){ artBG(c,'#12030a','#8a1a22','#3a0a14'); GR_(c,140,102,.6,-1); CA_(c,46,100,.4,1); OM_(c,82,100,.4,1); SH_(c,18,100,.7,1,'attack'); },
   sh_omar_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); c.fillStyle='#000'; c.beginPath(); c.arc(150,26,14,0,7); c.fill(); OM_(c,118,100,.6,-1,{form:3,scythe:1}); SH_(c,40,100,.9,1,'attack'); artText(c,'HE ATE THE MOON',6,18,'#c08aff'); },
   sh_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); artHearts(c,14); CA_(c,118,100,.6,-1,{form:3,glintT:.6}); SH_(c,40,100,.9,1); artText(c,'✦ ×10',8,22,'#ffffff'); },
   sh_both_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); PIG_(c,120,102,.6,1); SH_(c,30,100,.8,1); CA_(c,62,90,.35,1); OM_(c,82,90,.35,1); artText(c,'ITADAKIMASU',90,18,'#ffb0c8'); },
@@ -139,9 +130,6 @@ const ART={
   al_omar(c){ artBG(c,'#100818','#3a1030','#2a2030'); OM_(c,134,100,.55,-1); AL_(c,50,100,.9,1); c.strokeStyle='#ff2a3a'; c.lineWidth=2; for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(20+i*30,10); c.lineTo(60+i*30,90); c.stroke(); } },
   al_cao(c){ artBG(c,'#100818','#3a1030','#2a2030'); CA_(c,134,100,.55,-1,{heartEyes:1}); AL_(c,50,100,.9,1); artHearts(c,10); artText(c,'ALI-KUN ♡',100,20,'#ffd0ec'); },
   al_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); CA_(c,96,100,.45,-1,{heartEyes:1}); OM_(c,140,100,.45,-1); AL_(c,44,100,.9,1); artText(c,'WEAKLINGS (2)',60,20,'#ffd45a'); },
-  al_omar_g(c){ artBG(c,'#0a0306','#3a1018','#2a1418'); GR_(c,128,102,.6,-1,'winded'); OM_(c,60,100,.42,1); AL_(c,26,100,.8,1); artText(c,'11 SECONDS',96,18,'#ff9aa8'); },
-  al_cao_g(c){ artBG(c,'#0a0306','#3a1018','#2a1418'); GR_(c,128,102,.6,-1,'winded'); CA_(c,60,100,.42,1); AL_(c,26,100,.8,1); },
-  al_both_g(c){ artBG(c,'#12030a','#8a1a22','#3a0a14'); GR_(c,140,102,.6,-1); CA_(c,52,100,.38,1); OM_(c,86,100,.38,1); AL_(c,20,100,.7,1); artText(c,'FIELD TRIP',70,18,'#ffd45a'); },
   al_omar_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); OM_(c,118,100,.6,-1,{form:3,scythe:1}); AL_(c,40,100,.9,1); artText(c,'HE READ THE WIKI',6,18,'#c08aff'); },
   al_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); artHearts(c,12); CA_(c,118,100,.6,-1,{form:2,heartEyes:1}); AL_(c,40,100,.9,1); artText(c,'"Hm."',20,22,'#ffffff'); },
   al_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); if(MECHTEX&&MECHTEX.image){ try{ c.drawImage(MECHTEX.image,96,18,84,86); }catch(e){} } AL_(c,44,100,.9,1); artText(c,'ARC: MID',8,18,'#3ff4ff'); },

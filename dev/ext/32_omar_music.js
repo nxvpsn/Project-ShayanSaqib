@@ -3,7 +3,7 @@
 // Omar: one song (Song of Healing, reversed) for the whole fight. Caotan: sections per phase (below).
 // A track name 'mp3:<song>:<seconds>' starts that song at that point; any other track (or Sound.stop) fades it out.
 // =====================================================================
-const TW_SONG={omar:'audio/omar.mp3',caotan:'audio/caotan.mp3'};
+const TW_SONG={omar:'audio/omar.mp3',caotan:'audio/caotan.mp3',hamza:'audio/hamza.mp3'};
 const TW_SONG_VOL=.5; // the song's level under the game's master volume (was .75: too loud)
 const MP3={el:null,g:null,name:null,want:null,seek:null};
 function twMp3Ready(){ if(MP3.g) return true; if(!Sound.ctx||typeof Audio==='undefined') return false;

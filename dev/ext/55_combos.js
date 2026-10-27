@@ -7,9 +7,9 @@ function twComboBroken(x,z,who,line){ Sound.sfx('counter'); Sound.sfx('glass'); 
   FX.ring(x,groundY(x,z)+.1,z,'#ffd45a',3.6,.5); twBig('COMBO BROKEN!',{size:54,col:'#ffd45a',y:UH*.3,dur:1.3,sub:'Perfect parry. Punish!'}); if(line) twBark(who,line,true); }
 function twComboTick(C,x,z){ C.par++; Game.dmgNums.push({x:Player.x,y:Player.y+3,z:Player.z,n:C.par+' / '+C.n,t:0,big:true,col:C.par>=C.n?'#ffd45a':'#ffffff'}); }
 
-// ---------- Grimmaw: Kennel Rush (3 hits from three sides) ----------
+// ---------- Kojima (the old Grimmaw): Autograph Rush (3 teleport swings from three sides; no strict judging, mashing works) ----------
 function* grimRush(b){ const sp=b.phase===3?1.25:b.phase===2?1.12:1, C={n:3,par:0};
-  twBark('grimmaw',["Kennel Rush! Heel... and DIE!","Sit. Stay. PERISH.","Three bites. Count them, pup."][Math.floor(Math.random()*3)],true);
+  twBark('grimmaw',["Hold still! I'm trying to sign you!","Three autographs. You didn't ask for any of them.","Smile! You're in my trailer now!"][Math.floor(Math.random()*3)],true);
   for(let i=0;i<3;i++){ const P=Player; bossSmoke(b); b.vanish=1; b.spr.show(false); Sound.sfx('dash'); yield .2/sp;
     const P1=Player, a=i===0?Math.atan2(b.z-P1.z,b.x-P1.x):i===1?(P1.ang||0)+Math.PI:Math.atan2(b.z-P1.z,b.x-P1.x)+Math.PI/2*(Math.random()<.5?1:-1);
     const p=safeNear(P1.x+Math.cos(a)*2.1,P1.z+Math.sin(a)*2.1); b.x=p.x; b.z=p.z; b.y=groundY(b.x,b.z); b.vy=0; b.vanish=0; b.spr.show(true); bossSmoke(b);
@@ -17,7 +17,7 @@ function* grimRush(b){ const sp=b.phase===3?1.25:b.phase===2?1.12:1, C={n:3,par:
     const P2=Player, dx=P2.x-b.x, dz=P2.z-b.z, d=Math.hypot(dx,dz); b.anim='slash'; Sound.sfx('swing'); FX.arc(b.x,b.y,b.z,b.ang,i,true); let par=false;
     if(d<3.7&&angDiff(Math.atan2(dz,dx),b.ang)<1.35&&Math.abs(P2.y-b.y)<2.4){ playerHit(3,b.x,b.z,{heavy:true,melee:true,onParry:()=>{ par=true; }}); if(par) twComboTick(C); }
     yield .42; }
-  if(C.par>=3){ stagger(b,3.4); twComboBroken(b.x,b.z); twBark('grimmaw',"The Dog Lord... has been... TRAINED?!",true); return; }
+  if(C.par>=3){ stagger(b,3.4); twComboBroken(b.x,b.z); twBark('grimmaw',"You parried a GENIUS?! I'm calling my lawyer. And my mom.",true); return; }
   b.anim='idle'; yield .25; }
 (function(){ const ub=updateBoss; updateBoss=function(dt){ const b=Game.boss, play=Game.state==='play';
   if(b&&play&&b.state==='idle'&&!b.twg&&b.cd-dt<=0&&b.hp>0&&!b.inv&&!b.vanish&&Math.random()<.3){ b.state='twcombo'; b.st=0; b.twg=grimRush(b); b.tww=0; b.vx=b.vz=0; }

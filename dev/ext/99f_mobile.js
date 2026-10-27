@@ -17,6 +17,7 @@ function mobRects(list,k){ for(const r of list){ r.x*=k; r.y*=k; r.w*=k; r.h*=k;
 function mobTouchRows(){ const ali=ALI();
   return [['◎','Left thumb','Drag anywhere on the left half to move'],['⚔','Sword',ali?'Tap: 3-cut combo (slash, double cut, spin)':'Tap: 3-hit combo · hold, release: Getsuga'],
     ['↑','Jump',ali?'Jumps high · hold: ride a Getsuga':'Again in the air: double jump · hold: glide'],['☾',ali?'Getsuga':'Fireball',ali?'Tap: Getsuga Tenshou · hold, release: Black Getsuga':'Tap: fireball · hold until full: huge fireball + flaming sword'],
+    ...(ali?[['⚔☾','Rhythm','Sword, Getsuga, Sword, Getsuga: each Getsuga after a cut hits harder']]:[]),
     ['»',ali?'Teleport':'Dash','Dodge through attacks'],['✦','Special','When the blue gauge is full'],['!','Parry','Attack right before a hit lands (5 = '+(ali?'Judgement Cut':'Full Counter')+'). A silver slash can always be parried'],
     ['…','Talk / Next','Talk to people, advance dialogue'],['☰','Menu','Top right: timeline, controls, options, cheats']]; }
 const mobIn=(r,x,y)=>!!r&&x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;
@@ -132,7 +133,7 @@ function mobDialog(){ const d=Game.dlg; if(!d) return; const t=performance.now()
   else { D.font=`italic 500 21px ${FB}`; D.fillStyle='#b8a888'; D.fillText('Tap a reply',tx,by+42);
     Game.dlgRows=[]; d.opts.forEach((o,i)=>{ const ry=by+60+i*64, sel=i===d.sel; Game.dlgRows.push([tx-14,ry,maxW+20,56]);
       uRR(tx-14,ry,maxW+20,56,10); D.fillStyle=sel?'rgba(216,180,106,.18)':'rgba(255,255,255,.05)'; D.fill(); D.strokeStyle=sel?'rgba(216,180,106,.7)':'rgba(255,255,255,.12)'; D.lineWidth=1.5; D.stroke();
-      D.font=`${sel?700:500} 27px ${FB}`; D.fillStyle=sel?'#fff4d6':'#e2dccb'; D.fillText(wrap(o.act?o.t:'“'+o.t+'”',maxW-20)[0],tx+4,ry+37); }); } }
+      D.font=`${sel?700:500} 27px ${FB}`; D.fillStyle=o.lock?(sel?'#8a8496':'#5e5a6a'):sel?'#fff4d6':'#e2dccb'; D.fillText(wrap((o.lock?'🔒 ':'')+(o.act?o.t:'“'+o.t+'”'),maxW-20)[0],tx+4,ry+37); }); } }
 (function(){ const dd=drawDialog; drawDialog=function(){ if(!IS_TOUCH()) return dd(); try{ mobDialog(); }catch(e){ console.error('mob dialog',e); return dd(); } }; })();
 
 // ---------- title on touch: big buttons ----------
@@ -146,7 +147,7 @@ function mobTitle(){ const k=1.8, W=UW/k, H=UH/k, x=36; D.save(); D.scale(k,k);
   TM_OPTS.forEach((o,i)=>{ const y=184+i*68, on=TM.sel===i&&!HUB.modal, dis=o.id==='cont'&&!saveHas(), w=310, h=58; TM.rows.push({x,y,w,h});
     uRR(x,y,w,h,12); D.fillStyle=on?'rgba(227,182,90,.16)':'rgba(255,255,255,.05)'; D.fill(); D.strokeStyle=on?UIC.acc:UIC.line2; D.lineWidth=on?2:1; D.stroke();
     uText(o.t,x+18,y+27,`800 22px ${FD}`,dis?UIC.dim:on?UIC.accL:'#e6e3ef'); uText(twTitleSub(o),x+18,y+46,`500 12px ${FB}`,on?'#d9cfb4':UIC.mut); });
-  D.globalAlpha=.75; uText('Fully voiced  ·  Sound on',x,H-18,`600 12px ${FB}`,UIC.mut); D.globalAlpha=1; D.restore();
+  D.restore();
   for(const r of TM.rows){ r.x*=k; r.y*=k; r.w*=k; r.h*=k; } twDrawModal(); }
 
 // ---------- full screen: no button; leave it when the phone turns upright, go back in on the next tap sideways ----------

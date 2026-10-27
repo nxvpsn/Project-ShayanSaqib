@@ -133,13 +133,13 @@ function* twBetrayal(){ const P=Player, who=Game.flags.twinAlly, H=HERO(), A=TW.
   if(A){ A.hidden=false; } cineSet(P.x+2,1.5,P.z+6,P.x,1.4,P.z); yield wait(.5);
   const ax=A?A.x:P.x+2, az=A?A.z:P.z;
   if(who==='caotan'){
-    yield say('caotan',"Senpai... the Dog Lord is dead. You know what that means?");
+    yield say('caotan',"Senpai... the baby is dead. You know what that means?");
     yield say(H,ALI()?"It means you can leave.":"We can all go home? Mira's free? I can finally eat?");
     yield say('caotan',"It means the gate... is MINE. And so are you.");
   } else {
-    yield say('omar',"The Dog Lord falls. My brother is dead. And the Edge... has no master.");
+    yield say('omar',"The baby falls. My brother is dead. And the Edge... has no employer.");
     yield say(H,ALI()?"You never had a master. You had a bedtime.":"Cool, so... you're free! Go live your life! Maybe try a color!");
-    yield say('omar',"You spared me. That was your mistake. The darkness... needs a new Dog Lord.");
+    yield say('omar',"You spared me. That was your mistake. The darkness... needs a new CEO.");
   }
   twClearAllies(); const T=twStartSolo(who); T.x=ax; T.z=az; T.inv=true; T.noAttack=1; Game.state='cut'; Game.arena={lock:TW.fight.lock}; Sound.stop();
   twCamT(T,7.5,1.8); yield wait(.3);

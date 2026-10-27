@@ -8,7 +8,7 @@
 // phase starts with the reverse. Hits use a tiny hitbox (the dot); grazing fills the drill gauge.
 // Controls: move, focus (hold magic: slow, tighter bits), shoot (hold attack;
 // a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
-// The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes on his last life, it explodes when he dies.
+// The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes at 3-4 hearts and burns at 1-2 (his face follows), it explodes when he dies. The bits turn red (and ding) when the Power Shot is charged; the shot also fires four red bit lasers (minions first).
 // =====================================================================
 const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5,HP:[0,170,210]};
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
@@ -24,13 +24,14 @@ function thFx(u,v,n,col,sp,life){ FX.burst(TH.CX+v,-u,.4,n,col,sp,life||.3); }
 // ---------- textures for the tiny things ----------
 let TH_TEX=null;
 function thTex(){ if(TH_TEX) return TH_TEX; const mk=(S,f)=>{ const [cv,c]=mkCanvas(S,S); f(c,S); const t=tex(cv); t.encoding=THREE.sRGBEncoding; t.magFilter=t.minFilter=THREE.NearestFilter; return t; };
-  const bit=mk(16,(c)=>{ c.fillStyle='#0c1424'; c.fillRect(6,1,4,1); c.fillRect(5,2,6,9); c.fillRect(4,11,8,3); c.fillStyle='#5d6f9e'; c.fillRect(6,2,4,9); c.fillStyle='#8fa0c8'; c.fillRect(6,3,1,7); c.fillStyle='#3a4670'; c.fillRect(5,11,6,2);
-    c.fillStyle='#3ff4ff'; c.fillRect(7,0,2,2); c.fillStyle='#d8ffff'; c.fillRect(7,0,1,1); c.fillStyle='#3ff4ff'; c.fillRect(6,13,4,2); });
+  const mkBit=(body,hi,glow,gl)=>mk(16,(c)=>{ c.fillStyle='#0c1424'; c.fillRect(6,1,4,1); c.fillRect(5,2,6,9); c.fillRect(4,11,8,3); c.fillStyle=body; c.fillRect(6,2,4,9); c.fillStyle=hi; c.fillRect(6,3,1,7); c.fillStyle='#3a4670'; c.fillRect(5,11,6,2);
+    c.fillStyle=glow; c.fillRect(7,0,2,2); c.fillStyle=gl; c.fillRect(7,0,1,1); c.fillStyle=glow; c.fillRect(6,13,4,2); });
+  const bit=mkBit('#5d6f9e','#8fa0c8','#3ff4ff','#d8ffff'), bitR=mkBit('#c8303a','#ff8a8a','#ff2a2a','#ffd8d8'); /* red: the Power Shot is charged */
   const eld=(fr)=>mk(32,(c)=>{ c.strokeStyle='#1a0420'; c.lineWidth=3; for(let k=0;k<6;k++){ const a=Math.PI*.15+k*Math.PI*.14, w=Math.sin(fr*2+k)*3; c.beginPath(); c.moveTo(16,18); c.quadraticCurveTo(16+Math.cos(a)*10+w,18+Math.sin(a)*8,16+Math.cos(a)*14-w,18+Math.sin(a)*13); c.stroke(); }
     c.strokeStyle='#6a1a7a'; c.lineWidth=1.5; for(let k=0;k<6;k++){ const a=Math.PI*.15+k*Math.PI*.14, w=Math.sin(fr*2+k)*3; c.beginPath(); c.moveTo(16,18); c.quadraticCurveTo(16+Math.cos(a)*10+w,18+Math.sin(a)*8,16+Math.cos(a)*14-w,18+Math.sin(a)*13); c.stroke(); }
     c.fillStyle='#1a0420'; c.beginPath(); c.arc(16,14,11,0,7); c.fill(); c.fillStyle='#4a1050'; c.beginPath(); c.arc(16,14,9.5,0,7); c.fill(); c.fillStyle='#f4e8d8'; c.beginPath(); c.ellipse(16,14,7,5.5,0,0,7); c.fill();
     c.fillStyle='#ff2a4a'; c.beginPath(); c.arc(16+(fr?1:-1),14,3.4,0,7); c.fill(); c.fillStyle='#120008'; c.fillRect(15+(fr?1:-1),11,2,6); c.fillStyle='#fff'; c.fillRect(13,11,2,2); });
-  TH_TEX={bit,eld:[eld(0),eld(1)]}; return TH_TEX; }
+  TH_TEX={bit,bitR,eld:[eld(0),eld(1)]}; return TH_TEX; }
 function thPlane(size,map){ const m=new THREE.Mesh(new THREE.PlaneGeometry(size,size),new THREE.MeshBasicMaterial({map,transparent:true,alphaTest:.4,depthWrite:false,fog:false})); m.renderOrder=6; m.rotation.z=-Math.PI/2; scene.add(m); return m; }
 
 // ---------- setup / teardown ----------
@@ -64,15 +65,24 @@ function thPlayer(dt){ const N=NAT, G=Game.mech, T=G.th, ctl=Game.state==='play'
   N.tu=clamp(N.tu+vu*dt,-TH.W+.45,TH.W-.45); N.tv=clamp(N.tv+vv*dt,-TH.H+.7,TH.VH-6.5*TH.K-2.2);
   [N.x,N.y]=thW(N.tu,N.tv);
   // shooting: hold to fire a needle stream; a full charge releases a Power Shot
-  if(ctl&&(held.attack||IS_TOUCH())){ T.fire-=dt; if(held.attack){ const b=T.hold; T.hold+=dt; if(b<TH.FULL&&T.hold>=TH.FULL){ Sound.sfx('ready'); thFx(N.tu,N.tv+.6,14,0x8fd0ff,3,.25); } }
+  if(ctl&&(held.attack||IS_TOUCH())){ T.fire-=dt; if(held.attack){ const b=T.hold; T.hold+=dt; if(b<TH.FULL&&T.hold>=TH.FULL){ Sound.tone('sine',1568,1568,.3,.18); Sound.tone('sine',2349,2349,.5,.14,.08); for(const bt of T.bits) thFx(bt.u,bt.v,10,0xff3a3a,3,.25); thFx(N.tu,N.tv+.6,14,0xff8a8a,3,.25); } /* ding! the bits turn red */ }
     if(T.fire<=0){ T.fire=.07; const n=1+Math.floor(T.power), spread=foc?.08:.2; for(let k=0;k<=n;k++){ const o=(k-n/2); T.pb.push({u:N.tu+o*(foc?.18:.3),v:N.tv+.5,vu:o*spread*20,vv:46,r:.16,col:0x8ff8ff,dmg:.042,t:0}); } if(Math.random()<.4) Sound.sfx('mechshot'); } }
   if(!(ctl&&held.attack)){ if(T.hold>=TH.FULL&&ctl) thPowerShot(); T.hold=0; if(!(ctl&&IS_TOUCH())) T.fire=0; }
   if(ctl&&consume('special')){ if(N.sp>=100) run(thDrill); else { Sound.sfx('block'); Game.dmgNums.push({x:N.x+1.5,y:N.y,z:0,n:'DRILL '+Math.floor(N.sp)+'%',t:0,col:'#8fc8ff'}); } }
   // engine sparks, behind him (screen-down)
   if(Math.random()<.7){ const [x,y]=thW(N.tu+rnd(-.12,.12),N.tv-.55); FX.spawn(x,y,.2,-rnd(4,8),rnd(-.5,.5),0,.18,Math.random()<.5?0x3ff4ff:0xbff8ff,rnd(.12,.22),0,true); } }
 function thPowerShot(){ const N=NAT, T=Game.mech.th; T.pb.push({u:N.tu,v:N.tv+.8,vu:0,vv:30,r:.95,col:0x3a8aff,dmg:3.2,pierce:true,hit:new Set(),t:0,big:1});
-  Sound.sfx('beam'); Sound.sfx('mechshot'); shake(.25); thFx(N.tu,N.tv+.8,30,0x3a8aff,7,.35); thFx(N.tu,N.tv+.8,16,0xffffff,5,.25); }
-function thBits(dt){ const N=NAT, T=Game.mech.th; for(const b of T.bits){ b.wt-=dt;
+  Sound.sfx('beam'); Sound.sfx('mechshot'); shake(.25); thFx(N.tu,N.tv+.8,30,0x3a8aff,7,.35); thFx(N.tu,N.tv+.8,16,0xffffff,5,.25); thBitLasers(); }
+// the bits answer the Power Shot: a red line laser each, at the minions first (one each, nearest first), else at Hamza
+function thBitLasers(){ const T=Game.mech.th, B=Game.mech.boss, C=thBossC(), live=T.mn.filter(m=>m.hp>0); Sound.sfx('beam');
+  for(const b of T.bits){ let tg=null; if(live.length){ live.sort((p,q)=>Math.hypot(p.u-b.u,p.v-b.v)-Math.hypot(q.u-b.u,q.v-b.v)); tg=live.length>1?live.shift():live[0]; }
+    const tu=tg?tg.u:C.u+rnd(-1.2,1.2), tv=tg?tg.v:C.v-1.2, [x0,y0]=thW(b.u,b.v), [x1,y1]=thW(tu,tv);
+    if(tg){ tg.hp-=8; tg.flash=.1; T.score+=300; if(tg.hp<=0) thKill(tg); } else if(B){ const was=B.hp; mechDamage(1.1*(T.stun>0?1.5:1),x1,y1,0,false); if(B.hp<was) T.score+=Math.round((was-B.hp)*1000); }
+    thFx(tu,tv,12,0xff3a3a,4,.25); thLine(x0,y0,x1,y1); } }
+function thLine(x0,y0,x1,y1){ const len=Math.hypot(x1-x0,y1-y0), ms=[]; for(const [col,w] of [[0xff2a2a,.26],[0xffe0e0,.08]]){ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:col,transparent:true,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
+    m.renderOrder=7; m.position.set((x0+x1)/2,(y0+y1)/2,.45); m.rotation.z=Math.atan2(y1-y0,x1-x0); m.scale.set(Math.max(.01,len),w,1); m.userData.temp=1; scene.add(m); ms.push(m); }
+  const s={t:0}; Game.fxUpd.push(dt=>{ s.t+=dt; const k=Math.max(0,1-s.t/.3); ms.forEach(m=>{ m.material.opacity=k; m.scale.y=Math.max(.01,m.scale.y*(1-dt*2)); }); if(k<=0){ ms.forEach(m=>scene.remove(m)); return false; } return true; }); }
+function thBits(dt){ const N=NAT, T=Game.mech.th, TX=thTex(); for(const b of T.bits){ b.wt-=dt;
     if(T.focus){ const a=T.t*2.4+b.i*Math.PI/2; b.tu=N.tu+Math.cos(a)*1.2; b.tv=N.tv+.4+Math.sin(a)*.5; }
     else if(b.wt<=0){ b.wt=rnd(.8,1.6); b.tu=clamp(N.tu+rnd(-6,6),-TH.W+.8,TH.W-.8); b.tv=clamp(rnd(-TH.H+1.5,-1.5),-TH.H+1,-1); }
     b.u=lerp(b.u,b.tu,Math.min(1,dt*(T.focus?9:2.2))); b.v=lerp(b.v,b.tv,Math.min(1,dt*(T.focus?9:2.2)));
@@ -80,7 +90,7 @@ function thBits(dt){ const N=NAT, T=Game.mech.th; for(const b of T.bits){ b.wt-=
     let tg=null,bd=1e9; for(const m of T.mn){ if(m.hp<=0) continue; const d=Math.hypot(m.u-b.u,m.v-b.v); if(d<bd){ bd=d; tg=m; } } const C=thBossC(), tu=tg?tg.u:C.u+rnd(-2,2), tv=tg?tg.v:C.v-1.5;
     const ta=Math.atan2(tv-b.v,tu-b.u); b.ang=ta; b.cd-=dt;
     if(T.ready&&!T.drill&&Game.state==='play'&&b.cd<=0){ b.cd=(T.focus?.55:1.05)+rnd(0,.4); T.pb.push({u:b.u,v:b.v,vu:Math.cos(ta)*38,vv:Math.sin(ta)*38,r:.2,col:0x3ff4ff,dmg:.1,t:0}); thFx(b.u,b.v,4,0x3ff4ff,2,.15); }
-    const [x,y]=thW(b.u,b.v); b.mesh.position.set(x,y,.35); const dx=Math.sin(ta), dy=-Math.cos(ta); b.mesh.rotation.z=Math.atan2(-dx,dy); b.mesh.visible=!!N.show&&T.pk<.5; } }
+    const [x,y]=thW(b.u,b.v); b.mesh.position.set(x,y,.35); const dx=Math.sin(ta), dy=-Math.cos(ta); b.mesh.rotation.z=Math.atan2(-dx,dy); b.mesh.visible=!!N.show&&T.pk<.5; const want=T.hold>=TH.FULL&&!T.drill?TX.bitR:TX.bit; if(b.mesh.material.map!==want) b.mesh.material.map=want; } }
 function thHurt(){ const N=NAT, G=Game.mech, T=G.th; if(N.inv>0||Game.state!=='play'||T.drill) return; T.miss++; T.spellMiss++;
   N.flash=.3; shake(.6); Sound.sfx('hurt'); Sound.sfx('crash'); thFx(N.tu,N.tv,40,0xff5a8a,8,.35); thFx(N.tu,N.tv,24,0xffffff,6,.3); FX.flash=.25; grade.uniforms.flashCol.value.set(1,.2,.3);
   // Touhou-style: losing a life clears the bullets around you
@@ -284,7 +294,7 @@ function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++
 (function(){
   // the 3D "Dimension Break" phases are replaced: never enter them
   m3Enter=function(){};
-  const smp=startMechPhase; startMechPhase=function(ph){ const G=Game.mech, resp=!!(G&&G._resp); smp(ph); if(!Game.mech) return; thSetup(Math.min(ph,2),!resp); };
+  const smp=startMechPhase; startMechPhase=function(ph){ const G=Game.mech, resp=!!(G&&G._resp); smp(ph); if(!Game.mech) return; if(ph<=2) Sound.play('mp3:hamza'); thSetup(Math.min(ph,2),!resp); }; /* the Hamza song through both bullet-hell phases (carries on where it was) */
   const mpe=mechPhaseEnd; mechPhaseEnd=function*(ph){ if(thOn()){ yield* thPhaseOut(ph); return; } yield* mpe(ph); };
   const um=updateMech; updateMech=function(dt){ const G=Game.mech; thGhosts(dt); if(G&&G.th&&L.vd){ for(const f of L.anim) f(dt); try{ thUpdate(dt); }catch(e){ console.error('touhou update',e); } return; } return um(dt); };
   const mc=mechCam; mechCam=function(dt){ if(thOn()) return thCam(); return mc(dt); };
@@ -293,9 +303,9 @@ function thStar(x,y,r,col){ D.fillStyle=col; D.beginPath(); for(let i=0;i<10;i++
   const em=exitMech; exitMech=function(q){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; camera.up.set(0,1,0); } thTouchButtons(false); return em(q); };
   // the drill and the death-retry may clear temp scene objects: rebuild on respawn
   const mr=mechRespawn; mechRespawn=function(){ const G=Game.mech; if(G&&G.th){ thClear(G.th); G.th=null; } return mr(); }; })();
-// ---------- Nathan's cockpit (right panel): flinches when hit, smokes on his last life, explodes when he dies ----------
+// ---------- Nathan's cockpit (right panel): flinches when hit, smokes at 3-4 hearts, burns at 1-2, explodes when he dies ----------
 function thCockpit(x,y,w,h,T,N){ thCockpitOn(D,x,y,w,h,T,N); }
-function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hitK=T.hitT?Math.max(0,1-(now-T.hitT)/550):0, dead=T.deadT?(now-T.deadT)/1000:-1, last=T.lives<=0&&dead<0;
+function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hitK=T.hitT?Math.max(0,1-(now-T.hitT)/550):0, dead=T.deadT?(now-T.deadT)/1000:-1, last=T.lives<=2&&dead<0, smoke=T.lives<=4&&dead<0; /* 1-2 hearts: burning; 3-4: smoking; 5: fine */
   let jx=0, jy=0; if(hitK>0){ jx=rnd(-6,6)*hitK; jy=rnd(-4,4)*hitK; } if(dead>=0&&dead<1.2){ jx=rnd(-9,9)*(1-dead/1.2); jy=rnd(-7,7)*(1-dead/1.2); }
   D.save(); D.translate(Math.round(x+jx),Math.round(y+jy)); uCaps('COCKPIT',0,-4,'#b9a8d8',11);
   D.beginPath(); D.rect(0,4,w,h-4); D.clip();
@@ -303,21 +313,32 @@ function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hi
   const g=D.createLinearGradient(0,4,0,h); g.addColorStop(0,'#05030f'); g.addColorStop(1,'#1a0a2e'); D.fillStyle=g; D.fillRect(0,4,w,h);
   for(let i=0;i<26;i++){ const sx=(twP5Rand(i)*w+t*(60+twP5Rand(i+3)*90))%w, sy=4+twP5Rand(i+7)*h*.7; D.fillStyle=i%5?'rgba(220,220,255,.5)':'#ffffff'; D.fillRect(Math.round(sx),Math.round(sy),i%5?2:3,1); }
   if(dead<0||dead<.15){
-    // Nathan in the seat (his portrait, pixel-scaled): flinches when hit, sweats on his last life
-    const ex=hitK>.3?'surprised':last?'worried':'normal', pc=portrait('nathan',ex), ps=Math.max(1,Math.floor(Math.min(w*.62,h*.78)/56)), pw=56*ps, px=Math.round(w/2-pw/2+(hitK>0?-hitK*8:0)), py=Math.round(h-pw-h*.14+(hitK>0?hitK*4:0));
+    // Nathan in the seat (his portrait, pixel-scaled): flinches when hit; worried while it smokes, in pain while it burns
+    const ex=hitK>.3?'surprised':last?'sad':smoke?'worried':'normal', pc=portrait('nathan',ex), ps=Math.max(1,Math.floor(Math.min(w*.62,h*.78)/56)), pw=56*ps, px=Math.round(w/2-pw/2+(hitK>0?-hitK*8:0)), py=Math.round(h-pw-h*.14+(hitK>0?hitK*4:0));
     D.fillStyle='#120c1c'; D.fillRect(Math.round(w/2-pw*.42),py+pw*.2,Math.round(pw*.84),h); /* the seat */
     D.imageSmoothingEnabled=false; if(pc&&pc.width) D.drawImage(pc,px,py,pw,pw);
+    const Q=(u,v,uw,vh,col)=>{ D.fillStyle=col; D.fillRect(px+u*ps,py+v*ps,uw*ps,vh*ps); };
+    if(smoke&&hitK<=.3){ const dy=(t*14)%6; Q(42,20+dy,2,3,'#8fd8ff'); Q(42,23+dy,1,1,'#d8f4ff'); }
+    if(last&&hitK<=.3){ // squeezed-shut eyes, gritted teeth, sweat and soot
+      Q(18,22,8,8,'#c48a5c'); Q(30,22,8,8,'#c48a5c'); for(const [u,v] of [[19,24],[20,25],[21,26],[20,27],[19,28],[36,24],[35,25],[34,26],[35,27],[36,28]]) Q(u,v,1,1,'#1a1626');
+      Q(18,21,3,1,'#1a1626'); Q(21,22,3,1,'#1a1626'); Q(32,22,3,1,'#1a1626'); Q(35,21,3,1,'#1a1626');
+      Q(22,34,13,5,'#c48a5c'); Q(23,35,11,3,'#ffffff'); Q(23,34,11,1,'#3a0a14'); Q(23,38,11,1,'#3a0a14'); for(let k=0;k<4;k++) Q(25+k*2.5,35,1,3,'#b8b0b0');
+      const dy=(t*20)%7; Q(41,18+dy,2,3,'#8fd8ff'); Q(14,21+((t*17+3)%7),2,3,'#8fd8ff'); Q(16,30,4,2,'rgba(30,20,20,.55)'); Q(36,32,3,2,'rgba(30,20,20,.55)'); }
     if(hitK>0){ D.fillStyle=`rgba(255,40,60,${(.45*hitK).toFixed(3)})`; D.fillRect(0,4,w,h); }
     // the console across the bottom, lights blinking (red when it is going badly)
     const cy=Math.round(h-h*.16); D.fillStyle='#1c1428'; D.fillRect(0,cy,w,h-cy); D.fillStyle='#2e2440'; D.fillRect(0,cy,w,3);
     for(let i=0;i<10;i++){ const on=(Math.floor(t*(last?6:2)+i*1.7)%3)>0; D.fillStyle=last?(on?'#ff3a3a':'#5a1010'):(on?(i%3?'#3ff4ff':'#8aff8a'):'#1a3a3a'); D.fillRect(Math.round(8+i*(w-16)/10),cy+8,6,4); }
     // canopy struts
     D.strokeStyle='#3a2e4e'; D.lineWidth=5; D.beginPath(); D.moveTo(0,cy); D.lineTo(w*.18,4); D.moveTo(w,cy); D.lineTo(w*.82,4); D.stroke(); D.strokeStyle='rgba(180,220,255,.12)'; D.lineWidth=2; D.beginPath(); D.moveTo(w*.3,10); D.lineTo(w*.1,cy-8); D.stroke();
-    if(last){ // smoke and sparks out of the console, and the alarm
-      T.ck=T.ck||[]; if(Math.random()<.5) T.ck.push({x:w*(.15+Math.random()*.7),y:cy,r:6+Math.random()*7,vy:-(22+Math.random()*30),vx:rnd(-8,8),a:.9,sp:Math.random()<.25});
+    if(smoke){ // smoke out of the console (3-4 hearts); fire, sparks and the alarm too (1-2 hearts)
+      T.ck=T.ck||[]; if(Math.random()<(last?.5:.22)) T.ck.push({x:w*(.15+Math.random()*.7),y:cy,r:6+Math.random()*7,vy:-(22+Math.random()*30),vx:rnd(-8,8),a:last?.9:.6,sp:last&&Math.random()<.25});
+      if(last){ T.cf=T.cf||[]; for(let i=0;i<3;i++) T.cf.push({x:w*(.08+Math.random()*.84),y:cy+2,h:18+Math.random()*22,a:1});
+        for(const f of T.cf){ f.y-=40/60; f.a-=.05; } T.cf=T.cf.filter(f=>f.a>0); if(T.cf.length>90) T.cf.splice(0,T.cf.length-90); }
       for(const p of T.ck){ p.y+=p.vy/60; p.x+=p.vx/60; p.r+=.25; p.a-=.009; } T.ck=T.ck.filter(p=>p.a>0&&p.y>-20);
       for(const p of T.ck){ if(p.sp){ D.fillStyle=`rgba(255,210,90,${Math.max(0,p.a).toFixed(3)})`; D.fillRect(Math.round(p.x),Math.round(p.y),2,2); } else { D.fillStyle=`rgba(52,48,60,${Math.max(0,p.a*.9).toFixed(3)})`; D.beginPath(); D.arc(p.x,p.y,Math.max(0,p.r),0,7); D.fill(); } }
-      if(Math.floor(t*3)%2){ D.fillStyle='rgba(255,30,40,.18)'; D.fillRect(0,4,w,h); uText('⚠ WARNING',w/2,22,`900 15px ${FB}`,'#ff4a4a','center'); } }
+      if(last&&T.cf) for(const f of T.cf){ const k=Math.max(0,f.a), hh=f.h*k, wv=Math.sin(t*20+f.x)*3; D.fillStyle=`rgba(255,${Math.round(90+120*k)},40,${(.85*k).toFixed(3)})`; D.beginPath(); D.moveTo(f.x-8*k,f.y); D.lineTo(f.x+wv,f.y-hh); D.lineTo(f.x+8*k,f.y); D.fill();
+          if(k>.6){ D.fillStyle=`rgba(255,240,170,${(.7*k).toFixed(3)})`; D.fillRect(Math.round(f.x-1),Math.round(f.y-hh*.4),2,Math.max(1,Math.round(hh*.3))); } }
+      if(last&&Math.floor(t*3)%2){ D.fillStyle='rgba(255,30,40,.18)'; D.fillRect(0,4,w,h); uText('⚠ WARNING',w/2,22,`900 15px ${FB}`,'#ff4a4a','center'); } }
   }
   if(dead>=0){ // the cockpit blows up, then the feed dies
     if(dead<1.4){ const k=dead/1.4; for(let i=0;i<7;i++){ const a=i*.9+1, r=Math.max(0,(18+i*9)*Math.min(1,dead*3)*(1-k*.3)); D.fillStyle=['#ffffff','#ffe08a','#ff9a3a','#ff4a2a','#5a2a1a'][Math.min(4,Math.floor(k*4+i%2))]; D.beginPath(); D.arc(w/2+Math.cos(a*3)*i*7,h*.55+Math.sin(a*2)*i*5,r,0,7); D.fill(); }

@@ -20,7 +20,7 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'ali': ('am_onyx', .98, .94, 'aecho=0.8:0.3:30:0.12'), 'aliold': ('am_onyx', .9, .86, None), 'hamza': ('am_puck', 1.0, 1.32, None),
   'hamzadeep': ('am_onyx', .72, .58, 'aecho=0.8:0.75:140:0.45,aecho=0.6:0.5:400:0.3'),
   'nathan': ('am_adam', 1.0, .97, 'highpass=f=160,lowpass=f=5600,aecho=0.8:0.35:35:0.18'), 'nathanraw': ('am_adam', .9, .97, None),
-  'grimmaw': ('am_onyx', .9, .78, 'aecho=0.8:0.55:70:0.28'), 'hound': ('am_fenrir', 1.05, .84, 'aecho=0.8:0.5:40:0.2'),
+  'grimmaw': ('bm_fable', 1.04, 1.22, None), 'hound': ('am_fenrir', .98, .8, 'highpass=f=300,lowpass=f=3400'),  # He's Day Old Kojima (a posh baby) and his soldiers (over the codec)
   'caotan': ('am_liam', 1.06, 1.0, None), 'omar': ('bm_lewis', .9, .86, 'aecho=0.8:0.4:60:0.25'),
   'caomar': ('bm_lewis', 1.0, .92, 'aecho=0.8:0.5:25:0.35,aecho=0.7:0.4:60:0.2'),
   'elder': ('bm_george', .9, .96, None), 'baker': ('bf_isabella', 1.0, 1.0, None), 'kid': ('am_puck', 1.05, 1.28, None),

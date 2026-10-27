@@ -25,7 +25,7 @@ function pfSetRadius(R){ const G=L; G.R=R; for(let z=0;z<80;z++) for(let x=0;x<8
 
 // ---------- the party ----------
 const PF_ROLE={grimmaw:'tank',nathan:'tank',mira:'healer',hamza:'healer',shayan:'dps',ali:'dps',caotan:'dps',omar:'dps'};
-const PF_NAME={grimmaw:'Grimmaw',nathan:'Nathan',mira:'Mira',hamza:'Hamza',shayan:'Shayan',ali:'Ali',caotan:'Caotan',omar:'Omar'};
+const PF_NAME={grimmaw:'Kojima',nathan:'Nathan',mira:'Mira',hamza:'Hamza',shayan:'Shayan',ali:'Ali',caotan:'Caotan',omar:'Omar'};
 const PF_JOB={grimmaw:'PLD',nathan:'GNB',mira:'WHM',hamza:'AST',shayan:'MNK',ali:'SAM',caotan:'DNC',omar:'RPR'};
 let PF=null;
 function pfMember(id){ const isP=id===HERO(), m={id,role:PF_ROLE[id],name:PF_NAME[id],x:PF_C.x,z:PF_C.z+6,y:0,vx:0,vz:0,hp:1,maxHp:1,shown:1,f:1,t:rnd(0,3),isPlayer:isP,spr:null,gaol:0,mark:0,hitT:rnd(0,1),anim:'idle',tx:PF_C.x,tz:PF_C.z+6,vuln:0};

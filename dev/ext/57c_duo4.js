@@ -208,7 +208,7 @@ function twDrawDuoMash(){ const M=TW.mash; if(!M||!M.duoClash) return; const w=4
   D.fillStyle='rgba(8,4,14,.88)'; D.fillRect(x-6,y-6,w+12,30); D.fillStyle='#ff3a5a'; D.fillRect(x,y,w*k,18); D.fillStyle='#a04aff'; D.fillRect(x+w*k,y,w*(1-k),18); D.fillStyle='#fff'; D.fillRect(x+w*k-2,y-8,4,34);
   D.strokeStyle='#ffe6b0'; D.lineWidth=2; D.strokeRect(x-6,y-6,w+12,30); D.textAlign='center'; D.font=`900 ${28+Math.round(Math.sin(t*20)*2)}px ${FB}`; D.fillStyle=Math.floor(t*8)%2?'#ffffff':'#ffd45a';
   D.lineWidth=5; D.strokeStyle='#1a0e24'; const s='MASH '+K('attack')+'!'; D.strokeText(s,UW/2,y-18); D.fillText(s,UW/2,y-18);
-  D.font=`700 14px ${FB}`; D.fillStyle='#ffd0d8'; D.textAlign='left'; D.fillText('SHAYAN + ALI',x,y+38); D.textAlign='right'; D.fillStyle='#d0b0ff'; D.fillText('OMAR',x+w,y+38); D.restore(); }
+  const lb=M.lbl||['SHAYAN + ALI','OMAR']; D.font=`700 16px ${FB}`; D.fillStyle='#ffd0d8'; D.textAlign='left'; D.fillText(lb[0],x,y+40); D.textAlign='right'; D.fillStyle='#d0b0ff'; D.fillText(lb[1],x+w,y+40); D.restore(); }
 (function(){ const du=drawUI; drawUI=function(){ du(); try{ twDrawDuoMash(); }catch(e){} }; })();
 
 // =====================================================================

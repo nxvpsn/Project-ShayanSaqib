@@ -21,7 +21,7 @@ drawTitle=function(){ const t=performance.now()/1000; D.fillStyle='rgba(6,6,18,.
     D.textAlign='center'; D.font=`800 26px ${FD}`; D.fillStyle=on?'#fff4d6':'#d8c8a8'; D.fillText((on?'▸  ':'')+o.t+(on?'  ◂':''),UW/2,y+30);
     D.font=`500 14px ${FB}`; D.fillStyle=on?'#e9d6b0':'#a8906a'; D.fillText(o.sub,UW/2,y+49); D.textAlign='left'; });
   D.globalAlpha=.55+.3*Math.sin(t*3); cText([[IS_TOUCH()?'Tap an option':'W / S or mouse to choose  ·  E, Enter or click to start',`600 17px ${FB}`,'#fff4d6',500]]); D.globalAlpha=1;
-  cText([['About 25 minutes  ·  Fully voiced  ·  Your words with Mira shape the ending  ·  Sound on',`500 19px ${FB}`,'#e2dacb',UH-40]]); };
+  };
 function twTitleHit(e){ const r=ui.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*UW, y=(e.clientY-r.top)/r.height*UH; return TM.rows.findIndex(q=>x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h); }
 ui.addEventListener('pointermove',e=>{ if(Game.state!=='title'||TM.busy) return; const i=twTitleHit(e); if(i>=0) TM.sel=i; });
 ui.addEventListener('pointerdown',e=>{ if(Game.state!=='title'||TM.busy) return; const i=twTitleHit(e); e.preventDefault(); e.stopImmediatePropagation(); Sound.unlock(); if(i>=0&&(Game.titleT||0)>=.5){ TM.sel=i; twTitlePick(); } },true);

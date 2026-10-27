@@ -104,24 +104,24 @@ function* pfBuster(swap){ const T=pfTank(); T.mark='buster'; yield* pfCast('git 
   if(swap){ const O=pfOT(); PF.mt=O.id; Game.dmgNums.push({x:O.x,y:O.y+2.8,z:O.z,n:'PROVOKE',t:0,big:true,col:'#7ab0ff'}); pfLog(O.name+' uses Provoke. Tank swap.'); } yield .5; }
 // MEME: Grimmaw shirks the tankbuster onto a DPS
 function* pfShirkMeme(){ const G=pfById('grimmaw'); PF.mt='grimmaw'; G.mark='buster'; PF.cast={name:'git push --force (tankbuster)',t:0,dur:2.8}; yield 1;
-  twBark('grimmaw',"Tankbuster? Watch this. I'll press my big defensive.",true); yield 1.1; pfLog('Grimmaw uses Shirk.'); Game.dmgNums.push({x:G.x,y:3,z:G.z,n:'SHIRK',t:0,big:true,col:'#ffb0b0'});
+  twBark('grimmaw',"Tankbuster? Watch this. I'll press my big defensive.",true); yield 1.1; pfLog('Kojima uses Shirk.'); Game.dmgNums.push({x:G.x,y:3,z:G.z,n:'SHIRK',t:0,big:true,col:'#ffb0b0'});
   const C=pfById('caotan'); G.mark=0; C.mark='buster'; yield .7; PF.cast=null; C.mark=0; FX.burst(C.x,1.4,C.z,50,0xff6a3a,8,.4); Sound.sfx('crossboom'); shake(.6); pfDie(C,'took a tankbuster',1);
   twBark('caotan',"WHO SHIRKED?! I'm a DANCER! I'm made of SILK!",true); yield 1.6; twBark('grimmaw',"...The buttons are next to each other.",true);
-  yield* pfRaiseAI(C,'mira'); twBark('mira',"Swiftcast, Raise. Grimmaw, I'm writing you up.",true); yield .5; }
+  yield* pfRaiseAI(C,'mira'); twBark('mira',"Swiftcast, Raise. Kojima, I'm writing you up.",true); yield .5; }
 // MEME: the off-tank dies and floortanks for a bit
 function* pfFloortankMeme(){ const N=pfById('nathan'); PF.mt='nathan'; N.mark='buster'; PF.cast={name:'rm -rf ./tanks (tankbuster)',t:0,dur:2.6}; twBark('nathan',"Superbolide. I'll be at one HP. On purpose.",true); yield 2.6; PF.cast=null; N.mark=0;
   FX.burst(N.x,1.4,N.z,50,0xff6a3a,8,.4); Sound.sfx('crossboom'); pfDie(N,'Superbolide was on cooldown',1); pfLog('Nathan is floortanking. Paul seems confused.'); twBark('paul',"Is he... tanking me from the FLOOR?",true);
-  yield 1.5; twBark('grimmaw',"Provoke. The dog is back on duty.",true); PF.mt='grimmaw'; yield 1.2; yield* pfRaiseAI(N,'hamza'); twBark('hamza',"Ascend! It's a pig card. It works the same.",true); }
+  yield 1.5; twBark('grimmaw',"Provoke. The baby is back on duty.",true); PF.mt='grimmaw'; yield 1.2; yield* pfRaiseAI(N,'hamza'); twBark('hamza',"Ascend! It's a pig card. It works the same.",true); }
 // Passage of Arms: everyone gets behind Grimmaw's shield
 function* pfPassage(){ const Pa=PF.paul, G=pfById('grimmaw'), a=rnd(0,6.28); PF.mt='grimmaw'; const px=PF_C.x+Math.cos(a)*11, pz=PF_C.z+Math.sin(a)*11;
   pfLog('Paul jumps to the edge.'); Pa.away=1; yield .25; Pa.x=px; Pa.z=pz; Pa.away=0; FX.burst(px,1,pz,40,0x7affb0,6,.4); Sound.sfx('slam');
   const gx=PF_C.x+Math.cos(a)*3, gz=PF_C.z+Math.sin(a)*3, back=a+Math.PI, half=.62, len=11; pfPlace(G,gx,gz); PF.passage={gx,gz,back,half,len};
-  twBark('grimmaw',"PASSAGE OF ARMS! Behind me. My shield is bigger than my self-esteem.",true); pfPrompt('GET BEHIND GRIMMAW','#9fe0ff',5.4,'Stand inside his shield cone (Passage of Arms)');
+  twBark('grimmaw',"PASSAGE OF ARMS! Behind me. My shield is bigger than my head. Barely.",true); pfPrompt('GET BEHIND KOJIMA','#9fe0ff',5.4,'Stand inside his shield cone (Passage of Arms)');
   const cone=pfConeMesh(gx,gz,back,half,len,0x7ab0ff,.28); const cone2=pfConeMesh(gx,gz,back,half,len,0xffffff,.05);
   pfAI().filter(m=>m!==G&&!m.dead).forEach((m,i)=>{ const b=back+(i-3)*.14, r=3+(i%3)*1.6; pfPlace(m,gx+Math.cos(b)*r,gz+Math.sin(b)*r); });
   yield* pfCast('Merge Conflict (the whole arena)',5.4); scene.remove(cone); scene.remove(cone2);
   FX.flash=.7; grade.uniforms.flashCol.value.set(1,.6,.3); shake(1); Sound.sfx('crossboom'); for(let i=0;i<60;i++){ const r=rnd(0,16), b=rnd(0,6.28); FX.burst(PF_C.x+Math.cos(b)*r,.3,PF_C.z+Math.sin(b)*r,2,0xff8a3a,6,.35); }
-  if(!PF.pDown&&!pfInCone(Player.x,Player.z,gx,gz,back,half,len)) pfKill('Merge Conflict. You were not behind Grimmaw.');
+  if(!PF.pDown&&!pfInCone(Player.x,Player.z,gx,gz,back,half,len)) pfKill('Merge Conflict. You were not behind Kojima.');
   PF.passage=null; pfFreeAll(); Pa.x=PF_C.x; Pa.z=PF_C.z; yield .6; }
 // Hard Reset: hide behind a firewall. Then the firewalls start compiling: break them yourself.
 function* pfFirewalls(){ const Pa=PF.paul; Pa.x=PF_C.x; Pa.z=PF_C.z; const a0=rnd(0,6.28); PF.walls=[];

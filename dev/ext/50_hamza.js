@@ -103,9 +103,9 @@ function* hzgFinale(){ const G=TW.giant, P=Player, H=Game.hamza, C=TW.allies.fin
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2; cineSet((cx+ox)/2,P.y+3,(cz+oz)/2+10.5,(cx+ox)/2,P.y+2,(cz+oz)/2); yield wait(.6);
   yield say('caotan',"So... the pig's dead. Rest in pork.");
-  yield say('omar',"The Dog Lord is dead. I will mourn him later. Alone. In the rain. With a playlist.");
+  yield say('omar',"The baby is dead. I will mourn him later. Alone. In the rain. He still owes us three paychecks.");
   yield say('caotan',"And the main character is at one HP, sweaty and vulnerable. My three favorite things.");
-  yield say('omar',"Shayan Saqib. The last thing standing between us and the throne of Kennel Keep. And its excellent dental plan.");
+  yield say('omar',"Shayan Saqib. The last thing standing between us and the throne of Day Old Keep. And its excellent dental plan.");
   twCamP(6.2,1.2);
   yield say('shayan',"I KNEW IT! Nobody is THAT helpful without a betrayal arc!",'angry');
   yield say('caotan',"Sorry, senpai! It's not personal! I just want your throne. And your body. Mostly the throne. ♡",'happy');

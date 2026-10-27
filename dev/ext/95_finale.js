@@ -36,7 +36,7 @@ function* twPaulIntro(){ const P=Player; yield fadeOut(); pfStart(); TWS.paulTri
   cineSet(PF_C.x,4,PF_C.z+16,PF_C.x,1.6,PF_C.z); for(const id of ['caotan','omar','hamza']) pfRemoveFx(pfMem(id),0xbfe8ff); yield say('paul',"Caotan. Omar. Hamza. Flight: disabled. Walk like the rest of us.");
   PF.fly={}; Sound.sfx('crash'); shake(.5); yield wait(.3);
   yield say('caotan',"My legs! They've never touched grass!",'surprised'); yield say('omar',"The ground. It's so... grounded."); yield say('hamza',"Oink.",'sad');
-  shot('grimmaw',9); pfRemoveFx(pfMem('grimmaw'),0xff5a3a); yield say('paul',"Grimmaw. Howl: muted."); yield say('',"Grimmaw threw back his head and howled with all his might. Nothing came out. A single hound in the distance felt sorry for him.");
+  shot('grimmaw',9); pfRemoveFx(pfMem('grimmaw'),0xff5a3a); yield say('paul',"Kojima. Monologue: muted."); yield say('',"Kojima threw back his enormous head and began a forty-minute monologue. Nothing came out. Somewhere, a single Snake felt sorry for him.");
   shot('mira'); pfRemoveFx(pfMem('mira'),0xffd0ec); yield say('paul',"Mira. Singing voice: removed. ...Sorry, Mira. It was for balance."); yield say('mira',"...!",'angry');
   shot('nathan',10); yield say('paul',"Nathan. Mech: uninstalled.");
   const N=pfMem('nathan'); Sound.sfx('shatter'); Sound.sfx('crossboom'); for(let i=0;i<80;i++) FX.spawn(N.x+rnd(-2,2),rnd(.5,4.5),N.z,rnd(-6,6),rnd(-2,6),rnd(-3,3),rnd(.6,1.4),[0x5d6f9e,0x3ff4ff,0x8fa0c8][i%3],rnd(.3,.6),12,false); PF.mechOn=false; impactFrame([[3,2],[2,1]]); shake(.8); yield wait(.8);
@@ -70,7 +70,7 @@ function* twPaulFinale(){ const P=Player, Pa=PF.paul; Sound.stop(); Voice.stop()
   const N=pfMem('nathan'); PF.mechY=20; PF.mechOn=true; Sound.sfx('quickboost'); Sound.sfx('beam'); const fall={k:20}; while(fall.k>0){ fall.k=Math.max(0,fall.k-1.4); PF.mechY=fall.k; yield wait(.03); } Sound.sfx('slam'); shake(1); FX.ring(N.x,.1,N.z,'#3ff4ff',5,.5);
   rt.on=0; Game.subtitle=null;
   cineSet(N.x+1.5,3,N.z+9,N.x,2.4,N.z); yield say('nathan',"My MECH! Every memory, every song! ...Every crash report.");
-  yield say('caotan',"Wait... my legs are FREE again! I'm FLOATING!",'happy'); yield say('mira',"La... la... LAAA! My voice! It's back!",'happy'); yield say('grimmaw',"AWOOOOOOOOO!",'angry');
+  yield say('caotan',"Wait... my legs are FREE again! I'm FLOATING!",'happy'); yield say('mira',"La... la... LAAA! My voice! It's back!",'happy'); yield say('grimmaw',"AND ANOTHER THING ABOUT MY VISION—",'angry');
   cineSet(Pa.x,2.4,Pa.z+8,Pa.x,2.4,Pa.z); yield say('paul',"...and that's why the code review process at this studio is a war crime, and furthermore—");
   const S=pfMem('shayan'), sx=S.isPlayer?P.x:S.x, sz=S.isPlayer?P.z:S.z; cineSet(sx+1,2,sz+5,sx,1.4,sz);
   yield say('shayan',"Shut the fuck up, Paul.",'angry');
@@ -102,7 +102,7 @@ function* twPaulFinale(){ const P=Player, Pa=PF.paul; Sound.stop(); Voice.stop()
   yield say('hamza',"Bismillah, I'm so nervous. I'm peeing. I'm peeing so much.");
   cineSet(M.x+1,2,M.z+6,M.x,1.6,M.z); const notes={on:1}; Game.fxUpd.push(()=>{ if(!notes.on) return false; if(Math.random()<.5) FX.spawn(M.x+rnd(-1,1),1.8,M.z,rnd(-1,1),rnd(1,2),0,1.2,0xfff0a0,.3,-.5,true); return true; });
   yield say('mira',"I'll sing everyone a buff! LAAAAAA!",'happy');
-  cineSet(G.x+1,3,G.z+9,G.x,2.4,G.z); Sound.sfx('howl'); yield say('grimmaw',"Lord of Hounds grants you... ATTACK UP! HOWL WITH ME!",'angry');
+  cineSet(G.x+1,3,G.z+9,G.x,2.4,G.z); Sound.sfx('howl'); yield say('grimmaw',"He's Day Old Kojima grants you... ATTACK UP! A Kojima Buff!",'angry');
   cineSet(Pa.x,1.6,Pa.z+5,Pa.x,1.4,Pa.z); yield say('paul',"Wait. Wait wait wait. Can we talk about this? I'll add a checkpoint! I'll add TWO checkpoints!",'surprised');
   yield say(HERO(),"No.");
   // impact one: Shayan's drill
@@ -127,7 +127,7 @@ function* twPaulFinale(){ const P=Player, Pa=PF.paul; Sound.stop(); Voice.stop()
   yield say('mira',"...Did the pig just eat God?",'surprised');
   yield say('ali',"He wasn't God. He was a guy with a hood.");
   yield say('shayan',"Does this mean the game's over? Do we get to go home? Do we HAVE homes?");
-  yield say('grimmaw',"...I would like to go home now. I have a very large crown to polish.");
+  yield say('grimmaw',"...I would like to go home now. It's past my nap time. My lawyers will be in touch.");
   yield say('nathan',"Of every memory I carry... this is the dumbest one. I'll keep it forever.");
   yield say('',"Somewhere in a single HTML file, a hooded man's last commit message read: 'fix later'. It never was.");
   TWS.paulDone=1; twSave(); Game.ending=6; evaCard(['PATCH 7.0','THE DEV IS DEAD'],3,1); yield wait(3.2); evaCard(['GG.'],2,3); yield wait(2.2);

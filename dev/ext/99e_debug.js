@@ -8,10 +8,10 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH='Oct 27: bullet hell without spell cards, items or dash; Meatball Mayhem; Nathan cockpit';
-const DBG_NEW=['mech:*','mech:ward'];
+const DBG_PATCH="Oct 27: the duo v5 (mixes, new limit cuts, Burnout); He's Day Old Kojima replaces Grimmaw; bit lasers in the bullet hell";
+const DBG_NEW=['duo:*','duo:laserMix','duo:omarMix','duo:duoMix','duo:scytheRain','duo:burnout','grimmaw:*','mech:*'];
 const DBG={on:false,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
-const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Grimmaw ↗'],['paul','Paul ↗']];
+const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
 function dbgName(k){ const S=[...(TH_SPELLS[1]||[]),...(TH_SPELLS[2]||[])].find(s=>s[2]===k); if(DBG.boss==='mech'&&S){ const m=S[0].match(/「(.*)」/); return m?m[1]:S[0]; }
   return String(k).replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/^./,c=>c.toUpperCase()); }

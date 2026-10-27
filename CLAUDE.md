@@ -29,7 +29,7 @@ Test what you touch with its test (§7; menus also with `TOUCH=1`). One commit p
 - **Debug Mode NEW tags:** every push that adds or changes a boss mechanic replaces `DBG_PATCH` and `DBG_NEW` (`dev/ext/99e_debug.js`) with exactly that patch's `'boss:move'` keys (ids: caotan, omar, duo, hamza, nathan, mech; `'boss:*'` = the whole boss; moves = pool keys). List them in the report.
 - **A silver slash means parryable.** Every parryable melee attack shows Shayan's silver slash (`pxvSlash`): new melee hits pass `melee:true` to `twHitP`/`playerHit`, parryable rushes call `twRushTell(o,ang)` each frame. Nothing unparryable may use it.
 - **Readability:** telegraphs and attacks must contrast with the arena (dark arenas under white attacks, solid dark telegraphs on bright ground). Check a new arena's colours against the boss's attack colours. Hits, clashes and the basic slash stay small.
-- **Hands off:** Judgement Cut VFX, the black hole, Shayan's dash trail, all of Grimmaw's effects.
+- **Hands off:** Judgement Cut VFX, the black hole, Shayan's dash trail. (Grimmaw is now He's Day Old Kojima, id 'grimmaw': the easy tutorial boss, `40k_kojima.js`.)
 - **New dialogue** is voice-ready (literal speaker and text: `say('caotan',"…")`, never a variable) and voiced only when the owner asks.
 - **Menus** are phone-first (text >= 16 CSS px, taps >= 44 CSS px) and must work on desktop and `TOUCH=1`.
 - **Per-frame code:** one exception freezes the game. Wrap new per-frame hooks in `try{ … }catch(e){ console.error('name',e); }` and guard computed sizes (`Math.max(0,…)`).

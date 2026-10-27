@@ -15,9 +15,9 @@ function twVillageClimb(G){ if(!G||!G.destr) return; const edge=(ix,iz)=>iz<=4||
     else if(p.kind==='fence'){ const iz=Math.floor(p.cz); for(let ix=Math.floor(p.x0);ix<=Math.floor(p.x1);ix++) if(!edge(ix,iz)) set(p,ix,iz,1); } } }
 (function(){ const ll=loadLevel; loadLevel=function(key){ const r=ll.apply(this,arguments); if(L&&L.key==='village') twVillageClimb(L); return r; };
   const sp=smashProp; smashProp=function(p){ if(p&&p.climb&&L&&L.key==='village'){ for(const [ix,iz] of p.climb){ L.H[iz][ix]=0; L.B[iz][ix]=false; } p.climb=null; } return sp.apply(this,arguments); }; })();
-// the mantle: push into something taller than a step (and not taller than a roof) and you run up it
+// the mantle: push into something taller than a step (and not taller than a roof) and you run up it (the village, or wherever TW._mantle is on: Ali's tree)
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ const P=Player, r=up.apply(this,arguments);
-    if(!L||L.key!=='village'||Game.state!=='play'||Game.dlg||P.cineFly||P.scripted||P.hidden){ P.mantle=null; return r; }
+    if(!L||(L.key!=='village'&&!TW._mantle)||Game.state!=='play'||Game.dlg||P.cineFly||P.scripted||P.hidden){ P.mantle=null; return r; }
     const M=P.mantle;
     if(M){ M.t+=dt; const u=Math.min(1,M.t/M.dur), e=u*(2-u); P.y=lerp(M.y0,M.y1+.08,e); P.vy=0; P.onGround=false;
       if(Math.random()<.5) FX.spawn(P.x+rnd(-.2,.2),P.y+.1,P.z+rnd(-.2,.2),0,-1,0,.25,0xcfc0a0,.2,0,false);
