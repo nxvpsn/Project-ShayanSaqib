@@ -209,7 +209,7 @@ const TH_PAT={
       thB(m.u,m.v,a,5.4,{col:0xc0603a,r:.72,bounce:3,life:14,onB:b=>{ for(let j=0;j<9;j++) thB(b.u,b.v,j/9*6.283+b.t,2.5,{col:0xffb08a,r:.2}); thFx(b.u,b.v,8,0xff8a5a,3,.2); Sound.sfx('squelch'); }});
       if(w%2===1){ for(const i of [-1,1]){ const e=thEye(i); for(let k=0;k<4;k++) thB(e.u,e.v,-Math.PI/2+i*(.3+k*.22),4.6,{col:0xffffff,r:.21,curl:-i*.28}); } }
       if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); yield 1.05; } },
-  *throat(T){ T.tip='Focus ('+K('block')+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*.8)*4.6+Math.sin(t*.37)*1.3, gw=1.85; /* two bullets wider each side than at first (1.05); it sways at most 4.2/s, under focused speed (4.8/s) */
+  *throat(T){ T.tip='Focus ('+K('block')+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*.8)*4.6+Math.sin(t*.37)*1.3, gw=1.25; /* half-width: 3 bullet widths (0.4 each) narrower in all than the 1.85 it had (1.05 at first); it sways at most 4.2/s, under focused speed (4.8/s) */
       for(let k=0;;k++){ const o=gw+k*.75, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); }
       t+=.085; yield .085; } },
   *mitosis(T){ for(let w=0;;w++){ const m=thMouth(), a=thAim(m.u,m.v)+rnd(-.3,.3); T.jaw=.9; thB(m.u,m.v,a,3.6,{col:0xff2a5a,r:.8,split:.9+rnd(0,.4)}); Sound.sfx('squelch'); if(w%3===2){ for(const i of [-1,1]){ const e=thEye(i); thB(e.u,e.v,thAim(e.u,e.v),5.5,{col:0xffd04a,r:.5,split:.7}); } } yield .75; } },
