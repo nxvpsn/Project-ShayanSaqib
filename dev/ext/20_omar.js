@@ -80,7 +80,7 @@ function twSludgePat(black){ const k=black?'b':'p'; twSludgePat.c=twSludgePat.c|
   for(let i=0;i<90;i++){ const x=hash(i,5)*w, y=hash(5,i)*h; blob(x,y,2,pal[3]); c.fillStyle=black?'#8a6ab0':'#c08aff'; c.fillRect(Math.round(x-1),Math.round(y-1),1,1); } /* glossy bubbles */
   if(!black) for(let i=0;i<9;i++){ const x=Math.floor(12+hash(i,9)*(w-28)), y=Math.floor(10+hash(9,i)*(h-24)); c.fillStyle='#120418'; c.fillRect(x,y,2,3); c.fillRect(x+6,y,2,3); c.fillRect(x+1,y+6,6,1); c.fillRect(x,y+7,1,1); c.fillRect(x+7,y+7,1,1); c.fillStyle='#9ad8ff'; c.fillRect(x,y+3,1,2); } /* sad faces */
   return twSludgePat.c[k]=cv; }
-function twSludge(T,ph,sp){ const P=Player, RG=11, W=2*RG+5, D=W, cx=T.x, cz=T.z, x0=cx-W/2, z0=cz-D/2, PX=10, gy=groundY(cx,cz);
+function twSludge(T,ph,sp){ const P=Player, RG=12, W=2*RG+5, /* radius 12: 20% more area than 11 */ D=W, cx=T.x, cz=T.z, x0=cx-W/2, z0=cz-D/2, PX=10, gy=groundY(cx,cz);
   const [cv,c]=mkCanvas(W*PX,D*PX), tx=tex(cv), m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,opacity:.6}));
   m.rotation.x=-Math.PI/2; m.position.set(cx,gy+.035,cz); m.renderOrder=1; m.userData.tw=1; scene.add(m);
   // pockets: 3 (2 in phase III), 4+ apart, inside the goo (2+ from Omar), one within reach of you
