@@ -28,6 +28,7 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'kid14': ('am_puck', 1.05, 1.3, None), 'kids': ('am_puck', 1.08, 1.34, 'aecho=0.8:0.7:23:0.6,aecho=0.8:0.6:47:0.5'),
   'babies': ('am_puck', 1.1, 1.45, 'aecho=0.8:0.7:19:0.6,aecho=0.8:0.6:41:0.5,aecho=0.7:0.5:67:0.4'),
   'villagerm': ('am_eric', 1.0, 1.0, None), 'trainer': ('am_puck', 1.08, 1.08, None), 'villagerf': ('af_sarah', 1.0, 1.0, None), 'paul': ('am_liam', .95, .9, 'lowpass=f=6000'),
+  'operator': ('af_nicole', .95, 1.0, 'highpass=f=200,lowpass=f=7500,chorus=0.6:0.9:50|60:0.4|0.32:0.25|0.4:2|1.3,aecho=0.8:0.6:45:0.25'),  # Aire, Nathan's operator (calm, synthetic)
   '': ('bf_emma', .95, 1.0, None)}
 FIXES = [('Itadakimasu.', 'Ee-tah-dah-kee-mahss.'), ('GG fucking EZ.', 'G. G. Fucking. E. Z.'), ('Getsuga Tenshou', 'Get-sue-gah. Ten-show'),
   ('Getsuga... Jujishou', 'Get-sue-gah. Joo-jee-show'), ('Getsuga... TENSHOU', 'Get-sue-gah. TEN-SHOW'), ('GETSUGA', 'GET-SUE-GAH'), ('TENSHOU', 'TEN-SHOW'), ('Jujishou', 'Joo-jee-show'), ('...', ', '),

@@ -47,7 +47,8 @@ function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return
   const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:2,graze:G.thGraze||0,
     fire:0,hold:0,pk:1,cam:null,panel:animate?0:1,ready:!animate,miss:0,spellMiss:0,bonus:null,tip:null,shield:0};
   const B=G.boss; if(B){ B.hp=B.maxHp=thPhaseHp(ph); B.vuln=true; } T.tick=0; T.pops=[]; T.finDone=0; T.finT=0;
-  N.tu=0; N.tv=-8; N.x=TH.CX+N.tv; N.y=-N.tu; N.vx=N.vy=0; N.qb=0; N.inv=animate?99:2; N.boostN=3; N.charge=N.shot=0; N.atk=null; N.pull=0; N.show=1; N.sp=N.sp||0;
+  if(animate||!G.thCp||G.thCp.ph!==ph){ if(animate) G.thCp=null; } else if(B){ T.tick=G.thCp.tick; B.hp=thTickFloor(T,T.tick-1); T.fromCp=1; }
+  N.tu=0; N.tv=-8; N.x=TH.CX+N.tv; N.y=-N.tu; N.vx=N.vy=0; N.qb=0; N.inv=animate?99:2; N.boostN=3; N.charge=N.shot=0; N.atk=null; N.pull=0; N.show=1; N.sp=Math.max(N.sp||0,100); /* one drill ready at the start of every phase */
   if(N.coreMk) N.coreMk.visible=false; if(N.coreRing) N.coreRing.visible=false;
   const TX=thTex(); for(let i=0;i<4;i++){ const mesh=thPlane(.75,TX.bit); T.bits.push({mesh,u:N.tu+(i-1.5)*1.6,v:N.tv-.6,tu:0,tv:0,cd:.4+i*.3,ang:Math.PI/2,i,wt:0}); }
   Game.mechTip=0; Game.hintT=0; G.busy=animate?1:0; thTouchButtons(true);
@@ -97,7 +98,7 @@ function thHurt(){ const N=NAT, G=Game.mech, T=G.th; if(N.inv>0||Game.state!=='p
   N.flash=.3; shake(.6); Sound.sfx('hurt'); Sound.sfx('crash'); thFx(N.tu,N.tv,40,0xff5a8a,8,.35); thFx(N.tu,N.tv,24,0xffffff,6,.3); FX.flash=.25; grade.uniforms.flashCol.value.set(1,.2,.3);
   // Touhou-style: losing a life clears the bullets around you
   for(const b of T.eb) if(Math.hypot(b.u-N.tu,b.v-N.tv)<5){ b.dead=1; thFx(b.u,b.v,2,0xffffff,1,.15); }
-  if(!TW.god) T.lives--; N.inv=2.4; T.hitT=performance.now();
+  if(!TW.god) T.lives--; N.inv=2.4; T.hitT=performance.now(); if(T.lives===2) thOp('low2'); else if(T.lives===1) thOp('low1'); else if(T.lives===0) thOp('last');
   if(T.lives<0){ T.lives=0; T.deadT=performance.now(); thFx(N.tu,N.tv,90,0x3ff4ff,12,.5); Sound.sfx('crossboom'); N.show=0; G.thScore=0; Game.onDeath(); }
   else if(Math.random()<.4) Voice.bark(Math.random()<.5?'nhurt1':'nhurt2'); }
 
@@ -146,6 +147,21 @@ function thEldHover(tu,tv,o){ o=o||{}; return (m,dt)=>{ m.vu=(tu-m.u)*2.5; m.vv=
 const TH_SPELLS={
   1:[['Snout Spiral',22,'spiral'],['Feeding Trough',16,'trough'],['Oink-Oink Crossfire',22,'cross'],['Piglet Parade',22,'parade'],['Bacon Downpour',22,'rain'],['Event Horizon',22,'horizon']],
   2:[['Eight Billion Lullabies',24,'lullaby'],['Eyes That Keep the Pig',30,'ward'],['Narrow Throat',18,'throat'],['Mitosis',22,'mitosis'],['Six Skeletal Wings',24,'wings'],['Oink Oink Oink',99,'final']]};
+// ---------- AIRE, Nathan's operator (a calm, synthetic voice in his ear): phase starts, drill ready, low hull, checkpoints ----------
+NAMES.operator='Aire';
+function thOp(k){ const T=Game.mech&&Game.mech.th; if(!T) return; T.opT=T.opT||{}; if(T.opT[k]!=null&&T.t-T.opT[k]<8) return; T.opT[k]=T.t;
+  if(k==='p1') twBark('operator',"Systems green, Nathan. Hamza's mass is larger than projected. One drill is loaded. Let's begin.",true);
+  else if(k==='p2') twBark('operator',"Phase two. He's still growing. I've loaded another drill for you.",true);
+  else if(k==='drill') twBark('operator',"Drill charged, Nathan. Show him how deep the sky goes.",true);
+  else if(k==='drill2') twBark('operator',"Second drill charged. You could just... use them.",true);
+  else if(k==='low2') twBark('operator',"Hull integrity critical. Please be careful, Nathan. I'd miss your voice.",true);
+  else if(k==='low1') twBark('operator',"Shields are gone. One more hit and we're both just light.",true);
+  else if(k==='last') twBark('operator',"This is the last one, Nathan. Breathe. I'm right here.",true);
+  else if(k==='cp') twBark('operator',"Checkpoint logged. If we fall, we come back to here.",true);
+  else if(k==='retry') twBark('operator',"Rebooting from the checkpoint. Let's try that again. Together.",true); }
+// checkpoints: after Oink-Oink Crossfire (phase I) and Narrow Throat (phase II) a retry starts from the next attack
+const TH_CP={1:3,2:3};
+
 // ---------- ticks: each attack is its own chunk of Hamza's HP ----------
 // A chunk is what perfect play deals to him in 15 s of that attack (measured in the harness: Power Shot fired the frame it is full,
 // recharged at once, focused, right under him), so clearing an attack in 15 s takes perfect play; most players take a little longer.
@@ -158,7 +174,7 @@ function thPhaseHp(ph){ return thTicks(ph).reduce((s,e)=>s+(TH_TICK[e[2]]||100),
 function thTickFloor(T,i){ const L1=thTicks(T.ph); let f=T.ph===2&&!T.finDone?1:0; for(let j=i+1;j<L1.length;j++) f+=TH_TICK[L1[j][2]]||100; return f; }
 // the Drill gauge fills only from shots that land (boss-damage worth): about one Drill per 35 s of good shooting, up to 2 charges
 const TH_SP_K=100/(6.5*35), TH_SP_MAX=200;
-function thSpGain(d){ const N=NAT; if(N) N.sp=Math.min(TH_SP_MAX,(N.sp||0)+d*TH_SP_K); }
+function thSpGain(d){ const N=NAT; if(!N) return; const b=N.sp||0; N.sp=Math.min(TH_SP_MAX,b+d*TH_SP_K); if(b<100&&N.sp>=100) thOp('drill'); else if(b<200&&N.sp>=200) thOp('drill2'); }
 const TH_PAT={
   *spiral(T){ let a=0; for(;;){ const m=thMouth(); T.jaw=.5; for(let k=0;k<5;k++) thB(m.u,m.v,a+k*1.2566,5.2,{col:0xff5a8a,r:.28}); for(let k=0;k<5;k++) thB(m.u,m.v,-a*1.3+k*1.2566+.6,3.8,{col:0xb06aff,r:.22}); a+=.21; yield .1; } },
   *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=1.65+k*.8, /* two bullet widths more room each side than at first (.85) */ l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
@@ -169,7 +185,9 @@ const TH_PAT={
       for(let k=0;k<6;k++){ const m=thMouth(); for(let j=0;j<20;j++) thB(m.u,m.v,j/20*6.283+k*.15+w,2.6,{col:0xff8ab0,r:.26}); yield .9; } } for(;;) yield 1; },
   *rain(T){ for(let w=0;;w++){ for(let i=0;i<9;i++) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2+rnd(-.15,.15),rnd(4,7),{col:i%3?0xff9a5a:0xffd0a0,r:rnd(.18,.3)});
       if(w%6===0){ const m=thMouth(), a=thAim(m.u,m.v); T.jaw=.8; for(let k=-1;k<=1;k++) thB(m.u,m.v,a+k*.3,4.5,{col:0xff2a3a,r:.65}); Sound.sfx('howl'); } yield .14; } },
-  *horizon(T){ T.pull=1; for(let w=0;;w++){ const m=thMouth(); for(let i=0;i<14;i++){ const a=i/14*6.283+w*.23, R=12, u=m.u+Math.cos(a)*R, v=m.v+Math.sin(a)*R; thB(u,v,a+Math.PI-.5,2.6,{col:0x9a5aff,r:.24,curl:.35,life:8}); }
+  *horizon(T){ T.pull=1; const W=TH.W-.3, H=TH.H-.3, per=4*(W+H); for(let w=0;;w++){ const m=thMouth(); for(let i=0;i<16;i++){ let s=((i/16+w*.037)%1)*per, u, v; /* around the field's border, curling in to the mouth */
+        if(s<2*W){ u=-W+s; v=H; } else if((s-=2*W)<2*H){ u=W; v=H-s; } else if((s-=2*H)<2*W){ u=W-s; v=-H; } else { s-=2*W; u=-W; v=-H+s; }
+        thB(u,v,Math.atan2(m.v-v,m.u-u)-.5,2.6,{col:0x9a5aff,r:.24,curl:.35,life:9}); }
       if(w%4===0){ const a=thAim(m.u,m.v); for(let k=0;k<5;k++) thB(m.u,m.v,a,4+k*.6,{col:0xff5a8a,r:.3}); } yield .45; } },
   *lullaby(T){ let a=0,b=0; for(let w=0;;w++){ const m=thMouth(); T.jaw=.6; for(let k=0;k<8;k++){ thB(m.u,m.v,a+k*.785,4.6,{col:0xff4a7a,r:.24}); thB(m.u,m.v,b+k*.785+.39,3.4,{col:0x6ab0ff,r:.24}); } a+=.13; b-=.17;
       if(w%12===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.12,8,{col:0xffffff,r:.2}); } } yield .1; } },
@@ -191,7 +209,7 @@ const TH_PAT={
   *final(T){ let a=0; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(); T.jaw=.9; for(let k=0;k<6;k++) thB(m.u,m.v,a+k*1.047,4.4,{col:0xff3a5a,r:.24}); a+=.19;
       if(w%8===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.18,7,{col:0xffffff,r:.22}); } }
       if(w%30===0) thMinion('pig',rnd(-6,6),TH.H,thPigDive); if(w%3===0) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2,5,{col:0xff9a5a,r:.22}); yield .1; } } };
-function* thBossLoop(T){ const B=Game.mech.boss, ticks=thTicks(T.ph), fin=TH_SPELLS[2].find(e=>e[2]==='final'); yield 1.4;
+function* thBossLoop(T){ const B=Game.mech.boss, ticks=thTicks(T.ph), fin=TH_SPELLS[2].find(e=>e[2]==='final'); if(!T.opStart){ T.opStart=1; thOp(T.fromCp?'retry':T.ph===1?'p1':'p2'); } yield 1.4;
   for(;;){ let ent=T.tick<ticks.length?ticks[T.tick]:T.ph===2?fin:null; if(!ent) return; // phase I: the last tick took him to 0
     if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } // debug mode can pick the attack
     const [name,,key]=ent, tk=T.tick, isFin=key==='final';
@@ -206,7 +224,7 @@ function* thBossLoop(T){ const B=Game.mech.boss, ticks=thTicks(T.ph), fin=TH_SPE
 // a hit can't carry past the current tick: the chunk empties, the tick pops, the next attack starts (the one-hit-kill cheat skips this)
 (function(){ const md=mechDamage; mechDamage=function(d,x,y,z,b){ try{ const G=Game.mech, T=G&&G.th, B=G&&G.boss;
     if(T&&B&&B.vuln&&!TW.otk&&T.tick!=null){ const n=thTicks(T.ph).length; while(T.tick<n&&B.hp<=thTickFloor(T,T.tick)+1e-6) T.tick++; /* HP set from outside (Debug Mode): catch up */ const f=thTickFloor(T,T.tick); d=Math.max(0,Math.min(d,B.hp-f)); if(d<=0) return;
-      if(B.hp-d<=f+1e-6&&T.tick<thTicks(T.ph).length){ const i=T.tick; T.tick++; T.pops.push({i,t:0}); Sound.sfx('ting'); Sound.sfx('ready'); const C=thBossC(); thFx(C.u,C.v,30,0xffd45a,6,.4); } } }catch(e){ console.error('ticks',e); }
+      if(B.hp-d<=f+1e-6&&T.tick<thTicks(T.ph).length){ const i=T.tick; T.tick++; T.pops.push({i,t:0}); if(TH_CP[T.ph]===T.tick&&G){ G.thCp={ph:T.ph,tick:T.tick}; thOp('cp'); Game.dmgNums.push({x:NAT.x,y:NAT.y+2.2,z:0,n:'CHECKPOINT',t:0,big:true,col:'#9fe0ff'}); } Sound.sfx('ting'); Sound.sfx('ready'); const C=thBossC(); thFx(C.u,C.v,30,0xffd45a,6,.4); } } }catch(e){ console.error('ticks',e); }
   return md.call(this,d,x,y,z,b); }; })();
 
 // ---------- per-frame ----------
