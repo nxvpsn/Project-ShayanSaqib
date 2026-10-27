@@ -71,7 +71,7 @@ TWK.omar.monologue=function*(T,ph){ const sp=twSp(T); const lines=["When I was s
   T.hy=2.6; T.cast=4; twBig('*EDGE INTENSIFIES*',{size:44,col:'#c08aff',y:UH*.24,dur:1.6});
   for(let w=0;w<2;w++){ twBark('omar',lines[w*2],true); const S=twSludge(T,ph,sp); while(!S.done) yield .05; if(w===0){ twBark('omar',lines[1],true); yield .4; } }
   twBark('omar',lines[2],true); yield .8; twBark('omar',lines[3],true); T.hy=1.3; yield .4; };
-// the sludge: a W x D sheet around you (clamped to the arena), drawn into a canvas each frame: purple goo oozing out from Omar (round blobs,
+// the sludge: a round sheet of goo centred on Omar (radius ~11: most of the screen), drawn into a canvas each frame: purple goo oozing out (round blobs,
 // a lobed wobbling front with droplets ahead of it), then it erupts into black sludge with water-wave ripples for 2s, then sinks back
 function twSludgePat(black){ const k=black?'b':'p'; twSludgePat.c=twSludgePat.c||{}; if(twSludgePat.c[k]) return twSludgePat.c[k]; const S=10, w=26*S, h=16*S, [cv,c]=mkCanvas(w,h);
   const pal=black?['#08040c','#140a1c','#1e1028','#3a2050']:['#3a1062','#4a1a7a','#5a2a92','#7a3ac0'];
@@ -80,21 +80,22 @@ function twSludgePat(black){ const k=black?'b':'p'; twSludgePat.c=twSludgePat.c|
   for(let i=0;i<90;i++){ const x=hash(i,5)*w, y=hash(5,i)*h; blob(x,y,2,pal[3]); c.fillStyle=black?'#8a6ab0':'#c08aff'; c.fillRect(Math.round(x-1),Math.round(y-1),1,1); } /* glossy bubbles */
   if(!black) for(let i=0;i<9;i++){ const x=Math.floor(12+hash(i,9)*(w-28)), y=Math.floor(10+hash(9,i)*(h-24)); c.fillStyle='#120418'; c.fillRect(x,y,2,3); c.fillRect(x+6,y,2,3); c.fillRect(x+1,y+6,6,1); c.fillRect(x,y+7,1,1); c.fillRect(x+7,y+7,1,1); c.fillStyle='#9ad8ff'; c.fillRect(x,y+3,1,2); } /* sad faces */
   return twSludgePat.c[k]=cv; }
-function twSludge(T,ph,sp){ const P=Player, A=twBounds(), W=24, D=14, cx=clamp(P.x,A.x0+W/2,A.x1-W/2), cz=clamp(P.z,A.z0+D/2,A.z1-D/2), x0=cx-W/2, z0=cz-D/2, PX=10, gy=groundY(cx,cz);
+function twSludge(T,ph,sp){ const P=Player, RG=11, W=2*RG+5, D=W, cx=T.x, cz=T.z, x0=cx-W/2, z0=cz-D/2, PX=10, gy=groundY(cx,cz);
   const [cv,c]=mkCanvas(W*PX,D*PX), tx=tex(cv), m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,opacity:.6}));
   m.rotation.x=-Math.PI/2; m.position.set(cx,gy+.035,cz); m.renderOrder=1; m.userData.tw=1; scene.add(m);
-  // pockets: 3 (2 in phase III), 4+ apart, one within reach of you
-  const n=ph>=3?2:3, pk=[], pr=1.5; for(let g=0;g<200&&pk.length<n;g++){ const near=pk.length===0, a=rnd(0,6.28), d=near?rnd(2.5,4.5):0;
-      const x=near?P.x+Math.cos(a)*d:rnd(x0+pr+.5,x0+W-pr-.5), z=near?P.z+Math.sin(a)*d:rnd(z0+pr+.5,z0+D-pr-.5); if(x<x0+pr||x>x0+W-pr||z<z0+pr||z>z0+D-pr) continue;
+  // pockets: 3 (2 in phase III), 4+ apart, inside the goo (2+ from Omar), one within reach of you
+  const n=ph>=3?2:3, pk=[], pr=1.5, A=twBounds(); for(let g=0;g<300&&pk.length<n;g++){ const near=pk.length===0&&g<150, a=rnd(0,6.28), d=near?rnd(2.5,4.5):rnd(2.5,RG-pr-1);
+      const bx=near?P.x:cx, bz=near?P.z:cz, x=bx+Math.cos(a)*d, z=bz+Math.sin(a)*d, dc=Math.hypot(x-cx,z-cz); if(dc<2.5||dc>RG-pr-.8||x<A.x0+pr||x>A.x1-pr||z<A.z0+pr||z>A.z1-pr) continue;
       if(pk.every(q=>Math.hypot(q.x-x,q.z-z)>4)) pk.push({x,z}); }
   const rings=pk.map(q=>{ const g=new THREE.Group(); for(const [r0,r1,col,op] of [[pr-.06,pr+.1,0x0a1a10,.85],[pr-.02,pr+.05,0x9affc0,1]]){ const r=new THREE.Mesh(new THREE.RingGeometry(r0,r1,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false})); g.add(r); }
       g.rotation.x=-Math.PI/2; g.position.set(q.x,groundY(q.x,q.z)+.05,q.z); g.renderOrder=2; g.userData.tw=1; scene.add(g); return g; });
-  const ox=T.x, oz=T.z, Rmax=Math.max(...[[x0,z0],[x0+W,z0],[x0,z0+D],[x0+W,z0+D]].map(([x,z])=>Math.hypot(x-ox,z-oz)))+1.5, spread=1.3/sp, hold=.4/sp, ERUPT=2, SINK=.6;
+  const ox=cx, oz=cz, Rmax=RG, spread=1.3/sp, hold=.4/sp, ERUPT=2, SINK=.6;
   const lobes=[...Array(7)].map(()=>({a:rnd(0,6.28),w:rnd(.25,.6),k:rnd(.08,.2)})), drops=[...Array(14)].map(()=>({a:rnd(0,6.28),d:rnd(.3,1.4),r:rnd(.12,.3)})), rip=[...Array(5)].map(()=>({x:rnd(x0+1,x0+W-1),z:rnd(z0+1,z0+D-1),t0:rnd(0,1.4)}));
   const S={t:0,done:false,set:false,pk,pr}; Sound.sfx('squelch'); Sound.sfx('drone');
   const X=x=>(x-x0)*PX, Z=z=>(z-z0)*PX;
   // the goo's outline: a radius wobbling with the time, swollen into lobes
-  const front=(R,t)=>{ c.beginPath(); const N=96; for(let i=0;i<=N;i++){ const a=i/N*6.283; let rr=R*(1+.045*Math.sin(a*5+t*3)+.03*Math.sin(a*11-t*4)); for(const L of lobes){ const d=Math.abs(((a-L.a+9.42)%6.283)-3.14); if(d<L.w) rr+=R*L.k*Math.cos(d/L.w*1.571); } const px=X(ox+Math.cos(a)*rr), pz=Z(oz+Math.sin(a)*rr); if(i) c.lineTo(px,pz); else c.moveTo(px,pz); } c.closePath(); };
+  const rAt=(R,a,t)=>{ let rr=R*(1+.045*Math.sin(a*5+t*3)+.03*Math.sin(a*11-t*4)); for(const L of lobes){ const d=Math.abs(((a-L.a+9.42)%6.283)-3.14); if(d<L.w) rr+=R*L.k*Math.cos(d/L.w*1.571); } return Math.min(rr,W/2-.3); };
+  const front=(R,t)=>{ c.beginPath(); const N=96; for(let i=0;i<=N;i++){ const a=i/N*6.283, rr=rAt(R,a,t), px=X(ox+Math.cos(a)*rr), pz=Z(oz+Math.sin(a)*rr); if(i) c.lineTo(px,pz); else c.moveTo(px,pz); } c.closePath(); };
   const draw=(R,black,t)=>{ c.clearRect(0,0,W*PX,D*PX); if(R<=.05){ tx.needsUpdate=true; return; }
     c.save(); front(R,t); c.clip(); c.drawImage(twSludgePat(black),0,0,W*PX,D*PX);
     if(black){ // water waves: big rings rolling out from Omar, small ones popping up all over
@@ -103,7 +104,7 @@ function twSludge(T,ph,sp){ const P=Player, A=twBounds(), W=24, D=14, cx=clamp(P
     c.restore(); front(R,t); c.lineWidth=3; c.strokeStyle=black?'#000000':'#1a0626'; c.stroke(); /* a dark rim on the goo */
     if(!black&&R<Rmax-.5) for(const dp of drops){ const rr=R+dp.d, px=X(ox+Math.cos(dp.a)*rr), pz=Z(oz+Math.sin(dp.a)*rr); c.fillStyle='#4a1a7a'; c.beginPath(); c.arc(px,pz,dp.r*PX,0,7); c.fill(); c.strokeStyle='#1a0626'; c.lineWidth=1.5; c.stroke(); } /* droplets ahead of the front */
     c.globalCompositeOperation='destination-out'; for(const q of pk){ c.beginPath(); c.arc(X(q.x),Z(q.z),pr*PX,0,7); c.fill(); } c.globalCompositeOperation='source-over'; tx.needsUpdate=true; };
-  const inSludge=(x,z)=>x>x0&&x<x0+W&&z>z0&&z<z0+D&&pk.every(q=>Math.hypot(q.x-x,q.z-z)>pr);
+  const inSludge=(x,z)=>Math.hypot(x-ox,z-oz)<rAt(RG,Math.atan2(z-oz,x-ox),S.t)&&pk.every(q=>Math.hypot(q.x-x,q.z-z)>pr);
   twHz({upd(dt,play){ if(play) S.t+=dt; const t=S.t;
       if(t<spread+hold){ const k=Math.min(1,t/spread); draw(Rmax*(1-Math.pow(1-k,2)),false,t); m.material.opacity=.5+.15*Math.sin(t*14); return true; }
       if(!S.set){ S.set=true; m.material.opacity=1; Sound.sfx('squelch'); Sound.sfx('crash'); Sound.sfx('void'); shake(.4); for(const g of rings) g.visible=false;
