@@ -4918,7 +4918,11 @@ function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marke
     if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } return false; },
     kill(){ if(mk) scene.remove(mk.m); }}); }
 // beam along the ground at chest height, with a blinking telegraph strip first
+// colour rule: a blue laser can always be jumped (low, at shin height), a pink one never can (it fires as two lasers stacked)
+function twBeamKind(col){ if(typeof col!=='number') return ''; const r=(col>>16&255)/255, g=(col>>8&255)/255, b=(col&255)/255, mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; if(d<.15) return '';
+  let h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4; h=(h*60+360)%360; return h>=180&&h<=235?'blue':h>=300&&h<=352?'pink':''; }
 function twBeam(o){ o=Object.assign({w:1,len:26,warn:.7,dur:.3,dmg:2,col:0xff5aa8,core:0xffffff,y:1,ub:true},o); if(typeof o.ang==='function'&&o.jump==null){ o.jump=true; o.y=.45; }
+  { const k=twBeamKind(o.col); if(k==='blue'&&!o.jump){ o.jump=true; o.y=Math.min(o.y,.45); } else if(k==='pink'&&o.jump){ o.jump=false; if(o.y<1) o.y=1; } }
   const strip=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:o.col,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
   strip.geometry.translate(.5,0,0); strip.rotation.x=-Math.PI/2; strip.userData.tw=1; scene.add(strip); let mm=null, fired=false, wall=null;
   // o.wall: a knee-high lip during the warning, then a tall see-through wall while it fires, so it reads as 'cannot jump this' without blocking the view
@@ -4928,11 +4932,11 @@ function twBeam(o){ o=Object.assign({w:1,len:26,warn:.7,dur:.3,dmg:2,col:0xff5aa
   return twHz({upd(dt,play){ if(play) tt+=dt; const a=ang(), x=ox(), z=oz(), gy=groundY(x,z), act=tt>=o.warn&&tt<o.warn+o.dur;
     if(wall){ wall.position.set(x,gy,z); wall.rotation.y=-a; const wh=act?Math.min(3.4,.45+(tt-o.warn)*40):.45; wall.scale.set(o.len,wh,1); wall.material.opacity=act?.34:.22+.16*(Math.floor(tt*14)%2); }
     strip.position.set(x,gy+.06,z); strip.rotation.z=-a; strip.scale.set(o.len,o.w*(act?1:.35+.25*(Math.floor(tt*14)%2)),1); strip.material.opacity=act?.2:.45;
-    if(act&&!fired){ fired=true; mm=[beamMesh(o.col,.32*o.w),beamMesh(o.core,.12*o.w)]; mm.push(...twBeamExtra(o)); mm.forEach(m=>m.userData.tw=1); Sound.sfx(o.sfx||'beam'); shake(.2); if(o.onFire) o.onFire(); }
-    if(mm){ const k=act?Math.min(1,(tt-o.warn)/.05)*Math.min(1,(o.warn+o.dur-tt)/.08):0; for(const m of mm){ if(m.userData.flare!=null){ twBeamFlare(m,x,gy+o.y,z,a,o,k,tt); continue; } m.position.set(x,gy+o.y,z); m.lookAt(x+Math.cos(a),gy+o.y,z+Math.sin(a)); const wob=m.userData.haze?1+Math.sin(tt*23)*.18:1+Math.sin(tt*60)*.1; m.scale.set(Math.max(.01,k*wob),Math.max(.01,k*wob),o.len); if(m.material.map&&m.userData.flow){ m.material.map.offset.y-=.06; m.material.map.repeat.set(1,o.len/3); } }
+    if(act&&!fired){ fired=true; mm=[beamMesh(o.col,.32*o.w),beamMesh(o.core,.12*o.w)]; if(!o.jump){ const up=[beamMesh(o.col,.28*o.w),beamMesh(o.core,.1*o.w)]; up.forEach(m=>m.userData.up=1.5); mm.push(...up); } /* can't be jumped: a second laser stacked on top */ mm.push(...twBeamExtra(o)); mm.forEach(m=>m.userData.tw=1); Sound.sfx(o.sfx||'beam'); shake(.2); if(o.onFire) o.onFire(); }
+    if(mm){ const k=act?Math.min(1,(tt-o.warn)/.05)*Math.min(1,(o.warn+o.dur-tt)/.08):0; for(const m of mm){ if(m.userData.flare!=null){ twBeamFlare(m,x,gy+o.y,z,a,o,k,tt); continue; } const yy=gy+o.y+(m.userData.up||0); m.position.set(x,yy,z); m.lookAt(x+Math.cos(a),yy,z+Math.sin(a)); const wob=m.userData.haze?1+Math.sin(tt*23)*.18:1+Math.sin(tt*60)*.1; m.scale.set(Math.max(.01,k*wob),Math.max(.01,k*wob),o.len); if(m.material.map&&m.userData.flow){ m.material.map.offset.y-=.06; m.material.map.repeat.set(1,o.len/3); } }
       if(act&&play) twBeamSparks(x,gy+o.y,z,a,o,tt);
       if(act&&play){ const P=twP(), px=P.x-x, pz=P.z-z, ux=Math.cos(a), uz=Math.sin(a), al=px*ux+pz*uz, pe=Math.abs(px*uz-pz*ux);
-        if(al>-.3&&al<o.len&&pe<o.w*.5+.25&&P.y<gy+(o.jump?.8:2.6)) twHitP(o.dmg,x+ux*al,z+uz*al,{ub:o.ub}); twAllyLine(x,z,ux,uz,o.len,o.w*.5+.25,o.dmg);
+        if(al>-.3&&al<o.len&&pe<o.w*.5+.25&&P.y<gy+(o.jump?1:99)) twHitP(o.dmg,x+ux*al,z+uz*al,{ub:o.ub}); twAllyLine(x,z,ux,uz,o.len,o.w*.5+.25,o.dmg);
         if(Math.random()<.7) FX.spawn(x+ux*rnd(0,o.len),gy+o.y,z+uz*rnd(0,o.len),rnd(-1,1),rnd(.5,2),rnd(-1,1),.3,o.col,.3,0,true); } }
     return tt<o.warn+o.dur; },
     kill(){ scene.remove(strip); if(wall) scene.remove(wall); if(mm) mm.forEach(m=>scene.remove(m)); }}); }
@@ -7242,9 +7246,9 @@ TWK.caotan.lc2=function*(T){ twLCPrep(T); const c=twCenter(), Pl=Player; yield t
   T.cracked=1; T.glintN=0; T.showN=0; Sound.sfx('glass'); twBark('caotan',"My glasses... MY GLASSES! I can't see! Everything is so... blurry and beautiful...",true); twBig('LENS CRACKED',{size:52,col:'#ffd45a',sub:'Caotan is wide open'});
   Game.letterTo=0; applyLook(L.look); T.inv=false; T.stun=2.75; T.state='stun'; T.lcDone[3]=1; yield T.stun; };
 
-// Caotan's lasers read the same everywhere: blue = low, jump it; pink = tall wall, you cannot jump it
+// Caotan's lasers read the same everywhere: blue = low, jump it; pink = two lasers stacked (twBeam), you cannot jump it
 const TW_CAO_COLS=[0x9fd8ff,0xbfe4ff,0xffa0d8,0xffb0e0,0xff9ad8,0xff6ab0];
-(function(){ const tb=twBeam; twBeam=function(o){ if(o&&TW_CAO_COLS.includes(o.col)){ const jump=o.jump!=null?!!o.jump:typeof o.ang==='function'; o=Object.assign({},o,{col:jump?0x7ac8ff:0xff7ac8,wall:!jump}); } return tb(o); }; })();
+(function(){ const tb=twBeam; twBeam=function(o){ if(o&&TW_CAO_COLS.includes(o.col)){ const jump=o.jump!=null?!!o.jump:typeof o.ang==='function'; o=Object.assign({},o,{col:jump?0x7ac8ff:0xff7ac8,jump}); } return tb(o); }; })();
 // Megane Supernova helpers: a nosebleed geyser on a marked spot, and a body pillow flung in a straight line
 function twCaoNose(x,z,warn){ const p=twClampXZ(x,z,.5); twBlast(p.x,p.z,1.1,warn,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.1,h:99,noBurst:true,onBoom(x,z){ twNoseSplurt(x,z,3.8); }}); }
 // a nosebleed geyser: one splurt of blood (img/vfx/nosebleed.png: a column shoots up, drops arc out and rain down, a splash ring); can't be jumped (h:99)
@@ -15296,8 +15300,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Hamza bullet hell: Narrow Throat 3 bullets narrower; Caotan's nosebleeds are a pixel blood splurt and can't be jumped; Omar: goop jumpable, lingers 2s, slows 50% for 8s (icon); every other spiral hand tall and unjumpable; deflected scythes 0.2s immunity";
-const DBG_NEW=['mech:throat','caotan:nose','omar:monologue','omar:hands','omar:scythes','duo:volley'];
+const DBG_PATCH="Oct 27: lasers: blue always jumpable, pink never (fires as two stacked lasers instead of a wall); Hamza bullet hell: Narrow Throat 3 bullets narrower; Caotan's nosebleeds are a pixel blood splurt and can't be jumped; Omar: goop jumpable, lingers 2s, slows 50% for 8s (icon); every other spiral hand tall and unjumpable; deflected scythes 0.2s immunity";
+const DBG_NEW=['caotan:*','duo:*','omar:tear','mech:throat','caotan:nose','omar:monologue','omar:hands','omar:scythes','duo:volley'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

@@ -156,9 +156,9 @@ TWK.caotan.lc2=function*(T){ twLCPrep(T); const c=twCenter(), Pl=Player; yield t
   T.cracked=1; T.glintN=0; T.showN=0; Sound.sfx('glass'); twBark('caotan',"My glasses... MY GLASSES! I can't see! Everything is so... blurry and beautiful...",true); twBig('LENS CRACKED',{size:52,col:'#ffd45a',sub:'Caotan is wide open'});
   Game.letterTo=0; applyLook(L.look); T.inv=false; T.stun=2.75; T.state='stun'; T.lcDone[3]=1; yield T.stun; };
 
-// Caotan's lasers read the same everywhere: blue = low, jump it; pink = tall wall, you cannot jump it
+// Caotan's lasers read the same everywhere: blue = low, jump it; pink = two lasers stacked (twBeam), you cannot jump it
 const TW_CAO_COLS=[0x9fd8ff,0xbfe4ff,0xffa0d8,0xffb0e0,0xff9ad8,0xff6ab0];
-(function(){ const tb=twBeam; twBeam=function(o){ if(o&&TW_CAO_COLS.includes(o.col)){ const jump=o.jump!=null?!!o.jump:typeof o.ang==='function'; o=Object.assign({},o,{col:jump?0x7ac8ff:0xff7ac8,wall:!jump}); } return tb(o); }; })();
+(function(){ const tb=twBeam; twBeam=function(o){ if(o&&TW_CAO_COLS.includes(o.col)){ const jump=o.jump!=null?!!o.jump:typeof o.ang==='function'; o=Object.assign({},o,{col:jump?0x7ac8ff:0xff7ac8,jump}); } return tb(o); }; })();
 // Megane Supernova helpers: a nosebleed geyser on a marked spot, and a body pillow flung in a straight line
 function twCaoNose(x,z,warn){ const p=twClampXZ(x,z,.5); twBlast(p.x,p.z,1.1,warn,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.1,h:99,noBurst:true,onBoom(x,z){ twNoseSplurt(x,z,3.8); }}); }
 // a nosebleed geyser: one splurt of blood (img/vfx/nosebleed.png: a column shoots up, drops arc out and rain down, a splash ring); can't be jumped (h:99)
