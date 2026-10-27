@@ -89,7 +89,7 @@ TWK.caotan.rain=function*(T,ph){ const sp=twSp(T); twBark('caotan',"It's raining
 // ---------- LIMIT CUT I: Doki Doki Execution Club (dating-sim) ----------
 const CAO_VN={shayan:[["D-do you like my glasses? I polished them for you.",["They're... nice?","I only love my sword.","*push up your own glasses*"]],
   ["Want to share a body pillow? Her name is Hikari-chan.",["Absolutely not.","Is it... washed?","Only if I get the left side."]],
-  ["Say it. Say 'Senpai'. Just once.",["Senpai.","S-senpai... >///<","I'd rather fight the Dog Lord again."]]],
+  ["Say it. Say 'Senpai'. Just once.",["Senpai.","S-senpai... >///<","I'd rather fight the baby again."]]],
   ali:[["A-Ali-kun... do you like my glasses?",["Hm.","They're adequate.","Take them off. Fight me properly."]],
   ["Want to share a body pillow? Her name is Hikari-chan.",["I sleep standing up.","Wash her first.","Hm."]],
   ["Say it. Say 'Senpai'. Just once.",["No.","...Senpai.","I am everyone's senpai."]]]};

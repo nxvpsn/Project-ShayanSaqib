@@ -1,6 +1,7 @@
 # He's Day Old Kojima replaces Grimmaw in the base game's lines (applied by build.py; each pair: old, new, expected count)
 K = "He's Day Old Kojima"
 PAIRS = [
+ ("{id:'MEMORY 00003',title:'Grimmaw',sub:'Even the Dog Lord had a castle he called home.'", "{id:'MEMORY 00003',title:\"He's Day Old Kojima\",sub:'Even a forty-three-day-old auteur had a castle he called home.'", 1),
  ("And warm up on the straw hound first.", "And warm up on the straw dummy first.", 1),
  ("Give that straw hound a proper thrashing.", "Give that straw dummy a proper thrashing.", 1),
  ("I was aiming at the straw hound!", "I was aiming at the straw dummy!", 1),

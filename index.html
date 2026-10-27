@@ -3255,7 +3255,7 @@ function* blackHoleFinale(){ const G=Game.mech, N=NAT, v=L.vd, hz=v.hz; Sound.pl
   yield say('nathan',"Even that wasn't enough. Then there's only one thing left to burn.");
   cineSet(N.x+1.6,N.y+1.7,5,N.x+.3,N.y+1.8,0);
   yield say('nathan',"Me.");
-  const M=[{id:'MEMORY 00000',title:'Earth',sub:'Blue, green, and loud with life.',scene:'earth',cost:6},{id:'MEMORY 00003',title:'Grimmaw',sub:'Even the Dog Lord had a castle he called home.',who:'grimmaw',cost:5},
+  const M=[{id:'MEMORY 00000',title:'Earth',sub:'Blue, green, and loud with life.',scene:'earth',cost:6},{id:'MEMORY 00003',title:"He's Day Old Kojima",sub:'Even a forty-three-day-old auteur had a castle he called home.',who:'grimmaw',cost:5},
     {id:'MEMORY 00004',title:'Hamza, Before',sub:'Once, he only wanted to pee on things.',who:'hamza',cost:5},{id:'MEMORY 00005',title:'The Gatekeeper Twins',sub:'They never did talk about it.',who:'caotan',who2:'omar',x:UW*.16,cost:5},
     {id:'MEMORY 99999',title:'Nathan',sub:'The boy who became a machine so he would never forget.',who:'nathanraw',cost:9}];
   for(const m of M) yield* burnMemory(m,.75);
@@ -7161,7 +7161,7 @@ TWK.caotan.rain=function*(T,ph){ const sp=twSp(T); twBark('caotan',"It's raining
 // ---------- LIMIT CUT I: Doki Doki Execution Club (dating-sim) ----------
 const CAO_VN={shayan:[["D-do you like my glasses? I polished them for you.",["They're... nice?","I only love my sword.","*push up your own glasses*"]],
   ["Want to share a body pillow? Her name is Hikari-chan.",["Absolutely not.","Is it... washed?","Only if I get the left side."]],
-  ["Say it. Say 'Senpai'. Just once.",["Senpai.","S-senpai... >///<","I'd rather fight the Dog Lord again."]]],
+  ["Say it. Say 'Senpai'. Just once.",["Senpai.","S-senpai... >///<","I'd rather fight the baby again."]]],
   ali:[["A-Ali-kun... do you like my glasses?",["Hm.","They're adequate.","Take them off. Fight me properly."]],
   ["Want to share a body pillow? Her name is Hikari-chan.",["I sleep standing up.","Wash her first.","Hm."]],
   ["Say it. Say 'Senpai'. Just once.",["No.","...Senpai.","I am everyone's senpai."]]]};
