@@ -1503,7 +1503,7 @@ function updatePlayer(dt){
   } else if(!held.attack&&!(ALI()&&held.block)) P.charge=0;
   if(ctl&&consume('special')){ if(P.sp>=20&&P.hurt<=0&&!Game.script) run(ALI()?aliUltimate:specialAttack); else if(P.sp<20){ Sound.sfx('block'); Game.dmgNums.push({x:P.x,y:P.y+2.2,z:P.z,n:Math.floor(P.sp)+' / 20',t:0,col:'#8fc8ff'}); } }
   P.atkGrace=P.atk?.2:Math.max(0,(P.atkGrace||0)-dt);
-  if(P.atk){ const a=P.atk; a.t+=dt; if(a.t>.05&&a.t<.16) meleeHits(P.x,P.z,P.y,a.big?5.7:1.9,P.ang,a.big?1.6:1.35,a.big?18:(a.n===2?2:1),a.hit);
+  if(P.atk){ const a=P.atk; a.t+=dt; if(a.t>.05&&a.t<.16) meleeHits(P.x,P.z,P.y,a.big?7:1.9,P.ang,a.big?Math.PI:1.35,a.big?18:(a.n===2?2:1),a.hit);
     if(a.t>=.24){ if(a.q) startAtk((a.n+1)%3); else { P.atk=null; P.comboT=.32; } } }
   // move with collision
   moveBody(P,dt,.42);
@@ -6641,7 +6641,7 @@ function shArc(x,y,z,ang,n){ const th=SH_SL.TH, P=Player, ig=P.ignite>0, dir=n==
     const fa=FX.arc; FX.arc=function(x,y,z,ang,nn,big){ if(big) return fa.apply(FX,arguments); shArc(x,y,z,ang,nn); };
     try{ return sa.apply(this,arguments); } finally{ FX.arc=fa; } }; })();
 
-// ---------- Full Counter: the animation and the big show (the hit itself is twCounterSlash's, unchanged) ----------
+// ---------- Full Counter: the animation and the big show (the hit: a 7-unit sphere around Shayan, patched in build.py) ----------
 (function(){ const cs=twCounterSlash; twCounterSlash=function(){ const r=cs.apply(this,arguments); const P=Player; P.fcT=SH_FC_T; shFullCounterFX(); return r; }; })();
 function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=Math.cos(ang), uz=Math.sin(ang);
   Game.slowT=Math.max(Game.slowT||0,.22); FX.flash=Math.max(FX.flash,.45); grade.uniforms.flashCol.value.set(1,.35,.45); impactFrame([[3,1],[2,1],[1,1],[3,1]]); shake(.9);
@@ -15373,8 +15373,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Omar's goop slow: 70% for 4s (was 50% for 8s)";
-const DBG_NEW=['omar:monologue'];
+const DBG_PATCH="Oct 27: Shayan's Full Counter hits a 7-unit sphere around him (was a 5.7 front arc)";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

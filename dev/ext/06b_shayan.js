@@ -99,7 +99,7 @@ function shArc(x,y,z,ang,n){ const th=SH_SL.TH, P=Player, ig=P.ignite>0, dir=n==
     const fa=FX.arc; FX.arc=function(x,y,z,ang,nn,big){ if(big) return fa.apply(FX,arguments); shArc(x,y,z,ang,nn); };
     try{ return sa.apply(this,arguments); } finally{ FX.arc=fa; } }; })();
 
-// ---------- Full Counter: the animation and the big show (the hit itself is twCounterSlash's, unchanged) ----------
+// ---------- Full Counter: the animation and the big show (the hit: a 7-unit sphere around Shayan, patched in build.py) ----------
 (function(){ const cs=twCounterSlash; twCounterSlash=function(){ const r=cs.apply(this,arguments); const P=Player; P.fcT=SH_FC_T; shFullCounterFX(); return r; }; })();
 function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=Math.cos(ang), uz=Math.sin(ang);
   Game.slowT=Math.max(Game.slowT||0,.22); FX.flash=Math.max(FX.flash,.45); grade.uniforms.flashCol.value.set(1,.35,.45); impactFrame([[3,1],[2,1],[1,1],[3,1]]); shake(.9);
