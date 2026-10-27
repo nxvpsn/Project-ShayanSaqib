@@ -4911,12 +4911,28 @@ function twHitP(dmg,sx,sz,o){ o=o||{}; const op={}; if(o.ub){ op.unblockable=tru
   return playerHit(dmg,sx,sz,op); }
 function twInR(x,z,r,hmax){ const P=twP(); return Math.hypot(P.x-x,P.z-z)<r&&(hmax==null||P.y<groundY(x,z)+hmax); }
 // ground circle telegraph -> boom
-function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marker(x,z,r,col,delay+.05);
+// ---------- jumpable or not, at a glance: one jump height for every circle; an unjumpable circle stands a fence of rising squiggles on its rim ----------
+const TW_JUMP_H=1; // a jumpable circle misses you above this (any jump clears it); an unjumpable one never does
+function twBlastH(o){ return o&&(o.jump===true||(o.h!=null&&o.h<=1))?TW_JUMP_H:99; }
+let TW_FENCE_TEX=null;
+function twFenceTex(){ if(TW_FENCE_TEX) return TW_FENCE_TEX; const cv=document.createElement('canvas'); cv.width=8; cv.height=32; const c=cv.getContext('2d');
+  for(let y=0;y<32;y++){ const x=Math.round(3.5+2.2*Math.sin(y/32*Math.PI*4)); c.fillStyle='#1a0610'; c.fillRect(x-1,y,4,1); } /* a dark outline under the line (reads on bright ground) */
+  for(let y=0;y<32;y++){ const x=Math.round(3.5+2.2*Math.sin(y/32*Math.PI*4)); c.fillStyle='#ffffff'; c.fillRect(x,y,2,1); }
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.wrapT=THREE.RepeatWrapping; return TW_FENCE_TEX=t; }
+// a ring of squiggly lines standing on the circle's rim, rising (the texture scrolls up); f.move(x,z,r) for a moving circle, f.kill()
+function twFence(x,z,r,col,life){ const n=Math.max(6,Math.min(28,Math.round(6.283*r/.85))), mat=new THREE.SpriteMaterial({map:twFenceTex(),color:col||0xffffff,transparent:true,depthWrite:false,fog:false}), sp=[], f={x,z,r,t:0,dead:0};
+  for(let i=0;i<n;i++){ const s=new THREE.Sprite(mat); s.center.set(.5,0); s.userData.tw=1; s.renderOrder=6; scene.add(s); sp.push(s); }
+  const place=()=>{ for(let i=0;i<n;i++){ const a=i/n*6.283, px=f.x+Math.cos(a)*f.r, pz=f.z+Math.sin(a)*f.r; sp[i].position.set(px,groundY(px,pz)+.02,pz); } };
+  f.move=(nx,nz,nr)=>{ f.x=nx; f.z=nz; if(nr!=null) f.r=nr; place(); }; f.kill=()=>{ if(f.dead) return; f.dead=1; sp.forEach(s=>scene.remove(s)); };
+  place(); Game.fxUpd.push(dt=>{ try{ if(f.dead) return false; f.t+=dt; if(life!=null&&f.t>=life){ f.kill(); return false; }
+      const k=Math.min(1,f.t/.2); for(const s of sp) s.scale.set(.3,Math.max(.01,1.4*k),1); TW_FENCE_TEX.offset.y=(performance.now()/1000*1.8)%1; return true; }catch(e){ f.kill(); return false; } });
+  return f; }
+function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marker(x,z,r,col,delay+.05), hh=twBlastH(o), fence=hh>1?twFence(x,z,r,col,delay+.05):null;
   return twHz({upd(dt,play){ if(play) this.t+=dt; if(this.t<delay) return true; const gy=groundY(x,z);
     FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.4,.4); if(!o.noBurst) FX.burst(x,gy+.3,z,o.n||22,o.burst||col,o.sp||5,.3,true); if(o.dark) FX.burst(x,gy+.3,z,14,0x140a1a,4,.4,false);
     if(!o.quiet){ Sound.sfx(o.sfx||'slam'); shake(o.shake||.22); }
-    if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } return false; },
-    kill(){ if(mk) scene.remove(mk.m); }}); }
+    if(fence) fence.kill(); if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,hh)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } return false; },
+    kill(){ if(mk) scene.remove(mk.m); if(fence) fence.kill(); }}); }
 // beam along the ground at chest height, with a blinking telegraph strip first
 // colour rule: a blue laser can always be jumped (low, at shin height), a pink one never can (it fires as two lasers stacked)
 function twBeamKind(col){ if(typeof col!=='number') return ''; const r=(col>>16&255)/255, g=(col>>8&255)/255, b=(col&255)/255, mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; if(d<.15) return '';
@@ -6050,7 +6066,7 @@ function twSkinTex(kind,v){ const key=kind+v; if(TW_SKINS[key]) return TW_SKINS[
   const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; TW_SKINS[key]=t; return t; }
 function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:twSkinTex(kind,Math.floor(Math.random()*3)),transparent:true,depthWrite:false,alphaTest:.05}));
   m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,groundY(x,z)+.05,z); m.scale.setScalar(.01); m.userData.tw=1; scene.add(m); return m; }
-(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(!o||!o.skin) return tb.apply(this,arguments); const kind=o.skin, col=o.col||0xff3a6a, dec=twDecal(x,z,r,kind);
+(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(!o||!o.skin) return tb.apply(this,arguments); const kind=o.skin, col=o.col||0xff3a6a, dec=twDecal(x,z,r,kind), hh=twBlastH(o), fence=hh>1?twFence(x,z,r,col,delay+.05):null;
     const pc=kind==='goop'?[0x7a3ac0,0x2a0a3a,0xc08aff]:kind==='frosting'?[0xff8ab0,0xffffff,0xffc0d8]:[0x8a6a44,0x3a2a1a,0xffb050];
     return twHz({upd(dt,play){ if(play) this.t+=dt; const gy=groundY(x,z);
         if(this.t<delay){ const k=Math.min(1,this.t/Math.max(.05,delay)); dec.scale.setScalar(Math.max(.01,r*(.35+.65*k)*(1+Math.sin(this.t*30)*.03*k))); dec.material.opacity=.55+.45*k;
@@ -6059,11 +6075,11 @@ function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2
           if(kind!=='goop') for(let i=0;i<(o.n||26);i++){ const a=Math.random()*6.283, s=rnd(2,6); FX.spawn(x+Math.cos(a)*r*.5,gy+.2,z+Math.sin(a)*r*.5,Math.cos(a)*s*.6,rnd(4,9),Math.sin(a)*s*.6,rnd(.4,.8),pc[i%3],rnd(.2,.34),16,kind==='frosting',.5); }
           FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.3,.3);
           if(!o.quiet){ Sound.sfx(o.sfx||(kind==='goop'?'squelch':'slam')); shake(o.shake||.18); }
-          if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } }
+          if(fence) fence.kill(); if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,hh)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } }
         // o.linger: the puddle stays that long after the hit (full strength); o.onTouch() while you stand in it
         this.bt+=dt; const lg=o.linger||0; if(this.bt<lg){ dec.material.opacity=1; if(play&&o.onTouch){ const P=twP(); if(Math.hypot(P.x-x,P.z-z)<r*.9&&P.y<gy+.35) o.onTouch(); } return true; }
         dec.material.opacity=Math.max(0,1-(this.bt-lg)/.7); return this.bt<lg+.7; },
-      kill(){ scene.remove(dec); dec.geometry.dispose(); dec.material.dispose(); }}); }; })();
+      kill(){ scene.remove(dec); dec.geometry.dispose(); dec.material.dispose(); if(fence) fence.kill(); }}); }; })();
 
 // ----- 04p_pxv_atlas.js -----
 // Generated by dev/vfx/build_vfx.py from dev/vfx/recipes: pixel VFX sprite sheets in img/vfx (frame size, count, fps, impact frame, pivot).
@@ -7097,11 +7113,11 @@ const TWPOOL={
   omar:{gate:['scythes','reap','hands'],1:['scythes','reap','hands','orbs','sentence'],2:['scythes','reap','hands','orbs','sentence','clones','monologue'],3:['scythes','reap','hands','orbs','sentence','clones','monologue','tear','harvest']}};
 const CAO_BARK=["Senpai, notice me!","My reserves are ENDLESS!","Don't look at me like that... unless?","I'm not blushing, it's the moonlight!","Uwu. That was a threat.","Let me push up my glasses at you.","Ara ara~"];
 // something thrown in an arc that lands on a marked spot
-function twThrow(o){ const s={x:o.x,y:o.y,z:o.z}, gy=groundY(o.tx,o.tz), mk=o.mark!==false?FX.marker(o.tx,o.tz,o.r||.9,o.col||0xff6ab0,o.dur+.05):null; let tt=0;
+function twThrow(o){ const s={x:o.x,y:o.y,z:o.z}, gy=groundY(o.tx,o.tz), mk=o.mark!==false?FX.marker(o.tx,o.tz,o.r||.9,o.col||0xff6ab0,o.dur+.05):null, fz=o.fence&&o.mark!==false?twFence(o.tx,o.tz,o.r||.9,o.col||0xff6ab0,o.dur+.05):null; let tt=0;
   return twHz({upd(dt,play){ if(play) tt+=dt; const u=Math.min(1,tt/o.dur); const x=lerp(s.x,o.tx,u), z=lerp(s.z,o.tz,u), y=lerp(s.y,gy+(o.endY||.4),u)+Math.sin(u*Math.PI)*(o.h||3);
     if(o.mesh){ o.mesh.position.set(x,y,z); o.mesh.rotation.z+=dt*(o.spin||8); } if(o.trail&&Math.random()<.6) FX.spawn(x,y,z,0,0,0,.3,o.trail,.22,0,true);
-    if(u>=1){ if(o.onLand) o.onLand(o.tx,o.tz,play); return o.keep?o.keep():false; } return true; },
-    kill(){ if(o.mesh&&!o.keepMesh) scene.remove(o.mesh); if(mk) scene.remove(mk.m); }}); }
+    if(u>=1){ if(fz) fz.kill(); if(o.onLand) o.onLand(o.tx,o.tz,play); return o.keep?o.keep():false; } return true; },
+    kill(){ if(o.mesh&&!o.keepMesh) scene.remove(o.mesh); if(mk) scene.remove(mk.m); if(fz) fz.kill(); }}); }
 function twHeartBurst(x,z,n){ const gy=groundY(x,z); for(let i=0;i<(n||14);i++){ const a=rnd(0,6.28); FX.spawn(x,gy+.5,z,Math.cos(a)*rnd(2,6),rnd(2,6),Math.sin(a)*rnd(2,6),rnd(.4,.8),i%2?0xff6ab0:0xffd0ec,.32,8,true); } }
 
 TWK.caotan.goo=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark('caotan',ph>=2?"Overflow mode! I'm DRIPPING with power!":"I never run dry!");
@@ -7109,8 +7125,8 @@ TWK.caotan.goo=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark('c
   if(ph<2) return; const P=Player;
   for(let i=0;i<(ph>=3?8:6);i++){ const a=rnd(0,6.28), r=i===0?0:rnd(1.2,3.4), p=twClampXZ(P.x+P.vx*.5+Math.cos(a)*r,P.z+P.vz*.5+Math.sin(a)*r,.6);
     const m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5); T.fire=.2; Sound.sfx('squelch');
-    twThrow({x:T.x,y:T.y+1,z:T.z,tx:p.x,tz:p.z,dur:.85/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); FX.burst(x,groundY(x,z)+.2,z,14,0xffffff,3,.3,false);
-      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
+    twThrow({x:T.x,y:T.y+1,z:T.z,tx:p.x,tz:p.z,dur:.85/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(x,z,play){ Sound.sfx('squelch'); FX.burst(x,groundY(x,z)+.2,z,14,0xffffff,3,.3,false);
+      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(x,z,.95,99)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
   yield .45; };
 function twRayWall(x,z,ux,uz){ const A=twLock(); let tx=1e9,tz=1e9; if(ux>1e-4) tx=(A.x1-x)/ux; else if(ux<-1e-4) tx=(A.x0-x)/ux; if(uz>1e-4) tz=(A.z1-z)/uz; else if(uz<-1e-4) tz=(A.z0-z)/uz; return tx<tz?{t:tx,ax:'x'}:{t:tz,ax:'z'}; }
 TWK.caotan.glint1=function*(T,ph){ const sp=twSp(T); yield* twGlint(T,1); twBark('caotan',ph>=2?"Senpai Snipe: Ricochet Edition!":"Senpai Snipe!");
@@ -7340,7 +7356,7 @@ function twPhone(T,tx,tz,dur,st,ph){ const sx=T.x, sy=T.y+1.5, sz=T.z, gy=ground
       const swat=Game.time-twParryClock()<.3||(ALI()&&P.block);
       if(play&&u>.3&&swat&&Math.hypot(P.x-q.x,P.z-q.z)<2.1&&Math.abs(q.y-(P.y+1))<2.4){ q.mode='back'; q.t=0; q.sx=q.x; q.sy=q.y; q.sz=q.z; if(mk){ scene.remove(mk.m); }
         Sound.sfx('deflect'); FX.spark(q.x,q.y,q.z); Game.dmgNums.push({x:q.x,y:q.y+.8,z:q.z,n:'DECLINED',t:0,col:'#ff9ad8'}); }
-      else if(u>=1){ Sound.sfx('kyun'); twHeartBurst(tx,tz,12); FX.ring(tx,gy,tz,'#ff6ab0',1.6,.35); if(play&&twInR(tx,tz,.95,1.8)) twHitP(2,tx,tz,{ub:true}); if(ph>=2) twWave(tx,tz,{sp:6,max:4.2,col:0xff6ab0}); return false; } }
+      else if(u>=1){ Sound.sfx('kyun'); twHeartBurst(tx,tz,12); FX.ring(tx,gy,tz,'#ff6ab0',1.6,.35); if(play&&twInR(tx,tz,.95,TW_JUMP_H)) twHitP(2,tx,tz,{ub:true}); if(ph>=2) twWave(tx,tz,{sp:6,max:4.2,col:0xff6ab0}); return false; } }
     else { const u=Math.min(1,q.t/.35); q.x=lerp(q.sx,T.x,u); q.z=lerp(q.sz,T.z,u); q.y=lerp(q.sy,T.y+1.4,u);
       if(u>=1){ if(!st.caught&&!T.down&&T.hp>0&&T.state!=='lc'){ st.caught=true; st.busy=true; twPhoneCatch(T,st); } else { twHurt(T,2,'bolt'); T.flash=.2; FX.burst(T.x,T.y+1.4,T.z,10,0xff6ab0,3,.25); Sound.sfx('hit'); } return false; } }
     m.position.set(q.x,q.y,q.z); m.rotation.z+=dt*(q.mode==='arc'?10:22); if(Math.random()<.6) FX.spawn(q.x,q.y,q.z,0,0,0,.3,0xff8ac8,.22,0,true); return true; },
@@ -9268,10 +9284,10 @@ function hzgUpdate(dt,play){ const G=TW.giant; G.t+=dt; G.flash=Math.max(0,G.fla
   G.cd-=dt; if(G.cd<=0){ if(!G.bag.length||G.bagPh!==G.phase){ G.bag=HZG_POOL[G.phase].slice().sort(()=>Math.random()-.5); G.bagPh=G.phase; } const k=G.bag.shift(); G.gen=HZG[k](G,G.phase); G.wait=0; } }
 function texPiglet(){ return twTex('piglet',32,32,(c)=>drawEyePiglet(c,16,30,0,0)); }
 const HZG={
-  *flop(G,ph){ twBark('hamza',ph>=2?"DOUBLE FLOP. Bismillah.":"Belly flop! Oink!",true); for(let k=0;k<(ph>=2?2:1);k++){ const P=Player, p=twClampXZ(P.x+P.vx*.4,P.z+P.vz*.4,2.2); FX.marker(p.x,p.z,3,0xff6a9a,1.05); Sound.sfx('pigroar');
+  *flop(G,ph){ twBark('hamza',ph>=2?"DOUBLE FLOP. Bismillah.":"Belly flop! Oink!",true); for(let k=0;k<(ph>=2?2:1);k++){ const P=Player, p=twClampXZ(P.x+P.vx*.4,P.z+P.vz*.4,2.2); FX.marker(p.x,p.z,3,0xff6a9a,1.05); twFence(p.x,p.z,3,0xff6a9a,1); Sound.sfx('pigroar');
       G.mouth=.6; G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:.9}; const up={t:0}; twHz({upd(dt){ up.t+=dt; G.air=Math.sin(Math.min(1,up.t/.9)*Math.PI)*6; return up.t<.9; }, kill(){ G.air=0; }}); yield .95;
       Sound.sfx('slam'); Sound.sfx('crash'); shake(1); FX.burst(G.x,groundY(G.x,G.z)+.4,G.z,50,0xd8c0c8,8,.45,false); FX.ring(G.x,groundY(G.x,G.z),G.z,'#ffb0c8',5,.5);
-      if(twInR(G.x,G.z,3,1.5)) twHitP(3,G.x,G.z,{ub:true}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12}); if(ph>=2) twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.45}); yield .7; } G.mouth=0; },
+      if(twInR(G.x,G.z,3,99)) twHitP(3,G.x,G.z,{ub:true}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12}); if(ph>=2) twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.45}); yield .7; } G.mouth=0; },
   *snot(G,ph){ twBark('hamza',"Snot rockets. Sorry. Allergies.",true); for(let v=0;v<(ph>=2?3:2);v++){ G.mouth=.3; const n=ph>=2?7:5; for(let k=0;k<n;k++) twAimBolt(G,'goo',G.x,G.y+2.4,G.z,8,(k-(n-1)/2)*.17,{col:0x8aff6a,homing:ph>=2?.5:0}); Sound.sfx('squelch'); yield .55; } G.mouth=0; yield .4; },
   *piglets(G,ph){ twBark('hamza',"Go, my children! My beautiful eyeball children!",true); const A=G.lock||twLock(), P=Player;
     for(let w=0;w<(ph>=2?2:1);w++){ const lanes=[P.z,P.z+rnd(2.2,3.2)*(Math.random()<.5?1:-1),P.z+rnd(-5,5)]; for(const [i,lz] of lanes.entries()){ const z=clamp(lz,A.z0+1,A.z1-1), dir=(w+i)%2?-1:1, x0=dir>0?A.x0-1:A.x1+1;
@@ -9896,8 +9912,8 @@ DUO.cage=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.12); twBark('c
 // GRAVEYARD VOLLEY: Omar throws a ring of scythes onto marked spots (they stay planted: +8/+10/+12). Caotan lobs goo in between.
 DUO.volley=function*(C,O,ph){ const sp=twSp(O), n=[0,8,10,12][ph]; twBark('omar',"Graveyard Volley. Every blade I throw stays in the ground. Like my self-esteem.",true); O.cast=1; O.scythe=0;
   const P=Player; for(let i=0;i<n;i++){ const a=i*6.283/n+rnd(-.2,.2), r=i===0?0:rnd(1.8,3.8), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), m=twScytheMesh(false);
-    twThrow({x:O.x,y:O.y+2.2,z:O.z,tx:p.x,tz:p.z,dur:.95/sp,h:4,mesh:m,spin:16,r:.95,col:0x8a3aff,trail:0x8a3aff,onLand(x,z,play){ Sound.sfx('hit'); FX.burst(x,groundY(x,z)+.3,z,14,0x8a3aff,4,.3);
-      if(play&&twInR(x,z,.95,2)) twHitP(2,x,z,{ub:true}); twPlantDrop(x,z,0,true); }}); Sound.sfx('swing'); yield .11/sp;
+    twThrow({x:O.x,y:O.y+2.2,z:O.z,tx:p.x,tz:p.z,dur:.95/sp,h:4,mesh:m,spin:16,r:.95,col:0x8a3aff,trail:0x8a3aff,fence:true,onLand(x,z,play){ Sound.sfx('hit'); FX.burst(x,groundY(x,z)+.3,z,14,0x8a3aff,4,.3);
+      if(play&&twInR(x,z,.95,99)) twHitP(2,x,z,{ub:true}); twPlantDrop(x,z,0,true); }}); Sound.sfx('swing'); yield .11/sp;
     if(i===3||i===7){ C.fire=.25; for(const k of [-1,0,1]) twAimBolt(C,'goo',C.x+C.f*.3,C.y+.95,C.z,9.5*sp,k*.2,{col:0xffffff}); Sound.sfx('squelch'); } }
   yield 1.2; };
 // SENTENCED TO SENPAI: the Death Sentence hovers over you; on every count Caotan fires a pink wall at you. At 0 it drops (one-shot): move.
@@ -10313,7 +10329,7 @@ DUO.burnout=function*(C,O){ const F=TW.fight, sp=1.15, H=TW.hg={left:20,total:20
         if((el<5||el>=10&&el<15)&&el>=ev.c){ ev.c=el+(el<5?1.7:1.45); const a=Math.atan2(P.z-C.z,P.x-C.x); for(const k of [-.38,0,.38]) twCaoPillowShot(C,a+k,10); C.cast=.4; }
         // 5-10: goo puddles and pink walls; black holes; a light rain
         if(el>=5&&el<10){ if(el>=ev.goo){ ev.goo=el+2; for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5);
-              twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
+              twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,99)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
           if(el>=ev.pink){ ev.pink=el+1.3; C.push=.3; C.glintT=.3; Sound.sfx('ting'); twPink(C.x,C.z,Math.atan2(P.z-C.z,P.x-C.x),{warn:.55}); }
           if(!ev.holes){ ev.holes=1; for(let k=0;k<3;k++){ const p=twRandIn(3), a=rnd(0,6.28); twMiniHole(p.x,p.z,{r:.7,pull:3.4,range:5,dur:10,eat:.95,dmg:4,vx:Math.cos(a)*1.1,vz:Math.sin(a)*1.1}); } }
           if(el>=ev.rain){ ev.rain=el+.5; const a=rnd(0,6.28), r=rnd(0,2.5); twSkyScythe(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.8,{quiet:1}); } }
@@ -11056,7 +11072,7 @@ const D5T={H:12.6};
 // a generator run as a hazard (Caotan's side of a limit cut runs alongside Omar's)
 function d5Run(g){ const s={w:0}; return twHz({upd(dt,play){ if(!play) return true; s.w-=dt; let n=0; while(s.w<=0&&n++<20){ let r; try{ r=g.next(); }catch(e){ console.error('d5 run',e); return false; } if(r.done) return false; s.w+=r.value||.1; } return true; }}); }
 function d5Goops(C,n){ const P=Player; for(let i=0;i<n;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5);
-    twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
+    twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,99)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
 function* d5CaoDriver(C,stop){ const keys=Object.keys(D5CP); for(let i=0;!stop();i++){ if(i%3===1) d5Goops(C,3); else if(i%3===0) yield* D5CP.spin(C,1.05,2); else yield* D5CP[keys[Math.floor(Math.random()*keys.length)]](C,1.08,2); if(Math.random()<.25) d5Bark('caoBark'); yield 1.5; } }
 // ---------- tombstones: solid, block Getsugas, break ----------
 function d5Tomb(x,z){ const gy=groundY(x,z), g=new THREE.Group(), mat=new THREE.MeshLambertMaterial({color:0x3e3850});
@@ -11696,10 +11712,10 @@ function hzgSp(G){ return G.phase>=2?1.15:1; }
 function hzgAlly(who){ return TW.allies.find(a=>a.who===who&&!a.gone)||null; }
 // ---------- BISMILLAH BOUNCE: three flops, each one chasing where you are going (the third leaves two jump rings) ----------
 HZG.bounce=function*(G,ph){ const sp=hzgSp(G); twBark('hamza',"Bismillah... BOUNCE! Bismillah... BOUNCE!",true);
-  for(let k=0;k<3;k++){ const P=Player, p=twClampXZ(P.x+P.vx*.5,P.z+P.vz*.5,2.2), up=(k?.75:.95)/sp; FX.marker(p.x,p.z,2.6,0xff6a9a,up+.05); Sound.sfx('pigroar'); G.mouth=.6; G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:up};
+  for(let k=0;k<3;k++){ const P=Player, p=twClampXZ(P.x+P.vx*.5,P.z+P.vz*.5,2.2), up=(k?.75:.95)/sp; FX.marker(p.x,p.z,2.6,0xff6a9a,up+.05); twFence(p.x,p.z,2.6,0xff6a9a,up+.03); Sound.sfx('pigroar'); G.mouth=.6; G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:up};
     const u={t:0}; twHz({upd(dt){ u.t+=dt; G.air=Math.sin(Math.min(1,u.t/up)*Math.PI)*(k===2?7:4.5); return u.t<up; }, kill(){ G.air=0; }}); yield up+.03;
     Sound.sfx('slam'); Sound.sfx('crash'); shake(k===2?1.1:.6); FX.burst(G.x,groundY(G.x,G.z)+.4,G.z,40,0xd8c0c8,7,.45,false); FX.ring(G.x,groundY(G.x,G.z),G.z,'#ffb0c8',4.5,.5);
-    if(twInR(G.x,G.z,2.6,1.5)) twHitP(3,G.x,G.z,{ub:true}); if(k===2){ twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,r0:2.6}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.5,r0:2.6}); } yield .2; }
+    if(twInR(G.x,G.z,2.6,99)) twHitP(3,G.x,G.z,{ub:true}); if(k===2){ twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,r0:2.6}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.5,r0:2.6}); } yield .2; }
   G.mouth=0; yield .7; };
 // ---------- PORK ROLL: he curls up and rolls, bouncing off the walls (each new line flashes first). Dash through or get clear ----------
 HZG.roll=function*(G,ph){ const sp=hzgSp(G); twBark('hamza',"Pork roll! I'm a sushi now!",true); Sound.sfx('pigrumble'); G.mouth=0;
@@ -11899,13 +11915,13 @@ function drawPigletBaby(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flas
 // ---------- landing, leaping, shadows ----------
 function hzgLand(G,r,dmg,rings){ const gy=groundY(G.x,G.z); Sound.sfx('slam'); Sound.sfx('crash'); shake(r>3?1.1:.7); FX.burst(G.x,gy+.4,G.z,50,0xd8c0c8,8,.45,false); FX.ring(G.x,gy,G.z,'#ffb0c8',r*1.6,.5);
   for(let i=0;i<16;i++){ const a=i/16*6.283; FX.spawn(G.x+Math.cos(a)*r,gy+.3,G.z+Math.sin(a)*r,Math.cos(a)*5,rnd(2,5),Math.sin(a)*5,.6,i%2?0xffb0c8:0x8a6a44,.35,12,false); }
-  if(twInR(G.x,G.z,r,1.6)) twHitP(dmg,G.x,G.z,{ub:true}); for(let k=0;k<(rings||0);k++) twWave(G.x,G.z,{col:0xffb0c8,sp:8+k,max:13,delay:k*.45,r0:r}); }
+  if(twInR(G.x,G.z,r,99)) twHitP(dmg,G.x,G.z,{ub:true}); for(let k=0;k<(rings||0);k++) twWave(G.x,G.z,{col:0xffb0c8,sp:8+k,max:13,delay:k*.45,r0:r}); }
 function hzgDecalFade(d){ const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; d.material.opacity=Math.max(0,.8-k.t); if(k.t>.8){ scene.remove(d); d.geometry.dispose(); d.material.dispose(); return false; } return true; }); }
 // a leap with a crater shadow; with track, the target follows Shayan until 65% of the way, then locks
-function* hzgLeap(G,tx,tz,up,h,r,dmg,rings,track){ const sx=G.x, sz=G.z; let p=twClampXZ(tx,tz,2.2); const d=twDecal(p.x,p.z,r,'crater'); G.mouth=.6; Sound.sfx('pigroar');
+function* hzgLeap(G,tx,tz,up,h,r,dmg,rings,track){ const sx=G.x, sz=G.z; let p=twClampXZ(tx,tz,2.2); const d=twDecal(p.x,p.z,r,'crater'), fe=twFence(p.x,p.z,r,0xffb050,up+.1); G.mouth=.6; Sound.sfx('pigroar');
   for(let t=0;t<up;t+=1/60){ const u=t/up; if(track&&u<.65){ const P=Player; p=twClampXZ(lerp(p.x,P.x+P.vx*.2,.12),lerp(p.z,P.z+P.vz*.2,.12),2.2); }
-    G.x=lerp(sx,p.x,twEIO(u)); G.z=lerp(sz,p.z,twEIO(u)); G.air=Math.sin(u*Math.PI)*h; d.position.set(p.x,groundY(p.x,p.z)+.05,p.z); d.scale.setScalar(Math.max(.01,r*(.4+.6*u))); d.material.opacity=.5+.4*u; yield 1/60; }
-  G.x=p.x; G.z=p.z; G.air=0; hzgLand(G,r,dmg,rings); hzgDecalFade(d); G.mouth=0; }
+    G.x=lerp(sx,p.x,twEIO(u)); G.z=lerp(sz,p.z,twEIO(u)); G.air=Math.sin(u*Math.PI)*h; d.position.set(p.x,groundY(p.x,p.z)+.05,p.z); d.scale.setScalar(Math.max(.01,r*(.4+.6*u))); d.material.opacity=.5+.4*u; fe.move(p.x,p.z); yield 1/60; }
+  fe.kill(); G.x=p.x; G.z=p.z; G.air=0; hzgLand(G,r,dmg,rings); hzgDecalFade(d); G.mouth=0; }
 const hzgSp2=G=>G.phase>=2?1.15:1;
 
 // ---------- the moves ----------
@@ -15357,8 +15373,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: one rush timing everywhere (strict; tell .6, window .36; teleport strikes .4 + .45): tutorial, gate reaps, Kojima, Hamza, the twins' glomp; early-press grabs say TOO EARLY";
-const DBG_NEW=['grimmaw:*','hamza:*','duo:glompReap','duo:rushTag','caotan:tsun','omar:clones'];
+const DBG_PATCH="Oct 27: circles: one jump height (jumpable below 1, the rest never); every unjumpable circle stands a fence of rising squiggles on its rim (goo, volleys, Hamza's stomps too)";
+const DBG_NEW=['caotan:*','omar:*','duo:*','hamza:*','grimmaw:*','nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

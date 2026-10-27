@@ -26,10 +26,10 @@ function hzgUpdate(dt,play){ const G=TW.giant; G.t+=dt; G.flash=Math.max(0,G.fla
   G.cd-=dt; if(G.cd<=0){ if(!G.bag.length||G.bagPh!==G.phase){ G.bag=HZG_POOL[G.phase].slice().sort(()=>Math.random()-.5); G.bagPh=G.phase; } const k=G.bag.shift(); G.gen=HZG[k](G,G.phase); G.wait=0; } }
 function texPiglet(){ return twTex('piglet',32,32,(c)=>drawEyePiglet(c,16,30,0,0)); }
 const HZG={
-  *flop(G,ph){ twBark('hamza',ph>=2?"DOUBLE FLOP. Bismillah.":"Belly flop! Oink!",true); for(let k=0;k<(ph>=2?2:1);k++){ const P=Player, p=twClampXZ(P.x+P.vx*.4,P.z+P.vz*.4,2.2); FX.marker(p.x,p.z,3,0xff6a9a,1.05); Sound.sfx('pigroar');
+  *flop(G,ph){ twBark('hamza',ph>=2?"DOUBLE FLOP. Bismillah.":"Belly flop! Oink!",true); for(let k=0;k<(ph>=2?2:1);k++){ const P=Player, p=twClampXZ(P.x+P.vx*.4,P.z+P.vz*.4,2.2); FX.marker(p.x,p.z,3,0xff6a9a,1.05); twFence(p.x,p.z,3,0xff6a9a,1); Sound.sfx('pigroar');
       G.mouth=.6; G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:.9}; const up={t:0}; twHz({upd(dt){ up.t+=dt; G.air=Math.sin(Math.min(1,up.t/.9)*Math.PI)*6; return up.t<.9; }, kill(){ G.air=0; }}); yield .95;
       Sound.sfx('slam'); Sound.sfx('crash'); shake(1); FX.burst(G.x,groundY(G.x,G.z)+.4,G.z,50,0xd8c0c8,8,.45,false); FX.ring(G.x,groundY(G.x,G.z),G.z,'#ffb0c8',5,.5);
-      if(twInR(G.x,G.z,3,1.5)) twHitP(3,G.x,G.z,{ub:true}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12}); if(ph>=2) twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.45}); yield .7; } G.mouth=0; },
+      if(twInR(G.x,G.z,3,99)) twHitP(3,G.x,G.z,{ub:true}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12}); if(ph>=2) twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.45}); yield .7; } G.mouth=0; },
   *snot(G,ph){ twBark('hamza',"Snot rockets. Sorry. Allergies.",true); for(let v=0;v<(ph>=2?3:2);v++){ G.mouth=.3; const n=ph>=2?7:5; for(let k=0;k<n;k++) twAimBolt(G,'goo',G.x,G.y+2.4,G.z,8,(k-(n-1)/2)*.17,{col:0x8aff6a,homing:ph>=2?.5:0}); Sound.sfx('squelch'); yield .55; } G.mouth=0; yield .4; },
   *piglets(G,ph){ twBark('hamza',"Go, my children! My beautiful eyeball children!",true); const A=G.lock||twLock(), P=Player;
     for(let w=0;w<(ph>=2?2:1);w++){ const lanes=[P.z,P.z+rnd(2.2,3.2)*(Math.random()<.5?1:-1),P.z+rnd(-5,5)]; for(const [i,lz] of lanes.entries()){ const z=clamp(lz,A.z0+1,A.z1-1), dir=(w+i)%2?-1:1, x0=dir>0?A.x0-1:A.x1+1;

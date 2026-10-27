@@ -7,11 +7,11 @@ const TWPOOL={
   omar:{gate:['scythes','reap','hands'],1:['scythes','reap','hands','orbs','sentence'],2:['scythes','reap','hands','orbs','sentence','clones','monologue'],3:['scythes','reap','hands','orbs','sentence','clones','monologue','tear','harvest']}};
 const CAO_BARK=["Senpai, notice me!","My reserves are ENDLESS!","Don't look at me like that... unless?","I'm not blushing, it's the moonlight!","Uwu. That was a threat.","Let me push up my glasses at you.","Ara ara~"];
 // something thrown in an arc that lands on a marked spot
-function twThrow(o){ const s={x:o.x,y:o.y,z:o.z}, gy=groundY(o.tx,o.tz), mk=o.mark!==false?FX.marker(o.tx,o.tz,o.r||.9,o.col||0xff6ab0,o.dur+.05):null; let tt=0;
+function twThrow(o){ const s={x:o.x,y:o.y,z:o.z}, gy=groundY(o.tx,o.tz), mk=o.mark!==false?FX.marker(o.tx,o.tz,o.r||.9,o.col||0xff6ab0,o.dur+.05):null, fz=o.fence&&o.mark!==false?twFence(o.tx,o.tz,o.r||.9,o.col||0xff6ab0,o.dur+.05):null; let tt=0;
   return twHz({upd(dt,play){ if(play) tt+=dt; const u=Math.min(1,tt/o.dur); const x=lerp(s.x,o.tx,u), z=lerp(s.z,o.tz,u), y=lerp(s.y,gy+(o.endY||.4),u)+Math.sin(u*Math.PI)*(o.h||3);
     if(o.mesh){ o.mesh.position.set(x,y,z); o.mesh.rotation.z+=dt*(o.spin||8); } if(o.trail&&Math.random()<.6) FX.spawn(x,y,z,0,0,0,.3,o.trail,.22,0,true);
-    if(u>=1){ if(o.onLand) o.onLand(o.tx,o.tz,play); return o.keep?o.keep():false; } return true; },
-    kill(){ if(o.mesh&&!o.keepMesh) scene.remove(o.mesh); if(mk) scene.remove(mk.m); }}); }
+    if(u>=1){ if(fz) fz.kill(); if(o.onLand) o.onLand(o.tx,o.tz,play); return o.keep?o.keep():false; } return true; },
+    kill(){ if(o.mesh&&!o.keepMesh) scene.remove(o.mesh); if(mk) scene.remove(mk.m); if(fz) fz.kill(); }}); }
 function twHeartBurst(x,z,n){ const gy=groundY(x,z); for(let i=0;i<(n||14);i++){ const a=rnd(0,6.28); FX.spawn(x,gy+.5,z,Math.cos(a)*rnd(2,6),rnd(2,6),Math.sin(a)*rnd(2,6),rnd(.4,.8),i%2?0xff6ab0:0xffd0ec,.32,8,true); } }
 
 TWK.caotan.goo=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark('caotan',ph>=2?"Overflow mode! I'm DRIPPING with power!":"I never run dry!");
@@ -19,8 +19,8 @@ TWK.caotan.goo=function*(T,ph){ const sp=twSp(T); if(Math.random()<.5) twBark('c
   if(ph<2) return; const P=Player;
   for(let i=0;i<(ph>=3?8:6);i++){ const a=rnd(0,6.28), r=i===0?0:rnd(1.2,3.4), p=twClampXZ(P.x+P.vx*.5+Math.cos(a)*r,P.z+P.vz*.5+Math.sin(a)*r,.6);
     const m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5); T.fire=.2; Sound.sfx('squelch');
-    twThrow({x:T.x,y:T.y+1,z:T.z,tx:p.x,tz:p.z,dur:.85/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); FX.burst(x,groundY(x,z)+.2,z,14,0xffffff,3,.3,false);
-      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
+    twThrow({x:T.x,y:T.y+1,z:T.z,tx:p.x,tz:p.z,dur:.85/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(x,z,play){ Sound.sfx('squelch'); FX.burst(x,groundY(x,z)+.2,z,14,0xffffff,3,.3,false);
+      twZone(x,z,1.15,4.5,{slow:.55,col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(x,z,.95,99)) twHitP(1,x,z,{ub:true}); }}); yield .13; }
   yield .45; };
 function twRayWall(x,z,ux,uz){ const A=twLock(); let tx=1e9,tz=1e9; if(ux>1e-4) tx=(A.x1-x)/ux; else if(ux<-1e-4) tx=(A.x0-x)/ux; if(uz>1e-4) tz=(A.z1-z)/uz; else if(uz<-1e-4) tz=(A.z0-z)/uz; return tx<tz?{t:tx,ax:'x'}:{t:tz,ax:'z'}; }
 TWK.caotan.glint1=function*(T,ph){ const sp=twSp(T); yield* twGlint(T,1); twBark('caotan',ph>=2?"Senpai Snipe: Ricochet Edition!":"Senpai Snipe!");

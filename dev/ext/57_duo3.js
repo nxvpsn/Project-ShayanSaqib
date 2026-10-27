@@ -174,8 +174,8 @@ DUO.cage=function*(C,O,ph){ const sp=twSp(C); yield* twGlint(C,3,.12); twBark('c
 // GRAVEYARD VOLLEY: Omar throws a ring of scythes onto marked spots (they stay planted: +8/+10/+12). Caotan lobs goo in between.
 DUO.volley=function*(C,O,ph){ const sp=twSp(O), n=[0,8,10,12][ph]; twBark('omar',"Graveyard Volley. Every blade I throw stays in the ground. Like my self-esteem.",true); O.cast=1; O.scythe=0;
   const P=Player; for(let i=0;i<n;i++){ const a=i*6.283/n+rnd(-.2,.2), r=i===0?0:rnd(1.8,3.8), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), m=twScytheMesh(false);
-    twThrow({x:O.x,y:O.y+2.2,z:O.z,tx:p.x,tz:p.z,dur:.95/sp,h:4,mesh:m,spin:16,r:.95,col:0x8a3aff,trail:0x8a3aff,onLand(x,z,play){ Sound.sfx('hit'); FX.burst(x,groundY(x,z)+.3,z,14,0x8a3aff,4,.3);
-      if(play&&twInR(x,z,.95,2)) twHitP(2,x,z,{ub:true}); twPlantDrop(x,z,0,true); }}); Sound.sfx('swing'); yield .11/sp;
+    twThrow({x:O.x,y:O.y+2.2,z:O.z,tx:p.x,tz:p.z,dur:.95/sp,h:4,mesh:m,spin:16,r:.95,col:0x8a3aff,trail:0x8a3aff,fence:true,onLand(x,z,play){ Sound.sfx('hit'); FX.burst(x,groundY(x,z)+.3,z,14,0x8a3aff,4,.3);
+      if(play&&twInR(x,z,.95,99)) twHitP(2,x,z,{ub:true}); twPlantDrop(x,z,0,true); }}); Sound.sfx('swing'); yield .11/sp;
     if(i===3||i===7){ C.fire=.25; for(const k of [-1,0,1]) twAimBolt(C,'goo',C.x+C.f*.3,C.y+.95,C.z,9.5*sp,k*.2,{col:0xffffff}); Sound.sfx('squelch'); } }
   yield 1.2; };
 // SENTENCED TO SENPAI: the Death Sentence hovers over you; on every count Caotan fires a pink wall at you. At 0 it drops (one-shot): move.

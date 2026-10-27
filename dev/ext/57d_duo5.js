@@ -357,7 +357,7 @@ const D5T={H:12.6};
 // a generator run as a hazard (Caotan's side of a limit cut runs alongside Omar's)
 function d5Run(g){ const s={w:0}; return twHz({upd(dt,play){ if(!play) return true; s.w-=dt; let n=0; while(s.w<=0&&n++<20){ let r; try{ r=g.next(); }catch(e){ console.error('d5 run',e); return false; } if(r.done) return false; s.w+=r.value||.1; } return true; }}); }
 function d5Goops(C,n){ const P=Player; for(let i=0;i<n;i++){ const a=rnd(0,6.28), r=i?rnd(1.5,3.5):0, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6), m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5);
-    twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,1.2)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
+    twThrow({x:C.x,y:C.y+1,z:C.z,tx:p.x,tz:p.z,dur:.8,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(x,z,play){ Sound.sfx('squelch'); twZone(x,z,1.15,4,{slow:.55,col:0xfaf6ff,op:.85,fx:.05,splat:1}); if(play&&twInR(x,z,.95,99)) twHitP(1,x,z,{ub:true}); }}); } C.fire=.3; }
 function* d5CaoDriver(C,stop){ const keys=Object.keys(D5CP); for(let i=0;!stop();i++){ if(i%3===1) d5Goops(C,3); else if(i%3===0) yield* D5CP.spin(C,1.05,2); else yield* D5CP[keys[Math.floor(Math.random()*keys.length)]](C,1.08,2); if(Math.random()<.25) d5Bark('caoBark'); yield 1.5; } }
 // ---------- tombstones: solid, block Getsugas, break ----------
 function d5Tomb(x,z){ const gy=groundY(x,z), g=new THREE.Group(), mat=new THREE.MeshLambertMaterial({color:0x3e3850});

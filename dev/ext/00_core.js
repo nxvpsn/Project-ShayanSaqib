@@ -65,12 +65,28 @@ function twHitP(dmg,sx,sz,o){ o=o||{}; const op={}; if(o.ub){ op.unblockable=tru
   return playerHit(dmg,sx,sz,op); }
 function twInR(x,z,r,hmax){ const P=twP(); return Math.hypot(P.x-x,P.z-z)<r&&(hmax==null||P.y<groundY(x,z)+hmax); }
 // ground circle telegraph -> boom
-function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marker(x,z,r,col,delay+.05);
+// ---------- jumpable or not, at a glance: one jump height for every circle; an unjumpable circle stands a fence of rising squiggles on its rim ----------
+const TW_JUMP_H=1; // a jumpable circle misses you above this (any jump clears it); an unjumpable one never does
+function twBlastH(o){ return o&&(o.jump===true||(o.h!=null&&o.h<=1))?TW_JUMP_H:99; }
+let TW_FENCE_TEX=null;
+function twFenceTex(){ if(TW_FENCE_TEX) return TW_FENCE_TEX; const cv=document.createElement('canvas'); cv.width=8; cv.height=32; const c=cv.getContext('2d');
+  for(let y=0;y<32;y++){ const x=Math.round(3.5+2.2*Math.sin(y/32*Math.PI*4)); c.fillStyle='#1a0610'; c.fillRect(x-1,y,4,1); } /* a dark outline under the line (reads on bright ground) */
+  for(let y=0;y<32;y++){ const x=Math.round(3.5+2.2*Math.sin(y/32*Math.PI*4)); c.fillStyle='#ffffff'; c.fillRect(x,y,2,1); }
+  const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.wrapT=THREE.RepeatWrapping; return TW_FENCE_TEX=t; }
+// a ring of squiggly lines standing on the circle's rim, rising (the texture scrolls up); f.move(x,z,r) for a moving circle, f.kill()
+function twFence(x,z,r,col,life){ const n=Math.max(6,Math.min(28,Math.round(6.283*r/.85))), mat=new THREE.SpriteMaterial({map:twFenceTex(),color:col||0xffffff,transparent:true,depthWrite:false,fog:false}), sp=[], f={x,z,r,t:0,dead:0};
+  for(let i=0;i<n;i++){ const s=new THREE.Sprite(mat); s.center.set(.5,0); s.userData.tw=1; s.renderOrder=6; scene.add(s); sp.push(s); }
+  const place=()=>{ for(let i=0;i<n;i++){ const a=i/n*6.283, px=f.x+Math.cos(a)*f.r, pz=f.z+Math.sin(a)*f.r; sp[i].position.set(px,groundY(px,pz)+.02,pz); } };
+  f.move=(nx,nz,nr)=>{ f.x=nx; f.z=nz; if(nr!=null) f.r=nr; place(); }; f.kill=()=>{ if(f.dead) return; f.dead=1; sp.forEach(s=>scene.remove(s)); };
+  place(); Game.fxUpd.push(dt=>{ try{ if(f.dead) return false; f.t+=dt; if(life!=null&&f.t>=life){ f.kill(); return false; }
+      const k=Math.min(1,f.t/.2); for(const s of sp) s.scale.set(.3,Math.max(.01,1.4*k),1); TW_FENCE_TEX.offset.y=(performance.now()/1000*1.8)%1; return true; }catch(e){ f.kill(); return false; } });
+  return f; }
+function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marker(x,z,r,col,delay+.05), hh=twBlastH(o), fence=hh>1?twFence(x,z,r,col,delay+.05):null;
   return twHz({upd(dt,play){ if(play) this.t+=dt; if(this.t<delay) return true; const gy=groundY(x,z);
     FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.4,.4); if(!o.noBurst) FX.burst(x,gy+.3,z,o.n||22,o.burst||col,o.sp||5,.3,true); if(o.dark) FX.burst(x,gy+.3,z,14,0x140a1a,4,.4,false);
     if(!o.quiet){ Sound.sfx(o.sfx||'slam'); shake(o.shake||.22); }
-    if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } return false; },
-    kill(){ if(mk) scene.remove(mk.m); }}); }
+    if(fence) fence.kill(); if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,hh)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } return false; },
+    kill(){ if(mk) scene.remove(mk.m); if(fence) fence.kill(); }}); }
 // beam along the ground at chest height, with a blinking telegraph strip first
 // colour rule: a blue laser can always be jumped (low, at shin height), a pink one never can (it fires as two lasers stacked)
 function twBeamKind(col){ if(typeof col!=='number') return ''; const r=(col>>16&255)/255, g=(col>>8&255)/255, b=(col&255)/255, mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; if(d<.15) return '';

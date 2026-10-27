@@ -46,7 +46,7 @@ function twPhone(T,tx,tz,dur,st,ph){ const sx=T.x, sy=T.y+1.5, sz=T.z, gy=ground
       const swat=Game.time-twParryClock()<.3||(ALI()&&P.block);
       if(play&&u>.3&&swat&&Math.hypot(P.x-q.x,P.z-q.z)<2.1&&Math.abs(q.y-(P.y+1))<2.4){ q.mode='back'; q.t=0; q.sx=q.x; q.sy=q.y; q.sz=q.z; if(mk){ scene.remove(mk.m); }
         Sound.sfx('deflect'); FX.spark(q.x,q.y,q.z); Game.dmgNums.push({x:q.x,y:q.y+.8,z:q.z,n:'DECLINED',t:0,col:'#ff9ad8'}); }
-      else if(u>=1){ Sound.sfx('kyun'); twHeartBurst(tx,tz,12); FX.ring(tx,gy,tz,'#ff6ab0',1.6,.35); if(play&&twInR(tx,tz,.95,1.8)) twHitP(2,tx,tz,{ub:true}); if(ph>=2) twWave(tx,tz,{sp:6,max:4.2,col:0xff6ab0}); return false; } }
+      else if(u>=1){ Sound.sfx('kyun'); twHeartBurst(tx,tz,12); FX.ring(tx,gy,tz,'#ff6ab0',1.6,.35); if(play&&twInR(tx,tz,.95,TW_JUMP_H)) twHitP(2,tx,tz,{ub:true}); if(ph>=2) twWave(tx,tz,{sp:6,max:4.2,col:0xff6ab0}); return false; } }
     else { const u=Math.min(1,q.t/.35); q.x=lerp(q.sx,T.x,u); q.z=lerp(q.sz,T.z,u); q.y=lerp(q.sy,T.y+1.4,u);
       if(u>=1){ if(!st.caught&&!T.down&&T.hp>0&&T.state!=='lc'){ st.caught=true; st.busy=true; twPhoneCatch(T,st); } else { twHurt(T,2,'bolt'); T.flash=.2; FX.burst(T.x,T.y+1.4,T.z,10,0xff6ab0,3,.25); Sound.sfx('hit'); } return false; } }
     m.position.set(q.x,q.y,q.z); m.rotation.z+=dt*(q.mode==='arc'?10:22); if(Math.random()<.6) FX.spawn(q.x,q.y,q.z,0,0,0,.3,0xff8ac8,.22,0,true); return true; },

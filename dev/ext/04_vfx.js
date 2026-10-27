@@ -119,7 +119,7 @@ function twSkinTex(kind,v){ const key=kind+v; if(TW_SKINS[key]) return TW_SKINS[
   const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; TW_SKINS[key]=t; return t; }
 function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:twSkinTex(kind,Math.floor(Math.random()*3)),transparent:true,depthWrite:false,alphaTest:.05}));
   m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,groundY(x,z)+.05,z); m.scale.setScalar(.01); m.userData.tw=1; scene.add(m); return m; }
-(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(!o||!o.skin) return tb.apply(this,arguments); const kind=o.skin, col=o.col||0xff3a6a, dec=twDecal(x,z,r,kind);
+(function(){ const tb=twBlast; twBlast=function(x,z,r,delay,o){ if(!o||!o.skin) return tb.apply(this,arguments); const kind=o.skin, col=o.col||0xff3a6a, dec=twDecal(x,z,r,kind), hh=twBlastH(o), fence=hh>1?twFence(x,z,r,col,delay+.05):null;
     const pc=kind==='goop'?[0x7a3ac0,0x2a0a3a,0xc08aff]:kind==='frosting'?[0xff8ab0,0xffffff,0xffc0d8]:[0x8a6a44,0x3a2a1a,0xffb050];
     return twHz({upd(dt,play){ if(play) this.t+=dt; const gy=groundY(x,z);
         if(this.t<delay){ const k=Math.min(1,this.t/Math.max(.05,delay)); dec.scale.setScalar(Math.max(.01,r*(.35+.65*k)*(1+Math.sin(this.t*30)*.03*k))); dec.material.opacity=.55+.45*k;
@@ -128,8 +128,8 @@ function twDecal(x,z,r,kind){ const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2
           if(kind!=='goop') for(let i=0;i<(o.n||26);i++){ const a=Math.random()*6.283, s=rnd(2,6); FX.spawn(x+Math.cos(a)*r*.5,gy+.2,z+Math.sin(a)*r*.5,Math.cos(a)*s*.6,rnd(4,9),Math.sin(a)*s*.6,rnd(.4,.8),pc[i%3],rnd(.2,.34),16,kind==='frosting',.5); }
           FX.ring(x,gy,z,o.ring||'#ffb0d0',r*1.3,.3);
           if(!o.quiet){ Sound.sfx(o.sfx||(kind==='goop'?'squelch':'slam')); shake(o.shake||.18); }
-          if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,o.h||2.2)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } }
+          if(fence) fence.kill(); if(o.onBoom) o.onBoom(x,z); if(play) twAllyAoE(x,z,r,o.allyDmg||o.dmg||2); if(play&&twInR(x,z,r,hh)){ const res=twHitP(o.dmg||2,x,z,{ub:o.ub!==false}); if(o.onHit&&res==='hit') o.onHit(); } }
         // o.linger: the puddle stays that long after the hit (full strength); o.onTouch() while you stand in it
         this.bt+=dt; const lg=o.linger||0; if(this.bt<lg){ dec.material.opacity=1; if(play&&o.onTouch){ const P=twP(); if(Math.hypot(P.x-x,P.z-z)<r*.9&&P.y<gy+.35) o.onTouch(); } return true; }
         dec.material.opacity=Math.max(0,1-(this.bt-lg)/.7); return this.bt<lg+.7; },
-      kill(){ scene.remove(dec); dec.geometry.dispose(); dec.material.dispose(); }}); }; })();
+      kill(){ scene.remove(dec); dec.geometry.dispose(); dec.material.dispose(); if(fence) fence.kill(); }}); }; })();

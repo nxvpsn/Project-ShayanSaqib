@@ -11,10 +11,10 @@ function hzgSp(G){ return G.phase>=2?1.15:1; }
 function hzgAlly(who){ return TW.allies.find(a=>a.who===who&&!a.gone)||null; }
 // ---------- BISMILLAH BOUNCE: three flops, each one chasing where you are going (the third leaves two jump rings) ----------
 HZG.bounce=function*(G,ph){ const sp=hzgSp(G); twBark('hamza',"Bismillah... BOUNCE! Bismillah... BOUNCE!",true);
-  for(let k=0;k<3;k++){ const P=Player, p=twClampXZ(P.x+P.vx*.5,P.z+P.vz*.5,2.2), up=(k?.75:.95)/sp; FX.marker(p.x,p.z,2.6,0xff6a9a,up+.05); Sound.sfx('pigroar'); G.mouth=.6; G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:up};
+  for(let k=0;k<3;k++){ const P=Player, p=twClampXZ(P.x+P.vx*.5,P.z+P.vz*.5,2.2), up=(k?.75:.95)/sp; FX.marker(p.x,p.z,2.6,0xff6a9a,up+.05); twFence(p.x,p.z,2.6,0xff6a9a,up+.03); Sound.sfx('pigroar'); G.mouth=.6; G.mv={sx:G.x,sz:G.z,x:p.x,z:p.z,t:0,dur:up};
     const u={t:0}; twHz({upd(dt){ u.t+=dt; G.air=Math.sin(Math.min(1,u.t/up)*Math.PI)*(k===2?7:4.5); return u.t<up; }, kill(){ G.air=0; }}); yield up+.03;
     Sound.sfx('slam'); Sound.sfx('crash'); shake(k===2?1.1:.6); FX.burst(G.x,groundY(G.x,G.z)+.4,G.z,40,0xd8c0c8,7,.45,false); FX.ring(G.x,groundY(G.x,G.z),G.z,'#ffb0c8',4.5,.5);
-    if(twInR(G.x,G.z,2.6,1.5)) twHitP(3,G.x,G.z,{ub:true}); if(k===2){ twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,r0:2.6}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.5,r0:2.6}); } yield .2; }
+    if(twInR(G.x,G.z,2.6,99)) twHitP(3,G.x,G.z,{ub:true}); if(k===2){ twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,r0:2.6}); twWave(G.x,G.z,{col:0xffb0c8,sp:8,max:12,delay:.5,r0:2.6}); } yield .2; }
   G.mouth=0; yield .7; };
 // ---------- PORK ROLL: he curls up and rolls, bouncing off the walls (each new line flashes first). Dash through or get clear ----------
 HZG.roll=function*(G,ph){ const sp=hzgSp(G); twBark('hamza',"Pork roll! I'm a sushi now!",true); Sound.sfx('pigrumble'); G.mouth=0;

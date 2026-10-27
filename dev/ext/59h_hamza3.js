@@ -52,13 +52,13 @@ function drawPigletBaby(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flas
 // ---------- landing, leaping, shadows ----------
 function hzgLand(G,r,dmg,rings){ const gy=groundY(G.x,G.z); Sound.sfx('slam'); Sound.sfx('crash'); shake(r>3?1.1:.7); FX.burst(G.x,gy+.4,G.z,50,0xd8c0c8,8,.45,false); FX.ring(G.x,gy,G.z,'#ffb0c8',r*1.6,.5);
   for(let i=0;i<16;i++){ const a=i/16*6.283; FX.spawn(G.x+Math.cos(a)*r,gy+.3,G.z+Math.sin(a)*r,Math.cos(a)*5,rnd(2,5),Math.sin(a)*5,.6,i%2?0xffb0c8:0x8a6a44,.35,12,false); }
-  if(twInR(G.x,G.z,r,1.6)) twHitP(dmg,G.x,G.z,{ub:true}); for(let k=0;k<(rings||0);k++) twWave(G.x,G.z,{col:0xffb0c8,sp:8+k,max:13,delay:k*.45,r0:r}); }
+  if(twInR(G.x,G.z,r,99)) twHitP(dmg,G.x,G.z,{ub:true}); for(let k=0;k<(rings||0);k++) twWave(G.x,G.z,{col:0xffb0c8,sp:8+k,max:13,delay:k*.45,r0:r}); }
 function hzgDecalFade(d){ const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; d.material.opacity=Math.max(0,.8-k.t); if(k.t>.8){ scene.remove(d); d.geometry.dispose(); d.material.dispose(); return false; } return true; }); }
 // a leap with a crater shadow; with track, the target follows Shayan until 65% of the way, then locks
-function* hzgLeap(G,tx,tz,up,h,r,dmg,rings,track){ const sx=G.x, sz=G.z; let p=twClampXZ(tx,tz,2.2); const d=twDecal(p.x,p.z,r,'crater'); G.mouth=.6; Sound.sfx('pigroar');
+function* hzgLeap(G,tx,tz,up,h,r,dmg,rings,track){ const sx=G.x, sz=G.z; let p=twClampXZ(tx,tz,2.2); const d=twDecal(p.x,p.z,r,'crater'), fe=twFence(p.x,p.z,r,0xffb050,up+.1); G.mouth=.6; Sound.sfx('pigroar');
   for(let t=0;t<up;t+=1/60){ const u=t/up; if(track&&u<.65){ const P=Player; p=twClampXZ(lerp(p.x,P.x+P.vx*.2,.12),lerp(p.z,P.z+P.vz*.2,.12),2.2); }
-    G.x=lerp(sx,p.x,twEIO(u)); G.z=lerp(sz,p.z,twEIO(u)); G.air=Math.sin(u*Math.PI)*h; d.position.set(p.x,groundY(p.x,p.z)+.05,p.z); d.scale.setScalar(Math.max(.01,r*(.4+.6*u))); d.material.opacity=.5+.4*u; yield 1/60; }
-  G.x=p.x; G.z=p.z; G.air=0; hzgLand(G,r,dmg,rings); hzgDecalFade(d); G.mouth=0; }
+    G.x=lerp(sx,p.x,twEIO(u)); G.z=lerp(sz,p.z,twEIO(u)); G.air=Math.sin(u*Math.PI)*h; d.position.set(p.x,groundY(p.x,p.z)+.05,p.z); d.scale.setScalar(Math.max(.01,r*(.4+.6*u))); d.material.opacity=.5+.4*u; fe.move(p.x,p.z); yield 1/60; }
+  fe.kill(); G.x=p.x; G.z=p.z; G.air=0; hzgLand(G,r,dmg,rings); hzgDecalFade(d); G.mouth=0; }
 const hzgSp2=G=>G.phase>=2?1.15:1;
 
 // ---------- the moves ----------
