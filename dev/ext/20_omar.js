@@ -65,15 +65,40 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
       c.S.draw((cv,cx,by)=>drawOmarBoss(cv,cx,by,Math.cos(c.a)>0?1:-1,{t:c.t+3,scythe:1,swing:c.st==='dash'?1:0,cast:c.st==='tell'?1:0,flash:0,form:2})); c.S.place(c.x,gy+1.1,c.z,gy); }
     return alive; }, kill(){ cl.forEach(c=>{ if(!c.gone) c.S.dispose(); }); }});
   yield (n*.42+1.6)/sp; };
+// MONOLOGUE: a sheet of sad purple sludge spreads out from him over almost the whole screen, leaving a few safe pockets (bright rings).
+// When it sets, anyone outside a pocket is hit (no jumping it: find a pocket); it lingers 2s (stepping in it slows you), then fades. Two waves.
 TWK.omar.monologue=function*(T,ph){ const sp=twSp(T); const lines=["When I was seven... I stared into the darkness.","And the darkness... looked away. Because it was scared. Of me.","Since that day, I have worn only black. Even my socks.","Especially my socks."];
-  T.hy=2.6; T.cast=4; twBig('*EDGE INTENSIFIES*',{size:44,col:'#c08aff',y:UH*.24,dur:1.6}); const ox=T.x, oz=T.z;
-  for(let w=0;w<(ph>=3?2:2);w++){ twBark('omar',lines[w*2],true);
-    for(let k=0;k<5;k++){ const R=2.2+k*2.2, N=Math.round(R*2.6), gap1=rnd(0,6.28), gap2=gap1+Math.PI+rnd(-.5,.5);
-      for(let i=0;i<N;i++){ const a=i*6.283/N; if(angDiff(a,gap1)<.42||angDiff(a,gap2)<.42) continue; const x=ox+Math.cos(a)*R, z=oz+Math.sin(a)*R; const A=twLock(); if(x<A.x0||x>A.x1||z<A.z0||z>A.z1) continue;
-        twBlast(x,z,.8,.55/sp,{col:0x8a2aff,burst:0x1a0a2a,ring:'#a04aff',dmg:2,quiet:i>0,sfx:'squelch',shake:.08,skin:'goop',n:10,h:1,linger:2,onTouch:twGoopSlow}); }
-      yield .42/sp; }
-    if(w===0){ twBark('omar',lines[1],true); yield .6; } }
+  T.hy=2.6; T.cast=4; twBig('*EDGE INTENSIFIES*',{size:44,col:'#c08aff',y:UH*.24,dur:1.6});
+  for(let w=0;w<2;w++){ twBark('omar',lines[w*2],true); const S=twSludge(T,ph,sp); while(!S.done) yield .05; if(w===0){ twBark('omar',lines[1],true); yield .4; } }
   twBark('omar',lines[2],true); yield .8; twBark('omar',lines[3],true); T.hy=1.3; yield .4; };
+// the sludge: a W x D sheet around you (clamped to the arena), drawn into a canvas each frame while it spreads from Omar
+function twSludgePat(){ if(twSludgePat.c) return twSludgePat.c; const S=8, w=26*S, h=16*S, [cv,c]=mkCanvas(w,h); c.fillStyle='#4a1a7a'; c.fillRect(0,0,w,h);
+  for(let i=0;i<260;i++){ const x=Math.floor(hash(i,1)*w), y=Math.floor(hash(1,i)*h), r=1+Math.floor(hash(i,2)*5); c.fillStyle=i%3?'#5a2a92':'#3a1062'; c.fillRect(x-r,y-r,r*2,r*2); }
+  for(let i=0;i<70;i++){ const x=Math.floor(hash(i,5)*w), y=Math.floor(hash(5,i)*h); c.fillStyle='#7a3ac0'; c.fillRect(x,y,3,1); c.fillStyle='#c08aff'; c.fillRect(x,y,1,1); }
+  for(let i=0;i<9;i++){ const x=Math.floor(12+hash(i,9)*(w-28)), y=Math.floor(10+hash(9,i)*(h-24)); c.fillStyle='#120418'; c.fillRect(x,y,2,3); c.fillRect(x+6,y,2,3); c.fillRect(x+1,y+6,6,1); c.fillRect(x,y+7,1,1); c.fillRect(x+7,y+7,1,1); c.fillStyle='#9ad8ff'; c.fillRect(x,y+3,1,2); } /* sad faces */
+  return twSludgePat.c=cv; }
+function twSludge(T,ph,sp){ const P=Player, A=twBounds(), W=24, D=14, cx=clamp(P.x,A.x0+W/2,A.x1-W/2), cz=clamp(P.z,A.z0+D/2,A.z1-D/2), x0=cx-W/2, z0=cz-D/2, PX=8, gy=groundY(cx,cz);
+  const [cv,c]=mkCanvas(W*PX,D*PX), tx=tex(cv), pat=twSludgePat(), m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,opacity:.6}));
+  m.rotation.x=-Math.PI/2; m.position.set(cx,gy+.035,cz); m.renderOrder=1; m.userData.tw=1; scene.add(m);
+  // pockets: 3 (2 in phase III), 4+ apart, one within reach of you
+  const n=ph>=3?2:3, pk=[], pr=1.5; for(let g=0;g<200&&pk.length<n;g++){ const near=pk.length===0, a=rnd(0,6.28), d=near?rnd(2.5,4.5):0;
+      const x=near?P.x+Math.cos(a)*d:rnd(x0+pr+.5,x0+W-pr-.5), z=near?P.z+Math.sin(a)*d:rnd(z0+pr+.5,z0+D-pr-.5); if(x<x0+pr||x>x0+W-pr||z<z0+pr||z>z0+D-pr) continue;
+      if(pk.every(q=>Math.hypot(q.x-x,q.z-z)>4)) pk.push({x,z}); }
+  const rings=pk.map(q=>{ const g=new THREE.Group(); for(const [r0,r1,col,op] of [[pr-.06,pr+.1,0x0a1a10,.85],[pr-.02,pr+.05,0x9affc0,1]]){ const r=new THREE.Mesh(new THREE.RingGeometry(r0,r1,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false})); g.add(r); }
+      g.rotation.x=-Math.PI/2; g.position.set(q.x,groundY(q.x,q.z)+.05,q.z); g.renderOrder=2; g.userData.tw=1; scene.add(g); return g; });
+  const ox=T.x, oz=T.z, Rmax=Math.max(...[[x0,z0],[x0+W,z0],[x0,z0+D],[x0+W,z0+D]].map(([x,z])=>Math.hypot(x-ox,z-oz)))+1, spread=1.3/sp, hold=.4/sp;
+  const S={t:0,done:false,set:false,pk,pr}; Sound.sfx('squelch'); Sound.sfx('drone');
+  const draw=(R)=>{ c.clearRect(0,0,W*PX,D*PX); c.save(); c.beginPath(); const N=48; for(let i=0;i<=N;i++){ const a=i/N*6.283, rr=R*(1+.05*Math.sin(a*7+S.t*6)); const px=(ox+Math.cos(a)*rr-x0)*PX, pz=(oz+Math.sin(a)*rr-z0)*PX; if(i) c.lineTo(px,pz); else c.moveTo(px,pz); } c.closePath(); c.clip(); c.drawImage(pat,0,0,W*PX,D*PX); c.restore();
+    c.globalCompositeOperation='destination-out'; for(const q of pk){ c.beginPath(); c.arc((q.x-x0)*PX,(q.z-z0)*PX,pr*PX,0,7); c.fill(); } c.globalCompositeOperation='source-over'; tx.needsUpdate=true; };
+  const inSludge=(x,z)=>x>x0&&x<x0+W&&z>z0&&z<z0+D&&pk.every(q=>Math.hypot(q.x-x,q.z-z)>pr);
+  twHz({upd(dt,play){ if(play) S.t+=dt; const t=S.t;
+      if(t<spread+hold){ const k=Math.min(1,t/spread); draw(Rmax*(1-Math.pow(1-k,2))); m.material.opacity=.45+.15*Math.sin(t*14); return true; }
+      if(!S.set){ S.set=true; draw(Rmax); m.material.opacity=1; Sound.sfx('squelch'); Sound.sfx('crash'); shake(.35); for(const g of rings) g.visible=false;
+        const P2=twP(); if(play&&inSludge(P2.x,P2.z)) twHitP(2,ox,oz,{ub:true}); }
+      if(t<spread+hold+2){ const P2=twP(); if(play&&P2.y<groundY(P2.x,P2.z)+.35&&inSludge(P2.x,P2.z)&&typeof twGoopSlow==='function') twGoopSlow(); return true; }
+      const f=1-(t-spread-hold-2)/.5; m.material.opacity=Math.max(0,f); if(f<=0){ S.done=true; return false; } return true; },
+    kill(){ scene.remove(m); rings.forEach(g=>scene.remove(g)); S.done=true; }});
+  return S; }
 TWK.omar.tear=function*(T,ph){ const sp=twSp(T); twBark('omar',"I will tear this world... along the dotted line.",true); Sound.sfx('tear'); const c=twCenter(), P=Player;
   for(let i=0;i<3;i++){ const a=rnd(0,Math.PI)+i*1.05, px=i===0?P.x:c.x+rnd(-4,4), pz=i===0?P.z:c.z+rnd(-3,3); twBeam({x:px-Math.cos(a)*16,z:pz-Math.sin(a)*16,ang:a,len:32,w:1.5,warn:1.05,dur:4.6,dmg:2,col:0x6a1aff,core:0x2a0a4a,y:.25,sfx:'tear'}); yield .25; }
   yield 1.1; for(let v=0;v<2;v++){ T.cast=.5; for(const k of [-1,0,1]) twAimBolt(T,'scythe',T.x,T.y+2,T.z,0,0,{delay:.35+(k+1)*.12,spd:12*sp,col:0x8a3aff}); yield 1.3; } yield .6; };

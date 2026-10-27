@@ -161,7 +161,7 @@ const TW_CAO_COLS=[0x9fd8ff,0xbfe4ff,0xffa0d8,0xffb0e0,0xff9ad8,0xff6ab0];
 (function(){ const tb=twBeam; twBeam=function(o){ if(o&&TW_CAO_COLS.includes(o.col)){ const jump=o.jump!=null?!!o.jump:typeof o.ang==='function'; o=Object.assign({},o,{col:jump?0x7ac8ff:0xff7ac8,jump}); } return tb(o); }; })();
 // Megane Supernova helpers: a nosebleed geyser on a marked spot, and a body pillow flung in a straight line
 function twCaoNose(x,z,warn){ const p=twClampXZ(x,z,.5); twBlast(p.x,p.z,1.1,warn,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.1,h:99,noBurst:true,onBoom(x,z){ twNoseSplurt(x,z,3.8); }}); }
-// a nosebleed geyser: one splurt of blood (img/vfx/nosebleed.png: a column shoots up, drops arc out and rain down, a splash ring); can't be jumped (h:99)
+// a nosebleed geyser: a squirt of blood (img/vfx/nosebleed.png from dev/assets/vfx/nosebleed_squirt.py: two spurts, drops arc out and rain into a puddle); can't be jumped (h:99)
 function twNoseSplurt(x,z,size){ const gy=groundY(x,z), e=pxvPlay('nosebleed',{any:true,x,y:gy,z,size,ro:9}); if(e) return e;
   for(let k=0;k<Math.round(size*6);k++) FX.spawn(x+rnd(-.3,.3),gy+.55,z+rnd(-.3,.3),rnd(-1,1),rnd(9,15),rnd(-1,1),rnd(.6,1.1),k%3?0xc0081e:0xff3a4a,rnd(.3,.5),16,false); return null; } /* until the sheet loads */
 function twCaoPillowShot(T,a,v){ const m=twBB(texPillow(),.8,2.2), s={x:T.x,z:T.z,t:0,hit:false}; Sound.sfx('whoosh');

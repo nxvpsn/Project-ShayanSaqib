@@ -70,9 +70,9 @@ TWK.omar.reap=function*(T,ph){ const sp=twSp(T), n=ph>=2?3:2; twBark('omar',ph>=
 // Getting grabbed roots you for 2s. A hand that lands while you are already rooted still hurts but does not extend the root.
 function* twHandChase(T,sp){ for(let i=0;i<7;i++){ const P=Player, p=twClampXZ(P.x+P.vx*.25,P.z+P.vz*.25,.4); twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:'crash',shake:.1,h:1,onBoom(x,z){ twHandRise(x,z); }}); yield .27/sp; } }
 function twHandRoot(){ const P=Player; if(!(P.rootT>Game.time)){ P.rootT=Game.time+2; Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'GRABBED',t:0,col:'#c08aff'}); } P.hurt=Math.max(P.hurt,P.rootT-Game.time); P.vx=P.vz=0; }
-function* twHandSpiral(T,sp,a0,ox,oz,arms){ for(let k=0;k<11;k++){ for(let m=0;m<arms;m++){ const a=a0+m*6.283/arms+k*.33, r=1.2+k*1.05, p={x:ox+Math.cos(a)*r,z:oz+Math.sin(a)*r}; const A=twLock(); if(p.x<A.x0||p.x>A.x1||p.z<A.z0||p.z>A.z1) continue;
+function* twHandSpiral(T,sp,a0,ox,oz,arms){ for(let k=0;k<11;k++){ for(let m=0;m<arms;m++){ const a=a0+m*6.283/arms+k*.33, r=1.2+k*.9, /* a slightly tighter spiral */ p={x:ox+Math.cos(a)*r,z:oz+Math.sin(a)*r}; const A=twLock(); if(p.x<A.x0||p.x>A.x1||p.z<A.z0||p.z>A.z1) continue;
       const tall=k%2===1; /* every other hand along an arm: twice as tall, can't be jumped (the others can) */
-      twBlast(p.x,p.z,.95,.55/sp,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:k%2?'crash':'hit',shake:.06,quiet:m>0,h:tall?99:1,onBoom(x,z){ twHandRise(x,z,tall); },onHit:twHandRoot}); }
+      twBlast(p.x,p.z,.95,.55/sp+.6,{col:0x9a5aff,burst:0xd8c8f0,ring:'#c08aff',dmg:2,sfx:k%2?'crash':'hit',shake:.06,quiet:m>0,h:tall?99:1, /* +.6s: time to read which ones are tall */onBoom(x,z){ twHandRise(x,z,tall); },onHit:twHandRoot}); }
     yield .12/sp; } }
 TWK.omar.hands=function*(T,ph){ const sp=twSp(T); twBark('omar',ph>=2?"The graveyard has a firm handshake.":"The dead rise... for ME."); T.cast=.6;
   if(ph<2){ yield* twHandChase(T,sp); yield .5; return; }
