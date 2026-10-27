@@ -3,7 +3,8 @@
 // One panel (Tab, or the bar / the touch Debug button) that PAUSES the game while it is open: Setup (hero, cheats, boss),
 // Boss (AI mode, HP, kill) and Mechanics grouped in phase tabs (each tab: that phase's limit cuts / phase changes,
 // then the moves of that phase's pool). Picking a mechanic closes the panel and plays it; the bar at the bottom left
-// stays up during play: Again (R) repeats the last mechanic, Panel (Tab) reopens it. Esc closes the panel.
+// stays up during play: Again (R) repeats the last mechanic, Loop (T) toggles repeating it, Panel (Tab) reopens it. Esc closes the panel.
+// The AI starts idle (the boss stands still until you run a mechanic).
 // Final defeats never advance the story here: the boss just leaves and can be spawned again.
 //
 // DBG_NEW lists what the latest patch added or changed; those rows (and their boss) show a NEW tag.
@@ -12,7 +13,7 @@
 // =====================================================================
 const DBG_PATCH="Oct 27: Omar's monologue goo now spreads out around him (a round blob centred on Omar, radius ~11), erupts black with ripples, sinks back";
 const DBG_NEW=['omar:monologue'];
-const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
+const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
 function dbgName(k){ const S=[...(TH_SPELLS[1]||[]),...(TH_SPELLS[2]||[])].find(s=>s[2]===k); if(DBG.boss==='mech'&&S){ const m=S[0].match(/「(.*)」/); return m?m[1]:S[0]; }
@@ -137,6 +138,8 @@ function* dbgDefeated(){ twEndFight(); TW.giant=null; if(typeof hzgClearBabies==
 function dbgOpen(on){ if(on===!!DBG.open||!DBG.on) return; if(typeof releaseTouchKeys==='function') releaseTouchKeys(); clearHits();
   if(on){ DBG.prev=Game.state==='paused'?(Game.prev||'play'):Game.state; Game.prev=DBG.prev; Game.state='paused'; DBG.open=true; DBG.mph=0; DBG.sc=0; }
   else { DBG.open=false; if(Game.state==='paused') Game.state=DBG.prev||'play'; } }
+// T: loop the last mechanic on/off (off goes back to the AI mode you had, idle by default)
+function dbgLoopToggle(){ if(DBG.mode==='loop'){ DBG.mode=DBG.prevMode&&DBG.prevMode!=='loop'?DBG.prevMode:'idle'; dbgSay('Loop off'); } else { DBG.prevMode=DBG.mode; DBG.mode='loop'; const L=DBG.last; if(L&&L.a==='move') DBG.move=L.k; dbgSay(DBG.move?'Looping: '+dbgName(DBG.move):'Loop on: run a mechanic and it repeats'); } dbgApplyMode(); Sound.sfx('blip'); }
 function dbgAgain(){ const L=DBG.last; if(!L){ dbgSay('Nothing to repeat yet: pick a mechanic in the panel'); return; } if(L.a==='move') dbgRun(L.k,L.ph); else dbgLC(L.k,L.ph); }
 const DBK={k:1,bh:24,fs:12,oy:0};   // scale and sizes: bigger on touch (phone-first)
 function dbgBtn(x,y,w,h,label,id,o){ o=o||{}; const hov=DBG.hov===id; uRR(x,y,w,h,6); D.fillStyle=o.on?'rgba(227,182,90,.9)':o.red?'rgba(255,74,122,.22)':hov?'rgba(255,255,255,.14)':'rgba(255,255,255,.06)'; D.fill(); D.strokeStyle=o.on?UIC.acc:o.red?'#ff4a7a':UIC.line2; D.lineWidth=1; D.stroke();
@@ -206,8 +209,8 @@ function dbgBar(){ const tch=IS_TOUCH(), k=tch?2:1; DBK.k=k; DBK.bh=tch?30:24; D
   uPanel(bx,by,bw,62,'rgba(10,12,22,.82)','#ff8aa8',10); const ph=dbgPhase(), hp=dbgHP();
   uText('DEBUG',bx+10,by+17,`900 11px ${FB}`,'#ff8aa8'); uText(DBG.boss?dbgBossName()+(ph?' · '+['','I','II','III','IV'][ph]:'')+(hp!=null?' · '+Math.round(hp*100)+'%':''):'no boss',bx+58,by+17,`700 12px ${FB}`,UIC.text);
   const lt=L?(L.a==='move'?dbgName(L.k):((dbgLCs().find(q=>q[1]===L.k&&q[2]===L.ph)||[L.k])[0])):'—'; uText((loop?'Looping: ':'Last: ')+lt+'  ·  AI '+DBG.mode,bx+bw-10,by+17,`500 11px ${FB}`,UIC.mut,'right');
-  const n=loop?3:2, gw=(bw-20-(n-1)*6)/n; dbgBtn(bx+10,by+26,gw,DBK.bh,tch?'Again':'Again  (R)','again',{on:!!L}); dbgBtn(bx+10+gw+6,by+26,gw,DBK.bh,tch?'Panel':'Panel  (Tab)','open');
-  if(loop) dbgBtn(bx+10+2*(gw+6),by+26,gw,DBK.bh,'Stop loop','mode:active',{red:1});
+  const n=3, gw=(bw-20-(n-1)*6)/n; dbgBtn(bx+10,by+26,gw,DBK.bh,tch?'Again':'Again  (R)','again',{on:!!L}); dbgBtn(bx+10+gw+6,by+26,gw,DBK.bh,tch?'Panel':'Panel  (Tab)','open');
+  dbgBtn(bx+10+2*(gw+6),by+26,gw,DBK.bh,(DBG.mode==='loop'?'Loop on':'Loop off')+(tch?'':'  (T)'),'looptoggle',{on:DBG.mode==='loop'});
   D.restore(); }
 function dbgDraw(){ DBG.rects=[]; if(!DBG.on||Game.state==='title'||TLM.open){ return; }
   if(DBG.open&&Game.state!=='paused') DBG.open=false; /* something else resumed the game */
@@ -217,7 +220,7 @@ function dbgDraw(){ DBG.rects=[]; if(!DBG.on||Game.state==='title'||TLM.open){ r
 // which clicks close the panel (when "close the panel when a mechanic starts" is on)
 const DBG_CLOSE=/^(move|lc|kill|boss)$/;
 function dbgAct(id){ Sound.sfx('blip'); const [a,v,w]=id.split(':');
-  if(a==='open'){ dbgOpen(true); return; } if(a==='close'){ dbgOpen(false); return; } if(a==='again'){ dbgAgain(); return; }
+  if(a==='looptoggle'){ dbgLoopToggle(); return; } if(a==='open'){ dbgOpen(true); return; } if(a==='close'){ dbgOpen(false); return; } if(a==='again'){ dbgAgain(); return; }
   if(a==='tab'){ DBG.tab=v; DBG.sc=0; return; } if(a==='mph'){ DBG.mph=+v; return; }
   if(a==='off'){ dbgOpen(false); dbgToggle(); twCheatToast('DEBUG MODE: OFF',false); return; }
   if(a==='ali'){ DBG.ali=v==='1'; dbgArena(()=>{ if(DBG.boss&&DBG.boss!=='grimmaw'&&DBG.boss!=='paul'&&DBG.boss!=='mech') dbgSpawn(DBG.boss); }); return; }
@@ -243,4 +246,5 @@ ui.addEventListener('pointercancel',()=>{ DBG.drag=null; },true);
 window.addEventListener('keydown',e=>{ if(!DBG.on||Game.state==='title'||TLM.open||e.repeat) return; const c=e.code;
   if(c==='Tab'||c==='Numpad4'){ e.preventDefault(); e.stopImmediatePropagation(); dbgOpen(!DBG.open); Sound.sfx('blip'); return; }
   if(DBG.open&&c==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); dbgOpen(false); return; }
-  if(!DBG.open&&(c==='Numpad6'||(c==='KeyR'&&!Object.values(BIND).includes('KeyR')))){ e.preventDefault(); e.stopImmediatePropagation(); dbgAgain(); } },true);
+  if(!DBG.open&&(c==='Numpad6'||(c==='KeyR'&&!Object.values(BIND).includes('KeyR')))){ e.preventDefault(); e.stopImmediatePropagation(); dbgAgain(); return; }
+  if(c==='KeyT'&&!Object.values(BIND).includes('KeyT')){ e.preventDefault(); e.stopImmediatePropagation(); dbgLoopToggle(); } },true);
