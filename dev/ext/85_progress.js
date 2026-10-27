@@ -17,32 +17,32 @@ function twAllyKey(){ const a=Game.flags.twinAlly; return a==='both'?'both':a===
 
 // ---------- the map ----------
 const TL=[
-  // Shayan's road (the Grimmaw fight sits inside each "twin stays" panel: it plays the choice's cutscene, then the keep)
-  {id:'sh_root',tab:0,col:0,row:1,root:1,name:"Shayan's Road",desc:"A blacksmith, a pig named Hamza, and a girl in a cage. What could possibly go wrong?"},
-  {id:'sh_twins',tab:0,col:1,row:1,par:['sh_root'],name:'The Gatekeeper Twins',desc:"A laser weeb and an edgelord guard the gate. Both of them think they're the main character."},
-  {id:'sh_dec',tab:0,col:2,row:1,par:['sh_twins'],name:'Pick a Twin',desc:"They're on their knees, blaming each other. Somebody has to choose. You're somebody."},
-  {id:'sh_omar',tab:0,col:3,row:0,par:['sh_dec'],name:'The Edgelord Stays',desc:"Caotan eats a Getsuga. Omar joins you, and the three of you walk straight into Grimmaw's keep."},
-  {id:'sh_cao',tab:0,col:3,row:1,par:['sh_dec'],name:'The Weeb Stays',desc:"Omar is gone. Caotan joins with Hikari-chan in tow, and Grimmaw is waiting at the keep."},
-  {id:'sh_both',tab:0,col:3,row:2,par:['sh_dec'],name:'The Group Chat Is Born',desc:"Nobody dies. Both twins join. Grimmaw gets the whole squad, and nobody is happy about it."},
-  {id:'sh_omar_f',tab:0,col:4,row:0,par:['sh_omar'],name:'Moon Eater',desc:"Among the white flowers, Omar turns on you, eats the moon, and waits for applause."},
-  {id:'sh_cao_f',tab:0,col:4,row:1,par:['sh_cao'],name:'Senpai Noticed You',desc:"Caotan turns on you among the flowers. Glints, lasers, and one body pillow with a grudge."},
-  {id:'sh_both_f',tab:0,col:4,row:2,par:['sh_both'],name:'All You Can Eat',desc:"Big Back Hamza tries to eat the world. The twins say no. Then they say yes, to eating you."},
-  {id:'sh_hamza',tab:0,col:5,row:0.5,par:['sh_omar_f','sh_cao_f'],name:'Eight Billion Lullabies',desc:"The pig ate the world. Nathan the Nasty takes his mech into the pig's sky for a bullet hell with a burning cockpit."},
-  {id:'sh_duo',tab:0,col:5,row:2,par:['sh_both_f'],name:'The Other Way',desc:"The twins turn. A samurai cuts Mira out of her cage. Black holes, a tree of blades, and a pillow the size of the sky."},
+  // Shayan's road (each "twin stays" panel plays the choice, then the fight with He's Day Old Kojima at Day Old Keep)
+  {id:'sh_root',tab:0,col:0,row:1,root:1,name:"Shayan's Road",desc:"A blacksmith, a fairy pig and a catgirl apothecary walk into a festival. A very rich baby wants the catgirl for his collection."},
+  {id:'sh_twins',tab:0,col:1,row:1,par:['sh_root'],name:'The Gatekeeper Twins',desc:"A laser weeb with a body pillow and an edgelord with a scythe guard the baby's gate. Twins. Do not ask."},
+  {id:'sh_dec',tab:0,col:2,row:1,par:['sh_twins'],name:'Pick a Twin',desc:"Both on their knees, blaming each other. Kill one. The nice option stays gray until you beat both betrayals on this road."},
+  {id:'sh_omar',tab:0,col:3,row:0,par:['sh_dec'],name:'Edgelord & Baby',desc:"Caotan eats a Getsuga. Omar joins you to storm Day Old Keep against He's Day Old Kojima: a baby in a suit with lawyers."},
+  {id:'sh_cao',tab:0,col:3,row:1,par:['sh_dec'],name:'Weeb & Baby',desc:"Omar is gone. Caotan and Hikari-chan join you against He's Day Old Kojima, his sneaking soldiers and a Hydra of Snakes."},
+  {id:'sh_both',tab:0,col:3,row:2,par:['sh_dec'],name:'The Group Chat vs. The Baby',desc:"Nobody dies. Both twins join, the squad beats up a rich baby and Mira gets rescued. Nobody likes the group chat."},
+  {id:'sh_omar_f',tab:0,col:4,row:0,par:['sh_omar'],name:'Bankai: Moon Eater',desc:"Among the white flowers, Omar turns on you: Bankai, black snow, a scythe you can send back. He eats the moon."},
+  {id:'sh_cao_f',tab:0,col:4,row:1,par:['sh_cao'],name:'Domain Expansion: Senpai',desc:"Caotan turns on you. A stained-glass Hikari domain, glints, lasers and the Megane Supernova. Parry the feelings."},
+  {id:'sh_both_f',tab:0,col:4,row:2,par:['sh_both'],name:'Big Back Hamza',desc:"Your pig fairy gets planet-hungry. The twins help you fight a giant flying pig with a halo and a buffet."},
+  {id:'sh_hamza',tab:0,col:5,row:0.5,par:['sh_omar_f','sh_cao_f'],name:'Eight Billion Lullabies',desc:"The pig ate the world. Nathan flies his mech into its sky: a bullet hell, four gundam bits, a cockpit on fire."},
+  {id:'sh_duo',tab:0,col:5,row:2,par:['sh_both_f'],name:'The Other Way',desc:"The twins turn. A samurai cuts Mira free. Black holes, a tree of Judgement Cuts, a drill, a pillow the size of the sky."},
   // Ali's road
-  {id:'al_root',tab:1,col:0,row:1,root:1,name:"Ali's Road",desc:"He cut the moon, fell out of the sky and landed in your story. He counts to ten. Slowly."},
-  {id:'al_twins',tab:1,col:1,row:1,par:['al_root'],name:'Two Coats, One Gate',desc:"The gatekeepers try very hard. Ali tries less."},
-  {id:'al_dec',tab:1,col:2,row:1,par:['al_twins'],name:'Hm.',desc:"Two twins on their knees, one sword, zero patience."},
-  {id:'al_omar',tab:1,col:3,row:0,par:['al_dec'],name:'Research Partner',desc:"Caotan is gone. Omar follows the samurai into Grimmaw's keep. He calls it 'research'."},
-  {id:'al_cao',tab:1,col:3,row:1,par:['al_dec'],name:'Uwu Survives',desc:"Omar is gone. Caotan follows Ali to the keep like a lost puppy with glasses."},
-  {id:'al_both',tab:1,col:3,row:2,par:['al_dec'],name:'Emotional Support Twins',desc:"Two weaklings are better than zero weaklings. Barely. Grimmaw gets all three."},
-  {id:'al_omar_f',tab:1,col:4,row:0,par:['al_omar'],name:'Butter Knife Betrayal',desc:"Omar studied Ali's moveset. He read the wiki. It did not help."},
-  {id:'al_cao_f',tab:1,col:4,row:1,par:['al_cao'],name:'Friendzoned by a Samurai',desc:"Caotan's dating sim, except the love interest only says 'Hm.'"},
-  {id:'al_nathan',tab:1,col:5,row:0.5,par:['al_omar_f','al_cao_f'],name:'Your Tragic Arc Was Mid',desc:"Nathan crosses timelines to fight the pig. Ali already cut the pig in half. So Nathan fights Ali."},
-  {id:'al_nathan_both',tab:1,col:4.5,row:2,par:['al_both'],name:'Reply All',desc:"Nathan the Nasty versus Ali and two twins who will not stop talking."},
+  {id:'al_root',tab:1,col:0,row:1,root:1,name:"Ali's Road",desc:"Shayan hit the wrong man. Ali kicked him to the moon, cut the moon to pieces and took over. He counts to ten. Slowly."},
+  {id:'al_twins',tab:1,col:1,row:1,par:['al_root'],name:'Butter Knives in Coats',desc:"The gatekeeper twins try very hard to stop the samurai. The samurai tries very little."},
+  {id:'al_dec',tab:1,col:2,row:1,par:['al_twins'],name:'Hm.',desc:"Two twins on their knees, one sword, zero patience. The nice option stays gray until Ali beats both betrayals himself."},
+  {id:'al_omar',tab:1,col:3,row:0,par:['al_dec'],name:'Ten Seconds, Infant',desc:"Caotan is gone. Omar follows Ali into Day Old Keep. The baby got a ten-second head start. It did not help."},
+  {id:'al_cao',tab:1,col:3,row:1,par:['al_dec'],name:'Uwu & the Baby',desc:"Omar is gone. Caotan follows Ali to Day Old Keep like a lost puppy with glasses. The baby wet himself when he heard Ali counting."},
+  {id:'al_both',tab:1,col:3,row:2,par:['al_dec'],name:'Emotional Support Twins',desc:"Two weaklings are better than zero weaklings. Barely. Ali, two twins and one very rich baby with a Hydra of Snakes."},
+  {id:'al_omar_f',tab:1,col:4,row:0,par:['al_omar'],name:'Butter Knife Betrayal',desc:"Omar studied Ali's moveset. He read the wiki. He went Bankai. It did not help either."},
+  {id:'al_cao_f',tab:1,col:4,row:1,par:['al_cao'],name:'Friendzoned by a Samurai',desc:"Caotan's dating sim, Domain Expansion edition, except the love interest only says 'Hm.'"},
+  {id:'al_nathan',tab:1,col:5,row:0.5,par:['al_omar_f','al_cao_f'],name:'Your Tragic Arc Was Mid',desc:"Nathan the Nasty crosses timelines to save the world from the pig. Ali already cut the pig in half. So Nathan fights Ali instead."},
+  {id:'al_nathan_both',tab:1,col:4.5,row:2,par:['al_both'],name:'Reply All',desc:"Nathan the Nasty versus Ali and two twins who will not stop talking. The mech has funnels. The twins have opinions."},
   // oddities
-  {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Turn',desc:"Shayan versus Nathan. This was never supposed to happen. Paul loves it."},
-  {id:'paul',tab:2,col:4,row:1,par:[],final:1,name:'Paul Extreme: Code Review',desc:"Paul's own fight. Everyone loses their powers, nobody loses their dignity (they lose that later). Opens once every other checkpoint is cleared, or with the 9 key."}];
+  {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Turn',desc:"Paul's shortcut drops Shayan in front of Nathan's mech. This was never supposed to happen. Paul loves it."},
+  {id:'paul',tab:2,col:4,row:1,par:[],final:1,name:'Paul Extreme: Code Review',desc:"Paul's own raid. Everyone loses their powers. Opens once every other checkpoint is cleared, or with the timeline cheat."}];
 const TL_BY={}; TL.forEach(n=>TL_BY[n.id]=n);
 const TL_CHECKS=TL.filter(n=>!n.root&&!n.final).map(n=>n.id);
 function twAllDone(){ return TL_CHECKS.every(twDone); }
@@ -111,30 +111,43 @@ const PA_=(c,x,y,s,f)=>artChar(c,(cc,cx,by)=>drawVillagerHD(cc,cx,by,f||-1,{t:1}
 function artText(c,txt,x,y,col){ c.font='bold 13px sans-serif'; c.lineWidth=3; c.strokeStyle='#14001a'; c.strokeText(txt,x,y); c.fillStyle=col||'#fff'; c.fillText(txt,x,y); }
 function artHearts(c,n){ for(let i=0;i<n;i++){ const x=hash(i,11)*ART_W, y=hash(11,i)*ART_H*.7; c.fillStyle='#ff6ab0'; c.fillRect(x,y,3,2); c.fillRect(x+4,y,3,2); c.fillRect(x+1,y+2,5,2); c.fillRect(x+2,y+4,3,1); } }
 function artBeam(c,x0,y0,x1,y1,col,w){ c.strokeStyle=col; c.lineWidth=w||4; c.beginPath(); c.moveTo(x0,y0); c.lineTo(x1,y1); c.stroke(); c.strokeStyle='#fff'; c.lineWidth=(w||4)/3; c.stroke(); }
+// the little pictures on each panel
+const KJ_=(c,x,y,s,f,a)=>artChar(c,(cc,cx,by)=>drawKojimaCast(cc,cx,by,f||-1,{t:1,anim:a||'idle'}),x,y,s);
+const SN_=(c,x,y,s,f,arch,a)=>artChar(c,(cc,cx,by)=>drawSoldierCast(cc,cx,by,f||-1,{t:1,anim:a||'idle'},arch),x,y,s,48);
+function artPillow(c,x,y,h,rot){ try{ const t=texPillow(), im=t.image; if(!im) return; c.save(); c.translate(x,y); c.rotate(rot||0); c.drawImage(im,-h*.18,-h/2,h*.36,h); c.restore(); }catch(e){} }
+function artHole(c,x,y,r){ const g=c.createRadialGradient(x,y,r*.2,x,y,r*2.2); g.addColorStop(0,'rgba(160,80,255,.9)'); g.addColorStop(.45,'rgba(90,30,180,.45)'); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.beginPath(); c.arc(x,y,r*2.2,0,7); c.fill();
+  c.fillStyle='#000'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle='#c08aff'; c.lineWidth=1.5; c.beginPath(); c.ellipse(x,y,r*1.8,r*.45,-.3,0,7); c.stroke(); }
+function artMoon(c,x,y,r,cut){ c.fillStyle='#e8e4f6'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.fillStyle='rgba(160,150,190,.6)'; c.beginPath(); c.arc(x-r*.3,y-r*.2,r*.25,0,7); c.fill(); c.beginPath(); c.arc(x+r*.35,y+r*.3,r*.18,0,7); c.fill();
+  if(cut){ c.strokeStyle='#ff2a3a'; c.lineWidth=1.5; for(let i=0;i<5;i++){ const a=i*.7; c.beginPath(); c.moveTo(x-Math.cos(a)*r*1.4,y-Math.sin(a)*r*1.4); c.lineTo(x+Math.cos(a)*r*1.4,y+Math.sin(a)*r*1.4); c.stroke(); } } }
+function artJC(c,n,col){ c.strokeStyle=col||'#ff2a3a'; for(let i=0;i<n;i++){ c.lineWidth=i%3?1:2; const a=hash(i,4)*Math.PI, x=hash(4,i)*ART_W, y=hash(i,8)*ART_H*.8; c.beginPath(); c.moveTo(x-Math.cos(a)*70,y-Math.sin(a)*70); c.lineTo(x+Math.cos(a)*70,y+Math.sin(a)*70); c.stroke(); } }
+function artMech(c,x,y,w,h){ if(MECHTEX&&MECHTEX.image){ try{ c.drawImage(MECHTEX.image,x,y,w,h); }catch(e){} } }
+function artBullets(c,n){ for(let i=0;i<n;i++){ const x=hash(i,13)*ART_W, y=hash(13,i)*ART_H*.85; c.fillStyle=i%3?'#ff6ab0':'#ffffff'; c.fillRect(x|0,y|0,3,3); c.fillStyle=i%2?'#3ff4ff':'#ff2a3a'; c.fillRect((x|0)+1,(y|0)+1,1,1); } }
+function artLantern(c,n){ for(let i=0;i<n;i++){ const x=hash(i,21)*ART_W, y=10+hash(21,i)*ART_H*.45; c.fillStyle='rgba(255,180,90,.35)'; c.beginPath(); c.arc(x,y,4,0,7); c.fill(); c.fillStyle='#ffc070'; c.fillRect(x-1,y-2,3,4); } }
 const ART={
-  sh_root(c){ artBG(c,'#2a2d66','#c06a86','#3a4a2a'); SH_(c,60,96,1.2,1); HZ_(c,88,58,1.2); MI_(c,140,96,1.1,-1); artHearts(c,4); },
-  al_root(c){ artBG(c,'#05060f','#3a1020','#2a2a30'); AL_(c,96,98,1.4,1); c.fillStyle='#d8d4cc'; c.beginPath(); c.arc(150,30,14,0,7); c.fill(); c.strokeStyle='#ff2a3a'; c.lineWidth=2; c.beginPath(); c.moveTo(130,48); c.lineTo(170,12); c.stroke(); },
-  sh_twins(c){ artBG(c,'#010309','#0e1c44','#2a3550'); CA_(c,70,100,.55,1,{glintT:.5}); OM_(c,128,100,.55,-1,{scythe:1}); SH_(c,30,100,.9,1,'attack'); artText(c,'WE DON\'T TALK',100,18,'#bfe4ff'); artText(c,'ABOUT IT.',120,32,'#bfe4ff'); },
-  al_twins(c){ artBG(c,'#010309','#0e1c44','#2a3550'); CA_(c,90,100,.5,1,{down:1}); OM_(c,140,100,.5,-1,{down:1}); AL_(c,40,100,.9,1); artText(c,'BUTTER KNIFE.',70,22,'#ff9aa8'); },
-  sh_dec(c){ artBG(c,'#100818','#2a1030','#2a2030'); CA_(c,62,100,.5,1,{down:1,heartEyes:1}); OM_(c,130,100,.5,-1,{down:1}); artText(c,'KILL HIM!',8,20,'#ff9ad8'); artText(c,'NO, HIM.',118,20,'#c08aff'); },
-  sh_omar(c){ artBG(c,'#100818','#3a1030','#2a2030'); OM_(c,130,100,.55,-1); SH_(c,48,100,.9,1,'beam'); artBeam(c,62,74,100,60,'#ff3a5a',5); artHearts(c,8); artText(c,'RIP CAOTAN',10,18,'#ffd0ec'); },
-  sh_cao(c){ artBG(c,'#100818','#3a1030','#2a2030'); CA_(c,130,100,.55,-1,{glintT:.5}); SH_(c,48,100,.9,1,'beam'); artText(c,'RIP OMAR',10,18,'#c08aff'); artText(c,'(HE WROTE POEMS)',8,32,'#c08aff'); },
-  sh_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); CA_(c,70,100,.5,1,{heartEyes:1}); OM_(c,122,100,.5,-1); SH_(c,170,100,.8,-1); artText(c,'SQUAAAD!!',60,20,'#ffd45a'); },
-  sh_omar_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); c.fillStyle='#000'; c.beginPath(); c.arc(150,26,14,0,7); c.fill(); OM_(c,118,100,.6,-1,{form:3,scythe:1}); SH_(c,40,100,.9,1,'attack'); artText(c,'HE ATE THE MOON',6,18,'#c08aff'); },
-  sh_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); artHearts(c,14); CA_(c,118,100,.6,-1,{form:3,glintT:.6}); SH_(c,40,100,.9,1); artText(c,'✦ ×10',8,22,'#ffffff'); },
-  sh_both_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); PIG_(c,120,102,.6,1); SH_(c,30,100,.8,1); CA_(c,62,90,.35,1); OM_(c,82,90,.35,1); artText(c,'ITADAKIMASU',90,18,'#ffb0c8'); },
+  sh_root(c){ artBG(c,'#2a2d66','#c06a86','#3a4a2a'); artLantern(c,10); SH_(c,52,96,1.15,1); HZ_(c,80,58,1.2); MI_(c,124,96,1.05,-1); KJ_(c,172,62,.32,-1,'howl'); artHearts(c,3); artText(c,'MINE.',150,22,'#ffd45a'); },
+  al_root(c){ artBG(c,'#05060f','#3a1020','#2a2a30'); artMoon(c,150,32,16,true); AL_(c,90,98,1.4,1); SH_(c,160,26,.35,-1,'hurt'); artText(c,'HE HIT ME TWICE.',4,18,'#ff9aa8'); },
+  sh_twins(c){ artBG(c,'#010309','#0e1c44','#2a3550'); CA_(c,74,100,.55,1,{glintT:.5}); artPillow(c,54,74,30,.2); OM_(c,130,100,.55,-1,{scythe:1}); SH_(c,26,100,.85,1,'attack'); artText(c,"WE DON'T TALK",96,18,'#bfe4ff'); artText(c,'ABOUT IT.',116,32,'#bfe4ff'); },
+  al_twins(c){ artBG(c,'#010309','#0e1c44','#2a3550'); CA_(c,96,100,.5,1,{down:1}); OM_(c,146,100,.5,-1,{down:1}); AL_(c,40,100,.9,1); artJC(c,4); artText(c,'BUTTER KNIVES.',70,20,'#ff9aa8'); },
+  sh_dec(c){ artBG(c,'#100818','#2a1030','#2a2030'); CA_(c,62,100,.5,1,{down:1,heartEyes:1}); OM_(c,130,100,.5,-1,{down:1}); artText(c,'KILL HIM!',8,20,'#ff9ad8'); artText(c,'NO, HIM.',122,20,'#c08aff'); artText(c,'[LOCKED] THE NICE ONE',8,104,'#8a8496'); },
+  sh_omar(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,150,100,.62,-1,'slash'); SN_(c,112,100,1,-1); OM_(c,70,100,.5,1,{scythe:1}); SH_(c,34,100,.85,1,'attack'); artText(c,'VS. A BABY',8,18,'#ffd45a'); },
+  sh_cao(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,150,100,.62,-1,'howl'); CA_(c,74,100,.5,1,{glintT:.5}); SH_(c,34,100,.85,1,'attack'); artBeam(c,82,62,140,56,'#ffa0d8',3); artText(c,'SIGN HERE!',96,18,'#ffd45a'); },
+  sh_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); KJ_(c,162,100,.55,-1,'winded'); CA_(c,62,100,.45,1,{heartEyes:1}); OM_(c,98,100,.45,1); SH_(c,26,100,.8,1,'attack'); artText(c,'SQUAD VS. INFANT',8,18,'#ffd45a'); },
+  sh_omar_f(c){ artBG(c,'#03030c','#2a2050','#e8eef8'); for(let i=0;i<40;i++){ c.fillStyle='#f6f8ff'; c.fillRect(hash(i,31)*ART_W|0,hash(31,i)*ART_H|0,1,1); } c.fillStyle='#000'; c.beginPath(); c.arc(150,26,14,0,7); c.fill(); c.strokeStyle='#c08aff'; c.beginPath(); c.arc(150,26,16,0,7); c.stroke(); OM_(c,118,100,.6,-1,{form:3,scythe:1}); SH_(c,40,100,.9,1,'attack'); artText(c,'BANKAI.',6,18,'#c08aff'); artText(c,'(HE ATE THE MOON)',6,32,'#c08aff'); },
+  sh_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); c.globalAlpha=.55; artPillow(c,150,52,90,0); c.globalAlpha=1; artHearts(c,14); CA_(c,118,100,.6,-1,{form:3,glintT:.6}); SH_(c,40,100,.9,1); artText(c,'DOMAIN EXPANSION',6,18,'#ffd0ec'); },
+  sh_both_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); PIG_(c,122,102,.6,1); SH_(c,30,100,.8,1); CA_(c,62,90,.35,1); OM_(c,82,90,.35,1); artText(c,'ITADAKIMASU',94,18,'#ffb0c8'); },
   sh_hamza(c){ const g=c.createRadialGradient(140,40,4,140,40,90); g.addColorStop(0,'#3a1020'); g.addColorStop(1,'#000'); c.fillStyle=g; c.fillRect(0,0,ART_W,ART_H); for(let i=0;i<50;i++){ c.fillStyle='#fff'; c.fillRect(hash(i,1)*ART_W|0,hash(1,i)*ART_H|0,1,1); }
-    if(MECHTEX&&MECHTEX.image){ try{ c.drawImage(MECHTEX.image,14,30,64,70); }catch(e){} } c.fillStyle='#f09ab6'; c.beginPath(); c.arc(146,52,30,0,7); c.fill(); c.fillStyle='#ff2a3a'; c.fillRect(132,44,7,5); c.fillRect(152,44,7,5); c.fillStyle='#3a0010'; c.fillRect(134,62,24,8); artText(c,'NOW IN 3D',96,100,'#3ff4ff'); },
-  sh_duo(c){ artBG(c,'#03030c','#3a2060','#141a36'); CA_(c,104,100,.5,-1,{form:3}); OM_(c,150,100,.5,-1,{form:3}); SH_(c,30,100,.8,1,'attack'); AL_(c,60,100,.8,1); artText(c,'FU... SION... HA!',40,18,'#ffd45a'); },
-  al_dec(c){ artBG(c,'#100818','#2a1030','#2a2030'); CA_(c,62,100,.5,1,{down:1}); OM_(c,130,100,.5,-1,{down:1}); AL_(c,170,100,.7,-1); artText(c,'...HM.',80,20,'#ff9aa8'); },
-  al_omar(c){ artBG(c,'#100818','#3a1030','#2a2030'); OM_(c,134,100,.55,-1); AL_(c,50,100,.9,1); c.strokeStyle='#ff2a3a'; c.lineWidth=2; for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(20+i*30,10); c.lineTo(60+i*30,90); c.stroke(); } },
-  al_cao(c){ artBG(c,'#100818','#3a1030','#2a2030'); CA_(c,134,100,.55,-1,{heartEyes:1}); AL_(c,50,100,.9,1); artHearts(c,10); artText(c,'ALI-KUN ♡',100,20,'#ffd0ec'); },
-  al_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); CA_(c,96,100,.45,-1,{heartEyes:1}); OM_(c,140,100,.45,-1); AL_(c,44,100,.9,1); artText(c,'WEAKLINGS (2)',60,20,'#ffd45a'); },
-  al_omar_f(c){ artBG(c,'#03030c','#2a2050','#141a36'); OM_(c,118,100,.6,-1,{form:3,scythe:1}); AL_(c,40,100,.9,1); artText(c,'HE READ THE WIKI',6,18,'#c08aff'); },
-  al_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); artHearts(c,12); CA_(c,118,100,.6,-1,{form:2,heartEyes:1}); AL_(c,40,100,.9,1); artText(c,'"Hm."',20,22,'#ffffff'); },
-  al_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); if(MECHTEX&&MECHTEX.image){ try{ c.drawImage(MECHTEX.image,96,18,84,86); }catch(e){} } AL_(c,44,100,.9,1); artText(c,'ARC: MID',8,18,'#3ff4ff'); },
-  al_nathan_both(c){ artBG(c,'#03030c','#141030','#1a2040'); if(MECHTEX&&MECHTEX.image){ try{ c.drawImage(MECHTEX.image,110,22,74,80); }catch(e){} } AL_(c,30,100,.8,1); CA_(c,64,96,.36,1); OM_(c,88,96,.36,1); },
-  sh_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); if(MECHTEX&&MECHTEX.image){ try{ c.drawImage(MECHTEX.image,96,18,84,86); }catch(e){} } SH_(c,44,100,.9,1); artText(c,'WRONG GUY',8,18,'#3ff4ff'); },
+    c.fillStyle='#f09ab6'; c.beginPath(); c.arc(146,40,28,0,7); c.fill(); c.fillStyle='#ff2a3a'; c.fillRect(132,32,7,5); c.fillRect(152,32,7,5); c.fillStyle='#3a0010'; c.fillRect(134,50,24,8); artBullets(c,40);
+    artMech(c,30,52,40,48); c.strokeStyle='#ff2a2a'; c.lineWidth=1.5; for(const [x,y] of [[22,60],[78,60],[26,90],[74,90]]){ c.beginPath(); c.moveTo(x,y); c.lineTo(146,44); c.stroke(); } artText(c,'BULLET HELL',90,102,'#3ff4ff'); },
+  sh_duo(c){ artBG(c,'#03030c','#3a2060','#141a36'); artHole(c,150,24,9); c.globalAlpha=.7; artPillow(c,172,56,80,.15); c.globalAlpha=1; CA_(c,110,100,.48,-1,{form:3}); OM_(c,146,100,.48,-1,{form:3}); SH_(c,34,100,.8,1,'attack'); AL_(c,64,100,.8,1); MI_(c,10,100,.6,1); artJC(c,3); artText(c,'THE OTHER WAY',8,18,'#ffd45a'); },
+  al_dec(c){ artBG(c,'#100818','#2a1030','#2a2030'); CA_(c,62,100,.5,1,{down:1}); OM_(c,130,100,.5,-1,{down:1}); AL_(c,172,100,.7,-1); artText(c,'...HM.',80,20,'#ff9aa8'); artText(c,'[LOCKED] THE NICE ONE',8,104,'#8a8496'); },
+  al_omar(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,150,100,.6,-1,'winded'); OM_(c,96,100,.48,1); AL_(c,44,100,.9,1); artText(c,'10... 9... 8...',8,18,'#ff9aa8'); },
+  al_cao(c){ artBG(c,'#1a0a10','#5a1018','#2a1418'); KJ_(c,152,100,.6,-1,'winded'); CA_(c,96,100,.48,1,{heartEyes:1}); AL_(c,44,100,.9,1); artHearts(c,6); artText(c,'ALI-KUN ♡',8,18,'#ffd0ec'); },
+  al_both(c){ artBG(c,'#20103a','#6a3a6a','#2a2030'); KJ_(c,166,100,.52,-1,'howl'); CA_(c,90,100,.42,1,{heartEyes:1}); OM_(c,122,100,.42,1); AL_(c,40,100,.9,1); artText(c,'WEAKLINGS (2) + BABY',6,18,'#ffd45a'); },
+  al_omar_f(c){ artBG(c,'#03030c','#2a2050','#e8eef8'); OM_(c,118,100,.6,-1,{form:3,scythe:1}); AL_(c,40,100,.9,1); artJC(c,5); artText(c,'HE READ THE WIKI',6,18,'#c08aff'); },
+  al_cao_f(c){ artBG(c,'#03030c','#5a2050','#141a36'); c.globalAlpha=.5; artPillow(c,150,52,90,0); c.globalAlpha=1; artHearts(c,12); CA_(c,118,100,.6,-1,{form:2,heartEyes:1}); AL_(c,40,100,.9,1); artText(c,'"Hm."',20,22,'#ffffff'); },
+  al_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); artMech(c,96,18,84,86); AL_(c,44,100,.9,1); artJC(c,3,'#3ff4ff'); artText(c,'ARC: MID',8,18,'#3ff4ff'); },
+  al_nathan_both(c){ artBG(c,'#03030c','#141030','#1a2040'); artMech(c,110,22,74,80); AL_(c,30,100,.8,1); CA_(c,64,96,.36,1); OM_(c,88,96,.36,1); artText(c,'REPLY ALL',8,18,'#3ff4ff'); },
+  sh_nathan(c){ artBG(c,'#03030c','#141030','#1a2040'); artMoon(c,30,28,10,false); artMech(c,96,18,84,86); SH_(c,44,100,.9,1); PA_(c,14,100,.6,1); artText(c,'WRONG TURN',56,18,'#3ff4ff'); },
   paul(c){ c.fillStyle='#000'; c.fillRect(0,0,ART_W,ART_H); c.font='10px monospace'; for(let i=0;i<60;i++){ c.fillStyle=`rgba(80,255,120,${hash(i,5)})`; c.fillText(hash(i,2)>.5?'1':'0',hash(i,9)*ART_W,hash(9,i)*ART_H); }
     PA_(c,96,100,1.4,-1); c.fillStyle='rgba(255,0,60,.35)'; c.fillRect(60,40,80,6); artText(c,'ERROR: TOO MANY BOSSES',20,20,'#ff4a6a'); }
 };
