@@ -10,8 +10,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Ali's death in the twins' fight: body parts that stay on the ground, a revive countdown, no screen gore; he still cuts (ISSEN!) while dead and the twins ask HOW?!";
-const DBG_NEW=['duo:*'];
+const DBG_PATCH="Oct 27: one rush timing everywhere (strict; tell .6, window .36; teleport strikes .4 + .45): tutorial, gate reaps, Kojima, Hamza, the twins' glomp; early-press grabs say TOO EARLY";
+const DBG_NEW=['grimmaw:*','hamza:*','duo:glompReap','duo:rushTag','caotan:tsun','omar:clones'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

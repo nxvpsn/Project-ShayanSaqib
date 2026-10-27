@@ -166,7 +166,7 @@ for(const k of [1,2,3]) DUO3_POOL[k].push('comeHere');
 Object.assign(DUO3_RANGED,{comeHere:'caotan',rushTag:'omar'}); // Ali can cut these too (comeHere's cut retargets the twin that came)
 // ---------- a tag-team rush move, so the rushes (and their grabs) come up more often ----------
 DUO.rushTag=function*(C,O,ph){ const sp=twSp(C), K={n:[0,2,3,4][ph],par:0}; twBark('omar',"Tag. You're it. You were always it.",true);
-  for(let i=0;i<K.n;i++){ const r=i%2===0?yield* twDuoRush(O,sp,K):yield* twDuoGlomp(C,sp,[0,.62,.55,.48][ph],K); if(r==='grab') return; yield .3; }
+  for(let i=0;i<K.n;i++){ const r=i%2===0?yield* twDuoRush(O,sp,K):yield* twDuoGlomp(C,sp,.6/sp,K); if(r==='grab') return; yield .3; }
   if(K.par>=K.n) twDuoBroken(C,O,K,2.4); };
 for(const k of [1,2,3]) DUO3_POOL[k].push('rushTag');
 // no new duo move starts while a grab runs

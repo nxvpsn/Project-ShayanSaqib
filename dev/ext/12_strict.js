@@ -47,7 +47,7 @@ function twTsunFar(T){ const P=Player, base=Math.atan2(T.z-P.z,T.x-P.x); let bes
 function* twTsunSetup(T,first){ if(first){ for(let k=0;k<2;k++){ const a=rnd(0,6.28), r=rnd(1.2,2.2); twBlink(T,T.x+Math.cos(a)*r,T.z+Math.sin(a)*r); Sound.sfx('ting'); yield .22; } }
   const p=twTsunFar(T); twBlink(T,p.x,p.z); T.lockF=0; yield first?.2:.12; }
 function* twTsunPunish(T){ const P=Player; T.combo=null; twBlinkTo(T,'back',1.3,0xffb0e0); T.f=P.x<T.x?-1:1; T.lockF=1; T.cast=.5;
-  twBark('caotan',"Too eager, senpai! Hikari-chan, point blank!",true); Sound.sfx('whoosh');
+  twBark('caotan',"TOO EARLY! Hikari-chan says premature swinging is a red flag. She's a pillow and even SHE has standards!",true); Sound.sfx('whoosh');
   const m=twBB(texPillow(),.95,2.6), gy=groundY(P.x,P.z); m.userData.tw=1; m.position.set(T.x,gy+1.1,T.z); scene.add(m);
   twHz({upd(dt){ this.t+=dt; const u=Math.min(1,this.t/.12), P2=Player; m.position.set(lerp(T.x,P2.x,u),gy+1.1,lerp(T.z,P2.z,u)); m.rotation.z+=dt*20; return this.t<.35; }, kill(){ scene.remove(m); }});
   twHitP(3,T.x,T.z,{ub:true}); Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'TOO EARLY',t:0,big:true,col:'#ff6a9a'});

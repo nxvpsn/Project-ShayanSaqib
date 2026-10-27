@@ -156,7 +156,7 @@ function* twCage(C,sp,cx,cz){ const P=Player; cx=cx!=null?cx:P.x; cz=cz!=null?cz
 // =====================================================================
 // LOVE-HATE SANDWICH: Caotan glomps, Omar reaps behind you (twice in phase II+). Parry them all: both stunned.
 DUO.glompReap=function*(C,O,ph){ const sp=twSp(C), K={n:ph>=2?3:2,par:0}; twBark('caotan',"Love-Hate Sandwich! I hug, he stabs!",true);
-  const r=yield* twDuoGlomp(C,sp,[0,.62,.52,.46][ph],K); if(r==='grab') return; yield .25;
+  const r=yield* twDuoGlomp(C,sp,.6/sp,K); /* the same rush tell as every rush */ if(r==='grab') return; yield .25;
   for(let i=0;i<K.n-1;i++){ if(i===0) twBark('omar',"I am the bread. The sad, stale, gluten-free bread.",true); yield* twDuoReap(O,sp,K); yield .12; }
   if(twDuoBroken(C,O,K,3.2)) twBark('omar',"You ate the whole sandwich. Not even a crumb for me. Typical.",true); yield .3; };
 // CROSSFIRE: two blue beams cross in an X on you (jump), then Omar's scythes curve in from both sides (deflect: they stick in the ground)

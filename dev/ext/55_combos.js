@@ -10,12 +10,12 @@ function twComboTick(C,x,z){ C.par++; Game.dmgNums.push({x:Player.x,y:Player.y+3
 // ---------- Kojima (the old Grimmaw): Autograph Rush (3 teleport swings from three sides; no strict judging, mashing works) ----------
 function* grimRush(b){ const sp=b.phase===3?1.25:b.phase===2?1.12:1, C={n:3,par:0};
   twBark('grimmaw',["Hold still! I'm trying to sign you!","Three autographs. You didn't ask for any of them.","Smile! You're in my trailer now!"][Math.floor(Math.random()*3)],true);
-  for(let i=0;i<3;i++){ const P=Player; bossSmoke(b); b.vanish=1; b.spr.show(false); Sound.sfx('dash'); yield .2/sp;
+  for(let i=0;i<3;i++){ const P=Player, from=Game.time+TW_STRICT.grace; bossSmoke(b); b.vanish=1; b.spr.show(false); Sound.sfx('dash'); yield .4/sp; /* the same timing as Omar's reaps */
     const P1=Player, a=i===0?Math.atan2(b.z-P1.z,b.x-P1.x):i===1?(P1.ang||0)+Math.PI:Math.atan2(b.z-P1.z,b.x-P1.x)+Math.PI/2*(Math.random()<.5?1:-1);
     const p=safeNear(P1.x+Math.cos(a)*2.1,P1.z+Math.sin(a)*2.1); b.x=p.x; b.z=p.z; b.y=groundY(b.x,b.z); b.vy=0; b.vanish=0; b.spr.show(true); bossSmoke(b);
-    b.ang=Math.atan2(P1.z-b.z,P1.x-b.x); b.anim='windup'; const tell=(i?.36:.5)/sp; FX.line(b.x,b.z,b.ang,3.6,2.6,0xff3050,tell); FX.spawn(b.x,b.y+3.6,b.z,0,0,0,.3,0xffffff,.8,0,true); yield tell;
+    b.ang=Math.atan2(P1.z-b.z,P1.x-b.x); b.anim='windup'; const tell=.45/sp; FX.line(b.x,b.z,b.ang,3.6,2.6,0xff3050,tell); FX.spawn(b.x,b.y+3.6,b.z,0,0,0,.3,0xffffff,.8,0,true); yield tell;
     const P2=Player, dx=P2.x-b.x, dz=P2.z-b.z, d=Math.hypot(dx,dz); b.anim='slash'; Sound.sfx('swing'); FX.arc(b.x,b.y,b.z,b.ang,i,true); let par=false;
-    if(d<3.7&&angDiff(Math.atan2(dz,dx),b.ang)<1.35&&Math.abs(P2.y-b.y)<2.4){ playerHit(3,b.x,b.z,{heavy:true,melee:true,onParry:()=>{ par=true; }}); if(par) twComboTick(C); }
+    if(d<3.7&&angDiff(Math.atan2(dz,dx),b.ang)<1.35&&Math.abs(P2.y-b.y)<2.4){ twStrictDo(from,()=>playerHit(3,b.x,b.z,{heavy:true,melee:true,onParry:()=>{ par=true; }})); if(par) twComboTick(C); }
     yield .42; }
   if(C.par>=3){ stagger(b,3.4); twComboBroken(b.x,b.z); twBark('grimmaw',"You parried a GENIUS?! I'm calling my lawyer. And my mom.",true); return; }
   b.anim='idle'; yield .25; }

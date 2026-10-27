@@ -77,3 +77,10 @@ function kjPxv(fn){ const L0=pxvLegacy; pxvLegacy=()=>false; try{ return fn(); }
   const ub=updateBoss; updateBoss=function(dt){ const r=ub.apply(this,arguments), b=Game.boss; try{ if(b&&b.state==='charge'&&Game.state==='play'&&typeof twRushTell==='function') kjPxv(()=>twRushTell(b,b.ang)); }catch(e){ console.error('kj rush',e); } return r; }; })();
 // no more dog howls while he is on the field: a smug baby giggle instead
 (function(){ const sf=Sound.sfx; Sound.sfx=function(n){ if(n==='howl'&&Game.boss&&this.ctx&&!this.muted){ for(let i=0;i<5;i++){ this.tone('square',820-i*35,620-i*35,.08,.07,i*.11); this.tone('triangle',1640-i*70,1240-i*70,.06,.03,i*.11); } return; } return sf.apply(this,arguments); }; })();
+
+// every rush and teleport strike has the same timing as the twins' solo fights: the first press after the tell (+grace) decides,
+// in the rush window (TW_DASH_WIN) for his charge, the normal one for his teleport slashes (55_combos); early = it hits you (no grab: he's the easy one)
+(function(){ const ub=updateBoss; updateBoss=function(dt){ const b=Game.boss, prev=b&&b.state;
+  if(b&&b.state==='charge'&&b._sf!=null){ const ph=playerHit; playerHit=function(d,x,z,o){ return ph.call(this,d,x,z,o&&o.melee?Object.assign({},o,{win:TW_DASH_WIN}):o); };
+    try{ return twStrictDo(b._sf,()=>ub.apply(this,arguments)); } finally{ playerHit=ph; } }
+  const r=ub.apply(this,arguments); try{ if(b&&b.state==='charge_w'&&prev!=='charge_w') b._sf=Game.time+TW_STRICT.grace; }catch(e){} return r; }; })();

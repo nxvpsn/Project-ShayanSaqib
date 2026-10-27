@@ -156,6 +156,11 @@ s = patch(s, "farPlane(G,ridgeTex(['#8aa0cc','#b8c8e4'],1,3,1),800,170,20,-6,-26
 s = patch(s, "new THREE.MeshLambertMaterial({map:fieldsTex()})", "new THREE.MeshLambertMaterial({map:fieldsTex(),color:0x5a6a9a})")
 s = patch(s, "const gal=farPlane(G,galaxyTex(),900,400,60,10,-140,{ro:-8,add:true,op:.55}); gal.rotation.z=-.3; farPlane(G,galaxyTex(),1000,460,-30,120,-300,{ro:-9,add:true,op:.6});",
   "if(typeof nightSky==='function') nightSky(G,{x:58}); else { const gal=farPlane(G,galaxyTex(),900,400,60,10,-140,{ro:-8,add:true,op:.55}); gal.rotation.z=-.3; farPlane(G,galaxyTex(),1000,460,-30,120,-300,{ro:-9,add:true,op:.6}); }")
+# every rush has the same timing: the boss charge tells 0.6s like the twins' rushes (strict judging in 40k_kojima)
+s = patch(s, """case 'charge_w': b.anim='leapPrep'; b.vx=b.vz=0; if(b.st<dt*1.5){ b.ang=Math.atan2(dz,dx); b.lineMk=FX.line(b.x,b.z,b.ang,22,1.8,0xff3030,.7/sp); }
+      if(b.st>.7/sp){ go('charge');""", """case 'charge_w': b.anim='leapPrep'; b.vx=b.vz=0; if(b.st<dt*1.5){ b.ang=Math.atan2(dz,dx); b.lineMk=FX.line(b.x,b.z,b.ang,22,1.8,0xff3030,.6/sp); }
+      if(b.st>.6/sp){ go('charge');""")
+
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

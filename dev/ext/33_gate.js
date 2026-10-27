@@ -23,12 +23,12 @@ TWK.omar.scythesG=function*(T){ if(Math.random()<.5) twBark('omar',"Rise, my scy
   for(let i=0;i<3;i++){ const a=rnd(0,6.28), hx=T.x+Math.cos(a)*1.6, hy=T.y+rnd(1.6,3.1), hz=T.z+Math.sin(a)*.8;
     twBolt(T,{kind:'scythe',x:hx,y:hy,z:hz,vx:0,vz:0,delay:.7+i*.35,spd:9.5,col:0x8a3aff,dmg:2,life:4}); FX.burst(hx,hy,hz,10,0x7a2acc,2.5,.25); }
   Sound.sfx('charge'); yield 1.9; };
-// two reaps with a long, readable tell (no strict timing here)
+// two reaps, the same timing as the solo fights (vanish .4, tell .45, strict); no grabs here
 TWK.omar.reapG=function*(T){ twBark('omar',"Behind you. Always behind you.");
-  for(let i=0;i<2;i++){ const P=Player, a=(P.ang||0)+Math.PI+rnd(-.6,.6), p=twClampXZ(P.x+Math.cos(a)*2.1,P.z+Math.sin(a)*2.1,.6); FX.marker(p.x,p.z,1,0x8a3aff,.5);
-    FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false); T.hide=1; Sound.sfx('dash'); yield .45; T.x=p.x; T.z=p.z; T.y=groundY(p.x,p.z)+T.hy; T.hide=0; FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false);
-    T.scythe=1; T.swing=0; const P2=Player, aa=Math.atan2(P2.z-T.z,P2.x-T.x); T.lockF=1; T.f=Math.cos(aa)>0?1:-1; T.parried=0; FX.line(T.x,T.z,aa,2.8,2.6,0xb06aff,.6); yield .6;
-    T.swing=1; Sound.sfx('swing'); FX.arc(T.x,groundY(T.x,T.z),T.z,aa,0,true); twReapHit(T.x,T.z,aa,2.8,T); yield .4; T.lockF=0; T.scythe=0; if(T.parried) return; }
+  for(let i=0;i<2;i++){ const from=Game.time+TW_STRICT.grace, P=Player, a=(P.ang||0)+Math.PI+rnd(-.6,.6), p=twClampXZ(P.x+Math.cos(a)*2.1,P.z+Math.sin(a)*2.1,.6); FX.marker(p.x,p.z,1,0x8a3aff,.45);
+    FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false); T.hide=1; Sound.sfx('dash'); yield .4; T.x=p.x; T.z=p.z; T.y=groundY(p.x,p.z)+T.hy; T.hide=0; FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false);
+    T.scythe=1; T.swing=0; const P2=Player, aa=Math.atan2(P2.z-T.z,P2.x-T.x); T.lockF=1; T.f=Math.cos(aa)>0?1:-1; T.parried=0; FX.line(T.x,T.z,aa,2.8,2.6,0xb06aff,.45); yield .45;
+    T.swing=1; Sound.sfx('swing'); FX.arc(T.x,groundY(T.x,T.z),T.z,aa,0,true); twStrictDo(from,()=>twReapHit(T.x,T.z,aa,2.8,T)); yield .4; T.lockF=0; T.scythe=0; if(T.parried) return; }
   yield .6; };
 // hands: the phase I chasing hands only
 TWK.omar.handsG=function*(T){ yield* TWK.omar.hands(T,1); };

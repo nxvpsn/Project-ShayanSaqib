@@ -184,7 +184,7 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
       for(const c of cl){ if(c.gone) continue; const gy=groundY(c.x,c.z); c.S.draw((cv,cx,by)=>drawOmarBoss(cv,cx,by,Math.cos(c.a)>0?1:-1,{t:now-t0+3,scythe:1,swing:c.st==='dash'||c.st==='fly'?1:0,cast:c.st==='tell'||c.st==='rise'?1:0,flash:0,form:2})); c.S.place(c.x,(c.y||gy)+1.1,c.z,gy); }
       if(!alive) S.done=true; return alive; }, kill(){ cl.forEach(c=>{ if(!c.gone) c.S.dispose(); }); S.done=true; if(S.grab){ Player.cineFly=false; Player.cineAnim=null; } }});
   let w=0; while(!S.done&&w<20){ yield .05; w+=.05; } yield .4; };
-function twCloneGrabStart(S,cl,c){ const P=Player; twBark('omar',"Too eager. Hold still. We're all coming through.",true); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'TOO EARLY',t:0,big:true,col:'#c08aff'});
+function twCloneGrabStart(S,cl,c){ const P=Player; twBark('omar',"TOO EARLY. Like my depression. It also showed up uninvited and never left.",true); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'TOO EARLY',t:0,big:true,col:'#c08aff'});
   const a=(P.ang||0)+Math.PI; c.x=P.x+Math.cos(a)*1; c.z=P.z+Math.sin(a)*1; c.st='grab'; c.res=Game.time; FX.burst(c.x,groundY(c.x,c.z)+1.6,c.z,24,0x140a1a,4,.45,false); Sound.sfx('dash');
   const rest=cl.filter(o=>o!==c&&!o.gone&&(o.st==='wait'||o.st==='tell')); cl.forEach(o=>{ if(o!==c&&!o.gone&&!rest.includes(o)){ FX.burst(o.x,groundY(o.x,o.z)+1.6,o.z,18,0x2a0a3a,4,.4,false); o.S.dispose(); o.gone=1; } });
   rest.forEach((o,k)=>{ o.st='rise'; o.sx=o.x; o.sz=o.z; o.k=k; o.res=Game.time; });

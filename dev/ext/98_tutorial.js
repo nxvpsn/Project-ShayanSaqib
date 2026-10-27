@@ -79,10 +79,10 @@ function* twTutFlow(){ const T=TW.tut, A=T.A, P=Player;
   // 2) melee parry x5 into the Full Counter, twice
   for(let round=0;round<2;round++){ P.counter=0; T.obj='Land 5 melee parries to fill your Full Counter meter  ('+round+'/2)'; T.need=5;
     let i=0; while((P.counter||0)<5){ T.n=P.counter||0; const a=rnd(0,6.28)+i*1.3; A.x=P.x+Math.cos(a)*6; A.z=P.z+Math.sin(a)*6; const cl=twClampXZ(A.x,A.z,1.5); A.x=cl.x; A.z=cl.z; A.hide=0; FX.burst(A.x,A.y+1.2,A.z,16,0x140a1a,3,.3,false);
-      const aa=Math.atan2(P.z-A.z,P.x-A.x), d=Math.hypot(P.x-A.x,P.z-A.z)+1.5; A.f=Math.cos(aa)>0?1:-1; A.anim='charge'; FX.line(A.x,A.z,aa,d,2,0xff2a3a,.6); Sound.sfx('charge'); yield .6;
-      const s={t:0,hit:false,dur:d/16}; A.anim='dash'; Sound.sfx('dash');
-      twHz({upd(dt,play){ if(!play) return true; s.t+=dt; A.x+=Math.cos(aa)*16*dt; A.z+=Math.sin(aa)*16*dt; FX.spawn(A.x,A.y+1.2,A.z,0,0,0,.3,0xff4a5a,.5,0,true);
-          const P2=Player; if(!s.hit&&Math.hypot(P2.x-A.x,P2.z-A.z)<1.6){ s.hit=true; A.anim='attack'; Sound.sfx('swing'); const r=twHitP(1,A.x,A.z,{melee:true,heavy:true,win:.32,onParry:()=>{ if((Player.counter||0)>=5){ TW.bound=1; hit.attack=false; } }}); if(r==='hit') s.miss=1; } return s.t<s.dur; }});
+      const aa=Math.atan2(P.z-A.z,P.x-A.x), d=Math.hypot(P.x-A.x,P.z-A.z)+1.5, from=Game.time+TW_STRICT.grace; A.f=Math.cos(aa)>0?1:-1; A.anim='charge'; FX.line(A.x,A.z,aa,d,2,0xff2a3a,.6); Sound.sfx('charge'); yield .6; /* the same rush timing as the twins: strict, TW_DASH_WIN */
+      const s={t:0,hit:false,dur:d/17}; A.anim='dash'; Sound.sfx('dash');
+      twHz({upd(dt,play){ if(!play) return true; s.t+=dt; A.x+=Math.cos(aa)*17*dt; A.z+=Math.sin(aa)*17*dt; FX.spawn(A.x,A.y+1.2,A.z,0,0,0,.3,0xff4a5a,.5,0,true);
+          const P2=Player; if(!s.hit&&Math.hypot(P2.x-A.x,P2.z-A.z)<1.6){ s.hit=true; A.anim='attack'; Sound.sfx('swing'); const r=twStrictDo(from,()=>twHitP(1,A.x,A.z,{melee:true,heavy:true,win:TW_DASH_WIN,onParry:()=>{ if((Player.counter||0)>=5){ TW.bound=1; hit.attack=false; } }})); if(r==='hit') s.miss=1; } return s.t<s.dur; }});
       yield s.dur+.15; A.anim='idle'; i++;
       if(s.miss) twBark('ali',["Too late. Swing a hair earlier.","Watch the red line. Swing as I arrive.","Not bad. Not good either. Again."][i%3],true); else if(!s.hit) twBark('ali',"You dodged. Cute. Parry it instead.",true);
       T.n=P.counter||0; yield .55; }
@@ -99,12 +99,12 @@ function* twTutFlow(){ const T=TW.tut, A=T.A, P=Player;
   run(function*(){ yield say('ali',"Good. Last lesson. Some enemies teleport right into your face."); yield say('ali',"When I vanish, I reappear in front of you. A red mark flashes on the ground."); yield say('ali',"When it flashes, I'm about to swing. Attack right as I strike. Parry it three times and you graduate."); }); yield .1;
   // 3) teleport strike, front only
   T.obj='TELEPORT STRIKE: when the red mark flashes, attack as he swings'; T.n=0; T.need=3;
-  while(T.n<3){ A.anim='idle'; A.hide=0; yield 2;
-    FX.burst(A.x,A.y+1.2,A.z,22,0x140a1a,4,.4,false); A.hide=1; Sound.sfx('dash'); yield .25;
+  while(T.n<3){ A.anim='idle'; A.hide=0; yield 2; const from=Game.time+TW_STRICT.grace; /* the same timing as Omar's reaps: vanish .4, tell .45, strict */
+    FX.burst(A.x,A.y+1.2,A.z,22,0x140a1a,4,.4,false); A.hide=1; Sound.sfx('dash'); yield .4;
     const back=Math.atan2(A.z-P.z,A.x-P.x), fx=P.x+Math.cos(back)*1.5, fz=P.z+Math.sin(back)*1.5, c2=twClampXZ(fx,fz,1); A.x=c2.x; A.z=c2.z; A.f=P.x<A.x?-1:1; A.hide=0; A.anim='charge'; FX.burst(A.x,A.y+1.2,A.z,22,0x140a1a,4,.4,false);
-    const mk=FX.marker((A.x+P.x)/2,(A.z+P.z)/2,1.3,0xff2a3a,.55); Sound.sfx('charge'); yield .55;
+    const mk=FX.marker((A.x+P.x)/2,(A.z+P.z)/2,1.3,0xff2a3a,.45); Sound.sfx('charge'); yield .45;
     A.anim='attack'; Sound.sfx('swing'); FX.arc(A.x,A.y,A.z,Math.atan2(P.z-A.z,P.x-A.x),0,true);
-    let r='miss'; if(Math.hypot(P.x-A.x,P.z-A.z)<2.8) r=twHitP(1,A.x,A.z,{melee:true,heavy:true});
+    let r='miss'; if(Math.hypot(P.x-A.x,P.z-A.z)<2.8) r=twStrictDo(from,()=>twHitP(1,A.x,A.z,{melee:true,heavy:true}));
     if(r==='parry'){ T.n++; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'TELEPORT PARRY '+T.n+'/3',t:0,big:true,col:'#ffd45a'}); if(T.n<3) twBark('ali',T.n===1?"Yes. Again.":"Last one.",true); }
     else if(r==='hit') twBark('ali',["Wait for the flash, then swing.","Too early. Let me arrive first.","Almost. Swing as the blade comes down."][Math.floor(Math.random()*3)],true);
     else twBark('ali',"Stand your ground. Parry, don't run.",true);
