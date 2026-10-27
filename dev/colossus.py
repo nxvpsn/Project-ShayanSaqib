@@ -1,15 +1,17 @@
 """The Sleeping Colossus (the cat-god skeleton on the horizon of Lanternbrook and Starfall Ridge), painted at 2x and
-saved as an indexed PNG: a bound god asleep on a mountain, its ribs pouring waterfalls, crystals growing out of its
-spine, a temple on its hip, chains from its horns into the sky, a rune halo behind its head and light breaking behind it.
-Usage: python3 colossus.py day|dusk out.png"""
+saved as an indexed PNG: a bound god asleep on a mountain, no plants on it: bare carved bone with glowing runes and
+gold-mended cracks, a broken titan's sword driven through its ribs, stone stakes and chains pinning it to the ground,
+a crystal heart still beating inside the ribcage, crystals breaking out of its spine, its ribs pouring waterfalls,
+a temple on its back, chains from its horns into the sky, a rune halo behind its head and light breaking behind it.
+Usage: python3 colossus.py dusk|night out.png   (dusk: Lanternbrook, night: Starfall Ridge)"""
 import sys, math, random
 from PIL import Image, ImageDraw, ImageFilter
 
 PAL = {
-    'day': dict(bone=(244, 239, 226), shade=(184, 178, 164), dark=(84, 86, 108), glow=(143, 240, 255), halo=(255, 242, 192),
-                rock=(92, 108, 150), rockD=(64, 76, 112), moss=(104, 150, 96), haze=(170, 195, 235), ray=(255, 250, 225), lamp=(255, 200, 110)),
+    'night': dict(bone=(200, 212, 240), shade=(122, 136, 182), dark=(34, 38, 76), glow=(120, 200, 255), halo=(186, 206, 255),
+                  rock=(40, 48, 96), rockD=(20, 24, 54), haze=(34, 50, 124), ray=(214, 226, 255), lamp=(255, 196, 110), steel=(170, 190, 230), gold=(255, 206, 120)),
     'dusk': dict(bone=(240, 220, 203), shade=(184, 154, 144), dark=(90, 66, 80), glow=(255, 176, 224), halo=(255, 216, 160),
-                 rock=(110, 84, 128), rockD=(78, 58, 96), moss=(150, 120, 110), haze=(220, 140, 170), ray=(255, 220, 190), lamp=(255, 190, 120)),
+                 rock=(110, 84, 128), rockD=(78, 58, 96), haze=(220, 140, 170), ray=(255, 220, 190), lamp=(255, 190, 120), steel=(214, 196, 210), gold=(255, 210, 130)),
 }
 S = 2
 W, H = 1024 * S, 512 * S
@@ -58,7 +60,7 @@ def main(mode, out):
     isl = layer(); d = ImageDraw.Draw(isl)
     for (x, y, s) in [(70, 110, 24), (980, 80, 30), (930, 250, 16), (150, 40, 12), (700, 50, 14)]:
         d.polygon(P([(x - s, y), (x + s, y), (x + s * .5, y + s * .9), (x, y + s * 1.6), (x - s * .6, y + s * .8)]), fill=C['rockD'] + (230,))
-        d.polygon(P([(x - s, y), (x + s, y), (x + s * .7, y - s * .25), (x - s * .8, y - s * .2)]), fill=C['moss'] + (230,))
+        d.polygon(P([(x - s, y), (x + s, y), (x + s * .7, y - s * .25), (x - s * .8, y - s * .2)]), fill=C['rock'] + (240,))
         d.line(P([(x + s * .3, y + s * .6), (x + s * .3, y + s * 3.5)]), fill=(235, 245, 255, 110), width=2 * S)
     comp(blur(isl, .6))
     # far mountains behind it
@@ -67,6 +69,29 @@ def main(mode, out):
     d.polygon(P(far), fill=C['rock'] + (150,))
     comp(blur(mt, 1.5))
 
+    hrt = layer(); dh = ImageDraw.Draw(hrt)
+    for r, a in [(70, 50), (46, 90), (26, 150)]:
+        dh.ellipse([(585 - r) * S, (372 - r) * S, (585 + r) * S, (372 + r) * S], fill=C['glow'] + (a,))
+    comp(blur(hrt, 14)); hrt = layer(); dh = ImageDraw.Draw(hrt)
+    for (x, y, h, ang) in [(585, 396, 54, 0), (566, 398, 36, -.45), (604, 398, 40, .4), (576, 400, 24, -.9), (596, 400, 26, .85)]:
+        w = h * .3; tip = (x + math.sin(ang) * h, y - math.cos(ang) * h); l = (x - w * math.cos(ang), y - w * math.sin(ang)); r = (x + w * math.cos(ang), y + w * math.sin(ang))
+        dh.polygon(P([l, tip, r]), fill=C['glow'] + (255,)); dh.polygon(P([l, tip, ((l[0] + r[0]) / 2, (l[1] + r[1]) / 2)]), fill=tuple(min(255, v + 80) for v in C['glow']) + (255,))
+    comp(hrt)
+
+    # a titan's broken sword driven down through its spine (drawn before the bones: they cover the buried blade)
+    sw = layer(); ds = ImageDraw.Draw(sw)
+    ang = 2.27; ca, sa = math.cos(ang), math.sin(ang); bx, by = 800, 138
+    def at(u, v): return (bx + ca * u - sa * v, by + sa * u + ca * v)
+    blade = [at(0, -11), at(250, -11), at(262, -3), at(254, 2), at(268, 8), at(0, 11)]
+    ds.polygon(P([at(-4, -15), at(254, -15), at(268, -3), at(258, 2), at(274, 12), at(-4, 15)]), fill=C['dark'] + (255,))
+    ds.polygon(P(blade), fill=C['steel'] + (255,)); ds.polygon(P([at(0, -11), at(250, -11), at(256, -4), at(0, -2)]), fill=tuple(min(255, v + 40) for v in C['steel']) + (255,))
+    ds.line(P([at(10, 0), at(240, 0)]), fill=C['dark'] + (200,), width=2 * S)
+    for u in (40, 110, 180): ds.line(P([at(u, -10), at(u + 6, -4), at(u + 2, 4)]), fill=C['dark'] + (230,), width=S)
+    ds.polygon(P([at(-6, -46), at(6, -46), at(6, 46), at(-6, 46)]), fill=C['dark'] + (255,)); ds.polygon(P([at(-3, -42), at(3, -42), at(3, 42), at(-3, 42)]), fill=C['gold'] + (255,))
+    ds.polygon(P([at(-60, -6), at(-6, -6), at(-6, 6), at(-60, 6)]), fill=(60, 40, 48, 255))
+    for u in range(-56, -8, 8): ds.line(P([at(u, -6), at(u + 4, 6)]), fill=C['dark'] + (255,), width=S)
+    px, py = at(-68, 0); ds.ellipse([(px - 9) * S, (py - 9) * S, (px + 9) * S, (py + 9) * S], fill=C['gold'] + (255,)); ds.ellipse([(px - 4) * S, (py - 4) * S, (px + 4) * S, (py + 4) * S], fill=C['glow'] + (255,))
+    comp(sw)
     sk = layer(); d = ImageDraw.Draw(sk)
     def seg(pts, w, col):
         d.line(P(pts), fill=col, width=max(1, int(w * S)), joint='curve')
@@ -141,22 +166,25 @@ def main(mode, out):
             else: d.ellipse([(x - 5) * S, (y - 8) * S, (x + 5) * S, (y + 8) * S], outline=C['shade'] + (255,), width=3 * S)
     # cracks and weathering speckles on every bone
     a = sk.split()[3]; dd = ImageDraw.Draw(sk)
+    def crack(x, y, n, col, w=1.2):
+        pts = [(x, y)]
+        for i in range(n):
+            x += rnd.uniform(-5, 5); y += rnd.uniform(2, 6)
+            if a.getpixel((int(min(W / S - 1, max(0, x)) * S), int(min(H / S - 1, max(0, y)) * S))) == 0: break
+            pts.append((x, y))
+        if len(pts) > 1: dd.line(P(pts), fill=col, width=max(1, int(w * S)))
+    for (x, y) in ribs: crack(x + rnd.uniform(-6, 6), y - 20, 6, C['dark'] + (255,))
+    for i in range(70):
+        x, y = rnd.uniform(100, 940), rnd.uniform(200, 450)
+        if a.getpixel((int(x * S), int(y * S))) > 0: crack(x, y, 4, C['dark'] + (220,), 1)
+    for (x, y) in [(hx - 40, hy - 64), (hx + 10, hy - 60), (hx + 50, hy - 40), (hx - 70, hy - 20)]: crack(x, y, 7, C['gold'] + (255,), 1.6)
     for i in range(1400):
         x, y = rnd.uniform(60, 960), rnd.uniform(40, 470)
         if a.getpixel((int(x * S), int(y * S))) > 0:
             dd.rectangle([x * S, y * S, (x + rnd.uniform(1, 3)) * S, (y + 1) * S], fill=C['shade'] + (140,))
     comp(sk)
 
-    # ---- moss, little trees and a staircase of lanterns along the spine; crystals breaking out of the bone
-    gr = layer(); d = ImageDraw.Draw(gr)
-    for i in range(420):
-        x, y = rnd.uniform(60, 960), rnd.uniform(40, 470)
-        if a.getpixel((int(x * S), int(y * S))) > 0 and rnd.random() < .5:
-            d.ellipse([(x - 3) * S, (y - 1.4) * S, (x + 4) * S, (y + 1.4) * S], fill=C['moss'] + (200,))
-    for i in range(30):
-        t = .03 + i * .032; x, y = sp(t); y -= 6
-        d.polygon(P([(x - 4, y), (x, y - 12 - rnd.uniform(0, 8)), (x + 4, y)]), fill=(46, 82, 58, 255))
-    comp(gr)
+    # ---- crystals breaking out of the bone
     cr = layer(); dc = ImageDraw.Draw(cr)
     def crystal(x, y, h, ang):
         w = h * .26; tip = (x + math.sin(ang) * h, y - math.cos(ang) * h); l = (x - w * math.cos(ang), y - w * math.sin(ang)); r = (x + w * math.cos(ang), y + w * math.sin(ang))
@@ -186,6 +214,26 @@ def main(mode, out):
         dl.ellipse([(x - 2) * S, (y - 2) * S, (x + 2) * S, (y + 2) * S], fill=C['lamp'] + (255,))
     comp(tp); comp(Image.alpha_composite(blur(lamps, 4), lamps))
 
+    # ---- runes carved along the ribs, the legs and the brow
+    rn = layer(); dr = ImageDraw.Draw(rn)
+    def rune(x, y, k):
+        g = [[(0, -6), (0, 6)], [(-4, -4), (4, 4)], [(-4, 4), (4, -4)], [(-4, -2), (4, -2)], [(-3, 4), (3, 4)], [(0, -6), (4, -2)]]
+        for q in range(3 + k % 3): (p0, p1) = g[(k * 7 + q * 3) % len(g)]; dr.line(P([(x + p0[0], y + p0[1]), (x + p1[0], y + p1[1])]), fill=C['glow'] + (255,), width=int(1.5 * S))
+    for k, (x, y) in enumerate(ribs[1::2]): rune(x + 4, y + 10, k)
+    for k, (x, y) in enumerate([(330, 392), (240, 424), (900, 404), (880, 428), (hx - 20, hy - 46), (hx + 30, hy - 30)]): rune(x, y, k + 5)
+    comp(Image.alpha_composite(blur(rn, 3), rn))
+    # stone stakes in the ground with chains thrown over its bones
+    ch = layer(); dch = ImageDraw.Draw(ch)
+    for (sx, sy, tx2, ty2) in [(70, 452, 150, 430), (420, 452, 380, 304), (760, 452, 800, 300), (990, 452, 930, 384), (300, 456, 330, 370)]:
+        dch.polygon(P([(sx - 9, sy), (sx - 6, sy - 46), (sx, sy - 54), (sx + 6, sy - 46), (sx + 9, sy)]), fill=C['rockD'] + (255,))
+        dch.line(P([(sx - 3, sy - 44), (sx - 3, sy - 4)]), fill=C['rock'] + (255,), width=2 * S)
+        n = 12
+        for k in range(n + 1):
+            u = k / n; x = sx + (tx2 - sx) * u; y = sy - 46 + (ty2 - sy + 46) * u + math.sin(u * math.pi) * 16
+            if k % 2: dch.ellipse([(x - 6) * S, (y - 4) * S, (x + 6) * S, (y + 4) * S], outline=C['dark'] + (255,), width=3 * S)
+            else: dch.ellipse([(x - 4) * S, (y - 6) * S, (x + 4) * S, (y + 6) * S], outline=C['shade'] + (255,), width=3 * S)
+    comp(ch)
+
     # ---- the sleeping eye still glows
     ey = layer(); d = ImageDraw.Draw(ey)
     d.ellipse([(hx - 58) * S, (hy - 26) * S, (hx - 8) * S, (hy + 14) * S], fill=C['glow'] + (255,))
@@ -206,7 +254,8 @@ def main(mode, out):
     d.polygon(P(near), fill=C['rockD'] + (255,))
     for x in range(0, 1024, 26):
         y = 440 + 22 * math.sin(x / 55 + .5) + 12 * math.sin(x / 19) - (30 if 600 < x < 760 else 0)
-        d.polygon(P([(x - 6, y + 2), (x, y - 14 - rnd.uniform(0, 10)), (x + 6, y + 2)]), fill=(40, 70, 56, 255))
+        hh = 10 + rnd.uniform(0, 16); d.polygon(P([(x - 7, y + 2), (x - 2, y - hh), (x + 1, y - hh * .7), (x + 7, y + 2)]), fill=C['rockD'] + (255,))
+        d.line(P([(x - 2, y - hh), (x - 5, y)]), fill=C['rock'] + (255,), width=S)
     comp(nc)
 
     # ---- birds
