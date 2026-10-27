@@ -144,7 +144,7 @@ TWK.omar.sentence=function*(T,ph){ const sp=twSp(T); twBark('omar',ph>=2?"Double
   yield .9; TW.sentence=null; };
 
 // ---------- Shadow Requiem (clones): they start far out and arrive one per beat; each one is a timed parry, its eyes flash when the window opens ----------
-// Attacking early while standing in a clone's line: that clone blinks behind you, grabs you and lifts you up, and every clone that has not
+// Attacking early while standing in a clone's line (the first clone lets that slide until it is halfway to you): that clone blinks behind you, grabs you and lifts you up, and every clone that has not
 // dashed yet flies through you (half a heart each). Not pressing at all just means the clone hits you (1 heart), or you dodge out of its line.
 TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem. My clones are also emotionally unavailable.",true); T.cast=1; Sound.sfx('howl');
   const P=Player, n=ph>=3?5:4, a0=rnd(0,6.28), tell=.55/sp, vel=18*sp, gap=.7, t0=Game.time, cl=[], S={done:false,grab:null}; TW._clones=cl;
@@ -164,7 +164,9 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
           if(c.st!=='wait'&&!c.glint&&twRealAhead(ahead(c,P2,now))<=.17){ c.glint=true; Sound.sfx('ting'); const g=twGlow(0xffffff,2.4); g.position.set(c.x,gy+2.2,c.z); twHz({upd(d2){ this.t+=d2; g.material.opacity=Math.max(0,1-this.t/.3); return this.t<.3; }, kill(){ scene.remove(g); }}); }
           // the next clone to arrive judges the first press made in its line: early = the grab
           if(c===act&&c.st!=='wait'&&!c.decided&&play){ if(prev&&prev.res) c.from=Math.max(c.from,prev.res+.15);
-            for(let g=0;g<40;g++){ const p=twStrictFirst(c.from); if(!p) break; if(!inLine(c,P2)){ c.from=p.t; continue; } c.decided=true; if(twRealAhead(ahead(c,P2,now))+(now-p.t)>TW_STRICT.win){ twCloneGrabStart(S,cl,c); } break; }
+            for(let g=0;g<40;g++){ const p=twStrictFirst(c.from); if(!p) break; if(!inLine(c,P2)){ c.from=p.t; continue; } const early=twRealAhead(ahead(c,P2,now))+(now-p.t)>TW_STRICT.win;
+              if(early&&c.i===0&&!(c.st==='dash'&&c.d0>=c.dist*.5)){ c.from=p.t; continue; } /* the first clone forgives an early press until it is halfway to you (no grab; that press still doesn't parry) */
+              c.decided=true; if(early){ twCloneGrabStart(S,cl,c); } break; }
             if(S.grab) return true; }
           if(c.st==='dash'&&play){ c.x+=Math.cos(c.a)*vel*dt; c.z+=Math.sin(c.a)*vel*dt; c.d0+=vel*dt; if(!c.hit) twRushTell(c,c.a); if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
             if(!c.hit&&Math.hypot(P2.x-c.x,P2.z-c.z)<1.15&&Math.abs(P2.y-gy)<1.8){ const r=twStrictDo(c.from,()=>twHitP(2,c.x,c.z,{heavy:true,melee:true,onParry:()=>{ c.d0=99; Game.dmgNums.push({x:c.x,y:gy+3,z:c.z,n:'SHATTER',t:0,col:'#d0a0ff'}); }})); if(r!=='none'){ c.hit=true; c.res=now; } }

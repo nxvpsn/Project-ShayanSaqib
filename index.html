@@ -7149,8 +7149,8 @@ TWK.caotan.tsun=function*(T,ph){ const sp=twSp(T); T.heartEyes=1; twBark('caotan
   T.lockF=0; twBark('caotan',"*SLAP*",true); twBlast(T.x,T.z,2.4,.35,{col:0xff3a7a,dmg:3,shake:.5,h:.45}); twWave(T.x,T.z,{sp:8,max:9,col:0xff6ab0,delay:.35,r0:2.4}); /* the ring starts at the slap's edge, so one jump clears whichever reaches you */ yield .9; T.heartEyes=0; };
 TWK.caotan.nose=function*(T,ph){ const sp=twSp(T); T.nose=1; twBark('caotan',"I'm NOT looking at anything lewd! ...*nosebleed*",true); Sound.sfx('squelch');
   for(let i=0;i<(ph>=3?10:8);i++){ const P=Player, p=twClampXZ(P.x+P.vx*.3,P.z+P.vz*.3,.5);
-    twBlast(p.x,p.z,1,.62/sp,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.12,onBoom(x,z){ const gy=groundY(x,z); for(let k=0;k<26;k++) FX.spawn(x+rnd(-.3,.3),gy+.2,z+rnd(-.3,.3),rnd(-1,1),rnd(9,15),rnd(-1,1),rnd(.6,1.1),k%3?0xc0081e:0xff3a4a,rnd(.25,.45),16,false); }}); yield .27/sp; }
-  yield .3; twBark('caotan',"...Okay that one was a LOT of blood.",true); const gx=T.x, gz=T.z; twBlast(gx,gz,2.6,.85,{col:0xff1a3a,burst:0xd0102a,dmg:3,onBoom(x,z){ const gy=groundY(x,z); for(let k=0;k<60;k++) FX.spawn(x+rnd(-.6,.6),gy+.2,z+rnd(-.6,.6),rnd(-2,2),rnd(12,20),rnd(-2,2),rnd(.8,1.4),k%3?0xc0081e:0xff3a4a,rnd(.3,.55),18,false); }});
+    twBlast(p.x,p.z,1,.62/sp,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.12,onBoom(x,z){ const gy=groundY(x,z); for(let k=0;k<26;k++) FX.spawn(x+rnd(-.3,.3),gy+.55,z+rnd(-.3,.3),rnd(-1,1),rnd(9,15),rnd(-1,1),rnd(.6,1.1),k%5===0?0xffd0da:k%3?0xc0081e:0xff3a4a,rnd(.3,.5),16,false); }}); yield .27/sp; }
+  yield .3; twBark('caotan',"...Okay that one was a LOT of blood.",true); const gx=T.x, gz=T.z; twBlast(gx,gz,2.6,.85,{col:0xff1a3a,burst:0xd0102a,dmg:3,onBoom(x,z){ const gy=groundY(x,z); for(let k=0;k<60;k++) FX.spawn(x+rnd(-.6,.6),gy+.55,z+rnd(-.6,.6),rnd(-2,2),rnd(12,20),rnd(-2,2),rnd(.8,1.4),k%5===0?0xffd0da:k%3?0xc0081e:0xff3a4a,rnd(.35,.6),18,false); }});
   yield 1.1; T.nose=0; };
 TWK.caotan.maid=function*(T,ph){ const sp=twSp(T); twBark('caotan',"Welcome home, Master~! Moe moe... KYUN! ♡",true); Sound.sfx('kyun'); const P=Player, a0=rnd(0,6.28), maids=[];
   for(let i=0;i<4;i++){ const a=a0+i*Math.PI/2, p=twClampXZ(P.x+Math.cos(a)*6.5,P.z+Math.sin(a)*5,1); const s=new Sprite3D(128,128,28); maids.push({x:p.x,z:p.z,s,ph:i*.8,f:1}); FX.burst(p.x,groundY(p.x,p.z)+1.6,p.z,24,0xff8ac8,4,.35); }
@@ -7243,7 +7243,7 @@ TWK.caotan.lc2=function*(T){ twLCPrep(T); const c=twCenter(), Pl=Player; yield t
 const TW_CAO_COLS=[0x9fd8ff,0xbfe4ff,0xffa0d8,0xffb0e0,0xff9ad8,0xff6ab0];
 (function(){ const tb=twBeam; twBeam=function(o){ if(o&&TW_CAO_COLS.includes(o.col)){ const jump=o.jump!=null?!!o.jump:typeof o.ang==='function'; o=Object.assign({},o,{col:jump?0x7ac8ff:0xff7ac8,wall:!jump}); } return tb(o); }; })();
 // Megane Supernova helpers: a nosebleed geyser on a marked spot, and a body pillow flung in a straight line
-function twCaoNose(x,z,warn){ const p=twClampXZ(x,z,.5); twBlast(p.x,p.z,1.1,warn,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.1,onBoom(x,z){ const gy=groundY(x,z); for(let k=0;k<22;k++) FX.spawn(x+rnd(-.3,.3),gy+.2,z+rnd(-.3,.3),rnd(-1,1),rnd(9,15),rnd(-1,1),rnd(.6,1.1),k%3?0xc0081e:0xff3a4a,rnd(.25,.45),16,false); }}); }
+function twCaoNose(x,z,warn){ const p=twClampXZ(x,z,.5); twBlast(p.x,p.z,1.1,warn,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.1,onBoom(x,z){ const gy=groundY(x,z); for(let k=0;k<22;k++) FX.spawn(x+rnd(-.3,.3),gy+.55,z+rnd(-.3,.3),rnd(-1,1),rnd(9,15),rnd(-1,1),rnd(.6,1.1),k%5===0?0xffd0da:k%3?0xc0081e:0xff3a4a,rnd(.3,.5),16,false); }}); }
 function twCaoPillowShot(T,a,v){ const m=twBB(texPillow(),.8,2.2), s={x:T.x,z:T.z,t:0,hit:false}; Sound.sfx('whoosh');
   twHz({upd(dt,play){ if(!play) return true; s.t+=dt; s.x+=Math.cos(a)*v*dt; s.z+=Math.sin(a)*v*dt; const gy=groundY(s.x,s.z), A=twBounds(); m.position.set(s.x,gy+1.1,s.z); m.rotation.z+=dt*16;
       if(Math.random()<.5) FX.spawn(s.x,gy+1,s.z,0,.5,0,.35,0xffd0ec,.22,0,true);
@@ -8011,7 +8011,7 @@ TWK.omar.sentence=function*(T,ph){ const sp=twSp(T); twBark('omar',ph>=2?"Double
   yield .9; TW.sentence=null; };
 
 // ---------- Shadow Requiem (clones): they start far out and arrive one per beat; each one is a timed parry, its eyes flash when the window opens ----------
-// Attacking early while standing in a clone's line: that clone blinks behind you, grabs you and lifts you up, and every clone that has not
+// Attacking early while standing in a clone's line (the first clone lets that slide until it is halfway to you): that clone blinks behind you, grabs you and lifts you up, and every clone that has not
 // dashed yet flies through you (half a heart each). Not pressing at all just means the clone hits you (1 heart), or you dodge out of its line.
 TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem. My clones are also emotionally unavailable.",true); T.cast=1; Sound.sfx('howl');
   const P=Player, n=ph>=3?5:4, a0=rnd(0,6.28), tell=.55/sp, vel=18*sp, gap=.7, t0=Game.time, cl=[], S={done:false,grab:null}; TW._clones=cl;
@@ -8031,7 +8031,9 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
           if(c.st!=='wait'&&!c.glint&&twRealAhead(ahead(c,P2,now))<=.17){ c.glint=true; Sound.sfx('ting'); const g=twGlow(0xffffff,2.4); g.position.set(c.x,gy+2.2,c.z); twHz({upd(d2){ this.t+=d2; g.material.opacity=Math.max(0,1-this.t/.3); return this.t<.3; }, kill(){ scene.remove(g); }}); }
           // the next clone to arrive judges the first press made in its line: early = the grab
           if(c===act&&c.st!=='wait'&&!c.decided&&play){ if(prev&&prev.res) c.from=Math.max(c.from,prev.res+.15);
-            for(let g=0;g<40;g++){ const p=twStrictFirst(c.from); if(!p) break; if(!inLine(c,P2)){ c.from=p.t; continue; } c.decided=true; if(twRealAhead(ahead(c,P2,now))+(now-p.t)>TW_STRICT.win){ twCloneGrabStart(S,cl,c); } break; }
+            for(let g=0;g<40;g++){ const p=twStrictFirst(c.from); if(!p) break; if(!inLine(c,P2)){ c.from=p.t; continue; } const early=twRealAhead(ahead(c,P2,now))+(now-p.t)>TW_STRICT.win;
+              if(early&&c.i===0&&!(c.st==='dash'&&c.d0>=c.dist*.5)){ c.from=p.t; continue; } /* the first clone forgives an early press until it is halfway to you (no grab; that press still doesn't parry) */
+              c.decided=true; if(early){ twCloneGrabStart(S,cl,c); } break; }
             if(S.grab) return true; }
           if(c.st==='dash'&&play){ c.x+=Math.cos(c.a)*vel*dt; c.z+=Math.sin(c.a)*vel*dt; c.d0+=vel*dt; if(!c.hit) twRushTell(c,c.a); if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
             if(!c.hit&&Math.hypot(P2.x-c.x,P2.z-c.z)<1.15&&Math.abs(P2.y-gy)<1.8){ const r=twStrictDo(c.from,()=>twHitP(2,c.x,c.z,{heavy:true,melee:true,onParry:()=>{ c.d0=99; Game.dmgNums.push({x:c.x,y:gy+3,z:c.z,n:'SHATTER',t:0,col:'#d0a0ff'}); }})); if(r!=='none'){ c.hit=true; c.res=now; } }
@@ -8591,9 +8593,10 @@ function twGoopSpread(cx,cz,dur){ const tex=twSplatTex(0), A=twBounds(), n=1500,
     if(ch) im.instanceMatrix.needsUpdate=true; return k.t<dur+.2; }); return im; }
 function twMuralOn(){ const A=twBounds(), cx=(A.x0+A.x1)/2, cz=(A.z0+A.z1)/2, r=(A.x1-A.x0)/2; if(TWT.mural) return;
   const hid=[]; for(const o of (L.root?L.root.children:[])){ if(o.isInstancedMesh||(o.isMesh&&o.geometry&&o.geometry.type==='DodecahedronGeometry')){ if(o.visible){ o.visible=false; hid.push(o); } } }
-  const g=new THREE.Group(); const vo=new THREE.Mesh(new THREE.PlaneGeometry((L.w||120)+80,(L.d||110)+80),new THREE.MeshBasicMaterial({color:0x04020a,fog:false})); vo.rotation.x=-Math.PI/2; vo.position.set((L.w||116)/2,.02,(L.d||108)/2);
-  const mu=new THREE.Mesh(new THREE.CircleGeometry(r,96),new THREE.MeshBasicMaterial({map:twMuralTex(),transparent:true,fog:false})); mu.rotation.x=-Math.PI/2; mu.position.set(cx,.04,cz);
-  const rim=new THREE.Mesh(new THREE.RingGeometry(r,r+2.5,96),new THREE.MeshBasicMaterial({color:0x5a4ab0,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); rim.rotation.x=-Math.PI/2; rim.position.set(cx,.05,cz);
+  const g=new THREE.Group(); const vo=new THREE.Mesh(new THREE.PlaneGeometry((L.w||120)+80,(L.d||110)+80),new THREE.MeshBasicMaterial({color:0x04020a,fog:false,transparent:true,depthWrite:false})); vo.renderOrder=-3; vo.rotation.x=-Math.PI/2; vo.position.set((L.w||116)/2,.02,(L.d||108)/2);
+  const mu=new THREE.Mesh(new THREE.CircleGeometry(r,96),new THREE.MeshBasicMaterial({map:twMuralTex(),transparent:true,fog:false,depthWrite:false})); mu.renderOrder=-2; mu.rotation.x=-Math.PI/2; mu.position.set(cx,.04,cz);
+  const rim=new THREE.Mesh(new THREE.RingGeometry(r,r+2.5,96),new THREE.MeshBasicMaterial({color:0x5a4ab0,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); rim.renderOrder=-1; rim.rotation.x=-Math.PI/2; rim.position.set(cx,.05,cz);
+  // the floor is a backdrop: drawn first and never writing depth, so every telegraph on the ground stays on top of it
   g.add(vo,mu,rim); L.root.add(g); TWT.mural={g,hid}; TWT.circle={x:cx,z:cz,r}; }
 function* twCaoDomain(T){ const P=Player, A=twBounds(), cx=(A.x0+A.x1)/2, cz=(A.z0+A.z1)/2; twMuralTex(); /* build the glass now, while he talks */
   yield say('caotan',"Senpai... have you ever seen a man's soul? Let me show you mine.");
@@ -8621,7 +8624,8 @@ function twIceTex(){ if(TWT.iceTex) return TWT.iceTex; const S=128, cv=document.
 function twBankaiPulse(cx,cz,dur){ const W=L.w||116, Dd=L.d||108, st=2, nx=Math.ceil(W/st), nz=Math.ceil(Dd/st), n=nx*nz, im=new THREE.InstancedMesh(new THREE.PlaneGeometry(st+.05,st+.05),new THREE.MeshLambertMaterial({map:twIceTex(),color:0xbcc4d0,emissive:0x1e2a3c,emissiveIntensity:.45}),n), o=new THREE.Object3D(), T=[];
   for(let j=0;j<nz;j++) for(let i=0;i<nx;i++){ const x=i*st+st/2, z=j*st+st/2, k=j*nx+i; T.push({x,z,d:Math.hypot(x-cx,z-cz)+rnd(-1.5,1.5),r:Math.floor(Math.random()*4)}); o.position.set(x,.015,z); o.rotation.set(-Math.PI/2,0,0); o.scale.set(0,0,0); o.updateMatrix(); im.setMatrixAt(k,o.matrix); }
   L.root.add(im); const fl=twTufts().filter(m=>m!==im), cols=[]; const c0=new THREE.Color(1,1,1), mtx=new THREE.Matrix4(), p=new THREE.Vector3();
-  for(const m of fl){ const lily=m.material&&m.material.emissiveIntensity>0, ps=[]; for(let i=0;i<m.count;i++){ m.getMatrixAt(i,mtx); p.setFromMatrixPosition(mtx); ps.push([p.x,p.z]); m.setColorAt(i,c0); } m.instanceColor.needsUpdate=true; m.material.needsUpdate=true; cols.push({m,ps,lily,done:new Uint8Array(m.count),e0:m.material.emissiveIntensity}); }
+  for(const m of fl){ const lily=m.material&&m.material.emissiveIntensity>0, ps=[]; for(let i=0;i<m.count;i++){ m.getMatrixAt(i,mtx); p.setFromMatrixPosition(mtx); ps.push([p.x,p.z]); m.setColorAt(i,c0); } m.instanceColor.needsUpdate=true; m.material.needsUpdate=true; cols.push({m,ps,lily,done:new Uint8Array(m.count),e0:m.material.emissiveIntensity,tr:m.material.transparent,dw:m.material.depthWrite,ro:m.renderOrder});
+    m.material.transparent=true; m.material.depthWrite=false; m.renderOrder=-2; /* the snowy tufts never hide a telegraph on the ground: drawn before them, no depth */ }
   TWT.ice={im,cols,T,inks:[],st}; const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,96),new THREE.MeshBasicMaterial({color:0xbfe8ff,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false})); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.3,cz); L.root.add(ring);
   const black=new THREE.Color(.09,.05,.13), frost=new THREE.Color(.6,.68,.8), maxd=Math.hypot(Math.max(cx,W-cx),Math.max(cz,Dd-cz))+3, k={t:0};
   Game.fxUpd.push(dt=>{ try{ if(!im.parent){ ring.parent&&ring.parent.remove(ring); return false; } k.t+=dt; const R=maxd*Math.min(1,k.t/dur); ring.scale.set(R+.01,R+.01,1); ring.material.opacity=.8*(1-Math.min(1,k.t/dur));
@@ -8665,7 +8669,7 @@ function twIceInks(){ const I=TWT.ice; if(!I) return; for(const c of scene.child
 // ---------- drawing, and cleanup ----------
 (function(){ const du=drawUI; drawUI=function(){ du(); try{ twDomFrame(); twP5Frame(); twZeldaFrame(); }catch(e){ console.error('title cards',e); TWT.p5=TWT.zc=TWT.dom=null; } }; })();
 function twArenaRestore(){ TWT.circle=null; TWT.snow=false; const M=TWT.mural; if(M){ if(M.g.parent) M.g.parent.remove(M.g); M.hid.forEach(o=>o.visible=true); TWT.mural=null; }
-  const I=TWT.ice; if(I){ if(I.im.parent) I.im.parent.remove(I.im); const w=new THREE.Color(1,1,1); for(const C of I.cols){ for(let i=0;i<C.ps.length;i++) C.m.setColorAt(i,w); if(C.m.instanceColor) C.m.instanceColor.needsUpdate=true; if(C.lily) C.m.material.emissiveIntensity=C.e0; } for(const q of I.inks){ q.m.blending=THREE.AdditiveBlending; q.m.color.setHex(q.c); delete q.m.userData.iceInk; q.m.needsUpdate=true; } TWT.ice=null; } }
+  const I=TWT.ice; if(I){ if(I.im.parent) I.im.parent.remove(I.im); const w=new THREE.Color(1,1,1); for(const C of I.cols){ for(let i=0;i<C.ps.length;i++) C.m.setColorAt(i,w); if(C.m.instanceColor) C.m.instanceColor.needsUpdate=true; if(C.lily) C.m.material.emissiveIntensity=C.e0; C.m.material.transparent=C.tr; C.m.material.depthWrite=C.dw; C.m.renderOrder=C.ro; C.m.material.needsUpdate=true; } for(const q of I.inks){ q.m.blending=THREE.AdditiveBlending; q.m.color.setHex(q.c); delete q.m.userData.iceInk; q.m.needsUpdate=true; } TWT.ice=null; } }
 (function(){ const ef=twEndFight; twEndFight=function(){ try{ twArenaRestore(); }catch(e){} return ef.apply(this,arguments); };
   const cc=twClearCine; twClearCine=function(){ TWT.p5=TWT.zc=TWT.dom=TWT.spl=null; return cc.apply(this,arguments); }; })();
 
@@ -15261,8 +15265,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Omar's Tear: the scar that leads to the sky glows deep red (reads on snow)";
-const DBG_NEW=['omar:tear'];
+const DBG_PATCH="Oct 27: Caotan's mural never hides telegraphs, nosebleeds rise higher; Omar's snowy tufts never hide telegraphs, the first Requiem clone forgives an early press until halfway";
+const DBG_NEW=['caotan:*','caotan:nose','omar:clones','omar:hands'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
