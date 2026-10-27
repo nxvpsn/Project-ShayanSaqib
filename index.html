@@ -12109,9 +12109,10 @@ function* nbPhantomRush(){ const C={n:1,par:0}; twBark('nathan',"Phantom rush! Y
 // - every flat sprite turns to face the camera (Sprite3D planes, Nathan's mech), and the flower tufts do too (a
 //   billboard vertex shader, set the first time it's on);
 // - Nathan is a training dummy for now: he stays put, never attacks, hits flash and show numbers but take no HP.
+// - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
-const TPS={on:0,fov0:null,p:null,l:null,bb:0};
+const TPS={on:0,fov0:null,p:null,l:null,bb:0,off:null};
 function tpsFight(){ return typeof NB!=='undefined'&&NB&&NB.alive&&ALI()&&!Game.mech&&L&&L.key==='flowers'; }
 function tpsOn(){ return tpsFight()&&!NB.inv&&Game.state==='play'&&!Cam.cine&&!Game.script; }
 function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
@@ -12155,6 +12156,44 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
       for(const s of SPRITES) if(s&&s.mesh) s.mesh.quaternion.copy(camera.quaternion);
       if(NB&&NB.mesh){ NB.mesh.quaternion.copy(camera.quaternion); NB.mesh.scale.x=1; }
     }catch(e){ console.error('tps camera',e); return uc.apply(this,arguments); } }; })();
+// Ali's facing: picked relative to this camera (he faces Nathan, so you see his back), not the top-down screen
+(function(){ const da=drawAliHD; drawAliHD=function(c,cx,by,f,s){ const P=Player; if(!tpsOn()||!TPS.p||!s||s.t!==P.t||s.anim!==P.anim) return da.apply(this,arguments);
+    const a0=P.ang, fy=Math.atan2(TPS.l[2]-TPS.p[2],TPS.l[0]-TPS.p[0]), a=(P.ang||0)-fy-Math.PI/2;
+    try{ P.ang=a; return da.call(this,c,cx,by,Math.cos(a)>=0?1:-1,s); } finally{ P.ang=a0; } }; })();
+// his slash tears follow him (at this run speed they'd be left behind): their arcs are re-centred on him every frame
+(function(){ const ap=twArcPts; twArcPts=function(){ const o=TPS.off; if(!o) return ap.apply(this,arguments); const a=[...arguments]; a[0]+=o[0]; a[1]+=o[1]; a[2]+=o[2]; return ap.apply(this,a); }; })();
+(function(){ const sf=aliSlashFX; aliSlashFX=function(){ const n0=TW_GASH.length, r=sf.apply(this,arguments);
+    try{ if(tpsOn()){ const P=Player, x0=P.x, y0=P.y, z0=P.z; for(let i=n0;i<TW_GASH.length;i++){ const g=TW_GASH[i], f=g.pts; g.pts=()=>{ TPS.off=[P.x-x0,P.y-y0,P.z-z0]; try{ return f(); } finally{ TPS.off=null; } }; } } }catch(e){ console.error('tps slash',e); }
+    return r; }; })();
+
+// ----- 59u_nbsprite.js -----
+// =====================================================================
+// NATHAN IN 8 DIRECTIONS (Ali's road only; Shayan's Oddities and the mech fight keep the original art).
+// img/nathan/nathan.png (made by nathan_sprite.py: a 3D model rendered as pixel art): 176x192 cells, columns =
+// facings S,SE,E,NE,N,NW,W,SW, rows: idle 0-3, dash 4-5, slash 6-8, hurt 9. His facing (toward Ali) is taken
+// relative to the camera, so it holds in the behind-the-back view too. No cyan halo over him on this road.
+// =====================================================================
+const NBS={img:null,ok:false,cv:null,c:null,tex:null,geo:null,nb:null,key:'',slashT:0,CW:176,CH:192};
+(function(){ try{ const im=new Image(); im.onload=()=>{ NBS.ok=true; }; im.src='img/nathan/nathan.png'; NBS.img=im; }catch(e){} })();
+function nbsOn(){ return NBS.ok&&typeof NB!=='undefined'&&NB&&NB.mesh&&ALI(); }
+// his facing on the sheet: the angle toward Ali, measured from the camera's side of him
+function nbsDir(){ const P=Player, cp=camera.position, a=Math.atan2(P.z-NB.z,P.x-NB.x), ca=Math.atan2(cp.z-NB.z,cp.x-NB.x);
+  return ((Math.round(-(a-ca)/(Math.PI/4))%8)+8)%8; }
+function nbsRow(){ if(NB.stunned) return 9; if(NBS.slashT>0) return NBS.slashT>.22?7:8; if(NB.dsh) return 4+(Math.floor(Game.time*12)%2); return Math.floor(Game.time*6)%4; }
+function nbsInit(){ if(!NBS.cv){ NBS.cv=document.createElement('canvas'); NBS.cv.width=NBS.CW; NBS.cv.height=NBS.CH; NBS.c=NBS.cv.getContext('2d'); NBS.c.imageSmoothingEnabled=false;
+    const t=new THREE.CanvasTexture(NBS.cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; NBS.tex=t;
+    // the body as tall as the old art's (3.7 units feet to head): 31 px per model unit, 0.925 units each; feet 6 px up
+    const k=.925/31, w=NBS.CW*k, h=NBS.CH*k; NBS.geo=new THREE.PlaneGeometry(w,h); NBS.geo.translate(0,h/2-6*k,0); }
+  NB.mat.map=NBS.tex; NB.mat.needsUpdate=true; NB.mesh.geometry=NBS.geo; NBS.nb=NB; NBS.key=''; }
+function nbsDraw(dt){ if(NBS.nb!==NB) nbsInit(); NBS.slashT=Math.max(0,NBS.slashT-dt);
+  const d=nbsDir(), r=nbsRow(), key=d+','+r; NB.mesh.scale.x=1; if(NB.glow) NB.glow.visible=false;
+  if(key!==NBS.key){ NBS.key=key; NBS.c.clearRect(0,0,NBS.CW,NBS.CH); NBS.c.drawImage(NBS.img,d*NBS.CW,r*NBS.CH,NBS.CW,NBS.CH,0,0,NBS.CW,NBS.CH); NBS.tex.needsUpdate=true; } }
+(function(){ const ds=drawSprites; drawSprites=function(){ const r=ds.apply(this,arguments); try{ if(nbsOn()) nbsDraw(1/60); }catch(e){ console.error('nathan sprite',e); } return r; }; })();
+// the slash frames: on every strike
+(function(){ const ns=nbStrike; nbStrike=function(){ NBS.slashT=.36; return ns.apply(this,arguments); }; })();
+// afterimages: a still of the current frame instead of the old art
+(function(){ const na=nbAfterimage; nbAfterimage=function(){ const r=na.apply(this,arguments); try{ if(nbsOn()&&NBS.cv&&NBG.length){ const g=NBG[NBG.length-1].m, cv=document.createElement('canvas'); cv.width=NBS.CW; cv.height=NBS.CH;
+      cv.getContext('2d').drawImage(NBS.cv,0,0); const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; g.material.map=t; g.material.needsUpdate=true; g.scale.x=1; } }catch(e){} return r; }; })();
 
 // ----- 60_coop.js -----
 // =====================================================================
@@ -15222,8 +15261,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Twins: new \"Come here, little boy\" grab (dash to escape), Omar's rush no longer grabs, grab camera zoomed out";
-const DBG_NEW=['duo:comeHere','duo:rushTag','duo:glompReap'];
+const DBG_PATCH="Oct 27: Ali's Nathan fight: Nathan in 8 directions (3D-rendered pixel sheet), no cyan halo; Ali faces right in third person, his slash tears follow him";
+const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

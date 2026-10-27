@@ -6,9 +6,10 @@
 // - every flat sprite turns to face the camera (Sprite3D planes, Nathan's mech), and the flower tufts do too (a
 //   billboard vertex shader, set the first time it's on);
 // - Nathan is a training dummy for now: he stays put, never attacks, hits flash and show numbers but take no HP.
+// - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
-const TPS={on:0,fov0:null,p:null,l:null,bb:0};
+const TPS={on:0,fov0:null,p:null,l:null,bb:0,off:null};
 function tpsFight(){ return typeof NB!=='undefined'&&NB&&NB.alive&&ALI()&&!Game.mech&&L&&L.key==='flowers'; }
 function tpsOn(){ return tpsFight()&&!NB.inv&&Game.state==='play'&&!Cam.cine&&!Game.script; }
 function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
@@ -52,3 +53,12 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
       for(const s of SPRITES) if(s&&s.mesh) s.mesh.quaternion.copy(camera.quaternion);
       if(NB&&NB.mesh){ NB.mesh.quaternion.copy(camera.quaternion); NB.mesh.scale.x=1; }
     }catch(e){ console.error('tps camera',e); return uc.apply(this,arguments); } }; })();
+// Ali's facing: picked relative to this camera (he faces Nathan, so you see his back), not the top-down screen
+(function(){ const da=drawAliHD; drawAliHD=function(c,cx,by,f,s){ const P=Player; if(!tpsOn()||!TPS.p||!s||s.t!==P.t||s.anim!==P.anim) return da.apply(this,arguments);
+    const a0=P.ang, fy=Math.atan2(TPS.l[2]-TPS.p[2],TPS.l[0]-TPS.p[0]), a=(P.ang||0)-fy-Math.PI/2;
+    try{ P.ang=a; return da.call(this,c,cx,by,Math.cos(a)>=0?1:-1,s); } finally{ P.ang=a0; } }; })();
+// his slash tears follow him (at this run speed they'd be left behind): their arcs are re-centred on him every frame
+(function(){ const ap=twArcPts; twArcPts=function(){ const o=TPS.off; if(!o) return ap.apply(this,arguments); const a=[...arguments]; a[0]+=o[0]; a[1]+=o[1]; a[2]+=o[2]; return ap.apply(this,a); }; })();
+(function(){ const sf=aliSlashFX; aliSlashFX=function(){ const n0=TW_GASH.length, r=sf.apply(this,arguments);
+    try{ if(tpsOn()){ const P=Player, x0=P.x, y0=P.y, z0=P.z; for(let i=n0;i<TW_GASH.length;i++){ const g=TW_GASH[i], f=g.pts; g.pts=()=>{ TPS.off=[P.x-x0,P.y-y0,P.z-z0]; try{ return f(); } finally{ TPS.off=null; } }; } } }catch(e){ console.error('tps slash',e); }
+    return r; }; })();
