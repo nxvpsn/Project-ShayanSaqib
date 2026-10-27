@@ -79,7 +79,7 @@ function twFence(x,z,r,col,life){ const n=Math.max(6,Math.min(28,Math.round(6.28
   const place=()=>{ for(let i=0;i<n;i++){ const a=i/n*6.283, px=f.x+Math.cos(a)*f.r, pz=f.z+Math.sin(a)*f.r; sp[i].position.set(px,groundY(px,pz)+.02,pz); } };
   f.move=(nx,nz,nr)=>{ f.x=nx; f.z=nz; if(nr!=null) f.r=nr; place(); }; f.kill=()=>{ if(f.dead) return; f.dead=1; sp.forEach(s=>scene.remove(s)); };
   place(); Game.fxUpd.push(dt=>{ try{ if(f.dead) return false; f.t+=dt; if(life!=null&&f.t>=life){ f.kill(); return false; }
-      const k=Math.min(1,f.t/.2); for(const s of sp) s.scale.set(.3,Math.max(.01,1.4*k),1); TW_FENCE_TEX.offset.y=(performance.now()/1000*1.8)%1; return true; }catch(e){ f.kill(); return false; } });
+      const k=Math.min(1,f.t/.2); for(const s of sp) s.scale.set(.2,Math.max(.01,.55*k),1); /* a third of Shayan's height */ TW_FENCE_TEX.offset.y=(performance.now()/1000*1.8)%1; return true; }catch(e){ f.kill(); return false; } });
   return f; }
 function twBlast(x,z,r,delay,o){ o=o||{}; const col=o.col||0xff3a6a, mk=FX.marker(x,z,r,col,delay+.05), hh=twBlastH(o), fence=hh>1?twFence(x,z,r,col,delay+.05):null;
   return twHz({upd(dt,play){ if(play) this.t+=dt; if(this.t<delay) return true; const gy=groundY(x,z);
