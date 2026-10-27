@@ -7,7 +7,7 @@
 // Up close he auto-parries swings and projectiles (his charge keeps going); use the Drill and he drills back, cancelling yours.
 // White goo (these splotches, Caotan's goo puddles and goo pellets) gives Omar's goop slow debuff (twGoopSlow, 22_omar3.js).
 // =====================================================================
-const IMPC={dash:18, charge:1.4, fbSp:15, fbDmg:3, rushSp:17, rushDmg:2, down:3};
+const IMPC={dash:18, charge:1.4, fbSp:15, fbDmg:3, rushSp:17, rushDmg:0, down:3};
 IMP.down=null; IMP.clone=null;
 NAMES.gooshayan='Goo Shayan'; NAMES.gooali='Goo Ali';
 // the sperm got you
@@ -26,7 +26,7 @@ function impDown(){ const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IM
     return dd.apply(this,arguments); }; })();
 // Caotan holds his attacks while you're down, and doesn't Impregnate again while a clone is out
 (function(){ const pk=twPick; twPick=function(T){ if(IMP.down&&T&&T.who==='caotan') return null; let k=pk.apply(this,arguments);
-    for(let i=0;i<3&&k==='impregnate'&&IMP.clone;i++) k=pk.apply(this,arguments); return k==='impregnate'&&IMP.clone?null:k; }; })();
+    const busy=()=>!!IMP.clone||IMP.list.length>0; for(let i=0;i<3&&k==='impregnate'&&busy();i++) k=pk.apply(this,arguments); return k==='impregnate'&&busy()?null:k; }; })();
 // the clone: a hazard (twClearHz removes it with everything else)
 function impClone(x,z){ const spr=new Sprite3D(96,96); spr.show(false);
   const C={x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',ign:0,swU:0,swN:0,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,rushes:0,dead:false};
@@ -71,7 +71,9 @@ function impCloneUpd(C,dt){ const P=Player, T=TW.foes.find(t=>t.who==='caotan'),
     impRushWatch(C);
     if(Math.hypot(P.x-C.x,P.z-C.z)<TW_DASH_R&&Math.abs(P.y-C.gy)<2.4){ const r=twStrictDo(R.from,()=>twHitP(IMPC.rushDmg,C.x,C.z,{melee:true,win:TW_DASH_WIN}));
       if(r==='parry'){ const a=Math.atan2(C.z-P.z,C.x-P.x), q=twClampXZ(P.x+Math.cos(a)*1.5,P.z+Math.sin(a)*1.5,1); C.x=q.x; C.z=q.z; C.ang=a+Math.PI; impGo(C,'triple'); return; }
-      if(r!=='none'){ impGo(C,'retreat'); C.ign=0; return; } }
+      if(r!=='none'){ if(twStrictFirst(R.from0)){ /* you swung, just not on time */ Game.dmgNums.push({x:C.x,y:C.y+3,z:C.z,n:'TOO EARLY!',t:0,big:true,col:'#ffffff'});
+          if(C.al) twBark('gooali',"Too early! Rookie mistake. Trust me, I'd know. I'm you.",true); else twBark('gooshayan',"Too early! Rookie mistake. Trust me, I'd know. I'm you.",true); }
+        impGo(C,'retreat'); C.ign=0; return; } }
     if(R.trav>=R.d){ impGo(C,'retreat'); C.ign=0; } return; }
   if(C.st==='triple'){ // he swings like you do, three times: every swing is parried for you
     C.ang=toP; C.anim='swing';
@@ -97,6 +99,7 @@ function impShoot(C){ const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x), d=Math.hypo
   const core=new THREE.Mesh(new THREE.SphereGeometry(.42,10,8),new THREE.MeshBasicMaterial({color:0xff3a5a})), inner=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshBasicMaterial({color:0xffd0d8}));
   g.add(core); g.add(inner); g.userData.tw=1; scene.add(g);
   const F={g,core,x:C.x+Math.cos(a)*.7,y:y0,z:C.z+Math.sin(a)*.7,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp,vy:clamp(((P.y+1.1)-y0)/Math.max(.3,d/sp),-6,6),t:0,defl:false,dead:false};
+  try{ const e=pxvPlay('fireball_burn',{x:0,y:0,z:0,size:2.3,depth:true}); if(e){ g.add(e.m); e.m.position.set(0,.3,0); e.g=g; e.noAim=true; } }catch(e){ console.error('goo clone fireball flames',e); } /* Shayan's charged fireball look (06c_pxvfx) */
   C.fb=F; Sound.sfx('bigfire'); shake(.3); FX.burst(C.x,C.y+1.1,C.z,24,0xff1a3a,5,.3);
   twHz({upd(dt,play){ if(play&&!F.dead){ try{ impFbUpd(F,dt); }catch(e){ console.error('goo clone fireball',e); F.dead=true; } } if(F.dead){ scene.remove(g); return false; } return true; }, kill(){ F.dead=true; scene.remove(g); }});
   return F; }
@@ -112,7 +115,7 @@ function impDeflect(F){ const P=Player, a=P.ang||0; F.defl=true; F.t=0; F.vx=Mat
   Game.dmgNums.push({x:F.x,y:F.y+.6,z:F.z,n:'DEFLECT',t:0,col:'#9fe0ff'}); }
 // the rush: the usual rush timing (tell .6/sp, the first press in his lane after tell + grace is judged in TW_DASH_WIN)
 function impRushBegin(C,sp){ const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x), d=Math.min(15,Math.hypot(P.x-C.x,P.z-C.z)+3.5), tell=.6/sp;
-  C.R={a,ux:Math.cos(a),uz:Math.sin(a),d,sx:C.x,sz:C.z,from:Game.time+TW_STRICT.grace,tEnd:Game.time+tell,trav:0,slT:0};
+  C.R={a,ux:Math.cos(a),uz:Math.sin(a),d,sx:C.x,sz:C.z,from:Game.time+TW_STRICT.grace,from0:Game.time+TW_STRICT.grace,tEnd:Game.time+tell,trav:0,slT:0};
   C.ang=a; FX.line(C.x,C.z,a,d,2.6,0xff8a3a,tell); Sound.sfx('ting'); }
 function impRushWatch(C){ const R=C.R; for(let g=0;g<40;g++){ const p=twStrictFirst(R.from); if(!p) return; const P=Player, rx=P.x-R.sx, rz=P.z-R.sz, al=rx*R.ux+rz*R.uz, pe=Math.abs(rx*R.uz-rz*R.ux);
     if(al<-.5||al>R.d+.5||pe>1.6){ R.from=p.t; continue; } return; } }
@@ -154,13 +157,29 @@ function impCloneFig(C,c,cx,by){ const f=Math.cos(C.ang)>=0?1:-1, a=C.anim, t=C.
   else if(a==='shoot') fr=shFrame('punch',dir,4);
   else fr=shFrame('rot',dir,0);
   shBlit(c,fr,cx,by,0,0,0,1); }
-function impGooTint(c,cx,by,t){ c.save(); c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(248,246,238,.72)'; c.fillRect(0,0,96,96);
-  c.fillStyle='rgba(255,255,255,.95)'; c.fillRect(cx-6,by-40,2,3); c.fillRect(cx+3,by-31,1,3); c.fillRect(cx-2,by-18,2,2); c.restore();
-  c.fillStyle='#f2efe4'; for(let i=0;i<5;i++){ const u=(t*.9+i*.37)%1, x=Math.round(cx-9+i*4.5), y=Math.round(by-26+(i%3)*5); c.fillRect(x,y,1,Math.round(2+u*6)); if(u>.75) c.fillRect(x,y+Math.round(5+u*9),1,1); } }
+// the goo: every pixel recoloured into a solid white-goo ramp by its brightness (features stay readable, bands pushed bright), lumps on top, a wet highlight rim on top
+// edges, cool shade on the bottom ones, glints sliding over him, a slow wobble, drips that stretch and fall, and a puddle at his feet
+const IMP_GOO=[[124,122,146],[198,196,210],[234,232,226],[250,249,244]];
+function impGooTint(c,cx,by,t){ const W=96, H=96; let im=null; try{ im=c.getImageData(0,0,W,H); }catch(e){} if(!im||!im.data||im.data.length<W*H*4) return;
+  const d=im.data, src=new Uint8ClampedArray(d), on=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&src[(y*W+x)*4+3]>40, drips=[], bumps=[];
+  for(let y=0;y<H;y++){ const sh=y<by-6?Math.round(Math.sin(t*5+y*.32)*.8):0; /* the wobble: rows sway by a pixel, the feet stay put */
+    for(let x=0;x<W;x++){ const o=(y*W+x)*4, sx=x-sh; if(!on(sx,y)){ d[o+3]=0; continue; } const i=(y*W+sx)*4, L=(src[i]*.3+src[i+1]*.59+src[i+2]*.11)/255;
+      let col=IMP_GOO[L<.07?0:L<.17?1:L<.42?2:3];
+      if(!on(sx,y-1)||(!on(sx-1,y)&&L>.3)) col=[255,255,255]; else if(!on(sx,y+1)||!on(sx+1,y)) col=IMP_GOO[L<.07?0:1];
+      if(((x*7+y*13+Math.floor(t*6))%61)===0) col=[255,255,255];
+      d[o]=col[0]; d[o+1]=col[1]; d[o+2]=col[2]; d[o+3]=255;
+      if(!on(sx,y-1)&&((x*29+y*7)%5)===0) bumps.push([x,y]);
+      if(!on(sx,y+1)&&y<by-5&&((x*37+y*11)%4)===0) drips.push([x,y]); } }
+  c.putImageData(im,0,0);
+  for(const [x,y] of bumps){ c.fillStyle='#faf9f4'; c.fillRect(x-1,y-1,3,1); c.fillStyle='#ffffff'; c.fillRect(x,y-2,1,1); } /* lumpy top edges */
+  for(const [x,y] of drips){ const ph=(t*.7+((x*13)%10)/10)%1, len=Math.max(0,Math.round(1+ph*7)); c.fillStyle='#e2dfd6'; c.fillRect(x,y+1,1,len); c.fillRect(x-1,y+len,3,2); c.fillStyle='#ffffff'; c.fillRect(x-1,y+len,1,1);
+    if(ph>.8){ const fy=y+len+3+Math.round((ph-.8)*40); if(fy<by) { c.fillStyle='#f7f5ee'; c.fillRect(x,fy,1,2); } } }
+  const pw=11+Math.round(Math.sin(t*2)*1.5); c.fillStyle='#b9b7c2'; c.fillRect(cx-pw,by-1,pw*2,2); c.fillStyle='#e2dfd6'; c.fillRect(cx-pw+2,by-2,pw*2-4,2); c.fillStyle='#ffffff'; c.fillRect(cx-pw+4,by-2,4,1); }
 // white goo slows you (Omar's goop debuff): the goo splats on the floor and the goo pellets
 (function(){ const zn=twZone; twZone=function(x,z,r,dur,o){ const h=zn.apply(this,arguments);
     try{ if(o&&o.splat&&h){ const u=h.upd; h.upd=function(dt,play){ const k=u.apply(this,arguments); try{ if(play&&this.t>.2&&!IMP.down&&twInR(x,z,r,.6)) twGoopSlow(); }catch(e){ console.error('goo slow',e); } return k; }; } }catch(e){}
     return h; };
-  const ub=updateBolts; updateBolts=function(dt){ const P=Player, hp0=P.hp; let near=false;
+  const ub=updateBolts; updateBolts=function(dt){ const P=Player; let near=false;
     try{ for(const b of BOLTS) if(b.kind==='goo'&&!b.friendly&&b.col===0xffffff&&Math.hypot(P.x-b.x,P.z-b.z)<1.6) near=true; }catch(e){}
-    const r=ub.apply(this,arguments); try{ if(near&&P.hp<hp0) twGoopSlow(); }catch(e){ console.error('goo slow',e); } return r; }; })();
+    IMP._gooNear=near; try{ return ub.apply(this,arguments); } finally{ IMP._gooNear=false; } };
+  const hp=hurtPlayer; hurtPlayer=function(){ const r=hp.apply(this,arguments); try{ if(IMP._gooNear) twGoopSlow(); }catch(e){ console.error('goo slow',e); } return r; }; })();

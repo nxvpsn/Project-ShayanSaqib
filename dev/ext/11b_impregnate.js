@@ -1,10 +1,10 @@
 // =====================================================================
 // CAOTAN: IMPREGNATE (solo, phases I-III). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
 // twice as fast as his goo. Hit it (any swing) and it's smacked into the ground half a screen away, dormant, under "BURN IT!":
-// burn it with fireballs (10 small fireballs' worth; a charged one does it at once; Ali's Getsugas count double) and it ignites,
+// burn it down: 10 hits (slashes, fireballs of any size, Getsugas; one each) and it ignites,
 // writhes and dies. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! You go down and a goo clone of you pops out (11c_gooclone.js).
 // =====================================================================
-const IMP={hp:2, speed:22, tell:.9, dormant:12, list:[], womb:null};
+const IMP={hp:10, speed:22, tell:.9, dormant:12, list:[], womb:null};
 // the pink sperm: the goo sperm's shape, pink, bigger head with a smiley face; 4 tail frames
 const IMP_TEX=[];
 function impTex(f){ if(IMP_TEX[f]) return IMP_TEX[f]; const W=64, H=24, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
@@ -34,14 +34,14 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
   const face=()=>{ const a=toScreen(S.x,S.y,S.z), b=toScreen(S.x+S.vx*.05,S.y,S.z+S.vz*.05), dx=b[0]-a[0], dy=b[1]-a[1]; if(dx*dx+dy*dy>.01) S.rot=Math.atan2(-dy,dx); };
   if(S.ft>(S.st==='burn'?.03:.055)){ S.ft=0; S.f=(S.f+1)%4; s.material.map=impTex(S.f); }
   if(S.st==='fly'){ const sp=Math.hypot(S.vx,S.vz), cur=Math.atan2(S.vz,S.vx); let d=Math.atan2(P.z-S.z,P.x-S.x)-cur; while(d>Math.PI) d-=6.283; while(d<-Math.PI) d+=6.283;
-      const na=cur+clamp(d,-1.3*dt,1.3*dt); S.vx=Math.cos(na)*sp; S.vz=Math.sin(na)*sp; S.x+=S.vx*dt; S.z+=S.vz*dt; S.trav+=sp*dt; S.y=lerp(S.y,P.y+1.1,Math.min(1,dt*6)); face();
+      const ad=Math.abs(d), close=Math.hypot(P.x-S.x,P.z-S.z)<3.5&&ad<2, tr=close?99:ad>Math.PI/2?5:2.8, na=cur+clamp(d,-tr*dt,tr*dt), v=IMP.speed*(ad>Math.PI/3&&!close?.45:1); /* homes in; dodge through it and it brakes, loops back round and comes again */ S.vx=Math.cos(na)*v; S.vz=Math.sin(na)*v; S.x+=S.vx*dt; S.z+=S.vz*dt; { const q=twClampXZ(S.x,S.z,.8); S.x=q.x; S.z=q.z; } S.trav+=sp*dt; S.y=lerp(S.y,P.y+1.1,Math.min(1,dt*6)); face();
       if(Math.random()<.6) FX.spawn(S.x,S.y,S.z,0,.2,0,.25,0xff8ac8,.22,0,true);
       const d2=Math.hypot(P.x-S.x,P.z-S.z);
       if(d2<2.1&&impSwinging()){ impSmack(S); return; }
       if(d2<.9&&Math.abs(P.y+1-S.y)<1.6&&!(P.inv>0)&&!(P.dash>0)&&!IMP.down&&!IMP.clone){ S.dead=true; impDown(); return; }
-      if(S.trav>34){ S.dead=true; FX.burst(S.x,S.y,S.z,10,0xff8ac8,3,.25); return; } }
+    }
   else if(S.st==='smack'){ S.k+=dt/.5; const u=Math.min(1,S.k); S.x=lerp(S.sx,S.tx,u); S.z=lerp(S.sz,S.tz,u); S.y=lerp(S.sy,groundY(S.tx,S.tz)+.25,u)+Math.sin(u*Math.PI)*2.6; S.rot+=dt*26;
-      if(u>=1){ S.st='dormant'; S.t=0; S.rot=0; Sound.sfx('slam'); shake(.35); FX.burst(S.x,S.y,S.z,18,0xff8ac8,4,.3); FX.ring(S.x,S.y-.2,S.z,'#ff8ac8',1.6,.3); } }
+      if(u>=1){ S.st='dormant'; S.t=0; S.rot=0; S.lastSw=Player.swingT||0; S.wasSw=impSwinging(); Sound.sfx('slam'); shake(.35); FX.burst(S.x,S.y,S.z,18,0xff8ac8,4,.3); FX.ring(S.x,S.y-.2,S.z,'#ff8ac8',1.6,.3); } }
   else if(S.st==='dormant'){ S.rot=Math.sin(S.t*9)*.12; impBurnHits(S);
       if(S.hp<=1e-6){ S.st='burn'; S.t=0; Sound.sfx('fire'); Sound.sfx('bigfire'); twBark('caotan',"NOOO! He had a NAME! It was Caotan Junior!",true); return; }
       if(S.t>IMP.dormant){ S.st='fly'; S.trav=0; S.hp=IMP.hp; const a=Math.atan2(P.z-S.z,P.x-S.x); S.vx=Math.cos(a)*IMP.speed; S.vz=Math.sin(a)*IMP.speed; S.y=groundY(S.x,S.z)+1.1; IMP.womb={t:0,dur:.6};
@@ -54,9 +54,13 @@ function impSmack(S){ const P=Player, a=P.ang||Math.atan2(S.z-P.z,S.x-P.x), q=tw
   S.st='smack'; S.k=0; S.sx=S.x; S.sy=S.y; S.sz=S.z; S.tx=q.x; S.tz=q.z; Sound.sfx('punch'); Sound.sfx('parry'); FX.hitstop=Math.max(FX.hitstop,.08); FX.spark(S.x,S.y,S.z); shake(.3);
   Game.dmgNums.push({x:S.x,y:S.y+1,z:S.z,n:'SMACKED',t:0,big:true,col:'#ffd0ec'}); twBark('caotan',"My son! You hit my SON!",true); }
 // fireballs (and Ali's Getsugas) on the dormant sperm
-function impBurnHits(S){ const gy=S.y;
-  for(const f of TW.fb||[]){ if(f.hit.has(S)||f.life<=0) continue; if(Math.hypot(f.x-S.x,f.z-S.z)<f.r+.7&&Math.abs(f.y-gy)<1.6){ f.hit.add(S); S.hp-=f.dmg; twFireballHit(f,f.x,f.y,f.z); if(!f.big) f.life=0; S.flash=.1; } }
-  for(const b of BEAMS||[]){ if(!b||b.dead||!b.hit||b.hit.has(S)) continue; if(Math.hypot(b.x-S.x,b.z-S.z)<1.4){ b.hit.add(S); S.hp-=.4; FX.burst(S.x,S.y+.3,S.z,10,0xff3a2a,3,.25); Sound.sfx('hit'); } } }
+// every hit is one pip of ten: a slash, a fireball (any size) or a Getsuga
+function impBurnHits(S){ const gy=S.y, P=Player;
+  for(const f of TW.fb||[]){ if(f.hit.has(S)||f.life<=0) continue; if(Math.hypot(f.x-S.x,f.z-S.z)<f.r+.7&&Math.abs(f.y-gy)<1.6){ f.hit.add(S); S.hp-=1; twFireballHit(f,f.x,f.y,f.z); if(!f.big) f.life=0; S.flash=.1; } }
+  for(const b of BEAMS||[]){ if(!b||b.dead||!b.hit||b.hit.has(S)) continue; if(Math.hypot(b.x-S.x,b.z-S.z)<1.4){ b.hit.add(S); S.hp-=1; FX.burst(S.x,S.y+.3,S.z,10,0xff3a2a,3,.25); Sound.sfx('hit'); } }
+  const sw=impSwinging(), st=(P.swingT||0)!==S.lastSw||(sw&&!S.wasSw); S.lastSw=P.swingT||0; S.wasSw=sw;
+  if(st){ const d=Math.hypot(S.x-P.x,S.z-P.z), big=!!(P.atk&&P.atk.big); if(d<(big?7:2.4)&&Math.abs(P.y-gy)<2.2&&(d<1||angDiff(Math.atan2(S.z-P.z,S.x-P.x),P.ang||0)<1.4)){
+      S.hp-=1; S.flash=.1; Sound.sfx('hit'); FX.burst(S.x,S.y+.3,S.z,12,0xff8ac8,4,.25); FX.spark(S.x,S.y+.3,S.z); shake(.12); } } }
 // the womb over your head (a flashing pink line drawing) and BURN IT! over a dormant sperm
 function impDrawWomb(cx,cy,s,al){ D.save(); D.globalAlpha=al; D.lineJoin='round'; D.lineCap='round';
   const path=()=>{ D.beginPath(); // the body (an upturned pear), the cervix, the tubes curling out to the ovaries
