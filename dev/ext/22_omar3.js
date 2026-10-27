@@ -293,10 +293,10 @@ TWK.omar.storm=function*(T,ph){ const sp=twSp(T), list=TW.planted.splice(0), P=P
     const b=twBolt(T,{kind:'scythe',x:o.x,y:o.y,z:o.z,vx:dx/d*v,vy:dy/d*v,vz:dz/d*v,col:0x8a3aff,dmg:2,life:2}); b.storm=1; Sound.sfx('swing'); yield .26/sp; }
   H.live=false; yield .8; TW.storming=0; T.cast=0; };
 
-// ---------- the goop slow: standing in a lingering monologue puddle halves your speed for 8s (refreshes); an icon over your head ----------
-const TW_GOOP_SLOW=8;
+// ---------- the goop slow: standing in a lingering monologue puddle slows you 70% for 4s (refreshes); an icon over your head ----------
+const TW_GOOP_SLOW=4, TW_GOOP_SPEED=.3;
 function twGoopSlow(){ const P=Player, was=P.goopT>Game.time; P.goopT=Game.time+TW_GOOP_SLOW; if(!was){ Sound.sfx('squelch'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'SLOWED',t:0,col:'#c08aff'}); } }
-(function(){ const iv=inputVec; inputVec=function(){ const v=iv.apply(this,arguments); try{ if(Player.goopT>Game.time) return [v[0]*.5,v[1]*.5]; }catch(e){} return v; }; })();
+(function(){ const iv=inputVec; inputVec=function(){ const v=iv.apply(this,arguments); try{ if(Player.goopT>Game.time) return [v[0]*TW_GOOP_SPEED,v[1]*TW_GOOP_SPEED]; }catch(e){} return v; }; })();
 (function(){ const rp=resetPlayer; resetPlayer=function(){ Player.goopT=0; return rp.apply(this,arguments); }; })();
 (function(){ const ef=twEndFight; twEndFight=function(){ Player.goopT=0; return ef.apply(this,arguments); }; })();
 function drawGoopIcon(){ const P=Player, left=(P.goopT||0)-Game.time; if(!(left>0)||Game.state!=='play'||Game.script) return; const q=toScreen(P.x,P.y+3,P.z); if(!(q[2]<1)) return;
