@@ -2,7 +2,7 @@
 // CAOTAN: IMPREGNATE (solo, phases I-III). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
 // twice as fast as his goo. Hit it (any swing) and it's smacked into the ground half a screen away, dormant, under "BURN IT!":
 // burn it with fireballs (10 small fireballs' worth; a charged one does it at once; Ali's Getsugas count double) and it ignites,
-// writhes and dies. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! (3 damage).
+// writhes and dies. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! You go down and a goo clone of you pops out (11c_gooclone.js).
 // =====================================================================
 const IMP={hp:2, speed:22, tell:.9, dormant:12, list:[], womb:null};
 // the pink sperm: the goo sperm's shape, pink, bigger head with a smiley face; 4 tail frames
@@ -19,7 +19,7 @@ function impTex(f){ if(IMP_TEX[f]) return IMP_TEX[f]; const W=64, H=24, cv=docum
 TWK.caotan.impregnate=function*(T,ph){ const sp=twSp(T); twBark('caotan',"Impregnate! ...Wait, that came out wrong. FIRE!",true);
   T.cast=1; T.heartEyes=1; IMP.womb={t:0,dur:IMP.tell/sp}; Sound.sfx('doki'); Sound.sfx('charge'); yield IMP.tell/sp;
   T.cast=0; T.heartEyes=0; const S=impLaunch(T); Sound.sfx('whoosh'); Sound.sfx('squelch');
-  for(let w=0;w<3&&S.st==='fly';w+=.05) yield .05; yield .4; };
+  for(let w=0;w<3&&S.st==='fly'&&!S.dead;w+=.05) yield .05; yield .4; };
 for(const k of [1,2,3]) if(TWPOOL.caotan[k]&&!TWPOOL.caotan[k].includes('impregnate')) TWPOOL.caotan[k].push('impregnate');
 // one sperm: fly (homing a little) -> smacked (an arc half a screen away) -> dormant (BURN IT!) -> burning -> gone; or it gets you
 function impLaunch(T){ const P=Player, gy=groundY(T.x,T.z), s=new THREE.Sprite(new THREE.SpriteMaterial({map:impTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false}));
@@ -38,8 +38,7 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
       if(Math.random()<.6) FX.spawn(S.x,S.y,S.z,0,.2,0,.25,0xff8ac8,.22,0,true);
       const d2=Math.hypot(P.x-S.x,P.z-S.z);
       if(d2<2.1&&impSwinging()){ impSmack(S); return; }
-      if(d2<.9&&Math.abs(P.y+1-S.y)<1.6){ const r=twHitP(3,S.x,S.z,{ub:true}); if(r==='hit'){ Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); twHeartBurst(P.x,P.z,24);
-          twBark('caotan',"Congratulations, senpai! It's a... it's a lawsuit.",true); S.dead=true; return; } }
+      if(d2<.9&&Math.abs(P.y+1-S.y)<1.6&&!(P.inv>0)&&!(P.dash>0)&&!IMP.down&&!IMP.clone){ S.dead=true; impDown(); return; }
       if(S.trav>34){ S.dead=true; FX.burst(S.x,S.y,S.z,10,0xff8ac8,3,.25); return; } }
   else if(S.st==='smack'){ S.k+=dt/.5; const u=Math.min(1,S.k); S.x=lerp(S.sx,S.tx,u); S.z=lerp(S.sz,S.tz,u); S.y=lerp(S.sy,groundY(S.tx,S.tz)+.25,u)+Math.sin(u*Math.PI)*2.6; S.rot+=dt*26;
       if(u>=1){ S.st='dormant'; S.t=0; S.rot=0; Sound.sfx('slam'); shake(.35); FX.burst(S.x,S.y,S.z,18,0xff8ac8,4,.3); FX.ring(S.x,S.y-.2,S.z,'#ff8ac8',1.6,.3); } }

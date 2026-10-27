@@ -7390,7 +7390,7 @@ function twQuizDeath(){ const P=Player; if(TW.god){ Game.dmgNums.push({x:P.x,y:P
 // CAOTAN: IMPREGNATE (solo, phases I-III). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
 // twice as fast as his goo. Hit it (any swing) and it's smacked into the ground half a screen away, dormant, under "BURN IT!":
 // burn it with fireballs (10 small fireballs' worth; a charged one does it at once; Ali's Getsugas count double) and it ignites,
-// writhes and dies. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! (3 damage).
+// writhes and dies. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! You go down and a goo clone of you pops out (11c_gooclone.js).
 // =====================================================================
 const IMP={hp:2, speed:22, tell:.9, dormant:12, list:[], womb:null};
 // the pink sperm: the goo sperm's shape, pink, bigger head with a smiley face; 4 tail frames
@@ -7407,7 +7407,7 @@ function impTex(f){ if(IMP_TEX[f]) return IMP_TEX[f]; const W=64, H=24, cv=docum
 TWK.caotan.impregnate=function*(T,ph){ const sp=twSp(T); twBark('caotan',"Impregnate! ...Wait, that came out wrong. FIRE!",true);
   T.cast=1; T.heartEyes=1; IMP.womb={t:0,dur:IMP.tell/sp}; Sound.sfx('doki'); Sound.sfx('charge'); yield IMP.tell/sp;
   T.cast=0; T.heartEyes=0; const S=impLaunch(T); Sound.sfx('whoosh'); Sound.sfx('squelch');
-  for(let w=0;w<3&&S.st==='fly';w+=.05) yield .05; yield .4; };
+  for(let w=0;w<3&&S.st==='fly'&&!S.dead;w+=.05) yield .05; yield .4; };
 for(const k of [1,2,3]) if(TWPOOL.caotan[k]&&!TWPOOL.caotan[k].includes('impregnate')) TWPOOL.caotan[k].push('impregnate');
 // one sperm: fly (homing a little) -> smacked (an arc half a screen away) -> dormant (BURN IT!) -> burning -> gone; or it gets you
 function impLaunch(T){ const P=Player, gy=groundY(T.x,T.z), s=new THREE.Sprite(new THREE.SpriteMaterial({map:impTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false}));
@@ -7426,8 +7426,7 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
       if(Math.random()<.6) FX.spawn(S.x,S.y,S.z,0,.2,0,.25,0xff8ac8,.22,0,true);
       const d2=Math.hypot(P.x-S.x,P.z-S.z);
       if(d2<2.1&&impSwinging()){ impSmack(S); return; }
-      if(d2<.9&&Math.abs(P.y+1-S.y)<1.6){ const r=twHitP(3,S.x,S.z,{ub:true}); if(r==='hit'){ Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); twHeartBurst(P.x,P.z,24);
-          twBark('caotan',"Congratulations, senpai! It's a... it's a lawsuit.",true); S.dead=true; return; } }
+      if(d2<.9&&Math.abs(P.y+1-S.y)<1.6&&!(P.inv>0)&&!(P.dash>0)&&!IMP.down&&!IMP.clone){ S.dead=true; impDown(); return; }
       if(S.trav>34){ S.dead=true; FX.burst(S.x,S.y,S.z,10,0xff8ac8,3,.25); return; } }
   else if(S.st==='smack'){ S.k+=dt/.5; const u=Math.min(1,S.k); S.x=lerp(S.sx,S.tx,u); S.z=lerp(S.sz,S.tz,u); S.y=lerp(S.sy,groundY(S.tx,S.tz)+.25,u)+Math.sin(u*Math.PI)*2.6; S.rot+=dt*26;
       if(u>=1){ S.st='dormant'; S.t=0; S.rot=0; Sound.sfx('slam'); shake(.35); FX.burst(S.x,S.y,S.z,18,0xff8ac8,4,.3); FX.ring(S.x,S.y-.2,S.z,'#ff8ac8',1.6,.3); } }
@@ -7459,6 +7458,174 @@ function impDrawWomb(cx,cy,s,al){ D.save(); D.globalAlpha=al; D.lineJoin='round'
     for(const S of IMP.list){ if(S.st!=='dormant') continue; const q=toScreen(S.x,S.y+1.5,S.z); if(!(q[2]<1)) continue; const pu=1+.08*Math.sin(Game.time*10);
       D.save(); D.translate(q[0],q[1]); D.scale(pu,pu); uText('BURN IT!',0,0,`900 22px ${FB}`,'#ff7a1a','center'); D.restore();
       const n=10, k=Math.max(0,S.hp/IMP.hp); for(let i=0;i<n;i++){ D.fillStyle=i<Math.ceil(k*n)?'#ff8ac8':'rgba(255,255,255,.18)'; D.fillRect(q[0]-n*5+i*10,q[1]+8,8,6); } } }catch(e){ console.error('impregnate ui',e); } }; })();
+
+// ----- 11c_gooclone.js -----
+// =====================================================================
+// CAOTAN'S GOO CLONE (Impregnate's punishment, 11b_impregnate.js). The pink sperm reaches you: you're knocked down for 3s
+// (invulnerable, Caotan holds his attacks) and a white goo copy of you squeezes out and talks trash. As you get up it
+// double dashes away, charges a full fireball and shoots it (parry it and it's deflected away, never back to him), its sword
+// ignites and it rushes you slashing like a maniac (one timed parry = he swings three times like you do: an automatic triple
+// parry, then he bursts into 4 sticky splotches of white goo). Dodge the rush or eat it: two jump dashes away, charge, repeat.
+// Up close he auto-parries swings and projectiles (his charge keeps going); use the Drill and he drills back, cancelling yours.
+// White goo (these splotches, Caotan's goo puddles and goo pellets) gives Omar's goop slow debuff (twGoopSlow, 22_omar3.js).
+// =====================================================================
+const IMPC={dash:18, charge:1.4, fbSp:15, fbDmg:3, rushSp:17, rushDmg:2, down:3};
+IMP.down=null; IMP.clone=null;
+NAMES.gooshayan='Goo Shayan'; NAMES.gooali='Goo Ali';
+// the sperm got you
+function impDown(){ const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); Sound.sfx('squelch');
+  twHeartBurst(P.x,P.z,24); shake(.5); FX.hitstop=Math.max(FX.hitstop,.1); FX.burst(P.x,P.y+1,P.z,24,0xff8ac8,4,.3);
+  twBark('caotan',"Congratulations, senpai! It's a... it's a YOU!",true);
+  IMP.down={t:0,dur:IMPC.down}; P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; P.vx=P.vz=0; impClone(P.x,P.z); }
+// downed: no input, invulnerable, lying there (Shayan's death frames, reversed as he gets up)
+(function(){ const up=updatePlayer; updatePlayer=function(dt){ const D=IMP.down, P=Player; if(!D) return up.apply(this,arguments);
+    try{ P.hurt=Math.max(P.hurt||0,.1); P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; }catch(e){}
+    const r=up.apply(this,arguments);
+    try{ P.anim='dead'; P.vx=P.vz=0; P.inv=Math.max(P.inv,.3); P.noBlink=Game.time+.3; P.atk=null; }catch(e){ console.error('imp down',e); } return r; }; })();
+(function(){ const dd=drawShayanHD; drawShayanHD=function(c,cx,by,f,s){ const D=IMP.down, P=Player;
+    if(D&&s&&s.anim==='dead'&&P&&s.t===P.t&&!ALI()&&SHA.ok&&SHA.img){ try{ const left=D.dur-D.t, k=left<.45?Math.max(0,left/.45):Math.min(1,D.t/.45);
+        shBlit(c,shFrame('dead',Math.min(7,Math.floor(k*7.99))),cx,by,0,0,0,1); SHA.drawn=true; return; }catch(e){} }
+    return dd.apply(this,arguments); }; })();
+// Caotan holds his attacks while you're down, and doesn't Impregnate again while a clone is out
+(function(){ const pk=twPick; twPick=function(T){ if(IMP.down&&T&&T.who==='caotan') return null; let k=pk.apply(this,arguments);
+    for(let i=0;i<3&&k==='impregnate'&&IMP.clone;i++) k=pk.apply(this,arguments); return k==='impregnate'&&IMP.clone?null:k; }; })();
+// the clone: a hazard (twClearHz removes it with everything else)
+function impClone(x,z){ const spr=new Sprite3D(96,96); spr.show(false);
+  const C={x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',ign:0,swU:0,swN:0,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,rushes:0,dead:false};
+  IMP.clone=C;
+  twHz({upd(dt,play){ try{ if(play) impCloneUpd(C,dt); impCloneDraw(C); }catch(e){ console.error('goo clone',e); C.dead=true; } if(C.dead){ impCloneEnd(C); return false; } return true; },
+    kill(){ impCloneEnd(C); }});
+  return C; }
+function impCloneEnd(C){ if(C.ended) return; C.ended=1; try{ C.spr.dispose(); }catch(e){} if(C.fb) C.fb.dead=true; if(IMP.clone===C) IMP.clone=null;
+  if(IMP.down){ IMP.down=null; const P=Player; P.hurt=0; P.inv=Math.max(P.inv,.5); } }
+function impGo(C,st){ C.st=st; C.k=0; C.n=0; C.hopA=null; }
+function impCloneUpd(C,dt){ const P=Player, T=TW.foes.find(t=>t.who==='caotan'), sp=T?twSp(T):1, toP=Math.atan2(P.z-C.z,P.x-C.x), away=toP+Math.PI;
+  C.t+=dt; C.k+=dt; C.gy=groundY(C.x,C.z); C.swU=Math.min(1,C.swU+dt/.18); C.sayT-=dt;
+  const step=(a,v)=>{ const q=twClampXZ(C.x+Math.cos(a)*v*dt,C.z+Math.sin(a)*v*dt,1); C.x=q.x; C.z=q.z; };
+  if(C.ign&&Math.random()<.7) FX.spawn(C.x+Math.cos(C.ang)*.6,C.y+rnd(.8,1.6),C.z+Math.sin(C.ang)*.6,rnd(-.3,.3),rnd(1,2.5),rnd(-.3,.3),.35,Math.random()<.5?0xff5a1a:0xffc03a,.25,0,true);
+  if(Math.random()<.25) FX.spawn(C.x+rnd(-.4,.4),C.y+rnd(.3,1.4),C.z,0,-1.5,0,.5,0xf4f0e6,.14,6,false); /* goo drips */
+  if(['dash2','charge','shot','tell','retreat'].includes(C.st)) impAutoParry(C);
+  if(C.st==='emerge'){ const D=IMP.down; if(D) D.t+=dt; C.ang=toP; C.anim='idle';
+    if(!C.emerge&&C.t>.55){ C.emerge=1; const a=rnd(0,6.28), q=twClampXZ(P.x+Math.cos(a)*1.4,P.z+Math.sin(a)*1.4,1); C.x=q.x; C.z=q.z; C.gy=groundY(C.x,C.z); C.y=C.gy;
+      Sound.sfx('squelch'); Sound.sfx('gore'); shake(.3); FX.burst(P.x,P.y+.8,P.z,36,0xffffff,5,.35,false); FX.burst(C.x,C.y+1,C.z,20,0xf4f0e6,3,.3,false);
+      Game.dmgNums.push({x:C.x,y:C.y+3,z:C.z,n:"IT'S A... YOU?!",t:0,big:true,col:'#ffffff'}); }
+    if(C.emerge) C.ek=Math.min(1,C.ek+dt/.45);
+    if(C.t>.8&&!C.said1){ C.said1=1; if(C.al) twBark('gooali',"Hi, Dad. I'm four seconds old and I already want you dead.",true); else twBark('gooshayan',"Hi, Dad. I'm four seconds old and I already want you dead.",true); }
+    if(C.t>2&&!C.said2){ C.said2=1; twBark('caotan',"He has your eyes, senpai! And my... everything else!",true); }
+    if(!D||D.t>=D.dur){ IMP.down=null; P.hurt=0; P.inv=Math.max(P.inv,.5); P.anim='idle'; C.emerge=1; C.ek=1;
+      if(C.al) twBark('gooali',"There's only room for one Ali in this fight. And I'm way stickier.",true); else twBark('gooshayan',"There's only room for one Shayan in this fight. And I'm way stickier.",true);
+      impGo(C,'dash2'); } return; }
+  if(C.st==='dash2'){ // two quick dashes away from you
+    if(C.n>=2){ impGo(C,'charge'); return; }
+    if(C.k<.2){ if(C.hopA==null){ C.hopA=away+rnd(-.5,.5); Sound.sfx('dash'); } C.ang=C.hopA; C.anim='run'; step(C.hopA,IMPC.dash); FX.spawn(C.x,C.y+rnd(.3,1.4),C.z,0,0,0,.25,0xffffff,.3,0,true); }
+    else { C.anim='idle'; C.ang=toP; if(C.k>=.32){ C.n++; C.k=0; C.hopA=null; } } return; }
+  if(C.st==='charge'){ C.ang=toP; C.anim='charge'; C.y=lerp(C.y,C.gy,Math.min(1,dt*10)); const T0=IMPC.charge/sp;
+    if(!C.n){ C.n=1; Sound.sfx('charge'); }
+    if(Math.hypot(P.x-C.x,P.z-C.z)<3.5) step(away,7); /* crowded: he backs off without breaking the charge */
+    if(Math.random()<.8){ const a=rnd(0,6.28); FX.spawn(C.x+Math.cos(a)*.9,C.y+rnd(.6,1.6),C.z+Math.sin(a)*.9,-Math.cos(a)*2,1,-Math.sin(a)*2,.3,C.k>T0*.7?0xffd040:0xff6a1a,.22,0,true); }
+    if(C.k>=T0){ Sound.sfx('ready'); FX.ring(C.x,C.y+.1,C.z,'#ff8a2a',2,.4); impShoot(C); C.ign=1; C.anim='shoot';
+      Game.dmgNums.push({x:C.x,y:C.y+2.8,z:C.z,n:'SWORD IGNITED',t:0,col:'#ff5a2a'}); impGo(C,'shot'); } return; }
+  if(C.st==='shot'){ C.anim=C.k<.3?'shoot':'idle'; C.ang=toP; if(C.k>=.55){ impRushBegin(C,sp); impGo(C,'tell'); } return; }
+  if(C.st==='tell'){ const R=C.R; C.anim='idle'; impRushWatch(C); if(Game.time>=R.tEnd){ Sound.sfx('dash'); impGo(C,'rush');
+      if(!C.rushes++){ if(C.al) twBark('gooali',"My sword's on fire too! HAHAHA! MURDER TIME!",true); else twBark('gooshayan',"My sword's on fire too! HAHAHA! MURDER TIME!",true); } } return; }
+  if(C.st==='rush'){ const R=C.R; step(R.a,IMPC.rushSp); R.trav+=IMPC.rushSp*dt; C.ang=R.a; C.anim='swing'; twRushTell(C,R.a);
+    R.slT-=dt; if(R.slT<=0){ R.slT=.09; C.swN++; C.swU=0; Sound.sfx('swing'); try{ pxvSlash('sh_fslash',C.x,C.gy,C.z,R.a+rnd(-.6,.6),C.swN%2,2.4); }catch(e){} }
+    impRushWatch(C);
+    if(Math.hypot(P.x-C.x,P.z-C.z)<TW_DASH_R&&Math.abs(P.y-C.gy)<2.4){ const r=twStrictDo(R.from,()=>twHitP(IMPC.rushDmg,C.x,C.z,{melee:true,win:TW_DASH_WIN}));
+      if(r==='parry'){ const a=Math.atan2(C.z-P.z,C.x-P.x), q=twClampXZ(P.x+Math.cos(a)*1.5,P.z+Math.sin(a)*1.5,1); C.x=q.x; C.z=q.z; C.ang=a+Math.PI; impGo(C,'triple'); return; }
+      if(r!=='none'){ impGo(C,'retreat'); C.ign=0; return; } }
+    if(R.trav>=R.d){ impGo(C,'retreat'); C.ign=0; } return; }
+  if(C.st==='triple'){ // he swings like you do, three times: every swing is parried for you
+    C.ang=toP; C.anim='swing';
+    if(C.n<2&&C.k>=.26*(C.n+1)){ C.n++; C.swU=0; C.swN++; Sound.sfx('swing'); try{ pxvSlash('sh_fslash',C.x,C.gy,C.z,toP,C.swN%2,2.4); }catch(e){} twMeleeParry(C.x,C.z,{});
+      if(C.n===2){ if(C.al) twBark('gooali',"Wait, you can't parry yourself three ti- BLEGH!",true); else twBark('gooshayan',"Wait, you can't parry yourself three ti- BLEGH!",true); } }
+    if(C.k>=.95){ impPop(C); C.dead=true; } return; }
+  if(C.st==='retreat'){ // two jump dashes away from you
+    if(C.n>=2){ C.y=C.gy; impGo(C,'charge'); return; }
+    const u=Math.min(1,C.k/.38); if(C.hopA==null){ C.hopA=away+rnd(-.6,.6); Sound.sfx('djump'); FX.ring(C.x,C.gy+.05,C.z,'#ffffff',1.2,.3); }
+    C.ang=C.hopA; C.anim='jump'; step(C.hopA,13); C.y=C.gy+Math.sin(u*Math.PI)*1.8; FX.spawn(C.x,C.y+rnd(.3,1.3),C.z,0,0,0,.25,0xffffff,.28,0,true);
+    if(u>=1){ C.y=C.gy; C.n++; C.k=0; C.hopA=null; } return; }
+  if(C.st==='drill'){ C.ang=toP; C.anim='jump'; return; } }
+// up close: your swings and your projectiles get parried (no damage); his charge keeps going
+function impAutoParry(C){ const P=Player, s=impSwinging(), sw=P.swingT||0, start=sw!==C.lastSw||(s&&!C.wasSw); C.lastSw=sw; C.wasSw=s;
+  if(start&&Math.hypot(P.x-C.x,P.z-C.z)<2.7&&Math.abs(P.y-C.y)<2) impClash(C,lerp(C.x,P.x,.4),C.y+1.1,lerp(C.z,P.z,.4));
+  for(const f of TW.fb||[]){ if(f.life>0&&Math.hypot(f.x-C.x,f.z-C.z)<f.r+.8&&Math.abs(f.y-(C.y+1.1))<1.8){ f.life=0; impClash(C,f.x,f.y,f.z); } }
+  for(const b of (typeof BEAMS!=='undefined'?BEAMS:[])||[]){ if(b&&!b.dead&&b.hit&&!b.hit.has(C)&&Math.hypot(b.x-C.x,b.z-C.z)<1.6){ b.hit.add(C); impClash(C,b.x,C.y+1.1,b.z); } } }
+function impClash(C,x,y,z){ C.anim='swing'; C.swU=0; C.swN++; Sound.sfx('parry'); FX.spark(x,y,z); FX.spark(x,y+.1,z); FX.ring(x,C.gy+.1,z,'#ffffff',1.6,.3); shake(.2);
+  Game.dmgNums.push({x:C.x,y:C.y+2.6,z:C.z,n:'PARRIED',t:0,col:'#ffffff'});
+  if(C.sayT<=0){ C.sayT=6; if(C.al) twBark('gooali',"Nope. I know all your moves. I AM your moves."); else twBark('gooshayan',"Nope. I know all your moves. I AM your moves."); } }
+// the full fireball: parried or swung at, it's knocked away along your swing and fizzles (it never goes back to him)
+function impShoot(C){ const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x), d=Math.hypot(P.x-C.x,P.z-C.z), g=new THREE.Group(), y0=C.y+1.1, sp=IMPC.fbSp;
+  const core=new THREE.Mesh(new THREE.SphereGeometry(.42,10,8),new THREE.MeshBasicMaterial({color:0xff3a5a})), inner=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshBasicMaterial({color:0xffd0d8}));
+  g.add(core); g.add(inner); g.userData.tw=1; scene.add(g);
+  const F={g,core,x:C.x+Math.cos(a)*.7,y:y0,z:C.z+Math.sin(a)*.7,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp,vy:clamp(((P.y+1.1)-y0)/Math.max(.3,d/sp),-6,6),t:0,defl:false,dead:false};
+  C.fb=F; Sound.sfx('bigfire'); shake(.3); FX.burst(C.x,C.y+1.1,C.z,24,0xff1a3a,5,.3);
+  twHz({upd(dt,play){ if(play&&!F.dead){ try{ impFbUpd(F,dt); }catch(e){ console.error('goo clone fireball',e); F.dead=true; } } if(F.dead){ scene.remove(g); return false; } return true; }, kill(){ F.dead=true; scene.remove(g); }});
+  return F; }
+function impFbUpd(F,dt){ const P=Player; F.t+=dt; F.x+=F.vx*dt; F.y+=F.vy*dt; F.z+=F.vz*dt; F.g.position.set(F.x,F.y,F.z);
+  if(Math.random()<.9) FX.spawn(F.x,F.y,F.z,-F.vx*.05,rnd(0,.6),-F.vz*.05,.25,F.defl?0x9fe0ff:(Math.random()<.5?0xff0a30:0xff5a70),.5,0,true);
+  if(F.t>(F.defl?.9:2.2)||F.y<groundY(F.x,F.z)-.2||cellH(F.x,F.z)>F.y+.3){ FX.burst(F.x,F.y,F.z,20,F.defl?0x9fe0ff:0xff1a3a,5,.3); F.dead=true; return; }
+  if(F.defl) return;
+  const d=Math.hypot(P.x-F.x,P.z-F.z);
+  if(d<2.4&&Math.abs(F.y-P.y-1)<1.9&&impSwinging()&&(d<.9||angDiff(Math.atan2(F.z-P.z,F.x-P.x),P.ang)<1.7)){ impDeflect(F); return; }
+  if(d<.8&&F.y>P.y-.1&&F.y<P.y+2){ const r=twHitP(IMPC.fbDmg,F.x,F.z,{onParry:()=>impDeflect(F)}); if(r==='hit'||r==='block'){ twFireballHit({big:true},F.x,F.y,F.z); F.dead=true; } } }
+function impDeflect(F){ const P=Player, a=P.ang||0; F.defl=true; F.t=0; F.vx=Math.cos(a)*22; F.vz=Math.sin(a)*22; F.vy=0; try{ F.core.material.color.setHex(0x9fe0ff); }catch(e){}
+  Sound.sfx('deflect'); Sound.sfx('parry'); FX.spark(F.x,F.y,F.z); FX.burst(F.x,F.y,F.z,12,0x9fe0ff,4,.22); Game.slowT=Math.max(Game.slowT,.18); addSP(2);
+  Game.dmgNums.push({x:F.x,y:F.y+.6,z:F.z,n:'DEFLECT',t:0,col:'#9fe0ff'}); }
+// the rush: the usual rush timing (tell .6/sp, the first press in his lane after tell + grace is judged in TW_DASH_WIN)
+function impRushBegin(C,sp){ const P=Player, a=Math.atan2(P.z-C.z,P.x-C.x), d=Math.min(15,Math.hypot(P.x-C.x,P.z-C.z)+3.5), tell=.6/sp;
+  C.R={a,ux:Math.cos(a),uz:Math.sin(a),d,sx:C.x,sz:C.z,from:Game.time+TW_STRICT.grace,tEnd:Game.time+tell,trav:0,slT:0};
+  C.ang=a; FX.line(C.x,C.z,a,d,2.6,0xff8a3a,tell); Sound.sfx('ting'); }
+function impRushWatch(C){ const R=C.R; for(let g=0;g<40;g++){ const p=twStrictFirst(R.from); if(!p) return; const P=Player, rx=P.x-R.sx, rz=P.z-R.sz, al=rx*R.ux+rz*R.uz, pe=Math.abs(rx*R.uz-rz*R.ux);
+    if(al<-.5||al>R.d+.5||pe>1.6){ R.from=p.t; continue; } return; } }
+// three parries: he bursts into 4 splotches of white goo that stay on the floor
+function impPop(C){ Sound.sfx('squelch'); Sound.sfx('gore'); Sound.sfx('slam'); shake(.6); FX.hitstop=Math.max(FX.hitstop,.12);
+  FX.burst(C.x,C.y+1,C.z,60,0xffffff,7,.4,false); FX.burst(C.x,C.y+1,C.z,30,0xf4f0e6,4,.35,false); FX.ring(C.x,C.gy+.1,C.z,'#ffffff',3,.4);
+  Game.dmgNums.push({x:C.x,y:C.y+3,z:C.z,n:'SPLAT',t:0,big:true,col:'#ffffff'}); twBark('caotan',"JUNIOR?! ...That's okay. I can always make more.",true);
+  const a0=rnd(0,6.28); for(let i=0;i<4;i++){ const a=a0+i*Math.PI/2+rnd(-.35,.35), r=rnd(1.8,3.2), q=twClampXZ(C.x+Math.cos(a)*r,C.z+Math.sin(a)*r,1);
+    for(let j=0;j<8;j++) FX.spawn(C.x,C.y+1,C.z,(q.x-C.x)*2+rnd(-1,1),rnd(3,5),(q.z-C.z)*2+rnd(-1,1),.5,0xffffff,.3,12,false);
+    twZone(q.x,q.z,1.25,999,{splat:1,op:.95,col:0xfaf6ff}); } }
+// the Drill: he drills right back and the two cancel out
+(function(){ const sa=specialAttack; specialAttack=function*(){ const C=IMP.clone; if(C&&!C.dead&&C.st!=='emerge'&&!ALI()&&TW.fight){ yield* impDrillClash(C); return; } yield* sa.apply(this,arguments); }; })();
+function* impDrillClash(C){ const P=Player, pin=typeof drPin==='function'?drPin():null, gy=P.y; let d=null, e=null;
+  try{ P.sp=0; P.inv=99; P.atk=null; P.charge=0; P.vx=P.vz=0; P.cineFly=true; P.cineAnim='jump'; Sound.sfx('djump'); impGo(C,'drill'); if(C.fb) C.fb.dead=true;
+    twBark('gooshayan',"Oh, you're doing the drill? I'm doing the drill.",true);
+    yield tween(P,{y:gy+2},.35,t=>1-Math.pow(1-t,3)); P.cineAnim='charge';
+    d=makeDrill(); e=makeDrill(); for(const [q,o] of [[d,P],[e,C]]){ q.x=o.x; q.y=(o===C?C.gy:gy)+5.2; q.z=o.z; q.s=.1; q.spin=10; q.fire=.4; q.dir.set(0,-1,0); }
+    Sound.sfx('charge'); for(let w=0;w<1;w+=.05){ d.s=e.s=.1+w*.55; d.spin=e.spin=10+w*40; d.fire=e.fire=.4+w; C.y=lerp(C.y,C.gy+2,.25); yield wait(.05); }
+    const mx=(d.x+e.x)/2, my=Math.max(d.y,e.y)+.4, mz=(d.z+e.z)/2; d.dir.set(mx-d.x,my-d.y,mz-d.z); e.dir.set(mx-e.x,my-e.y,mz-e.z); d.spin=e.spin=55; d.fire=e.fire=2.2; Sound.sfx('beam'); yield wait(.2);
+    const s0=[d.x,d.y,d.z,e.x,e.y,e.z]; for(let u=0;u<=1.001;u+=.125){ const k=u*u*.85; d.x=lerp(s0[0],mx,k); d.y=lerp(s0[1],my,k); d.z=lerp(s0[2],mz,k); e.x=lerp(s0[3],mx,k); e.y=lerp(s0[4],my,k); e.z=lerp(s0[5],mz,k); yield wait(.03); }
+    impactFrame([[1,3],[2,3],[3,2]]); shake(1.2); FX.hitstop=.14; Sound.sfx('slam'); Sound.sfx('crossboom');
+    FX.burst(mx,my,mz,80,0xffffff,10,.4,false); FX.burst(mx,my,mz,60,0xff3a1a,9,.35); for(let i=0;i<3;i++) FX.ring(mx,groundY(mx,mz)+.1,mz,i?'#ffffff':'#ff3a2a',3+i*2,.4+i*.1);
+    Game.dmgNums.push({x:mx,y:my,z:mz,n:'DRILL CANCELLED',t:0,big:true,col:'#ffffff'});
+    for(const q of [d,e]){ q.fire=0; q.dead=1; scene.remove(q.g); } d=e=null; try{ fxLights[1].intensity=0; }catch(err){}
+    yield wait(.45);
+  } finally { for(const q of [d,e]) if(q){ q.dead=1; scene.remove(q.g); } P.cineFly=false; P.cineAnim=null; P.inv=.8; P.vy=-2; if(pin) pin.dead=1; if(!C.dead&&C.st==='drill'){ C.y=C.gy; impGo(C,'charge'); } } }
+// drawing: your sprite (8 directions for Shayan), soaked in white goo, dripping
+function impCloneDraw(C){ const s=C.spr; if(!C.emerge){ s.show(false); return; } s.show(true);
+  s.draw((c,cx,by)=>{ impCloneFig(C,c,cx,by); impGooTint(c,cx,by,C.t); });
+  const sc=(C.al?ALS.ok:SHA.ok)?.8:1, k=C.ek; s.mesh.scale.set(sc*(1+.3*(1-k)),sc*Math.max(.05,k),1); s.place(C.x,C.y,C.z,C.gy); }
+function impCloneFig(C,c,cx,by){ const f=Math.cos(C.ang)>=0?1:-1, a=C.anim, t=C.t;
+  if(C.al){ drawAliHD(c,cx,by,f,{t,anim:a==='swing'?'attack':a==='shoot'?'beam':a}); return; }
+  if(!(SHA.ok&&SHA.img)){ drawShayanHD(c,cx,by,f,{t,anim:a==='swing'?'attack':a==='shoot'?'beam':a,ap:a==='swing'?C.swU:0,combo:C.swN%3}); return; }
+  const dir=shDirIdx(C.ang); let fr;
+  if(a==='run') fr=shFrame('run',dir,Math.floor(t*14)%4);
+  else if(a==='jump') fr=shFrame('jump',dir,4);
+  else if(a==='swing') fr=shFrame('swing',dir,Math.min(6,Math.floor(C.swU*7)));
+  else if(a==='charge') fr=shFrame('punch',dir,1);
+  else if(a==='shoot') fr=shFrame('punch',dir,4);
+  else fr=shFrame('rot',dir,0);
+  shBlit(c,fr,cx,by,0,0,0,1); }
+function impGooTint(c,cx,by,t){ c.save(); c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(248,246,238,.72)'; c.fillRect(0,0,96,96);
+  c.fillStyle='rgba(255,255,255,.95)'; c.fillRect(cx-6,by-40,2,3); c.fillRect(cx+3,by-31,1,3); c.fillRect(cx-2,by-18,2,2); c.restore();
+  c.fillStyle='#f2efe4'; for(let i=0;i<5;i++){ const u=(t*.9+i*.37)%1, x=Math.round(cx-9+i*4.5), y=Math.round(by-26+(i%3)*5); c.fillRect(x,y,1,Math.round(2+u*6)); if(u>.75) c.fillRect(x,y+Math.round(5+u*9),1,1); } }
+// white goo slows you (Omar's goop debuff): the goo splats on the floor and the goo pellets
+(function(){ const zn=twZone; twZone=function(x,z,r,dur,o){ const h=zn.apply(this,arguments);
+    try{ if(o&&o.splat&&h){ const u=h.upd; h.upd=function(dt,play){ const k=u.apply(this,arguments); try{ if(play&&this.t>.2&&!IMP.down&&twInR(x,z,r,.6)) twGoopSlow(); }catch(e){ console.error('goo slow',e); } return k; }; } }catch(e){}
+    return h; };
+  const ub=updateBolts; updateBolts=function(dt){ const P=Player, hp0=P.hp; let near=false;
+    try{ for(const b of BOLTS) if(b.kind==='goo'&&!b.friendly&&b.col===0xffffff&&Math.hypot(P.x-b.x,P.z-b.z)<1.6) near=true; }catch(e){}
+    const r=ub.apply(this,arguments); try{ if(near&&P.hp<hp0) twGoopSlow(); }catch(e){ console.error('goo slow',e); } return r; }; })();
 
 // ----- 12_strict.js -----
 // =====================================================================
@@ -15519,7 +15686,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Caotan's new move Impregnate (solo, phases I-III): womb flashes over you, a fast pink smiley sperm; hit it to smack it away, then burn it with fireballs (10 small hits)";
+const DBG_PATCH="Oct 27: Impregnate punishment: the sperm downs you (3s, invulnerable) and a white goo clone of you pops out: double dash, full fireball (deflectable), ignited rush (parry once = auto triple parry, he bursts into 4 sticky goo splats), jump dashes away, repeat; auto-parries you up close; drill vs drill cancels. White goo now slows like Omar's goop";
 const DBG_NEW=['caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

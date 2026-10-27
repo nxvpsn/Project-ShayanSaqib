@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Caotan's new move Impregnate (solo, phases I-III): womb flashes over you, a fast pink smiley sperm; hit it to smack it away, then burn it with fireballs (10 small hits)";
+const DBG_PATCH="Oct 27: Impregnate punishment: the sperm downs you (3s, invulnerable) and a white goo clone of you pops out: double dash, full fireball (deflectable), ignited rush (parry once = auto triple parry, he bursts into 4 sticky goo splats), jump dashes away, repeat; auto-parries you up close; drill vs drill cancels. White goo now slows like Omar's goop";
 const DBG_NEW=['caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
