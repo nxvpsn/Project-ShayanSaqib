@@ -9,6 +9,12 @@
 // Your 4th deflect (after three returns) flies back at him super fast and hurts him. Phase III adds a second, faster red scythe;
 // the slow one's third return in phase III is FAST, with a glint first.
 function twRallyLook(b){ const piv=b.spin; if(!piv) return; const [bl,ed,po]=piv.children; if(bl) bl.material.color.setHex(0x0c0812); if(ed) ed.material.color.setHex(0xff2a3a); if(po) po.material.color.setHex(0x2a1a30); if(b.gl) b.gl.material.color.setHex(0xff1a2a); }
+// while you send it back at him it wears a solid light-blue outline (a slightly bigger copy seen from behind) over its red and black
+function twRallyHull(b,on){ if(!b.spin) return; if(!b.hull){ if(!on) return; const mat=new THREE.MeshBasicMaterial({color:0xaee8ff,side:THREE.BackSide}), H=new THREE.Group();
+    const t1=new THREE.Mesh(new THREE.TorusGeometry(.6,.19,4,16,Math.PI*.95),mat), t2=new THREE.Mesh(new THREE.TorusGeometry(.68,.1,4,16,Math.PI*.95),mat), po=new THREE.Mesh(new THREE.BoxGeometry(.17,1.32,.17),mat);
+    po.position.set(.6,-.55,0); H.add(t1,t2,po); b.spin.add(H); b.hull=H; }
+  b.hull.visible=on; }
+(function(){ const ub=updateBolts; updateBolts=function(dt){ const r=ub.apply(this,arguments); try{ for(const b of BOLTS) if(b.rally&&!b.dead) twRallyHull(b,!!b.friendly); }catch(e){ console.error('rally hull',e); } return r; }; })();
 function twRallyAlive(kind){ return BOLTS.some(b=>b.rally&&!b.dead&&(!kind||b.rally.kind===kind)); }
 function twRallySpawn(T,kind,delay){ const v=kind==='fast'?7:4.2, b=twBolt(T,{kind:'scythe',x:T.x,y:T.y+2.2,z:T.z,vx:0,vz:0,delay:delay||.9,spd:v,homing:kind==='fast'?1.8:1.4,col:0xff2a3a,dmg:2,life:10});
   b.rally={n:0,T,kind,v}; twRallyLook(b); if(b.gl) b.gl.scale.set(2.4,2.4,1); return b; }

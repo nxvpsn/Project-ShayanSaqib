@@ -37,7 +37,7 @@ LEVELDEF.vrtut=function(){ const W=30, G=newGrid(W,W,'keep'); G.tx=makeTileTextu
 
 // ---------- state ----------
 TW.tut=null;
-function twTutAli(){ const c={x:15,z:15}; const A={x:c.x,z:c.z-4,y:0,f:1,anim:'idle',t:0,hp:99,hide:0,spr:new Sprite3D(64,64),flash:0}; A.y=groundY(A.x,A.z); return A; }
+function twTutAli(){ const c={x:15,z:15}; const A={x:c.x,z:c.z-4,y:0,f:1,anim:'idle',t:0,hp:99,hide:0,spr:twAliSpr(),flash:0}; A.y=groundY(A.x,A.z); return A; }
 function twTutDrawAli(dt){ const T=TW.tut; if(!T||!T.A) return; const A=T.A; A.t+=dt; A.flash=Math.max(0,A.flash-dt); A.y=groundY(A.x,A.z);
   A.spr.show(!A.hide&&Game.state!=='title'); if(A.hide) return; A.spr.draw((c,cx,by)=>drawAliHD(c,cx,by,A.f,{t:A.t,anim:A.anim,flash:A.flash})); A.spr.place(A.x,A.y,A.z,A.y); A.spr.glow(A.flash>0?.8:.12); }
 function twTutCleanup(){ const T=TW.tut; if(!T) return; TW.bound=0; if(T.A&&T.A.spr) T.A.spr.dispose(); TW.tut=null; TW.vrGlitch=null; if(TW.fight&&TW.fight.kind==='tut'){ TW.fight=null; } Game.arena=null; twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); Player.counter=0; }

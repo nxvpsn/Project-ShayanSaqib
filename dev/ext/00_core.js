@@ -120,7 +120,9 @@ function twMake(who,x,z,o){ const T=Object.assign({who,x,z,y:groundY(x,z)+1.3,hy
     fire:0,cast:0,push:0,glintN:0,glintT:0,down:0,hide:0,scale:1,stun:0,lcDone:{},bag:[],mv:null,spr:null,orb:rnd(0,6.28),dist:who==='omar'?3.8:5.4,aliCd:0,kit:'p',tint:0,alpha:1},o||{});
   TW.foes.push(T); return T; }
 function twFoeAlive(){ return TW.foes.filter(T=>T.hp>0&&!T.gone); }
-function twSprOf(o){ if(!o.spr||SPRITES.indexOf(o.spr)<0) o.spr=o.who==='ali'?new Sprite3D(64,64):new Sprite3D(128,128,28); return o.spr; }
+// Ali's sprite has room for his drawn katana (96px, like the player's), with the player's shadow size
+function twAliSpr(){ const s=new Sprite3D(96,96); s.shadow.geometry=new THREE.PlaneGeometry(.88,.44); return s; }
+function twSprOf(o){ if(!o.spr||SPRITES.indexOf(o.spr)<0) o.spr=o.who==='ali'?twAliSpr():new Sprite3D(128,128,28); return o.spr; }
 function twRemoveFoe(T){ if(T.spr) T.spr.dispose(); T.spr=null; T.gone=1; const i=TW.foes.indexOf(T); if(i>=0) TW.foes.splice(i,1); }
 function twClearFoes(){ TW.foes.slice().forEach(twRemoveFoe); TW.foes=[]; }
 function twMoveTo(T,x,z,dur){ const p=twClampXZ(x,z); T.mv={sx:T.x,sz:T.z,x:p.x,z:p.z,t:0,dur:Math.max(.05,dur)}; return dur; }
