@@ -138,6 +138,8 @@ function thPigCurve(side,delay){ return (m,dt)=>{ const t=m.t-delay; if(t<0){ m.
   m.cd-=dt; if(m.cd<=0&&t>.5){ m.cd=9; const a=thAim(m.u,m.v); for(const o of [-.25,0,.25]) thB(m.u,m.v,a+o,6.5,{col:0xffd04a,r:.22}); } }; }
 // kamikaze piglet: hovers, then dives at Nathan
 function thPigDive(m,dt){ if(m.t<.9){ m.vu=0; m.vv=-2; return; } if(!m.dove){ m.dove=1; const a=thAim(m.u,m.v); m.vu=Math.cos(a)*13; m.vv=Math.sin(a)*13; Sound.sfx('oink'); } }
+// three kamikaze piglets at once (they arrive staggered)
+function thPigDive3(){ for(let k=0;k<3;k++) thMinion('pig',rnd(-7,7),TH.H+k*.9,thPigDive); }
 // eldritch eye: drifts to a spot, then fires rings and aimed lines
 function thEldHover(tu,tv,o){ o=o||{}; return (m,dt)=>{ m.vu=(tu-m.u)*2.5; m.vv=(tv-m.v)*2.5; m.cd-=dt; if(m.cd>0||m.t<1) return; m.cd=o.rate||1.9; m.k=(m.k||0)+1;
   if(m.k%2){ for(let i=0;i<16;i++) thB(m.u,m.v,i/16*6.283+m.k*.2,3.6,{col:0xb06aff,r:.26}); } else { const a=thAim(m.u,m.v); for(let j=0;j<7;j++) thB(m.u,m.v,a,5+j*.7,{col:0xff3aff,r:.2}); }
@@ -190,7 +192,7 @@ const TH_PAT={
     for(;;){ row(); gu+=dir*.3; if(Math.abs(gu)>TH.W-1.9){ dir=-dir; gu=clamp(gu,-(TH.W-1.9),TH.W-1.9); } yield .07; /* the gap slides at 4.3/s: focused (4.8/s) you can always catch up */ } },
   *cross(T){ for(let w=0;;w++){ const e=thEye(w%2?1:-1), a0=thAim(e.u,e.v); for(let k=-3;k<=3;k++) thB(e.u,e.v,a0+k*.16,7.2,{col:0xff3a3a,r:.24});
       if(w%3===0){ const m=thMouth(); T.jaw=.7; for(let k=0;k<28;k++) thB(m.u,m.v,k/28*6.283+w*.1,2.8,{col:0xffd04a,r:.3}); } Sound.sfx('swing'); yield .34; } },
-  *parade(T){ for(let w=0;w<4;w++){ const side=w%2?1:-1; for(let i=0;i<6;i++) thMinion('pig',side*(TH.W+1),TH.H-1-i*.2,thPigCurve(side,i*.28));
+  *parade(T){ for(let w=0;w<4;w++){ const side=w%2?1:-1; for(let ln=0;ln<3;ln++) for(let i=0;i<6;i++) thMinion('pig',side*(TH.W+1),TH.H-1-i*.2-ln*1.5,thPigCurve(side,i*.28+ln*.14)); /* three lanes of six: triple the piglets */
       for(let k=0;k<6;k++){ const m=thMouth(); for(let j=0;j<20;j++) thB(m.u,m.v,j/20*6.283+k*.15+w,2.6,{col:0xff8ab0,r:.26}); yield .9; } } for(;;) yield 1; },
   *rain(T){ for(let w=0;;w++){ for(let i=0;i<9;i++) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2+rnd(-.15,.15),rnd(4,7),{col:i%3?0xff9a5a:0xffd0a0,r:rnd(.18,.3)});
       if(w%6===0){ const m=thMouth(), a=thAim(m.u,m.v); T.jaw=.8; for(let k=-1;k<=1;k++) thB(m.u,m.v,a+k*.3,4.5,{col:0xff2a3a,r:.65}); Sound.sfx('howl'); } yield .14; } },
@@ -200,15 +202,15 @@ const TH_PAT={
       if(w%4===0){ const a=thAim(m.u,m.v); for(let k=0;k<5;k++) thB(m.u,m.v,a,4+k*.6,{col:0xff5a8a,r:.3}); } yield .45; } },
   *lullaby(T){ let a=0,b=0; for(let w=0;;w++){ const m=thMouth(); T.jaw=.6; for(let k=0;k<8;k++){ thB(m.u,m.v,a+k*.785,4.6,{col:0xff4a7a,r:.24}); thB(m.u,m.v,b+k*.785+.39,3.4,{col:0x6ab0ff,r:.24}); } a+=.13; b-=.17;
       if(w%12===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.12,8,{col:0xffffff,r:.2}); } } yield .1; } },
-  *ward(T){ T.tip='Hamza is shielded: kill the eyes!'; Sound.sfx('howl'); for(let i=0;i<4;i++) thMinion('eld',-6+i*4,TH.H+1,thEldHover(-6+i*4,3.2+(i%2)*1.4,{rate:2.1}),{shield:1,hp:7,maxHp:7});
-      for(let w=0;;w++){ if(!T.shield&&w>4) break; if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); const m=thMouth(); for(let j=0;j<14;j++) thB(m.u,m.v,j/14*6.283+w*.2,3,{col:0xff8ab0,r:.24}); yield .8; }
+  *ward(T){ T.tip='Hamza is shielded: kill the eyes!'; Sound.sfx('howl'); for(let i=0;i<12;i++){ const tu=-7.2+(i%6)*2.88, tv=2.4+Math.floor(i/6)*2.4+(i%2)*.7; thMinion('eld',tu,TH.H+1+Math.floor(i/6),thEldHover(tu,tv,{rate:3.6}),{shield:1,hp:7,maxHp:7,cd:rnd(.6,3.6)}); } /* 12 eyes (triple), two rows; each fires less often so the screen stays readable */
+      for(let w=0;;w++){ if(!T.shield&&w>4) break; if(w%5===4) thPigDive3(); const m=thMouth(); for(let j=0;j<14;j++) thB(m.u,m.v,j/14*6.283+w*.2,3,{col:0xff8ab0,r:.24}); yield .8; }
       const B=Game.mech.boss; if(B){ B.flash=1; } T.tip=null; Sound.sfx('glass'); Game.dmgNums.push({x:TH.CX+TH.VH,y:0,z:0,n:'SHIELD BROKEN',t:0,big:true,col:'#ffd45a'}); T.stun=4; yield 1.6; yield* TH_PAT.meatball(T); },
   // MEATBALL MAYHEM (after the shield breaks): he is FURIOUS; big meatballs bounce off the walls three times and burst into rings on every bounce,
   // while the eyes curl white fans in from the sides
   *meatball(T){ T.tip='He is FURIOUS. Meatballs bounce off the walls!'; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(), a=thAim(m.u,m.v)+rnd(-.55,.55); T.jaw=1;
       thB(m.u,m.v,a,5.4,{col:0xc0603a,r:.72,bounce:3,life:14,onB:b=>{ for(let j=0;j<9;j++) thB(b.u,b.v,j/9*6.283+b.t,2.5,{col:0xffb08a,r:.2}); thFx(b.u,b.v,8,0xff8a5a,3,.2); Sound.sfx('squelch'); }});
       if(w%2===1){ for(const i of [-1,1]){ const e=thEye(i); for(let k=0;k<4;k++) thB(e.u,e.v,-Math.PI/2+i*(.3+k*.22),4.6,{col:0xffffff,r:.21,curl:-i*.28}); } }
-      if(w%5===4) thMinion('pig',rnd(-6,6),TH.H,thPigDive); yield 1.05; } },
+      if(w%5===4) thPigDive3(); yield 1.05; } },
   *throat(T){ T.tip='Focus ('+K('block')+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*.8)*4.6+Math.sin(t*.37)*1.3, gw=1.25; /* half-width: 3 bullet widths (0.4 each) narrower in all than the 1.85 it had (1.05 at first); it sways at most 4.2/s, under focused speed (4.8/s) */
       for(let k=0;;k++){ const o=gw+k*.75, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); }
       t+=.085; yield .085; } },
@@ -217,7 +219,7 @@ const TH_PAT={
       a+=.12; if(w%25===0){ const m=thMouth(); for(let j=0;j<24;j++) thB(m.u,m.v,j/24*6.283,3.2,{col:0xffffff,r:.28}); } yield .09; } },
   *final(T){ let a=0; Sound.sfx('howl'); for(let w=0;;w++){ const m=thMouth(); T.jaw=.9; for(let k=0;k<6;k++) thB(m.u,m.v,a+k*1.047,4.4,{col:0xff3a5a,r:.24}); a+=.19;
       if(w%8===0){ for(const i of [-1,1]){ const e=thEye(i), at=thAim(e.u,e.v); for(let k=-2;k<=2;k++) thB(e.u,e.v,at+k*.18,7,{col:0xffffff,r:.22}); } }
-      if(w%30===0) thMinion('pig',rnd(-6,6),TH.H,thPigDive); if(w%3===0) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2,5,{col:0xff9a5a,r:.22}); yield .1; } } };
+      if(w%30===0) thPigDive3(); if(w%3===0) thB(rnd(-TH.W,TH.W),TH.H+.5,-Math.PI/2,5,{col:0xff9a5a,r:.22}); yield .1; } } };
 function* thBossLoop(T){ const B=Game.mech.boss, ticks=thTicks(T.ph), fin=TH_SPELLS[2].find(e=>e[2]==='final'); if(!T.opStart){ T.opStart=1; thOp(T.fromCp?'retry':T.ph===1?'p1':'p2'); } yield 1.4;
   for(;;){ let ent=T.tick<ticks.length?ticks[T.tick]:T.ph===2?fin:null; if(!ent) return; // phase I: the last tick took him to 0
     if(T.dbgSpell){ ent=TH_SPELLS[1].concat(TH_SPELLS[2]).find(s=>s[2]===T.dbgSpell)||ent; if(!T.dbgLoop) T.dbgSpell=null; } // debug mode can pick the attack
