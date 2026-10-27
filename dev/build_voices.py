@@ -21,7 +21,7 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'shayan': ('am_michael', 1.0, 1.0, None), 'mira': ('af_heart', 1.02, 1.0, None), 'miraold': ('af_heart', .96, .94, None),
   'ali': ('am_onyx', .98, .94, 'aecho=0.8:0.3:30:0.12'), 'aliold': ('am_onyx', .9, .86, None), 'hamza': ('am_puck', 1.0, 1.32, None),
   'hamzadeep': ('am_onyx', .72, .58, 'aecho=0.8:0.75:140:0.45,aecho=0.6:0.5:400:0.3'),
-  'nathan': ('am_fenrir', 1.04, 1.03, 'acompressor=threshold=-18dB:ratio=3:attack=5:release=80,aecho=0.8:0.35:35:0.15'), 'nathanraw': ('am_fenrir', .96, 1.0, 'acompressor=threshold=-18dB:ratio=2.5:attack=5:release=80'),  # a heroic, dramatic anime lead
+  'nathan': ('am_fenrir', .97, .88, 'bass=g=4:f=110,acompressor=threshold=-20dB:ratio=3:attack=5:release=90,aecho=0.8:0.45:55:0.22'), 'nathanraw': ('am_fenrir', .94, .88, 'bass=g=4:f=110,acompressor=threshold=-20dB:ratio=2.5:attack=5:release=90'),  # a heroic, dramatic anime lead
   'grimmaw': ('bm_fable', 1.04, 1.22, None), 'hound': ('am_fenrir', .98, .8, 'highpass=f=300,lowpass=f=3400'),  # He's Day Old Kojima (a posh baby) and his soldiers (over the codec)
   'caotan': ('am_liam', 1.06, 1.0, None), 'omar': ('bm_lewis', .9, .86, 'aecho=0.8:0.4:60:0.25'),
   'caomar': ('bm_lewis', 1.0, .92, 'aecho=0.8:0.5:25:0.35,aecho=0.7:0.4:60:0.2'),
