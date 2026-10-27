@@ -143,6 +143,9 @@ s = patch(s, "G.colossus=farPlane(G,catSkeletonTex({bone:'#f4efe2',shade:'#b8b2a
 # slash pass: a slash can skip the image distortion (Ali's basic cuts: sd >= 2 means "no distortion", the seed is its fraction)
 s = patch(s, "op=Q[i].z, sd=Q[i].w;", "op=Q[i].z, sd0=Q[i].w, sd=fract(sd0), dk=1.-step(1.5,sd0);")
 s = patch(s, "disp+=(-nn*sg*w*1.1+u*sg*W*op*1.2)*fall; ab+=fall*op;", "disp+=(-nn*sg*w*1.1+u*sg*W*op*1.2)*fall*dk; ab+=fall*op*dk;")
+# Kojima's phase transitions (40m_kjtrans.js): no more fade to black (both roads)
+s = patch(s, "yield fadeOut();\n    grade.uniforms.red.value=0; enterArena('lake',2); yield wait(.2);\n    cineSet(60,1.2,70,60,10,20); Game.fade=1; yield fadeIn();", "yield* kjToLake();", 2)
+s = patch(s, "yield fadeOut(); enterArena('flowers',3); cineSet(58,1,74,58,14,20); Game.fade=1; Sound.play('boss'); yield fadeIn();", "yield* kjToFlowers();", 2)
 # skies (05d_skies.js): Lanternbrook's dusk mountains, the night sky over Starfall Ridge and the flower field, the night colossus
 s = patch(s, "farPlane(G,ridgeTex(['#6a5a90','#9a7aa0'],2,3,0),620,150,20,-10,-210,{ro:-7}); farPlane(G,ridgeTex(['#4a3a68','#6a5080'],5,4,0),520,110,20,-14,-140,{ro:-6});\n    for(let i=0;i<7;i++) farPlane(G,cloudTex(i,['255,210,200','220,150,170']),110+i*12,40,-140+i*55,30+hash(i,1)*30,-230+i*6,{ro:-6,op:.85});",
   "if(typeof villageSky==='function') villageSky(G); else { G.oldSky=[farPlane(G,ridgeTex(['#6a5a90','#9a7aa0'],2,3,0),620,150,20,-10,-210,{ro:-7}),farPlane(G,ridgeTex(['#4a3a68','#6a5080'],5,4,0),520,110,20,-14,-140,{ro:-6})];\n    for(let i=0;i<7;i++) G.oldSky.push(farPlane(G,cloudTex(i,['255,210,200','220,150,170']),110+i*12,40,-140+i*55,30+hash(i,1)*30,-230+i*6,{ro:-6,op:.85})); }")

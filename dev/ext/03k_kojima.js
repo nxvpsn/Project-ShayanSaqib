@@ -31,7 +31,8 @@ function drawKojimaCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, a=s.anim|
   E(hx-1,hc+1,24,23,C.skinD); E(hx,hc,23,22,C.skin); E(hx-7,hc-8,8,6,C.skinH); p(hx-23,hc-2,5,7,C.skinD); p(hx-22,hc-1,3,4,C.skin);
   E(hx-2,hc-15,20,8,C.hair); p(hx-21,hc-14,6,14,C.hair); cPoly(p,[[hx-14,hc-22],[hx+16,hc-20],[hx+20,hc-10],[hx+8,hc-14],[hx-6,hc-13]],C.hair); p(hx-6,hc-21,14,2,C.hairH); p(hx+1,hc-27,2,5,C.hair); p(hx+3,hc-28,4,2,C.hair); p(hx+6,hc-27,2,3,C.hair); p(hx+4,hc-25,2,1,C.hair); /* the baby curl */ p(hx+2,hc-14,1,3,C.skinD);
   const gt=a==='winded'?2:0, ex1=hx+3, ex2=hx+15, ey=hc-1;
-  for(const [x0,y0] of [[ex1,ey],[ex2,ey+gt]]){ E(x0,y0,6,5,C.frame); E(x0,y0,5,4,C.lens); E(x0+1,y0+1,4,2,C.lensD); if(bl||laugh) p(x0-2,y0,5,1,C.frame); else { p(x0-1,y0-1,3,3,'#14121a'); p(x0,y0-1,1,1,'#ffffff'); } p(x0-3,y0-3,2,1,'#ffffff'); }
+  const red=!!s.redEye; s._eyes=[[ex1,ey],[ex2,ey+gt]]; // red: his phase II transition (40m_kjtrans.js)
+  for(const [x0,y0] of [[ex1,ey],[ex2,ey+gt]]){ E(x0,y0,6,5,C.frame); E(x0,y0,5,4,red?'#ff2a3a':C.lens); E(x0+1,y0+1,4,2,red?'#9a0a18':C.lensD); if(red){ p(x0-1,y0-1,3,3,'#3a0006'); p(x0,y0-1,1,1,'#ffd0d0'); } else if(bl||laugh) p(x0-2,y0,5,1,C.frame); else { p(x0-1,y0-1,3,3,'#14121a'); p(x0,y0-1,1,1,'#ffffff'); } p(x0-3,y0-3,2,1,'#ffffff'); }
   p(ex1+5,ey-1,5,2,C.frame); p(ex1-8,ey-1,3,1,C.frame); if(a!=='winded') { p(ex1-3,ey-7,6,2,C.hair); p(ex2-3,ey-8,6,2,C.hair); } else { p(ex1-3,ey-6,6,2,C.hair); p(ex2-2,ey-5,6,2,C.hair); }
   p(hx+9,hc+3,3,4,C.skinD); E(hx-5,hc+6,3,2,C.blush); E(hx+20,hc+6,2,2,C.blush);
   E(hx+5,hc+10,8,3,C.mus); E(hx+15,hc+10,7,3,C.mus); p(hx-4,hc+9,3,2,C.mus); p(hx+21,hc+9,3,2,C.mus); p(hx-5,hc+7,2,2,C.mus); p(hx+23,hc+7,2,2,C.mus); p(hx+2,hc+8,6,1,C.musH); p(hx+12,hc+8,6,1,C.musH);
