@@ -3657,13 +3657,13 @@ const SlashShader={uniforms:{tDiffuse:{value:null},L:{value:Array.from({length:S
     vec2 P=vec2(vUv.x*asp,vUv.y), disp=vec2(0.); float gash=0., rim=0., ab=0.; vec3 gcol=vec3(0.);
     for(int i=0;i<${SLASH_N};i++){ if(float(i)>=n) break;
       vec2 a=vec2(L[i].x*asp,L[i].y), b=vec2(L[i].z*asp,L[i].w), d=b-a; float len=max(length(d),1e-4); vec2 u=d/len, nn=vec2(-u.y,u.x);
-      vec2 q=P-a; float tt=dot(q,u)/len, s=dot(q,nn), W=Q[i].x, k=Q[i].y, op=Q[i].z, sd=Q[i].w;
+      vec2 q=P-a; float tt=dot(q,u)/len, s=dot(q,nn), W=Q[i].x, k=Q[i].y, op=Q[i].z, sd0=Q[i].w, sd=fract(sd0), dk=1.-step(1.5,sd0);
       if(tt<-.03||tt>k+.03) continue;
       float prof=pow(max(0.,sin(3.14159*clamp(tt,0.,1.))),.5);
       float jag=(nz(vec2(tt*len*90.+sd*40.,sd))-.5)*.7+(nz(vec2(tt*len*340.,sd*3.))-.5)*.35;
       float tip=smoothstep(k+.01,k-.05,tt), w=W*prof*op*(1.+jag)*tip, as=abs(s), sg=s<0.?-1.:1.;
       float fall=exp(-as/(W*4.+1e-4))*tip;
-      disp+=(-nn*sg*w*1.1+u*sg*W*op*1.2)*fall; ab+=fall*op;
+      disp+=(-nn*sg*w*1.1+u*sg*W*op*1.2)*fall*dk; ab+=fall*op*dk;
       if(as<w){ float e=as/max(w,1e-5); gash=1.;
         vec2 vp=vec2(tt*len*26.-t*1.6, s/max(W,1e-4)*1.4+t*.6);
         float sw=fbm(vp*1.3), fil=pow(1.-abs(sin((s/max(w,1e-5))*7.+fbm(vp*2.)*6.+t*3.)),18.);
@@ -5987,7 +5987,7 @@ function twBeamSparks(x,y,z,a,o,tt){ const ux=Math.cos(a), uz=Math.sin(a), px=-u
 // ---------- Judgement Cut gashes in any shape ----------
 // The JC slash post-shader only draws straight tears. twGash chains short, overlapping tears along a screen-space
 // polyline (recomputed each frame, so it follows the world), widest in the middle and sharp at both ends:
-// the Full Counter crescent and Ali's Getsuga Jujishou use it. o: {pts:()=>[[x,y],...], w:px, life, rev, fade, alive}
+// the Full Counter crescent and Ali's Getsuga Jujishou use it. o: {pts:()=>[[x,y],...], w:px, life, rev, fade, alive, nodisp (no image distortion)}
 const TW_GASH=[];
 function twGash(o){ o.t=0; o.sd=Math.random(); o.sparked=0; TW_GASH.push(o); return o; }
 function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.floor(Math.random()*(P.length-1)), a=P[j], b=P[j+1], u=Math.random(), dx=b[0]-a[0], dy=b[1]-a[1], d=Math.hypot(dx,dy)||1, s=(Math.random()<.5?-1:1)*rnd(60,260);
@@ -5998,7 +5998,7 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
       if(!g.sparked&&prog>=1){ g.sparked=1; twGashSparks(P,g.sparks||24); }
       for(let j=0;j<N&&n<SLASH_N;j++){ const a=P[j], b=P[j+1], ex0=j>0?.5:0, ex1=j<N-1?.5:0, dx=b[0]-a[0], dy=b[1]-a[1];
         const x0=a[0]-dx*ex0, y0=a[1]-dy*ex0, x1=b[0]+dx*ex1, y1=b[1]+dy*ex1, W=g.w*Math.pow(Math.sin(Math.PI*(j+.5)/N),g.taper==null?.8:g.taper), k=Math.max(0,Math.min(1,prog*N-j));
-        if(k<=0) continue; U.L.value[n].set(x0/UW,1-y0/UH,x1/UW,1-y1/UH); U.Q.value[n].set(W/UH*.85,k,op,(g.sd+j*.137)%1); n++; } }
+        if(k<=0) continue; U.L.value[n].set(x0/UW,1-y0/UH,x1/UW,1-y1/UH); U.Q.value[n].set(W/UH*.85,k,op,(g.sd+j*.137)%1+(g.nodisp?2:0)); n++; } }
     U.n.value=n; slashPass.enabled=n>0; }; })();
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;
@@ -6302,6 +6302,72 @@ function villageSky(G){
   return G; }
 // the first village of a session was built before this file ran: swap its old backdrop now
 try{ if(typeof L!=='undefined'&&L&&L.key==='village'&&L.oldSky){ for(const m of L.oldSky) L.root.remove(m); L.oldSky=null; villageSky(L); } }catch(e){ console.error('village sky swap',e); }
+
+// ----- 05e_alitree.js -----
+// =====================================================================
+// ALI'S TREE: in Lanternbrook, Ali (still the NPC, on Shayan's road) waits on top of a towering sacred tree that grows
+// out of his stone platform. Paper talismans with red characters hang all around the trunk on straw ropes, and black
+// katanas are driven into it. His hit box stays at the foot of the tree (hit the trunk to hit him, as before); only
+// his sprite sits on top (`n.perch`). Near the tree the camera eases up and out so he stays in frame.
+// In aliAwaken he drops from the top (41_moon.js). On Ali's own road the tree stands empty.
+// =====================================================================
+const ALT_TREE={x:35.1,z:16.6,h:6.2,k:0};
+function aliTreeY(){ const L0=L; return (L0&&L0.aliTree?L0.aliTree.top:3+ALT_TREE.h+.2); }
+function atBarkTex(){ if(atBarkTex.t) return atBarkTex.t; const [cv,c]=mkCanvas(32,64); c.fillStyle='#4a3424'; c.fillRect(0,0,32,64);
+  for(let i=0;i<26;i++){ const x=Math.floor(hash(i,3)*30), y=Math.floor(hash(3,i)*58), h=4+Math.floor(hash(i,4)*14); c.fillStyle=i%3?'#2e2016':'#5e4430'; c.fillRect(x,y,1+(i%2),h); }
+  for(let i=0;i<10;i++){ c.fillStyle='rgba(120,150,90,.5)'; c.fillRect(Math.floor(hash(i,6)*30),Math.floor(hash(6,i)*62),2,1); }
+  const t=tex(cv,1); t.repeat.set(3,4); return atBarkTex.t=t; }
+const AT_KANJI=['封','魔','滅','斬','神','鬼','呪','月','刀','闇','護','急','妖','禁','雷','霊','死','龍','罰','邪'];
+function atTalismanTex(i){ const k='at'+i; if(atTalismanTex[k]) return atTalismanTex[k]; const [cv,c]=mkCanvas(16,44);
+  c.fillStyle='#eee4c8'; c.fillRect(0,0,16,44); c.fillStyle='#d8cca8'; for(let y=0;y<44;y+=3) c.fillRect(0,y,16,1);
+  c.fillStyle='#b8141c'; c.fillRect(0,0,16,2); c.fillRect(0,42,16,2); c.fillRect(1,2,1,40); c.fillRect(14,2,1,40);
+  c.font='bold 11px serif'; c.textAlign='center'; c.textBaseline='middle';
+  for(let j=0;j<3;j++){ c.fillText(AT_KANJI[Math.floor(hash(i,j+11)*AT_KANJI.length)],8,9+j*12); }
+  c.beginPath(); c.arc(8,38,2.5,0,7); c.fill();
+  const t=tex(cv); t.magFilter=THREE.NearestFilter; return atTalismanTex[k]=t; }
+function atKatana(G,x,y,z,ang,tilt){ const g=new THREE.Group(), blk=new THREE.MeshPhongMaterial({color:0x0c0c12,specular:0x5a5a78,shininess:60}), edge=new THREE.MeshBasicMaterial({color:0x3a3a4a}),
+    gold=new THREE.MeshLambertMaterial({color:0x4a3414}), wrap=new THREE.MeshLambertMaterial({color:0x1a0a0e}), dia=new THREE.MeshLambertMaterial({color:0x8a1420});
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.035,.09,1.15),blk); b.position.z=.15; g.add(b); const e=new THREE.Mesh(new THREE.BoxGeometry(.04,.012,1.1),edge); e.position.set(0,-.045,.15); g.add(e);
+  const ts=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.03,10),gold); ts.rotation.x=Math.PI/2; ts.position.z=.74; g.add(ts);
+  const hd=new THREE.Mesh(new THREE.BoxGeometry(.05,.06,.34),wrap); hd.position.z=.93; g.add(hd);
+  for(let k=0;k<4;k++){ const d=new THREE.Mesh(new THREE.BoxGeometry(.055,.03,.03),dia); d.position.set(0,.03,.8+k*.07); g.add(d); }
+  const out=new THREE.Vector3(Math.cos(ang),Math.sin(tilt),Math.sin(ang)); g.position.set(x,y,z); g.lookAt(x+out.x,y+out.y,z+out.z); g.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); G.root.add(g); return g; }
+function aliTreeBuild(G){ const X=ALT_TREE.x, Z=ALT_TREE.z, y0=groundY(X,Z), H=ALT_TREE.h, bark=new THREE.MeshLambertMaterial({map:atBarkTex(),flatShading:true});
+  const rAt=y=>lerp(.62,.3,clamp((y-y0)/H,0,1)), lean=y=>Math.sin((y-y0)*.5)*.12;
+  // trunk: stacked tapered segments with a slight wander, flared roots
+  const N=7; for(let i=0;i<N;i++){ const ya=y0+i*H/N, yb=ya+H/N, m=new THREE.Mesh(new THREE.CylinderGeometry(rAt(yb),rAt(ya),H/N+.05,9),bark); m.position.set(X+lean(ya+H/N/2),ya+H/N/2,Z); m.castShadow=true; G.root.add(m); }
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2+.3, r=new THREE.Mesh(new THREE.ConeGeometry(.22,1.2,5),bark); r.position.set(X+Math.cos(a)*.62,y0+.18,Z+Math.sin(a)*.62); r.rotation.set(0,0,0); r.lookAt(X+Math.cos(a)*2,y0-.5,Z+Math.sin(a)*2); r.rotateX(Math.PI/2); G.root.add(r); }
+  // a few gnarled branches and a crown he stands on
+  for(let i=0;i<5;i++){ const a=i*1.3+.4, yy=y0+H*(.55+i*.08), br=new THREE.Mesh(new THREE.CylinderGeometry(.06,.13,1.4,6),bark); br.position.set(X+Math.cos(a)*.55,yy+.3,Z+Math.sin(a)*.55); br.lookAt(X+Math.cos(a)*2,yy+1.2,Z+Math.sin(a)*2); br.rotateX(Math.PI/2); G.root.add(br); }
+  const lv=[0x24502a,0x2e6232,0x1c4024].map(c=>new THREE.MeshLambertMaterial({color:c,flatShading:true})), top=y0+H;
+  [[0,.1,0,1.25],[.9,-.25,.3,.9],[-.85,-.3,-.2,.95],[.2,-.45,.85,.8],[-.3,-.4,-.85,.85],[.75,-.6,-.6,.7],[-.7,-.65,.6,.7]].forEach(([dx,dy,dz,s],i)=>{ const m=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),lv[i%3]); m.position.set(X+dx+lean(top),top+dy,Z+dz); m.scale.y=.62; m.castShadow=true; G.root.add(m); });
+  // straw ropes with the talismans hanging from them all around the trunk
+  const rope=new THREE.MeshLambertMaterial({color:0xc8a860}), tal=[];
+  for(const ry of [y0+1.3,y0+2.9,y0+4.5]){ const r=rAt(ry)+.05, t=new THREE.Mesh(new THREE.TorusGeometry(r,.06,6,18),rope); t.rotation.x=Math.PI/2; t.position.set(X+lean(ry),ry,Z); G.root.add(t);
+    const n=14; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2+ry, px=X+lean(ry)+Math.cos(a)*(r+.04), pz=Z+Math.sin(a)*(r+.04);
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(.2,.55),new THREE.MeshLambertMaterial({map:atTalismanTex(Math.floor(hash(i,Math.round(ry*10))*12)),side:THREE.DoubleSide,emissive:0x221810}));
+      m.geometry.translate(0,-.275,0); const g=new THREE.Group(); g.position.set(px,ry-.02,pz); g.lookAt(X+lean(ry)+Math.cos(a)*5,ry-.02,Z+Math.sin(a)*5); g.add(m); m.rotation.x=-.12; G.root.add(g); tal.push({m,ph:hash(i,7)*6,a0:(hash(7,i)-.5)*.2}); } }
+  // black katanas driven into the trunk
+  for(let i=0;i<9;i++){ const a=i*2.1+.5, yy=y0+.9+hash(i,21)*(H-1.6), r=rAt(yy); atKatana(G,X+lean(yy)+Math.cos(a)*(r-.12),yy,Z+Math.sin(a)*(r-.12),a,(hash(21,i)-.5)*.9); }
+  G.B[Math.floor(Z)][Math.floor(X)]=true; /* the trunk is solid */
+  const T=G.aliTree={x:X,z:Z,y0,top:top+.42,tal,shake:0};
+  G.anim.push(dt=>{ try{ const t=performance.now()/1000; T.shake=Math.max(0,T.shake-dt*1.5);
+      for(const n of NPCS) if(n.who==='ali'){ if(n.perch===undefined) n.perch=1; if(n.perch) n.y=y0; } /* his hit box stays on the platform, at the foot of the (solid) trunk */ for(const q of tal) q.m.rotation.z=q.a0+Math.sin(t*1.6+q.ph)*(.05+T.shake*.35);
+      // keep Ali in frame while he is up there: the camera eases up and out near the tree
+      const n=NPCS.find(o=>o.who==='ali'&&o.perch), d=Math.hypot(Player.x-X,Player.z-Z), want=n&&Game.state!=='title'?clamp((10-d)/5,0,1):0;
+      ALT_TREE.k+=(want-ALT_TREE.k)*Math.min(1,dt*2); if(G.cam){ if(G.cam.up0==null) G.cam.up0=G.cam.up; G.cam.up=G.cam.up0+3*ALT_TREE.k; }
+      if(ALT_TREE.k>.001||T.zoomed){ Cam.zoom=1+.35*ALT_TREE.k; T.zoomed=ALT_TREE.k>.001; } }catch(e){ console.error('ali tree',e); } });
+  return T; }
+(function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments);
+    try{ aliTreeBuild(G); const e=G.ents.find(o=>o.type==='npc'&&o.who==='ali'); if(e){ e.x=ALT_TREE.x; e.z=ALT_TREE.z; e.perch=1; }
+      const h=G.pick.find(p=>p.kind==='heart'&&Math.abs(p.x-34.8)<.3&&Math.abs(p.z-16.4)<.3); if(h){ h.x=33.9; h.z=17.9; } }catch(e){ console.error('ali tree',e); }
+    return G; }; })();
+// the NPC entry carries `perch` over to the spawned NPC
+(function(){ const ds=drawSprites; drawSprites=function(){ ds.apply(this,arguments); try{ for(const n of NPCS){ if(n.who!=='ali') continue;
+      
+      if(n.perch&&L&&L.aliTree) n.spr.place(n.x,L.aliTree.top,n.z,L.aliTree.top); } }catch(e){ console.error('ali perch',e); } }; })();
+// hitting the trunk shakes the talismans
+(function(){ const as=aliStruck; aliStruck=function(n){ const r=as.apply(this,arguments); try{ if(L&&L.aliTree){ L.aliTree.shake=1; } }catch(e){} return r; }; })();
 
 // ----- 06_combat.js -----
 // =====================================================================
@@ -6865,18 +6931,20 @@ function twAimed(fn,snapR){ return function(){ const a0=twAimAng(); if(a0==null)
 const ALI_R=3.8; // reach: double Shayan's swing
 const ALI_COMBO=[{dur:.32,hits:[[.06,.15]],dmg:1.3,arc:1.25,anim:'aliS1'},{dur:.38,hits:[[.05,.12],[.18,.25]],dmg:1,arc:1.25,anim:'aliS2'},{dur:.44,hits:[[.08,.24]],dmg:2,arc:3.3,anim:'aliSpin'}];
 function aliCombo(n){ const P=Player, tg=nearestFoe(ALI_R+1); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1; P.combo=n; P.swingT=Game.time;
-  P.aliAtk={n,t:0,u:0,q:false,f0:P.f,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0; P.gAct='b';
+  P.aliAtk={n,t:0,u:0,q:false,f0:P.f,ang:P.ang,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0; P.gAct='b';
   if(P.onGround&&n<2&&!(Game.twins&&Game.twins.active)){ P.vx+=Math.cos(P.ang)*3; P.vz+=Math.sin(P.ang)*3; } }
 // each cut is a Judgement Cut tear placed out in front (or around, for the spin), never over Ali
-function aliSlashFX(n,i){ const P=Player; aliSlashFXAt(P.x,P.y,P.z,P.ang,n,i); }
+function aliSlashFX(n,i){ const P=Player, a=P.aliAtk; aliSlashFXAt(P.x,P.y,P.z,a&&a.ang!=null?a.ang:P.ang,n,i); }
 function aliSlashFXAt(x,gy,z,ang,n,i){ const ux=Math.cos(ang), uz=Math.sin(ang); JC.flash=Math.max(JC.flash||0,.12);
-  if(n===0) twGash({life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
-  else if(n===1){ if(i===0) twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
-    else twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
-  else twGash({life:.48,rev:.15,fade:.24,w:22,sparks:26,pts:()=>twArcPts(x,gy+1,z,ux,uz,ALI_R*.85,-Math.PI,Math.PI,12,true)});
+  if(n===0) twGash({nodisp:1,life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
+  else if(n===1){ if(i===0) twGash({nodisp:1,life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
+    else twGash({nodisp:1,life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
+  else twGash({nodisp:1,life:.48,rev:.15,fade:.24,w:22,sparks:26,pts:()=>twArcPts(x,gy+1,z,ux,uz,ALI_R*.85,-Math.PI,Math.PI,12,true)});
   Sound.sfx(n===2?'whoosh':'swing'); if(n===2) shake(.15); }
 function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=ALI_COMBO[a.n]; a.t+=dt; a.u=Math.min(1,a.t/C.dur);
-  C.hits.forEach(([t0,t1],i)=>{ if(a.t>=t0&&!(a.fx>>i&1)){ a.fx|=1<<i; aliSlashFX(a.n,i); } if(a.t>=t0&&a.t<t1) meleeHits(P.x,P.z,P.y,ALI_R,P.ang,C.arc,C.dmg,a.sets[i]); });
+  // the swing keeps the aim it started with (the mouse), whatever direction he is running in
+  if(a.ang!=null){ P.ang=a.ang; P.f=Math.cos(a.ang)>=0?1:-1; }
+  C.hits.forEach(([t0,t1],i)=>{ if(a.t>=t0&&!(a.fx>>i&1)){ a.fx|=1<<i; aliSlashFX(a.n,i); } if(a.t>=t0&&a.t<t1) meleeHits(P.x,P.z,P.y,ALI_R,a.ang!=null?a.ang:P.ang,C.arc,C.dmg,a.sets[i]); });
   if(a.t>=C.dur){ P.aliAtk=null; P.f=a.f0; if(a.q) aliCombo((a.n+1)%3); else P.comboT=Math.max(.38,P.gAct==='g'?1.6-(Game.time-(P.gT||0)):0); } }
 function aliInput(dt){ const P=Player;
   if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
@@ -6932,6 +7000,40 @@ function* aliFinalCut(){ const P=Player; P.cineAnim='beam'; Sound.sfx('swing'); 
 // the friend's own game runs this file; the host draws their tears when their animation starts a cut.
 function aliRemoteSlashFX(A,anim){ const n=anim==='aliS1'?0:anim==='aliS2'?1:anim==='aliSpin'?2:-1; if(n<0) return; const ang=A.ang!=null?A.ang:(A.f>0?0:Math.PI), x=A.x, y=A.y, z=A.z;
   aliSlashFXAt(x,y,z,ang,n,0); if(n===1){ const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; if(k.t<.13) return true; aliSlashFXAt(x,y,z,ang,1,1); return false; }); } }
+
+// ----- 08c_alitips.js -----
+// =====================================================================
+// ALI'S CHAIN TIP: Ali hits hardest when he alternates his swing and Getsuga Tenshou. The names follow the
+// player's own controls (rebound keys, the controller's buttons, or the touch buttons):
+//   aliKey('attack'|'block'), aliSeq(sep) = "Left click → Right click → Left click → Right click".
+// In a fight, a small chip above the bottom of the screen shows that sequence and lights the press that comes
+// next (gold under the Getsugas that grow: ×1.5, ×1.7). It goes once the player has landed 3 Jujishous, and comes
+// back for a few seconds whenever they fire two Getsugas in a row (the slow, weak one).
+// =====================================================================
+function aliKey(a){ if(typeof IS_TOUCH==='function'&&IS_TOUCH()) return a==='attack'?'Sword':'Getsuga';
+  if(typeof twPadOn==='function'&&twPadOn()){ const i=PAD.map.indexOf(a); if(i>=0) return twPadName(i); } return K(a); }
+function aliSeq(sep){ const a=aliKey('attack'), b=aliKey('block'); return [a,b,a,b].join(sep); }
+const ALT={jj:0,mash:0,al:0};
+(function(){ const cg=aliChainGetsuga; aliChainGetsuga=function(){ const P=Player, t0=P.gT; const r=cg.apply(this,arguments);
+    try{ if(P.gT!==t0){ if(P.gTier===3) ALT.jj++; else if(P.gTier===0) ALT.mash=4; } }catch(e){} return r; }; })();
+// the press that comes next in the 4-step loop: 0 swing, 1 Getsuga ×1.5, 2 swing, 3 Getsuga ×1.7
+function aliNextStep(){ const P=Player, live=Game.time-(P.gT!=null?P.gT:-9)<1.6||P.comboT>0, t=P.gTier||0;
+  if(P.gAct==='b') return live&&t===2?3:1; if(P.gAct==='g'&&live) return t===2?2:0; return 0; }
+function aliTipShow(){ if(!ALI()||Game.state!=='play'||Game.script||Game.dlg||Game.mech||(typeof TLM!=='undefined'&&TLM.open)||Game.paulLock) return false;
+  const fight=!!Game.boss||!!TW.fight||!!TW.giant||(TW.foes&&TW.foes.length>0)||MOBS.some(m=>m&&!m.dead&&(m.hp==null||m.hp>0)); return fight&&(ALT.jj<3||ALT.mash>0); }
+function drawAliTip(){ const dt=1/60; ALT.mash=Math.max(0,ALT.mash-dt); ALT.al=clamp(ALT.al+(aliTipShow()?dt*4:-dt*3),0,1); if(ALT.al<=0) return;
+  const a=aliKey('attack'), b=aliKey('block'), keys=[a,b,a,b], nx=aliNextStep(), pulse=.5+.5*Math.sin(performance.now()/130);
+  D.save(); D.globalAlpha=ALT.al; D.font=`800 16px ${FB}`; const ws=keys.map(k=>Math.max(44,D.measureText(k).width+22)), gap=30, kw=ws.reduce((s,w)=>s+w,0)+gap*3, W=kw+40, H=ALT.mash>0?100:80, x0=Math.round(UW/2-W/2), y0=UH-138-H;
+  uRR(x0,y0,W,H,12); D.fillStyle='rgba(12,14,24,.86)'; D.fill(); D.strokeStyle=ALT.mash>0?'rgba(255,90,110,.7)':'rgba(255,212,90,.35)'; D.lineWidth=1.5; D.stroke();
+  uCaps('ALTERNATE',x0+20,y0+21,'#ffd45a',13);
+  let x=x0+20; const ky=y0+30;
+  keys.forEach((k,i)=>{ const w=ws[i], on=i===nx; uRR(x,ky,w,30,7); D.fillStyle=on?`rgba(255,212,90,${.75+.25*pulse})`:'rgba(255,255,255,.08)'; D.fill(); D.strokeStyle=on?'#ffe9a8':'rgba(255,255,255,.22)'; D.lineWidth=1; D.stroke();
+    uText(k,x+w/2,ky+21,`800 16px ${FB}`,on?'#1a1408':'#e9e2cf','center');
+    if(i%2) uText(i===1?'×1.5':'×1.7',x+w/2,ky+46,`800 13px ${FB}`,'#ffd45a','center');
+    if(i<3) uText('→',x+w+gap/2,ky+21,`800 16px ${FB}`,'#8f95ab','center'); x+=w+gap; });
+  if(ALT.mash>0) uText('Two Getsugas in a row are weak: swing in between',UW/2,y0+H-6,`700 14px ${FB}`,'#ff8a9a','center');
+  D.restore(); }
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ drawAliTip(); }catch(e){ console.error('ali tip',e); } }; })();
 
 // ----- 09_parry.js -----
 // =====================================================================
@@ -8938,11 +9040,21 @@ function moonBlast(M){ try{ const ctr=M.moon.getWorldPosition(MOON_V).clone(), c
         for(const q of rings){ const u=clamp((t-q.delay)/.7,0,1), s=Math.max(.01,14+(q.to-14)*(1-Math.pow(1-u,3))); q.r.scale.set(s,s,1); q.r.material.opacity=u>0?.9*(1-u):0; }
         core.material.opacity=Math.max(0,1-t/.8); core.scale.setScalar(Math.max(.01,70+t*90)); return true; }catch(e){ console.error('moon blast',e); return false; } }); }
   catch(e){ console.error('moon blast',e); } }
+// the sheathe: a ching (steel sliding home, then the ring) and a star-glint on the blade
+TW_SFX.ching=function(){ Sound.hiss(4200,.12,.07,'bandpass'); Sound.tone('sine',3400,3340,.9,.13,.1); Sound.tone('sine',6800,6720,.6,.06,.1); Sound.tone('triangle',10200,10100,.35,.035,.1); Sound.hiss(9000,.2,.03,'highpass',.1); };
+function moonGlintTex(){ if(moonGlintTex.t) return moonGlintTex.t; const [cv,c]=mkCanvas(32,32); c.fillStyle='#fff';
+  for(let i=0;i<16;i++){ const w=Math.max(1,Math.round(3-i/6)); c.fillRect(16-w/2,i,w,1); c.fillRect(16-w/2,31-i,w,1); c.fillRect(i,16-w/2,1,w); c.fillRect(31-i,16-w/2,1,w); }
+  c.fillRect(13,13,6,6); return moonGlintTex.t=tex(cv); }
+function moonGlint(al){ try{ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:moonGlintTex(),color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false})), g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xd8e8ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));
+    const x=al.x+.35, y=al.y+1.05, z=al.z+.15; s.position.set(x,y,z); g.position.set(x,y,z); s.userData.temp=g.userData.temp=1; scene.add(s); scene.add(g); if(al.glow) al.glow(.9); FX.spark(x,y,z); let t=0;
+    Game.fxUpd.push(dt=>{ try{ t+=dt; const u=t/.55, k=u<.25?u/.25:Math.max(0,1-(u-.25)/.75); s.scale.setScalar(Math.max(.01,2.6*k)); s.material.rotation=t*2.5; g.scale.setScalar(Math.max(.01,3.4*k)); s.material.opacity=g.material.opacity=k;
+        if(al.glow) al.glow(.9*k); if(u>=1){ scene.remove(s); scene.remove(g); return false; } return true; }catch(e){ console.error('glint',e); return false; } }); }catch(e){ console.error('glint',e); } }
 aliAwaken=function*(){ const P=Player, n=NPCS.find(o=>o.who==='ali'), H=Game.hamza, fl=Game.flags; Sound.stop(); Voice.stop(); Game.letterTo=1; P.atk=null; P.charge=0; P.vx=P.vz=0;
-  Cam.focus={x:(n.x+P.x)/2,y:n.y,z:(n.z+P.z)/2}; P.f=n.x>P.x?1:-1; n.fdir=-P.f;
+  Cam.focus={x:(n.x+P.x)/2,y:n.perch?(n.y+aliTreeY())/2:n.y,z:(n.z+P.z)/2}; P.f=n.x>P.x?1:-1; n.fdir=-P.f;
   zwStart(); Sound.sfx('heartbeat'); yield wait(.7);
   yield say('ali',"...So. You chose this.",'angry');
-  FX.burst(n.x,n.y+1,n.z,24,0x0c0814,4,.4,false); n.x=P.x-P.f*1.1; n.z=P.z+.1; n.y=P.y; n.fdir=P.f; FX.burst(n.x,n.y+1,n.z,24,0x0c0814,4,.4,false); Sound.sfx('dash'); yield wait(.4);
+  /* he drops from the top of his tree */ FX.burst(n.x,(n.perch?aliTreeY():n.y)+1,n.z,24,0x0c0814,4,.4,false); n.perch=0; n.x=P.x-P.f*1.1; n.z=P.z+.1; n.y=P.y; n.fdir=P.f; FX.burst(n.x,n.y+1,n.z,24,0x0c0814,4,.4,false); Sound.sfx('dash');
+  Cam.focus={x:(n.x+P.x)/2,y:P.y,z:(n.z+P.z)/2}; yield wait(.4);
   P.f=-P.f; yield say('shayan',"W-wait! That was an accident! I was aiming at the straw dummy!",'surprised');
   yield say('ali',"While you were hammering horseshoes, I studied the blade.");
   yield say('ali',"There are no accidents. There is only the blade, and those who are beneath it.");
@@ -8993,9 +9105,9 @@ aliAwaken=function*(){ const P=Player, n=NPCS.find(o=>o.who==='ali'), H=Game.ham
     yield wait(.01); }
   clk.done=1;
   JC.lines=[]; fol.slash=0; al.x=0; al.y=-3; al.z=-6; FX.burst(al.x,al.y+1,al.z,30,0x0c0814,5,.4,false);
-  cineSet(-1.6,-1.2,0,1.2,6,-40); Sound.stop(); yield wait(.4); Sound.sfx('secret');
-  yield say('ali',"...Sheathe.");
-  yield wait(1.1);
+  cineSet(-1.6,-1.2,0,1.2,6,-40); Sound.stop(); yield wait(.4);
+  // no words: his sword flashes once and goes home with a ching
+  moonGlint(al); Sound.sfx('ching'); yield wait(1.5);
   // the moon comes apart: impact frames, shockwaves, chunks everywhere (some straight past the camera)
   impactFrame([[3,3],[1,2],[2,2],[3,2],[1,2],[2,1],[3,2],[1,1],[2,1],[3,1]]); Sound.sfx('crossboom'); Sound.sfx('tear'); Sound.sfx('gore'); shake(2); OV.white=.9; OV.wfade=.7; Game.moonCut=null;
   M.moon.visible=false; M.halo.visible=false; sh.dispose(); moonBlast(M);
@@ -14169,7 +14281,7 @@ function twControlsShow(fromMenu){ CT.open=true; CT.fromMenu=!!fromMenu; CT.list
 function twControlsHide(){ CT.open=false; CT.fromMenu=false; CT.listen=null; CT.drop=null; }
 function twControlsRows(){ const ali=ALI();
   const keys=[['Move',null,'WASD or arrow keys (aim with the mouse)'],['Jump','jump',''],['Attack','attack',''],[ali?'Getsuga Tenshou':'Fireball','block',''],[ali?'Teleport':'Dash','dash',''],['Special','special',''],['Talk / advance','confirm',''],['Fast-forward','ff',' (hold in dialogue)'],['Pause','pause',' (toggle)'],['Voices','voices',' (toggle)'],['Mute','mute',' (toggle)'],['Menu / timeline','menu','']];
-  const mech=ali?[['High Jump','Ali jumps twice as high. Hold '+K('jump')+' to ride a Getsuga down'],['Combo','Press '+K('attack')+' three times: a long slash, a double cut, then a spin that hits all around you'],['Getsuga Tenshou',K('block')+' fires a Getsuga where you aim'],['Cut, Getsuga, repeat','Swing ('+K('attack')+'), then Getsuga ('+K('block')+'), then swing, then Getsuga. Each Getsuga that follows a swing grows: gold (1.5x), then a mini Jujishou (1.7x). Two Getsugas in a row are slow and weak'],['Black Getsuga','Hold '+K('block')+' to charge. Release when it turns red to fire it'],['Parry','Attack right before a melee hit lands'],['Judgement Cut','Land 5 parries, then attack to unleash it'],['Teleport',K('dash')+' blinks you through attacks'],['Special',K('special')+' when the blue gauge is full'],['Auto-mantle','In town, run into a roof, tree, stall, fence or fountain to climb it']]
+  const mech=ali?[['High Jump','Ali jumps twice as high. Hold '+K('jump')+' to ride a Getsuga down'],['Combo','Press '+K('attack')+' three times: a long slash, a double cut, then a spin that hits all around you'],['Getsuga Tenshou',K('block')+' fires a Getsuga where you aim'],['Alternate: '+aliSeq(' → '),'Alternate your swing ('+aliKey('attack')+') and Getsuga Tenshou ('+aliKey('block')+'): '+aliSeq(', ')+'... Every Getsuga right after a swing grows: gold (1.5x), then a mini Jujishou (1.7x). Two Getsugas in a row are slow and weak'],['Black Getsuga','Hold '+K('block')+' to charge. Release when it turns red to fire it'],['Parry','Attack right before a melee hit lands'],['Judgement Cut','Land 5 parries, then attack to unleash it'],['Teleport',K('dash')+' blinks you through attacks'],['Special',K('special')+' when the blue gauge is full'],['Auto-mantle','In town, run into a roof, tree, stall, fence or fountain to climb it']]
     :[['Double Jump','Press '+K('jump')+' twice'],['Glide','Hold '+K('jump')+' after the double jump'],['Combo','Press '+K('attack')+' three times for a 3-hit combo'],['Getsuga Tenshou','Hold '+K('attack')+' to charge. Release when it turns red to fire it, or wait until it is full and release for a stronger one'],['Charged Fireball','Hold '+K('block')+' until it is fully charged, then release: a huge fireball, and your sword catches fire. Basic attacks do double damage while it burns'],['Parry','Attack right before a melee hit lands'],['Ranged Parry','Attack an incoming projectile to send it back'],['Full Counter','Land 5 parries, then attack to unleash it'],['Dash',K('dash')+' dashes through attacks (you can\'t be hit mid-dash)'],['Special',K('special')+' when the blue gauge is full'],['Auto-mantle','In town, run into a roof, tree, stall, fence or fountain to climb it']];
   return {keys,mech}; }
 // the frame, the title and the close X (shared with the controller view in 99b_gamepad.js)

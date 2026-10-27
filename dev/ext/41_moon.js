@@ -73,11 +73,21 @@ function moonBlast(M){ try{ const ctr=M.moon.getWorldPosition(MOON_V).clone(), c
         for(const q of rings){ const u=clamp((t-q.delay)/.7,0,1), s=Math.max(.01,14+(q.to-14)*(1-Math.pow(1-u,3))); q.r.scale.set(s,s,1); q.r.material.opacity=u>0?.9*(1-u):0; }
         core.material.opacity=Math.max(0,1-t/.8); core.scale.setScalar(Math.max(.01,70+t*90)); return true; }catch(e){ console.error('moon blast',e); return false; } }); }
   catch(e){ console.error('moon blast',e); } }
+// the sheathe: a ching (steel sliding home, then the ring) and a star-glint on the blade
+TW_SFX.ching=function(){ Sound.hiss(4200,.12,.07,'bandpass'); Sound.tone('sine',3400,3340,.9,.13,.1); Sound.tone('sine',6800,6720,.6,.06,.1); Sound.tone('triangle',10200,10100,.35,.035,.1); Sound.hiss(9000,.2,.03,'highpass',.1); };
+function moonGlintTex(){ if(moonGlintTex.t) return moonGlintTex.t; const [cv,c]=mkCanvas(32,32); c.fillStyle='#fff';
+  for(let i=0;i<16;i++){ const w=Math.max(1,Math.round(3-i/6)); c.fillRect(16-w/2,i,w,1); c.fillRect(16-w/2,31-i,w,1); c.fillRect(i,16-w/2,1,w); c.fillRect(31-i,16-w/2,1,w); }
+  c.fillRect(13,13,6,6); return moonGlintTex.t=tex(cv); }
+function moonGlint(al){ try{ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:moonGlintTex(),color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false})), g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xd8e8ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));
+    const x=al.x+.35, y=al.y+1.05, z=al.z+.15; s.position.set(x,y,z); g.position.set(x,y,z); s.userData.temp=g.userData.temp=1; scene.add(s); scene.add(g); if(al.glow) al.glow(.9); FX.spark(x,y,z); let t=0;
+    Game.fxUpd.push(dt=>{ try{ t+=dt; const u=t/.55, k=u<.25?u/.25:Math.max(0,1-(u-.25)/.75); s.scale.setScalar(Math.max(.01,2.6*k)); s.material.rotation=t*2.5; g.scale.setScalar(Math.max(.01,3.4*k)); s.material.opacity=g.material.opacity=k;
+        if(al.glow) al.glow(.9*k); if(u>=1){ scene.remove(s); scene.remove(g); return false; } return true; }catch(e){ console.error('glint',e); return false; } }); }catch(e){ console.error('glint',e); } }
 aliAwaken=function*(){ const P=Player, n=NPCS.find(o=>o.who==='ali'), H=Game.hamza, fl=Game.flags; Sound.stop(); Voice.stop(); Game.letterTo=1; P.atk=null; P.charge=0; P.vx=P.vz=0;
-  Cam.focus={x:(n.x+P.x)/2,y:n.y,z:(n.z+P.z)/2}; P.f=n.x>P.x?1:-1; n.fdir=-P.f;
+  Cam.focus={x:(n.x+P.x)/2,y:n.perch?(n.y+aliTreeY())/2:n.y,z:(n.z+P.z)/2}; P.f=n.x>P.x?1:-1; n.fdir=-P.f;
   zwStart(); Sound.sfx('heartbeat'); yield wait(.7);
   yield say('ali',"...So. You chose this.",'angry');
-  FX.burst(n.x,n.y+1,n.z,24,0x0c0814,4,.4,false); n.x=P.x-P.f*1.1; n.z=P.z+.1; n.y=P.y; n.fdir=P.f; FX.burst(n.x,n.y+1,n.z,24,0x0c0814,4,.4,false); Sound.sfx('dash'); yield wait(.4);
+  /* he drops from the top of his tree */ FX.burst(n.x,(n.perch?aliTreeY():n.y)+1,n.z,24,0x0c0814,4,.4,false); n.perch=0; n.x=P.x-P.f*1.1; n.z=P.z+.1; n.y=P.y; n.fdir=P.f; FX.burst(n.x,n.y+1,n.z,24,0x0c0814,4,.4,false); Sound.sfx('dash');
+  Cam.focus={x:(n.x+P.x)/2,y:P.y,z:(n.z+P.z)/2}; yield wait(.4);
   P.f=-P.f; yield say('shayan',"W-wait! That was an accident! I was aiming at the straw dummy!",'surprised');
   yield say('ali',"While you were hammering horseshoes, I studied the blade.");
   yield say('ali',"There are no accidents. There is only the blade, and those who are beneath it.");
@@ -128,9 +138,9 @@ aliAwaken=function*(){ const P=Player, n=NPCS.find(o=>o.who==='ali'), H=Game.ham
     yield wait(.01); }
   clk.done=1;
   JC.lines=[]; fol.slash=0; al.x=0; al.y=-3; al.z=-6; FX.burst(al.x,al.y+1,al.z,30,0x0c0814,5,.4,false);
-  cineSet(-1.6,-1.2,0,1.2,6,-40); Sound.stop(); yield wait(.4); Sound.sfx('secret');
-  yield say('ali',"...Sheathe.");
-  yield wait(1.1);
+  cineSet(-1.6,-1.2,0,1.2,6,-40); Sound.stop(); yield wait(.4);
+  // no words: his sword flashes once and goes home with a ching
+  moonGlint(al); Sound.sfx('ching'); yield wait(1.5);
   // the moon comes apart: impact frames, shockwaves, chunks everywhere (some straight past the camera)
   impactFrame([[3,3],[1,2],[2,2],[3,2],[1,2],[2,1],[3,2],[1,1],[2,1],[3,1]]); Sound.sfx('crossboom'); Sound.sfx('tear'); Sound.sfx('gore'); shake(2); OV.white=.9; OV.wfade=.7; Game.moonCut=null;
   M.moon.visible=false; M.halo.visible=false; sh.dispose(); moonBlast(M);

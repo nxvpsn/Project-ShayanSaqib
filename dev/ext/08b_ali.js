@@ -15,18 +15,20 @@
 const ALI_R=3.8; // reach: double Shayan's swing
 const ALI_COMBO=[{dur:.32,hits:[[.06,.15]],dmg:1.3,arc:1.25,anim:'aliS1'},{dur:.38,hits:[[.05,.12],[.18,.25]],dmg:1,arc:1.25,anim:'aliS2'},{dur:.44,hits:[[.08,.24]],dmg:2,arc:3.3,anim:'aliSpin'}];
 function aliCombo(n){ const P=Player, tg=nearestFoe(ALI_R+1); if(tg) P.ang=Math.atan2(tg.z-P.z,tg.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1; P.combo=n; P.swingT=Game.time;
-  P.aliAtk={n,t:0,u:0,q:false,f0:P.f,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0; P.gAct='b';
+  P.aliAtk={n,t:0,u:0,q:false,f0:P.f,ang:P.ang,sets:ALI_COMBO[n].hits.map(()=>new Set()),fx:0}; Sound.sfx('swing'); P.charge=0; P.gAct='b';
   if(P.onGround&&n<2&&!(Game.twins&&Game.twins.active)){ P.vx+=Math.cos(P.ang)*3; P.vz+=Math.sin(P.ang)*3; } }
 // each cut is a Judgement Cut tear placed out in front (or around, for the spin), never over Ali
-function aliSlashFX(n,i){ const P=Player; aliSlashFXAt(P.x,P.y,P.z,P.ang,n,i); }
+function aliSlashFX(n,i){ const P=Player, a=P.aliAtk; aliSlashFXAt(P.x,P.y,P.z,a&&a.ang!=null?a.ang:P.ang,n,i); }
 function aliSlashFXAt(x,gy,z,ang,n,i){ const ux=Math.cos(ang), uz=Math.sin(ang); JC.flash=Math.max(JC.flash||0,.12);
-  if(n===0) twGash({life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
-  else if(n===1){ if(i===0) twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
-    else twGash({life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
-  else twGash({life:.48,rev:.15,fade:.24,w:22,sparks:26,pts:()=>twArcPts(x,gy+1,z,ux,uz,ALI_R*.85,-Math.PI,Math.PI,12,true)});
+  if(n===0) twGash({nodisp:1,life:.42,rev:.07,fade:.24,w:24,sparks:16,pts:()=>twArcPts(x,gy+1.1,z,ux,uz,ALI_R*.85,-1.05,1.05,7,true)});
+  else if(n===1){ if(i===0) twGash({nodisp:1,life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x+ux*1.5,gy+1.3,z+uz*1.5,ux,uz,1.9,1.15,-1.15,6)});
+    else twGash({nodisp:1,life:.38,rev:.06,fade:.22,w:20,sparks:10,pts:()=>twArcPts(x,gy+1.2,z,ux,uz,ALI_R*.8,1,-1,6,true)}); }
+  else twGash({nodisp:1,life:.48,rev:.15,fade:.24,w:22,sparks:26,pts:()=>twArcPts(x,gy+1,z,ux,uz,ALI_R*.85,-Math.PI,Math.PI,12,true)});
   Sound.sfx(n===2?'whoosh':'swing'); if(n===2) shake(.15); }
 function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=ALI_COMBO[a.n]; a.t+=dt; a.u=Math.min(1,a.t/C.dur);
-  C.hits.forEach(([t0,t1],i)=>{ if(a.t>=t0&&!(a.fx>>i&1)){ a.fx|=1<<i; aliSlashFX(a.n,i); } if(a.t>=t0&&a.t<t1) meleeHits(P.x,P.z,P.y,ALI_R,P.ang,C.arc,C.dmg,a.sets[i]); });
+  // the swing keeps the aim it started with (the mouse), whatever direction he is running in
+  if(a.ang!=null){ P.ang=a.ang; P.f=Math.cos(a.ang)>=0?1:-1; }
+  C.hits.forEach(([t0,t1],i)=>{ if(a.t>=t0&&!(a.fx>>i&1)){ a.fx|=1<<i; aliSlashFX(a.n,i); } if(a.t>=t0&&a.t<t1) meleeHits(P.x,P.z,P.y,ALI_R,a.ang!=null?a.ang:P.ang,C.arc,C.dmg,a.sets[i]); });
   if(a.t>=C.dur){ P.aliAtk=null; P.f=a.f0; if(a.q) aliCombo((a.n+1)%3); else P.comboT=Math.max(.38,P.gAct==='g'?1.6-(Game.time-(P.gT||0)):0); } }
 function aliInput(dt){ const P=Player;
   if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
