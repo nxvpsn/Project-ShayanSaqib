@@ -7175,8 +7175,8 @@ TWK.caotan.tsun=function*(T,ph){ const sp=twSp(T); T.heartEyes=1; twBark('caotan
 TWK.caotan.nose=function*(T,ph){ const sp=twSp(T); T.nose=1; twBark('caotan',"I'm NOT looking at anything lewd! ...*nosebleed*",true); Sound.sfx('squelch');
   for(let i=0;i<(ph>=3?10:8);i++){ const P=Player, p=twClampXZ(P.x+P.vx*.3,P.z+P.vz*.3,.5);
     twBlast(p.x,p.z,1,.62/sp,{col:0xff1a3a,burst:0xd0102a,ring:'#ff4a5a',dmg:2,sfx:'squelch',shake:.12,h:99,noBurst:true,onBoom(x,z){ twNoseSplurt(x,z,3.6); }}); yield .27/sp; }
-  yield .3; twBark('caotan',"...Okay that one was a LOT of blood.",true); const gx=T.x, gz=T.z; twBlast(gx,gz,2.6,.85,{col:0xff1a3a,burst:0xd0102a,dmg:3,h:99,noBurst:true,onBoom(x,z){ twNoseSplurt(x,z,8); }});
-  yield 1.1; T.nose=0; };
+  yield .3; twBark('caotan',"...Okay that one was a LOT of blood.",true); /* (no big geyser on himself any more) */
+  yield .8; T.nose=0; };
 TWK.caotan.maid=function*(T,ph){ const sp=twSp(T); twBark('caotan',"Welcome home, Master~! Moe moe... KYUN! ♡",true); Sound.sfx('kyun'); const P=Player, a0=rnd(0,6.28), maids=[];
   for(let i=0;i<4;i++){ const a=a0+i*Math.PI/2, p=twClampXZ(P.x+Math.cos(a)*6.5,P.z+Math.sin(a)*5,1); const s=new Sprite3D(128,128,28); maids.push({x:p.x,z:p.z,s,ph:i*.8,f:1}); FX.burst(p.x,groundY(p.x,p.z)+1.6,p.z,24,0xff8ac8,4,.35); }
   let tt=0, rot=0; const h=twHz({upd(dt,play){ if(play) tt+=dt; for(const m of maids){ const gy=groundY(m.x,m.z); m.f=Player.x>m.x?1:-1; m.s.draw((c,cx,by)=>drawCaotanBoss(c,cx,by,m.f,{t:tt+m.ph,maid:1,heartEyes:1,flash:0}));
@@ -15402,8 +15402,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: Full Counter stuns the boss 1s and cancels its move; no i-frames (a 0.3s parry guard while it swings); clones it shatters play the parry sound";
-const DBG_NEW=['omar:clones','caotan:tsun','duo:rushTag'];
+const DBG_PATCH="Oct 27: Caotan's nosebleed: a darker, bloodier splurt; no big geyser on himself at the end";
+const DBG_NEW=['caotan:nose'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
