@@ -39,7 +39,7 @@ function* dgLaunch(F,cam,gx,gy,gz,hk,dmg){ const P=Player;
   for(let t=0;t<1.25&&P.hp>0;t+=1/60) yield wait(1/60);
   dgRelease(F,cam,{keepInv:1}); }
 // Ali cuts the grab short (25%): Judgement Cuts through the grabber, then the kick (twAliKick knocks him down)
-function dgAliRoll(F){ const A=twAliAI(); return !!A&&twAliReady(A)&&(A.down||0)<=0&&!ALI()&&!F.lc&&Math.random()<TW_ALI_SAVE; }
+function dgAliRoll(F){ const A=twAliAI(); return !!A&&twAliReady(A)&&((A.down||0)<=0||!!A.gib)&&!ALI()&&!F.lc&&Math.random()<TW_ALI_SAVE; }
 function* dgAliSave(F,T,cam){ const P=Player, A=twAliAI(); if(!A) return;
   cam.want=()=>dgFrame([[P.x,P.y+1,P.z],[T.x,T.y+1,T.z],[A.x,A.y+1,A.z]],{min:20});
   for(let i=0;i<3;i++){ twTinyJC(T.x+rnd(-.6,.6),T.y+1.2+rnd(-.5,.5),T.z,220); FX.cut(T.x,T.y+1.2,T.z); Sound.sfx('swing'); yield wait(.07); }

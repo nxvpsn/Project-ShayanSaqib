@@ -13,7 +13,7 @@
 // a tiny slash on screen over a world point (fades on its own)
 function twTinyJC(x,y,z,len){ const s=toScreen(x,y,z); if(s[2]>1) return; const a=rnd(0,Math.PI), L0=len||110; JC.lines.push({x0:s[0]-Math.cos(a)*L0,y0:s[1]-Math.sin(a)*L0,x1:s[0]+Math.cos(a)*L0,y1:s[1]+Math.sin(a)*L0,t:0,ttl:.3}); }
 
-function twAliReady(A){ return !!A&&!A.gone&&!A.hidden; }
+function twAliReady(A){ return !!A&&!A.gone&&(!A.hidden||!!A.gib); } // dead (in pieces) still counts: he cuts from beyond
 const TW_ALI_CUT=.33, TW_ALI_SAVE=.4, TW_ALI_STUN=1.5; // Ali cuts a cuttable duo move this often; saves you from a grab this often (dgAliRoll); his kick stuns that twin this long
 // he cuts at least once per phase: once 3 moves of a phase have gone by without a cut, the next cuttable move is his
 function twAliCutRoll(F){ const ph=F.phase||1; F.mvN=F.mvN||{}; F.cutN=F.cutN||{}; F.mvN[ph]=(F.mvN[ph]||0)+1; return Math.random()<TW_ALI_CUT||(!F.cutN[ph]&&F.mvN[ph]>=3); }
@@ -29,7 +29,7 @@ function twDuo3Assist(F,dt,play){ if(!play) return; const A=twAliAI();
 function twAliKick(F,A,K){ F.cutN=F.cutN||{}; F.cutN[F.phase||1]=1; const T=K.who==='caotan'?F.C:F.O, o=T===F.C?F.O:F.C, mid=K.mid, gy=groundY(T.x,T.z);
   // the move stops dead
   F.C.gen=null; F.O.gen=null; for(const X of [F.C,F.O]){ X.state='idle'; X.lockF=0; X.swing=0; X.cast=0; X.fire=0; X.heartEyes=0; if(X.hide){ X.hide=0; } X.hy=1.3; } TW.sentence=null; TW.caoSafe=null;
-  aliGhost(A.x,A.y,A.z); const side=A.x<T.x?-1:1; A.x=T.x+side*.9; A.z=T.z+.3; A.f=-side; A.flash=.2; Sound.sfx('dash'); Sound.sfx('secret'); FX.burst(A.x,A.y+1,A.z,24,0xb0182a,5,.35);
+  const dead=!!A.gib, side=A.x<T.x?-1:1; if(!dead){ aliGhost(A.x,A.y,A.z); A.x=T.x+side*.9; A.z=T.z+.3; A.f=-side; A.flash=.2; } else { for(let i=0;i<4;i++) twTinyJC(T.x+rnd(-.6,.6),T.y+1.2+rnd(-.5,.5),T.z,200); JC.flash=Math.max(JC.flash||0,.5); } /* in pieces: the cuts come out of nowhere */ Sound.sfx('dash'); Sound.sfx('secret'); FX.burst(A.x,A.y+1,A.z,24,0xb0182a,5,.35);
   Game.slowT=Math.max(Game.slowT,.4); FX.hitstop=Math.max(FX.hitstop,.1);
   // every bolt and hazard of that move gets cut
   const cuts=[]; for(const b of BOLTS){ if(b.dead||b.friendly||b.mid!==mid) continue; b.dead=1; cuts.push([b.x,b.y,b.z]); }
@@ -40,7 +40,9 @@ function twAliKick(F,A,K){ F.cutN=F.cutN||{}; F.cutN[F.phase||1]=1; const T=K.wh
   Game.dmgNums.push({x:T.x,y:gy+3.4,z:T.z,n:'KICKED DOWN',t:0,big:true,col:'#ff6a7a'}); TW._ally=1; try{ twHurt(T,3,'ally'); } finally{ TW._ally=0; }
   o.state='idle';
   twBark('ali',"ISSEN!",true); /* every interrupt */
-  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=TW_ALI_STUN){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
+  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; const r=Math.random()<.5;
+      if(dead){ if(T.who==='caotan'){ if(r) twBark('caotan',"HOW?! You're in like SIX PIECES!",true); else twBark('caotan',"HOW?! Your HEAD is over THERE!",true); } else { if(r) twBark('omar',"HOW. He is literally scattered across the floor.",true); else twBark('omar',"How... Even death won't take him. I relate.",true); } }
+      else if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=TW_ALI_STUN){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
 
 // ---------- the guard: Ali parries for Shayan ----------
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const F=TW.fight, P=Player, G=F&&F.kind==='duo'?F.guard:null;

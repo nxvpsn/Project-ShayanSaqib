@@ -158,16 +158,40 @@ function d5MiraUpd(dt){ const S=TW.d5mira, mi=Game.mira, F=d5F(); if(!S||!mi||!F
 (function(){ const uw=updateWorld; updateWorld=function(dt){ uw.apply(this,arguments); try{ d5MiraUpd(dt); }catch(e){ console.error('d5 mira',e); } }; })();
 
 // =====================================================================
-// ALI DIES: he blows up into pieces; six seconds later a storm of Judgement Cuts stitches him back together
+// ALI DIES: he blows apart into body parts that stay on the ground (a small pool, a revive countdown over them); six seconds later a storm of
+// Judgement Cuts stitches him back together (the pieces fly home). Dead, he still cuts the twins' moves (twAliReady) and they ask HOW?!
 // =====================================================================
 (function(){ const ah=twAllyHurt; twAllyHurt=function(A,dmg){ const r=ah.apply(this,arguments); try{ if(A&&A.who==='ali'&&d5F()&&A.hp<=0&&!A.gib) d5AliGib(A); }catch(e){ console.error('d5 gib',e); } return r; };
-  const ua=twUpdateAlly; twUpdateAlly=function(A,dt,play){ if(A&&A.gib){ try{ d5AliGibUpd(A,dt); }catch(e){ console.error('d5 gib upd',e); A.gib=null; A.hidden=false; } return; } return ua.apply(this,arguments); }; })();
-function d5AliGib(A){ A.gib={t:0,jc:0}; A.down=99; A.hp=0; A.cmb=null; const S=twSprOf(A); try{ S.draw((c,cx,by)=>drawAliHD(c,cx,by,A.f,{t:A.t,anim:'hurt'})); gibsFromSprite(S,{cols:8,rows:7,n:44}); }catch(e){}
-  A.hidden=true; S.show(false); const gy=groundY(A.x,A.z); for(let i=0;i<3;i++) FX.burst(A.x,gy+1.2,A.z,40,i%2?0x8a0a14:0xd01a2a,7+i*2,.5,false); Sound.sfx('gore'); Sound.sfx('squelch'); shake(.6);
+  const ua=twUpdateAlly; twUpdateAlly=function(A,dt,play){ if(A&&A.gib){ try{ d5AliGibUpd(A,dt); }catch(e){ console.error('d5 gib upd',e); try{ d5AliPartsKill(A.gib); }catch(x){} A.gib=null; A.hidden=false; } return; } return ua.apply(this,arguments); }; })();
+function d5AliGib(A){ A.gib={t:0,jc:0,parts:[]}; A.down=99; A.hp=0; A.cmb=null; const S=twSprOf(A), gy=groundY(A.x,A.z);
+  try{ S.draw((c,cx,by)=>drawAliHD(c,cx,by,A.f,{t:A.t,anim:'hurt'})); A.gib.parts=d5AliParts(A,S,gy); }catch(e){ console.error('ali parts',e); }
+  A.hidden=true; S.show(false); FX.burst(A.x,gy+1,A.z,14,0xb0101e,4,.3,false);
+  const pool=new THREE.Mesh(new THREE.CircleGeometry(1,20),new THREE.MeshBasicMaterial({color:0x6a0610,transparent:true,opacity:.85,depthWrite:false})); pool.rotation.x=-Math.PI/2; pool.position.set(A.x,gy+.03,A.z); pool.scale.setScalar(.01); pool.userData.tw=1; scene.add(pool); A.gib.pool=pool;
+  Sound.sfx('gore'); Sound.sfx('squelch'); shake(.5);
   const F=d5F(); F.aliGibN=(F.aliGibN||0)+1; if(F.aliGibN===1) d5Bark('aliGib',0); else if(Math.random()<.6) d5Bark('aliGib',1+Math.floor(Math.random()*2)); }
-function d5AliGibUpd(A,dt){ const G=A.gib; G.t+=dt; A.down=99; A.hidden=true; if(Game.state!=='play'&&Game.state!=='cut') return;
+// his sprite cut into body parts (head with the hat, two halves of the torso with an arm each, two legs) that fly, land and stay put
+function d5AliParts(A,S,gy){ const cv=S.cv, w=S.w, h=S.h, c=cv.getContext('2d'), id=c.getImageData(0,0,w,h).data; let x0=w,x1=0,y0=h,y1=0;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(id[(y*w+x)*4+3]>40){ x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); } if(x1<=x0) return [];
+  const bw=x1-x0+1, bh=y1-y0+1, mx=x0+bw/2, k=(S.mesh.scale.y||1)/PPU, parts=[], cut=[[x0,y0,bw,bh*.3],[x0,y0+bh*.3,bw/2,bh*.32],[mx,y0+bh*.3,bw/2,bh*.32],[x0,y0+bh*.62,bw/2,bh*.38],[mx,y0+bh*.62,bw/2,bh*.38]];
+  cut.forEach(([sx,sy,sw,sh],i)=>{ sw=Math.max(2,Math.round(sw)); sh=Math.max(2,Math.round(sh)); sx=Math.round(sx); sy=Math.round(sy); const pc=document.createElement('canvas'); pc.width=sw; pc.height=sh; pc.getContext('2d').drawImage(cv,sx,sy,sw,sh,0,0,sw,sh);
+    const t=new THREE.CanvasTexture(pc); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; const m=new THREE.Mesh(new THREE.PlaneGeometry(sw*k,sh*k),new THREE.MeshBasicMaterial({map:t,transparent:true,alphaTest:.5,side:THREE.DoubleSide}));
+    const ox=(sx+sw/2-w/2)*k, oy=(h-(sy+sh/2))*k, a=rnd(0,6.283), sp=rnd(2.5,5.5)*(i===0?1.2:1); m.rotation.x=TILT; m.position.set(A.x+ox,gy+oy,A.z); m.userData.tw=1; scene.add(m);
+    parts.push({m,x:A.x+ox,y:gy+oy,z:A.z,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp*.7,vy:rnd(5,8.5)+(i===0?2:0),spin:rnd(-14,14),rz:0,rest:Math.max(.12,sh*k*.35),hx:ox,hy:oy,down:false}); });
+  return parts; }
+function d5AliPartsUpd(A,G,dt){ const back=G.t>5.2, k=back?Math.min(1,(G.t-5.2)/.8):0;
+  for(const p of G.parts){ if(back){ p.x=lerp(p.x,A.x+p.hx,k*.25); p.z=lerp(p.z,A.z,k*.25); p.y=lerp(p.y,groundY(A.x,A.z)+p.hy,k*.25); p.rz=lerp(p.rz,0,k*.25); } /* the cuts stitch him back: the pieces fly home */
+    else if(!p.down){ p.vy-=22*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.z+=p.vz*dt; p.rz+=p.spin*dt; const q=twClampXZ(p.x,p.z,.3); p.x=q.x; p.z=q.z; const gy=groundY(p.x,p.z);
+      if(p.y<=gy+p.rest){ p.y=gy+p.rest; if(p.vy<-4){ p.vy*=-.3; p.vx*=.5; p.vz*=.5; p.spin*=.5; } else { p.down=true; p.rz=Math.round(p.rz/(Math.PI/2))*(Math.PI/2)+rnd(-.3,.3); } } }
+    p.m.position.set(p.x,p.y,p.z); p.m.rotation.set(TILT,0,p.rz); }
+  if(G.pool) G.pool.scale.setScalar(Math.max(.01,Math.min(1.3,G.t*2)*(back?1-k:1))); }
+function d5AliPartsKill(G){ for(const p of G.parts||[]) scene.remove(p.m); if(G.pool) scene.remove(G.pool); }
+// the revive countdown over his remains
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ const A=twAliAI(); if(!A||!A.gib||Game.state!=='play'||Game.script) return; const left=Math.max(0,6-A.gib.t), q=toScreen(A.x,groundY(A.x,A.z)+1.6,A.z); if(!(q[2]<1)) return;
+    D.save(); uRR(q[0]-58,q[1]-34,116,40,9); D.fillStyle='rgba(16,4,8,.85)'; D.fill(); D.strokeStyle='#ff3a4a'; D.lineWidth=2; D.stroke();
+    D.fillStyle='#ff3a4a'; D.fillRect(q[0]-50,q[1]-2,100*(1-left/6),3); uText('REVIVE '+left.toFixed(1)+'s',q[0],q[1]-11,`800 16px ${FB}`,'#ffd0d4','center'); D.restore(); }catch(e){ console.error('ali revive timer',e); } }; })();
+function d5AliGibUpd(A,dt){ const G=A.gib; G.t+=dt; A.down=99; A.hidden=true; if(Game.state!=='play'&&Game.state!=='cut') return; d5AliPartsUpd(A,G,dt);
   if(G.t>5.2){ if(Math.random()<.6){ twTinyJC(A.x,A.y+1.1,A.z,rnd(60,140)); Sound.sfx(Math.random()<.5?'swing':'hit'); } JC.flash=Math.max(JC.flash||0,.15); if(Math.random()<.4) FX.cut(A.x,A.y+1,A.z); }
-  if(G.t>=6){ A.gib=null; A.hidden=false; A.hp=A.maxHp; A.down=0; A.inv=1.5; const gy=groundY(A.x,A.z); A.y=gy; FX.burst(A.x,gy+1.2,A.z,40,0xff2a3a,6,.35); FX.ring(A.x,gy+.1,A.z,'#ff3a4a',3,.4); Sound.sfx('secret'); Sound.sfx('crossboom'); JC.flash=.4;
+  if(G.t>=6){ d5AliPartsKill(G); A.gib=null; A.hidden=false; A.hp=A.maxHp; A.down=0; A.inv=1.5; const gy=groundY(A.x,A.z); A.y=gy; FX.burst(A.x,gy+1.2,A.z,40,0xff2a3a,6,.35); FX.ring(A.x,gy+.1,A.z,'#ff3a4a',3,.4); Sound.sfx('secret'); Sound.sfx('crossboom'); JC.flash=.4;
     const F=d5F(); if(F){ if(!F.aliBag||!F.aliBag.length) F.aliBag=D5.aliBack.map((_,i)=>i).sort(()=>Math.random()-.5); d5Bark('aliBack',F.aliBag.pop()); } } }
 
 // =====================================================================
