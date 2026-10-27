@@ -11,7 +11,7 @@
 //       Hikari-chan, and a Megane Supernova you survive only in her shadow while a black hole drags her away
 // - camera: a tracked, zoomed-out follow cam during the limit cuts, always restored (also on retry and on leaving)
 // =====================================================================
-DUO3.hp=[0,276,312,348]; /* 20% under the 345/390/435 it had */ DUO3.gap=[0,.8,.6,.45]; DUO3.rain=100; DUO3.seed=[0,0,30,45];
+DUO3.hp=[0,325,300,290]; /* ~1:30 a phase (simulated: Shayan 80% uptime + Drill, Ali, stuns: ~3.6/3.3/3.2 dmg/s) */ DUO3.gap=[0,.8,.6,.45]; DUO3.rain=100; DUO3.seed=[0,0,30,45];
 for(const k of [1,2,3]) DUO_HP[k]=DUO_SHARED_HP[k]=DUO3.hp[k];
 DUO3_POOL[1].push('laserStorm');
 DUO3_POOL[2].push('laserStorm','scytheCyclone','getsugaGauntlet');

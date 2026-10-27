@@ -8,7 +8,7 @@
 //   in and lasers you while you burn (your body chars), Omar throws you into a black hole that spits you out (uncharred).
 // - COME HERE, LITTLE BOY (`DUO.comeHere`): a twin blinks in front of you under a death sigil; unblockable and
 //   unparryable, only a dash in the last beat gets away. Caught: that twin's grab above plays out.
-// - Ali (the AI ally) cuts 40% of grabs short (TW_ALI_CUT): Judgement Cuts through the grab and kicks the grabber down.
+// - Ali (the AI ally) cuts 40% of grabs short (TW_ALI_SAVE): Judgement Cuts through the grab and kicks the grabber down.
 // =====================================================================
 // the camera: s.want() -> [px,py,pz,lx,ly,lz]; it eases toward that every frame
 function dgCam(want,k){ if(typeof twClearCutFX==='function') twClearCutFX(); /* a slash tear left on screen would stretch across the cut */ const L0=Cam.look||{x:Player.x,y:Player.y,z:Player.z}, cp=camera.position;
@@ -39,12 +39,12 @@ function* dgLaunch(F,cam,gx,gy,gz,hk,dmg){ const P=Player;
   for(let t=0;t<1.25&&P.hp>0;t+=1/60) yield wait(1/60);
   dgRelease(F,cam,{keepInv:1}); }
 // Ali cuts the grab short (25%): Judgement Cuts through the grabber, then the kick (twAliKick knocks him down)
-function dgAliRoll(F){ const A=twAliAI(); return !!A&&twAliReady(A)&&(A.down||0)<=0&&!ALI()&&!F.lc&&Math.random()<TW_ALI_CUT; }
+function dgAliRoll(F){ const A=twAliAI(); return !!A&&twAliReady(A)&&(A.down||0)<=0&&!ALI()&&!F.lc&&Math.random()<TW_ALI_SAVE; }
 function* dgAliSave(F,T,cam){ const P=Player, A=twAliAI(); if(!A) return;
   cam.want=()=>dgFrame([[P.x,P.y+1,P.z],[T.x,T.y+1,T.z],[A.x,A.y+1,A.z]],{min:20});
   for(let i=0;i<3;i++){ twTinyJC(T.x+rnd(-.6,.6),T.y+1.2+rnd(-.5,.5),T.z,220); FX.cut(T.x,T.y+1.2,T.z); Sound.sfx('swing'); yield wait(.07); }
   JC.flash=Math.max(JC.flash||0,.5); Sound.sfx('secret');
-  twAliKick(F,A,{who:T.who,mid:F.mid}); twBark('ali',T.who==='caotan'?"Hands off.":"Put him down.",true);
+  twAliKick(F,A,{who:T.who,mid:F.mid}); /* he yells ISSEN! in the kick */
   const gy=groundY(P.x,P.z); twAnim(P,{y:gy},.25,twEIn2); yield wait(.3); P.y=gy; P.inv=1.2; dgRelease(F,cam,{keepInv:1}); }
 
 // ---------- TWIN EXECUTION: Caotan grabs ----------

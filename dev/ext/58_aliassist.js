@@ -14,7 +14,7 @@
 function twTinyJC(x,y,z,len){ const s=toScreen(x,y,z); if(s[2]>1) return; const a=rnd(0,Math.PI), L0=len||110; JC.lines.push({x0:s[0]-Math.cos(a)*L0,y0:s[1]-Math.sin(a)*L0,x1:s[0]+Math.cos(a)*L0,y1:s[1]+Math.sin(a)*L0,t:0,ttl:.3}); }
 
 function twAliReady(A){ return !!A&&!A.gone&&!A.hidden; }
-const TW_ALI_CUT=.4; // Ali cuts a cuttable duo move this often (and saves you from a grab this often, dgAliRoll)
+const TW_ALI_CUT=.33, TW_ALI_SAVE=.4, TW_ALI_STUN=1.5; // Ali cuts a cuttable duo move this often; saves you from a grab this often (dgAliRoll); his kick stuns that twin this long
 // he cuts at least once per phase: once 3 moves of a phase have gone by without a cut, the next cuttable move is his
 function twAliCutRoll(F){ const ph=F.phase||1; F.mvN=F.mvN||{}; F.cutN=F.cutN||{}; F.mvN[ph]=(F.mvN[ph]||0)+1; return Math.random()<TW_ALI_CUT||(!F.cutN[ph]&&F.mvN[ph]>=3); }
 // at the start of every duo move
@@ -36,11 +36,11 @@ function twAliKick(F,A,K){ F.cutN=F.cutN||{}; F.cutN[F.phase||1]=1; const T=K.wh
   for(const h of TW.hz.slice()){ if(h.mid!==mid) continue; if(h._x!=null) cuts.push([h._x,groundY(h._x,h._z)+1,h._z]); try{ h.kill&&h.kill(); }catch(e){} const i=TW.hz.indexOf(h); if(i>=0) TW.hz.splice(i,1); }
   const seq={t:0,n:0}; Game.fxUpd.push(dt=>{ seq.t+=dt; while(seq.n<Math.min(cuts.length,16)&&seq.t>seq.n*.035){ const [x,y,z]=cuts[seq.n++]; twTinyJC(x,y,z,90); FX.cut(x,y,z); FX.burst(x,y,z,10,0xff2a3a,4,.25); if(seq.n%2) Sound.sfx('swing'); } return seq.n<Math.min(cuts.length,16); });
   // the kick: down he goes
-  T.down=1; T.stun=Math.max(T.stun,1); T.state='stun'; /* down for 1s */ T.flash=.4; T.mv=null; Sound.sfx('punch'); Sound.sfx('crash'); shake(.7); impactFrame([[2,1],[1,1]]); FX.ring(T.x,gy+.1,T.z,'#ff3a4a',3,.45); FX.burst(T.x,gy+.4,T.z,40,0xd8c0c8,6,.4,false);
+  T.down=1; T.stun=Math.max(T.stun,TW_ALI_STUN); T.state='stun'; T.aliSaveT=Game.time+TW_ALI_STUN; /* only this twin; the 'Ali saved you' face over it meanwhile */ T.flash=.4; T.mv=null; Sound.sfx('punch'); Sound.sfx('crash'); shake(.7); impactFrame([[2,1],[1,1]]); FX.ring(T.x,gy+.1,T.z,'#ff3a4a',3,.45); FX.burst(T.x,gy+.4,T.z,40,0xd8c0c8,6,.4,false);
   Game.dmgNums.push({x:T.x,y:gy+3.4,z:T.z,n:'KICKED DOWN',t:0,big:true,col:'#ff6a7a'}); TW._ally=1; try{ twHurt(T,3,'ally'); } finally{ TW._ally=0; }
-  o.stun=Math.max(o.stun,.9); o.state='stun';
-  const r=Math.floor(Math.random()*3); if(r===0) twBark('ali',"Sit.",true); else if(r===1) twBark('ali',"No.",true); else twBark('ali',"Down. Stay.",true);
-  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=1){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
+  o.state='idle';
+  twBark('ali',"ISSEN!",true); /* every interrupt */
+  const up={t:0}; twHz({upd(dt){ up.t+=dt; if(up.t>.7&&!up.said){ up.said=1; if(T.who==='caotan') twBark('caotan',"He kicked me! In the GLASSES! Those were PRESCRIPTION!",true); else twBark('omar',"I have been... grounded. Like when I was fourteen.",true); } if(up.t>=TW_ALI_STUN){ T.down=0; return false; } return true; }, kill(){ T.down=0; }}); }
 
 // ---------- the guard: Ali parries for Shayan ----------
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const F=TW.fight, P=Player, G=F&&F.kind==='duo'?F.guard:null;
@@ -71,3 +71,22 @@ function* twAliRevive(F,n){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sa
   cineSet(P.x+1.4,gy+1.5,P.z+3.6,P.x,gy+1.3,P.z);
   if(n===1) twBark('shayan',"Did you just heal me... with a SWORD?!",true); else if(n===2) twBark('shayan',"That is NOT how medicine works!",true); else twBark('shayan',"...I'm not even gonna ask.",true);
   yield wait(1.3); P.cineFly=false; P.cineAnim=null; A.hold=0; A.face=null; Cam.cine=null; Game.letterTo=0; P.inv=1.5; }
+
+// ---------- 'Ali saved you': Ali's own pixel head (his straw hat and face, from his sheet) in black and red, over the twin he just kicked ----------
+function twAliSaveIcon(){ if(TWT_ALIFACE) return TWT_ALIFACE;
+  if(typeof ALS!=='undefined'&&ALS.ok&&ALS.img&&ALS.img.width){ try{ const X=27,Y=16,W=43,H=18, /* the straw hat and face, above the shoulders */ cv=document.createElement('canvas'); cv.width=W+2; cv.height=H+2; const c=cv.getContext('2d');
+      c.drawImage(ALS.img,X,Y,W,H,1,1,W,H); const id=c.getImageData(0,0,W+2,H+2), d=id.data, a0=new Uint8Array((W+2)*(H+2));
+      for(let i=0;i<a0.length;i++){ const j=i*4; if(d[j+3]<40){ d[j+3]=0; continue; } a0[i]=1; const l=(d[j]*.3+d[j+1]*.59+d[j+2]*.11)/255;
+        const col=l<.16?[0,0,0]:l<.34?[90,0,10]:l<.55?[192,16,32]:[255,70,70]; d[j]=col[0]; d[j+1]=col[1]; d[j+2]=col[2]; d[j+3]=255; }
+      for(let y=0;y<H+2;y++) for(let x=0;x<W+2;x++){ const i=y*(W+2)+x; if(a0[i]) continue; if((x>0&&a0[i-1])||(x<W+1&&a0[i+1])||(y>0&&a0[i-W-2])||(y<H+1&&a0[i+W+2])){ const j=i*4; d[j]=d[j+1]=d[j+2]=0; d[j+3]=255; } } /* black outline */
+      c.putImageData(id,0,0); return TWT_ALIFACE=cv; }catch(e){} }
+  // until his sheet has loaded: a plain red face in a hat
+  const cv=document.createElement('canvas'); cv.width=cv.height=24; const c=cv.getContext('2d'), P=(x,y,w,h,k)=>{ c.fillStyle=k; c.fillRect(x,y,w,h); };
+  P(1,7,22,4,'#000'); P(6,1,12,8,'#000'); P(3,9,18,14,'#000'); P(5,22,14,2,'#000'); P(2,8,20,2,'#7a0a12'); P(7,2,10,6,'#9a1018'); P(4,10,16,12,'#e0202c'); P(8,13,2,3,'#000'); P(14,13,2,3,'#000'); P(9,18,6,2,'#000');
+  return cv; }
+let TWT_ALIFACE=null;
+function drawAliSaves(){ const F=TW.fight; if(!F||F.kind!=='duo'||Game.state!=='play') return;
+  for(const T of [F.C,F.O]){ if(!T||T.gone||!(T.aliSaveT>Game.time)) continue; const q=toScreen(T.x,T.y+3.7*(T.scale||1),T.z); if(!(q[2]<1)) continue;
+    const left=T.aliSaveT-Game.time, k=Math.min(1,(TW_ALI_STUN-left)/.15), ic=twAliSaveIcon(), w=Math.round(2*ic.width*(.6+.4*k)), h=Math.round(w*ic.height/ic.width), bob=Math.sin(Game.time*6)*3;
+    D.save(); D.imageSmoothingEnabled=false; D.globalAlpha=left<.3?left/.3:1; D.drawImage(ic,Math.round(q[0]-w/2),Math.round(q[1]-h+bob),w,h); D.restore(); } }
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ drawAliSaves(); }catch(e){ console.error('ali save icon',e); } }; })();
