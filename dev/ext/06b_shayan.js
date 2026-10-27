@@ -100,6 +100,10 @@ function shArc(x,y,z,ang,n){ const th=SH_SL.TH, P=Player, ig=P.ignite>0, dir=n==
     try{ return sa.apply(this,arguments); } finally{ FX.arc=fa; } }; })();
 
 // ---------- Full Counter: the animation and the big show (the hit: a 7-unit sphere around Shayan, patched in build.py) ----------
+// the hit: a 7-unit sphere around him (build.py) plus a second 6-unit sphere centred 6 ahead, where the crescent flies (reach 12 in front)
+let SH_FC_FRONT=0;
+(function(){ const mh=meleeHits; meleeHits=function(x,z,y,rad,ang,arc,dmg,set){ const r=mh.apply(this,arguments); const A=Player.atk;
+    if(SH_FC_FRONT||!A||!A.big||rad<7) return r; SH_FC_FRONT=1; let r2=false; try{ r2=meleeHits(x+Math.cos(ang)*6,z+Math.sin(ang)*6,y,6,ang,Math.PI,dmg,set); } finally{ SH_FC_FRONT=0; } return r||r2; }; })();
 (function(){ const cs=twCounterSlash; twCounterSlash=function(){ const r=cs.apply(this,arguments); const P=Player; P.fcT=SH_FC_T; shFullCounterFX(); return r; }; })();
 function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=Math.cos(ang), uz=Math.sin(ang);
   Game.slowT=Math.max(Game.slowT||0,.22); FX.flash=Math.max(FX.flash,.45); grade.uniforms.flashCol.value.set(1,.35,.45); impactFrame([[3,1],[2,1],[1,1],[3,1]]); shake(.9);
