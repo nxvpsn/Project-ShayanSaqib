@@ -5,11 +5,13 @@
 // ---------- deflected scythes do half damage (everywhere) ----------
 (function(){ const rp=reflectProj; reflectProj=function(b,how){ const was=b.friendly; const r=rp.apply(this,arguments); if(b.kind==='scythe'&&b.friendly&&!was){ b.dmg*=.5; if(b.rally) twRallyBack(b); } return r; }; })();
 
-// ---------- a scythe you deflect can't hurt you for a second afterwards (e.g. a rally scythe Omar knocks straight back) ----------
-const TW_DEFL_IMM=1.0;
-(function(){ const rp=reflectProj; reflectProj=function(b){ const r=rp.apply(this,arguments); try{ if(b&&b.kind==='scythe'&&b.friendly) b.pImm=Game.time+TW_DEFL_IMM; }catch(e){} return r; }; })();
+// ---------- a scythe you deflect can't hurt you for 0.2s afterwards (e.g. a rally scythe Omar knocks straight back) ----------
+const TW_DEFL_IMM=.2;
+(function(){ const rp=reflectProj; reflectProj=function(b){ const r=rp.apply(this,arguments); try{ if(b&&b.kind==='scythe'&&b.friendly) b.pImm=TW_DEFL_IMM; }catch(e){} return r; }; })();
+// counted in world time (the deflect's slow motion doesn't eat it)
+(function(){ const ub=updateBolts; updateBolts=function(dt){ for(const b of BOLTS) if(b.pImm>0) b.pImm-=dt; return ub.apply(this,arguments); }; })();
 // the base bolt check calls playerHit(b.dmg, b.x-b.vx*.1, b.z-b.vz*.1, ...): that source point names the bolt
-(function(){ const ph=playerHit; playerHit=function(dmg,sx,sz){ try{ for(const b of BOLTS){ if(b.pImm>Game.time&&!b.friendly&&!b.dead&&Math.abs(b.x-b.vx*.1-sx)<1e-6&&Math.abs(b.z-b.vz*.1-sz)<1e-6) return 'none'; } }catch(e){} return ph.apply(this,arguments); }; })();
+(function(){ const ph=playerHit; playerHit=function(dmg,sx,sz){ try{ for(const b of BOLTS){ if(b.pImm>0&&!b.friendly&&!b.dead&&Math.abs(b.x-b.vx*.1-sx)<1e-6&&Math.abs(b.z-b.vz*.1-sz)<1e-6) return 'none'; } }catch(e){} return ph.apply(this,arguments); }; })();
 
 // ---------- the red rally scythes: they follow you; deflect one and Omar knocks it straight back ----------
 // Your 4th deflect (after three returns) flies back at him super fast and hurts him. Phase III adds a second, faster red scythe;

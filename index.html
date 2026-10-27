@@ -7872,11 +7872,13 @@ TW.bound=0;
 // ---------- deflected scythes do half damage (everywhere) ----------
 (function(){ const rp=reflectProj; reflectProj=function(b,how){ const was=b.friendly; const r=rp.apply(this,arguments); if(b.kind==='scythe'&&b.friendly&&!was){ b.dmg*=.5; if(b.rally) twRallyBack(b); } return r; }; })();
 
-// ---------- a scythe you deflect can't hurt you for a second afterwards (e.g. a rally scythe Omar knocks straight back) ----------
-const TW_DEFL_IMM=1.0;
-(function(){ const rp=reflectProj; reflectProj=function(b){ const r=rp.apply(this,arguments); try{ if(b&&b.kind==='scythe'&&b.friendly) b.pImm=Game.time+TW_DEFL_IMM; }catch(e){} return r; }; })();
+// ---------- a scythe you deflect can't hurt you for 0.2s afterwards (e.g. a rally scythe Omar knocks straight back) ----------
+const TW_DEFL_IMM=.2;
+(function(){ const rp=reflectProj; reflectProj=function(b){ const r=rp.apply(this,arguments); try{ if(b&&b.kind==='scythe'&&b.friendly) b.pImm=TW_DEFL_IMM; }catch(e){} return r; }; })();
+// counted in world time (the deflect's slow motion doesn't eat it)
+(function(){ const ub=updateBolts; updateBolts=function(dt){ for(const b of BOLTS) if(b.pImm>0) b.pImm-=dt; return ub.apply(this,arguments); }; })();
 // the base bolt check calls playerHit(b.dmg, b.x-b.vx*.1, b.z-b.vz*.1, ...): that source point names the bolt
-(function(){ const ph=playerHit; playerHit=function(dmg,sx,sz){ try{ for(const b of BOLTS){ if(b.pImm>Game.time&&!b.friendly&&!b.dead&&Math.abs(b.x-b.vx*.1-sx)<1e-6&&Math.abs(b.z-b.vz*.1-sz)<1e-6) return 'none'; } }catch(e){} return ph.apply(this,arguments); }; })();
+(function(){ const ph=playerHit; playerHit=function(dmg,sx,sz){ try{ for(const b of BOLTS){ if(b.pImm>0&&!b.friendly&&!b.dead&&Math.abs(b.x-b.vx*.1-sx)<1e-6&&Math.abs(b.z-b.vz*.1-sz)<1e-6) return 'none'; } }catch(e){} return ph.apply(this,arguments); }; })();
 
 // ---------- the red rally scythes: they follow you; deflect one and Omar knocks it straight back ----------
 // Your 4th deflect (after three returns) flies back at him super fast and hurts him. Phase III adds a second, faster red scythe;
@@ -15271,7 +15273,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: a scythe you deflect can't hurt you for 1s afterwards (rally scythes knocked straight back)";
+const DBG_PATCH="Oct 27: a scythe you deflect can't hurt you for 0.2s afterwards (rally scythes knocked straight back)";
 const DBG_NEW=['omar:scythes','duo:volley'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
