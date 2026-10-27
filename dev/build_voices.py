@@ -6,6 +6,7 @@ and writes them to audio/v/<key>.mp3 + audio/v/manifest.json (existing clips are
   python3 build_voices.py index.html --dry-run      # list lines that would be rendered
   python3 build_voices.py index.html [--jobs N]     # render missing lines and embed
   python3 build_voices.py index.html --only 'a|b'  # only the missing lines whose text contains a or b
+  python3 build_voices.py index.html --recast nathan,nathanraw  # re-render every line of these speakers (new voice)
 """
 import re, sys, os, json, base64, subprocess, tempfile, concurrent.futures as cf
 
@@ -20,7 +21,7 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'shayan': ('am_michael', 1.0, 1.0, None), 'mira': ('af_heart', 1.02, 1.0, None), 'miraold': ('af_heart', .96, .94, None),
   'ali': ('am_onyx', .98, .94, 'aecho=0.8:0.3:30:0.12'), 'aliold': ('am_onyx', .9, .86, None), 'hamza': ('am_puck', 1.0, 1.32, None),
   'hamzadeep': ('am_onyx', .72, .58, 'aecho=0.8:0.75:140:0.45,aecho=0.6:0.5:400:0.3'),
-  'nathan': ('am_adam', 1.0, .97, 'highpass=f=160,lowpass=f=5600,aecho=0.8:0.35:35:0.18'), 'nathanraw': ('am_adam', .9, .97, None),
+  'nathan': ('am_fenrir', 1.04, 1.03, 'acompressor=threshold=-18dB:ratio=3:attack=5:release=80,aecho=0.8:0.35:35:0.15'), 'nathanraw': ('am_fenrir', .96, 1.0, 'acompressor=threshold=-18dB:ratio=2.5:attack=5:release=80'),  # a heroic, dramatic anime lead
   'grimmaw': ('bm_fable', 1.04, 1.22, None), 'hound': ('am_fenrir', .98, .8, 'highpass=f=300,lowpass=f=3400'),  # He's Day Old Kojima (a posh baby) and his soldiers (over the codec)
   'caotan': ('am_liam', 1.06, 1.0, None), 'omar': ('bm_lewis', .9, .86, 'aecho=0.8:0.4:60:0.25'),
   'caomar': ('bm_lewis', 1.0, .92, 'aecho=0.8:0.5:25:0.35,aecho=0.7:0.4:60:0.2'),
@@ -150,6 +151,14 @@ def main():
     lines = scan(code)
     want = {vhash(w + '|' + t): (w, t) for (w, t) in lines}
     missing = [(w, t, k) for k, (w, t) in want.items() if k not in existing or (w, t) in FORCE and existing.get(k + '#') is None]
+    if '--recast' in sys.argv:  # --recast who1,who2: re-render every line of these speakers (a new voice for them)
+        who = set(sys.argv[sys.argv.index('--recast') + 1].split(','))
+        missing = [(w, t, k) for k, (w, t) in want.items() if w in who]  # only these speakers
+        if not dry:
+            for w, t, k in missing:
+                if w in who:
+                    p = os.path.join(CACHE, k + FORCE.get((w, t), '') + '.mp3')
+                    if os.path.exists(p): os.remove(p)
     if '--only' in sys.argv:  # --only "text a|text b": render just the lines whose text contains one of these
         keys = sys.argv[sys.argv.index('--only') + 1].split('|'); missing = [m for m in missing if any(q in m[1] for q in keys)]
     print(f'{len(lines)} voiced lines found, {len(existing)} clips in audio/v, {len(missing)} to render')

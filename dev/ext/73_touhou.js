@@ -98,7 +98,7 @@ function thHurt(){ const N=NAT, G=Game.mech, T=G.th; if(N.inv>0||Game.state!=='p
   N.flash=.3; shake(.6); Sound.sfx('hurt'); Sound.sfx('crash'); thFx(N.tu,N.tv,40,0xff5a8a,8,.35); thFx(N.tu,N.tv,24,0xffffff,6,.3); FX.flash=.25; grade.uniforms.flashCol.value.set(1,.2,.3);
   // Touhou-style: losing a life clears the bullets around you
   for(const b of T.eb) if(Math.hypot(b.u-N.tu,b.v-N.tv)<5){ b.dead=1; thFx(b.u,b.v,2,0xffffff,1,.15); }
-  if(!TW.god) T.lives--; N.inv=2.4; T.hitT=performance.now(); if(T.lives===2) thOp('low2'); else if(T.lives===1) thOp('low1'); else if(T.lives===0) thOp('last');
+  if(!TW.god) T.lives--; N.inv=2.4; T.hitT=performance.now(); thGrunt(); if(T.lives<=2&&T.burnCd==null) T.burnCd=3.5; if(T.lives===2) thOp('low2'); else if(T.lives===1) thOp('low1'); else if(T.lives===0) thOp('last');
   if(T.lives<0){ T.lives=0; T.deadT=performance.now(); thFx(N.tu,N.tv,90,0x3ff4ff,12,.5); Sound.sfx('crossboom'); N.show=0; G.thScore=0; Game.onDeath(); }
   else if(Math.random()<.4) Voice.bark(Math.random()<.5?'nhurt1':'nhurt2'); }
 
@@ -159,6 +159,15 @@ function thOp(k){ const T=Game.mech&&Game.mech.th; if(!T) return; T.opT=T.opT||{
   else if(k==='last') twBark('operator',"This is the last one, Nathan. Breathe. I'm right here.",true);
   else if(k==='cp') twBark('operator',"Checkpoint logged. If we fall, we come back to here.",true);
   else if(k==='retry') twBark('operator',"Rebooting from the checkpoint. Let's try that again. Together.",true); }
+// Nathan hurts: a grunt on every hit (voice only, no subtitle); while his cockpit burns (2 spare lives or fewer) he talks about the memories he carries
+const TH_GRUNTS=[['nathan',"Agh!"],['nathan',"Ugh!"],['nathan',"Gah, damn it!"],['nathan',"Argh!"],['nathan',"Hnn... hold together!"]];
+function thGrunt(){ try{ const g=TH_GRUNTS[Math.floor(Math.random()*TH_GRUNTS.length)]; Voice.overlay(g[0],g[1],.95); }catch(e){} }
+function thBurnLine(i){ const k=i%5;
+  if(k===0) twBark('nathan',"The cockpit's on fire... Doesn't matter. I have to protect their memories.",true);
+  else if(k===1) twBark('nathan',"If I go down, they go with me. Every face. Every name. I won't let them burn.",true);
+  else if(k===2) twBark('nathan',"Hold together... Just a little longer. They're all in here with me.",true);
+  else if(k===3) twBark('nathan',"I'll burn. Fine. But not them. Never them.",true);
+  else twBark('nathan',"I remember all of you. I'm not letting go. Not even now.",true); }
 // checkpoints: after Oink-Oink Crossfire (phase I) and Narrow Throat (phase II) a retry starts from the next attack
 const TH_CP={1:3,2:3};
 
@@ -228,7 +237,8 @@ function* thBossLoop(T){ const B=Game.mech.boss, ticks=thTicks(T.ph), fin=TH_SPE
   return md.call(this,d,x,y,z,b); }; })();
 
 // ---------- per-frame ----------
-function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt; const sl=T.slow||1;
+function thUpdate(dt){ const G=Game.mech, T=G.th, N=NAT, v=L.vd; T.t+=dt;
+  if(T.burnCd!=null&&T.lives<=2&&T.lives>=0&&T.ready&&!T.drill&&!T.deadT){ T.burnCd-=dt; if(T.burnCd<=0&&!Voice.speaking){ T.burnCd=16; thBurnLine(T.burnN=(T.burnN||0)+1); } } const sl=T.slow||1;
   T.sway=Math.sin(T.t*.35)*1.6; if(T.ready) thHzPose(1); v.o.jaw=lerp(v.o.jaw,T.jaw||.1,Math.min(1,dt*6)); T.jaw=Math.max(.1,(T.jaw||.1)-dt*.8); v.o.look=1;
   if(T.cam){ T.cam.t+=dt; const keys=T.cam.keys, K1=keys[keys.length-1].t, k=Math.min(T.cam.t,K1); T.cam.upd(k); if(T.cam.t>=K1){ const d=T.cam.done; T.cam.upd(K1); T.cam.cur=null; d(); } }
   const B=G.boss; if(B){ B.flash=Math.max(0,B.flash-dt); }
