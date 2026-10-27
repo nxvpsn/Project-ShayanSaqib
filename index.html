@@ -11346,8 +11346,10 @@ twDuoEnding=function*(F,C,O){ const P=Player, A=twAliAny(), mi=Game.mira; if(!(F
 // high into the air (6 damage, if that doesn't kill you).
 // - TWIN EXECUTION (Caotan grabs: her glomp lands): she hugs you, throws you up to Omar, Omar opens a black hole below
 //   and spikes you into it, Caotan lasers the hole, it explodes.
-// - EDGE LORD'S EMBRACE (Omar grabs: a parry pressed too early against his rush): he holds you up, Caotan teleports
+// - EDGE LORD'S EMBRACE (Omar grabs: his "Come here, little boy" lands): he holds you up, Caotan teleports
 //   in and lasers you while you burn (your body chars), Omar throws you into a black hole that spits you out (uncharred).
+// - COME HERE, LITTLE BOY (`DUO.comeHere`): a twin blinks in front of you under a death sigil; unblockable and
+//   unparryable, only a dash in the last beat gets away. Caught: that twin's grab above plays out.
 // - Ali (the AI ally) cuts 25% of grabs short: Judgement Cuts through the grab and kicks the grabber down.
 // =====================================================================
 // the camera: s.want() -> [px,py,pz,lx,ly,lz]; it eases toward that every frame
@@ -11358,8 +11360,8 @@ function dgCam(want,k){ if(typeof twClearCutFX==='function') twClearCutFX(); /* 
   return s; }
 // a wide shot that keeps every point in frame (pts: [[x,y,z],...]): look at their middle, back off with their spread
 function dgFrame(pts,o){ o=o||{}; let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,zz=0; for(const p of pts){ x0=Math.min(x0,p[0]); x1=Math.max(x1,p[0]); y0=Math.min(y0,p[1]); y1=Math.max(y1,p[1]); zz+=p[2]; }
-  const cx=(x0+x1)/2, cy=(y0+y1)/2, cz=zz/pts.length, spread=Math.max(x1-x0,(y1-y0)*1.6), d=Math.max(o.min||20,spread*2.6+8);
-  return [cx+(o.side||0)*d*.3,cy+d*.45,cz+d,cx,cy,cz]; } // the fight camera sits ~30 back with a narrow lens: grabs stay in that range
+  const cx=(x0+x1)/2, cy=(y0+y1)/2, cz=zz/pts.length, spread=Math.max(x1-x0,(y1-y0)*1.6), d=Math.max((o.min||20)*1.5,spread*3.2+12);
+  return [cx+(o.side||0)*d*.3,cy+d*.45,cz+d,cx,cy,cz]; } // wide: the fight camera sits ~30 back with a narrow lens, grabs sit at 30-36+
 function dgHeroAnim(){ return ALI()?'fall':'hurt'; }
 // the player's body: charred (k 0..1) or back to normal
 function dgChar(k){ try{ if(pSprite&&pSprite.mesh) pSprite.mesh.material.color.setRGB(1-.82*k,1-.85*k,1-.86*k); }catch(e){} }
@@ -11375,7 +11377,7 @@ function* dgLaunch(F,cam,gx,gy,gz,hk,dmg){ const P=Player;
   P.hidden=false; P.cineFly=false; P.cineAnim=null; P.x=gx; P.z=gz; P.y=gy+.6; dgChar(0);
   Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:F._grabName||'TWIN EXECUTION',t:0,big:true,col:'#ff8ac8'});
   twHoleEat(gx,gz,dmg); P.vy=Math.max(P.vy||0,27); P.vx*=.55; P.vz*=.55; // high up, a little sideways
-  cam.k=3.2; cam.want=()=>[P.x,P.y+10,P.z+22,P.x,P.y+.6,P.z];
+  cam.k=3.2; cam.want=()=>[P.x,P.y+14,P.z+32,P.x,P.y+.6,P.z];
   for(let t=0;t<1.25&&P.hp>0;t+=1/60) yield wait(1/60);
   dgRelease(F,cam,{keepInv:1}); }
 // Ali cuts the grab short (25%): Judgement Cuts through the grabber, then the kick (twAliKick knocks him down)
@@ -11432,7 +11434,7 @@ function* twOmarExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), dt=1/6
   const cam=dgCam(()=>dgFrame([[P.x,P.y+1,P.z],[O.x,O.y+1,O.z]],{min:20}));
   // 1. he holds you up, one hand
   impactFrame([[3,1],[1,1]]); Sound.sfx('punch'); Sound.sfx('void'); shake(.5); FX.burst(gx,gy+2,gz,26,0x140a1a,4,.4,false);
-  twBark('omar',"Too early. You flinched. Everyone flinches. Except me. I have no feelings left to flinch with.",true);
+  twBark('omar',"Caught. Don't struggle. I struggled once. Look how I turned out.",true);
   const hold=()=>{ P.x=O.x+O.f*.85; P.z=O.z+.05; P.y=gy+2.1+Math.sin(performance.now()/120)*.05; };
   for(let t=0;t<.7;t+=dt){ hold(); yield wait(dt); }
   if(dgAliRoll(F)){ yield* dgAliSave(F,O,cam); return; }
@@ -11458,19 +11460,50 @@ function* twOmarExecution(F){ const P=Player, C=F.C, O=F.O, A=twAliAny(), dt=1/6
   // 4. it spits you out, high, uncharred
   yield* dgLaunch(F,cam,hp.x,groundY(hp.x,hp.z),hp.z,hk,6); }
 
-// ---------- Omar's rush: a parry pressed too early gets you grabbed (outside the limit cuts) ----------
+// ---------- Omar's rush: a plain strict parry (K counts parries toward the tag-team break) ----------
 twDuoRush=(function(){ return function*(O,sp,K){ const P=Player, from=Game.time+TW_STRICT.grace, a0=(P.ang||0)+rnd(-.8,.8), p=twClampXZ(P.x+Math.cos(a0)*7,P.z+Math.sin(a0)*7,.8);
   twBlink(O,p.x,p.z); O.hide=0; O.scythe=1; let a=Math.atan2(P.z-O.z,P.x-O.x); const tell=.6/sp; let t=0, ln=null; O.lockF=1;
   while(t<tell){ const P2=Player; if(t<tell-.15) a=Math.atan2(P2.z-O.z,P2.x-O.x); O.f=Math.cos(a)>0?1:-1; if(!ln||t-ln>.1){ ln=t; FX.line(O.x,O.z,a,Math.hypot(P2.x-O.x,P2.z-O.z)+4,2.6,0xb06aff,.12); } yield .016; t+=.016; }
-  const s={t:0,hit:false,grab:false,dur:(Math.hypot(Player.x-O.x,Player.z-O.z)+4)/20}; Sound.sfx('swing'); O.swing=1; O.parried=0;
+  const s={t:0,hit:false,dur:(Math.hypot(Player.x-O.x,Player.z-O.z)+4)/20}; Sound.sfx('swing'); O.swing=1; O.parried=0;
   twHz({upd(dt,play){ if(!play) return true; s.t+=dt; O.x+=Math.cos(a)*20*dt; O.z+=Math.sin(a)*20*dt; const q=twClampXZ(O.x,O.z,.5); O.x=q.x; O.z=q.z; if(!s.hit) twRushTell(O,a); FX.spawn(O.x,O.y+1.4,O.z,0,0,0,.35,0x2a0a3a,.6,0,false);
-    const P2=Player; if(!s.hit&&Math.hypot(P2.x-O.x,P2.z-O.z)<TW_DASH_R&&Math.abs(P2.y-groundY(O.x,O.z))<2.4){ s.hit=true; const F=TW.fight;
-      if(F&&F.kind==='duo'&&!F.lc&&!F.grabbed&&!ALI()&&P2.inv<=0&&P2.dash<=0&&twStrictJudge(from,TW_DASH_WIN)==='early') s.grab=true;
-      else twStrictDo(from,()=>twHitP(2,O.x,O.z,{melee:true,heavy:true,win:TW_DASH_WIN,onParry:()=>{ O.parried=1; O.flash=.3; if(K) twComboTick(K); }})); }
-    return s.t<s.dur&&!O.parried&&!s.grab; }});
-  let w=0; while(w<s.dur+.05&&!O.parried&&!s.grab){ yield .016; w+=.016; } O.swing=0; O.lockF=0;
-  if(s.grab&&Game.state==='play'){ const F=TW.fight; run(function*(){ yield* twOmarExecution(F); }); yield .1; return 'grab'; }
+    const P2=Player; if(!s.hit&&Math.hypot(P2.x-O.x,P2.z-O.z)<TW_DASH_R&&Math.abs(P2.y-groundY(O.x,O.z))<2.4){ s.hit=true;
+      twStrictDo(from,()=>twHitP(2,O.x,O.z,{melee:true,heavy:true,win:TW_DASH_WIN,onParry:()=>{ O.parried=1; O.flash=.3; if(K) twComboTick(K); }})); }
+    return s.t<s.dur&&!O.parried; }});
+  let w=0; while(w<s.dur+.05&&!O.parried){ yield .016; w+=.016; } O.swing=0; O.lockF=0;
   if(O.parried) Sound.sfx('clash'); return O.parried; }; })();
+// ---------- COME HERE, LITTLE BOY ----------
+// the death sigil (a white skull on a dark red disc: reads on bright and dark ground)
+function texDoom(){ return twTex('doom',24,24,c=>{ const P=(x,y,w,h,k)=>R(c,x,y,w,h,k);
+  for(let y=0;y<24;y++) for(let x=0;x<24;x++){ const d=Math.hypot(x-11.5,y-11.5); if(d<11.5) P(x,y,1,1,d>10.2?'#ff2a3a':'#4a000c'); }
+  P(7,5,10,9,'#f4eee8'); P(6,7,12,6,'#f4eee8'); P(8,14,8,3,'#f4eee8'); P(8,5,8,1,'#ffffff');
+  P(8,9,3,3,'#120006'); P(13,9,3,3,'#120006'); P(9,10,1,1,'#ff2a3a'); P(14,10,1,1,'#ff2a3a'); P(11,12,2,2,'#120006');
+  P(9,16,1,1,'#120006'); P(11,16,1,1,'#120006'); P(13,16,1,1,'#120006'); }); }
+// it hangs over the player's head until s.dead; s.k pulses it (the last beat)
+function dgDoomSigil(F){ const P=Player, m=twBB(texDoom(),1.3,1.3,{ro:9}), s={m,k:0,t:0,dead:0};
+  Game.fxUpd.push(dt=>{ try{ if(s.dead||TW.fight!==F){ scene.remove(m); return false; } s.t+=dt; s.k=Math.max(0,s.k-dt*2.5);
+      const sc=Math.max(.01,Math.min(1,s.t*6)*(1+.12*Math.sin(s.t*9)+.5*s.k)); m.scale.set(sc,sc,1); m.position.set(P.x,P.y+3.1,P.z+.2); return true; }catch(e){ console.error('doom sigil',e); scene.remove(m); return false; } });
+  return s; }
+DUO.comeHere=function*(C,O,ph){ const F=TW.fight, P=Player, live=[C,O].filter(T=>T&&T.hp>0&&!T.gone), T=live[Math.floor(Math.random()*live.length)];
+  if(!T||!F||F.lc||F.grabbed){ yield .3; return; }
+  const sp=twSp(T), front=()=>{ const a=P.ang||0; return twClampXZ(P.x+Math.cos(a)*1.5,P.z+Math.sin(a)*1.5,.6); };
+  if(T===C) twBark('caotan',"Come here, little boy! ♡",true); else twBark('omar',"Come here, little boy.",true);
+  const q=front(); twBlink(T,q.x,q.z); T.hide=0; T.lockF=1; if(T===C){ C.heartEyes=1; } else { O.scythe=0; O.cast=1; }
+  const S=dgDoomSigil(F); Sound.sfx('gong'); Sound.sfx('drone');
+  // he shadows you: stays right in front, whatever you do
+  for(let t=0;t<[0,1.1,1,.9][ph]/sp;t+=.016){ const w=front(), e=1-Math.exp(-.016*9); T.x=lerp(T.x,w.x,e); T.z=lerp(T.z,w.z,e); T.y=groundY(T.x,T.z)+T.hy; T.mv=null; T.f=P.x>T.x?1:-1;
+    if(Math.random()<.25) FX.spawn(T.x+rnd(-.4,.4),T.y+rnd(.5,2),T.z,0,1,0,.4,T===C?0xff6ab0:0x2a0a3a,.3,0,T===C); yield .016; }
+  // the last beat: a red flash, he reaches; a dash in this window (any dash) and he grabs air
+  S.k=1; FX.flash=Math.max(FX.flash,.3); grade.uniforms.flashCol.value.set(1,.15,.2); Sound.sfx('ting'); T.push=.35; T.glintT=.4; if(T===O) O.swing=1;
+  let dashed=false; for(let t=0;t<.42;t+=.016){ if(P.dash>0) dashed=true; T.f=P.x>T.x?1:-1; yield .016; }
+  S.dead=1; T.lockF=0; T.swing=0; T.cast=0; T.heartEyes=0;
+  const d=Math.hypot(P.x-T.x,P.z-T.z);
+  if(!dashed&&d<5&&P.inv<=0&&P.hp>0&&Game.state==='play'&&TW.fight===F&&!F.grabbed){ Sound.sfx('dash'); twBlink(T,P.x-(P.x>T.x?1:-1)*.8,P.z);
+    run(function*(){ yield* (T===C?twTwinExecution(F):twOmarExecution(F)); }); yield .1; return 'grab'; }
+  // he grabs air
+  Sound.sfx('whoosh'); FX.burst(T.x,T.y+1.3,T.z,14,T===C?0xff8ac8:0x8a3aff,3,.3);
+  if(T===C) twBark('caotan',"Senpai left me on read... in PERSON?!",true); else twBark('omar',"He dashed. They always dash. Like my father.",true);
+  yield .6; };
+for(const k of [1,2,3]) DUO3_POOL[k].push('comeHere');
 // ---------- a tag-team rush move, so the rushes (and their grabs) come up more often ----------
 DUO.rushTag=function*(C,O,ph){ const sp=twSp(C), K={n:[0,2,3,4][ph],par:0}; twBark('omar',"Tag. You're it. You were always it.",true);
   for(let i=0;i<K.n;i++){ const r=i%2===0?yield* twDuoRush(O,sp,K):yield* twDuoGlomp(C,sp,[0,.62,.55,.48][ph],K); if(r==='grab') return; yield .3; }
@@ -15189,8 +15222,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: third-person test of Ali's Nathan fight (behind-the-back camera, lock-on, 3x circling run; Nathan AFK)";
-const DBG_NEW=['nathan:*'];
+const DBG_PATCH="Oct 27: Twins: new \"Come here, little boy\" grab (dash to escape), Omar's rush no longer grabs, grab camera zoomed out";
+const DBG_NEW=['duo:comeHere','duo:rushTag','duo:glompReap'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'active',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
