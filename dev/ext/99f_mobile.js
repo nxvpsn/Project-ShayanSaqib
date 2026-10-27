@@ -86,7 +86,7 @@ function mobControls(x0,cw,H){ mobSeg(x0,8,cw,42,[['mob:ct:0','Touch controls'],
   D.save(); D.beginPath(); D.rect(x0,top+1,cw,vh-2); D.clip(); const y0=top+12; let y=y0-MOB.sy[c];
   if(c===0) for(const [ic,nm,ds] of mobTouchRows()){ D.beginPath(); D.arc(x0+32,y+20,17,0,7); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); D.strokeStyle=UIC.line2; D.lineWidth=1; D.stroke();
       uText(ic,x0+32,y+26,`800 16px ${FB}`,UIC.accL,'center'); uText(nm,x0+62,y+17,`800 15px ${FB}`,UIC.text); const n=uWrap(ds,x0+62,y+37,cw-78,17,`500 13px ${FB}`,UIC.mut,3); y+=Math.max(48,26+n*17)+8; }
-  else { const mech=twControlsRows().mech.concat([['Hamza bullet hell','Shoot fires by itself · hold Shoot for a Power Shot · hold Focus to slow down and show your hitbox · blue button: Heavenly Drill']]);
+  else { const mech=twControlsRows().mech.concat([['Hamza bullet hell','Shooting and the Power Shot are automatic: just move · hold Focus to slow down and show your hitbox · blue button: Heavenly Drill']]);
     for(const [a2,b2] of mech){ uText(a2,x0+16,y+16,`800 15px ${FB}`,UIC.accL); const n=uWrap(b2,x0+16,y+36,cw-32,17,`500 13px ${FB}`,'#cfd2de'); y+=26+n*17+12; } }
   D.restore(); const max=Math.max(0,y+MOB.sy[c]-y0-vh+20); MOB.sy[c]=clamp(MOB.sy[c],0,max);
   if(max>0){ const bh=Math.max(30,vh*vh/(vh+max)), by=top+4+(vh-8-bh)*(MOB.sy[c]/max); uRR(x0+cw-7,by,4,bh,2); D.fillStyle='rgba(255,255,255,.3)'; D.fill(); } }

@@ -12028,11 +12028,11 @@ function thPlane(size,map){ const m=new THREE.Mesh(new THREE.PlaneGeometry(size,
 function thClear(T){ if(!T) return; for(const m of T.mn) scene.remove(m.mesh); for(const b of T.bits) scene.remove(b.mesh); T.mn=[]; T.bits=[]; T.eb=[]; T.pb=[]; T.items=[]; if(T.drillD) T.drillD.dead=1; }
 function thHzPose(k){ const v=L.vd; if(!v) return; const T=Game.mech&&Game.mech.th, sw=T?T.sway:0, f=(TH.CZ+TH.DZ)/TH.CZ;
   v.hz.position.set(lerp(14,TH.CX+TH.VH*f,k),lerp(1,-sw*f,k),-14); v.hz.rotation.set(0,0,-Math.PI/2*k); v.hz.scale.setScalar(lerp(1,TH.HS,k)); }
-// touch: the sword button shoots (auto-fire; hold to charge the Power Shot), the shield button focuses
+// touch: shooting and the Power Shot are automatic (the sword button is hidden), the shield button focuses
 function thTouchButtons(on){ try{ const a=document.getElementById('tbAttack'), g=document.getElementById('tbGuard'); if(!a||!g||!a.dataset) return;
-  if(on){ if(a.dataset.thOrig==null){ a.dataset.thOrig=a.innerHTML; a.dataset.thLab=a.getAttribute('aria-label')||''; } a.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg>'; a.setAttribute('aria-label','Shoot (automatic), hold to charge a Power Shot');
+  if(on){ if(a.dataset.thOrig==null){ a.dataset.thOrig=a.innerHTML; a.dataset.thLab=a.getAttribute('aria-label')||''; } a.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg>'; a.setAttribute('aria-label','Shoot (automatic)'); a.style.visibility='hidden';
     g.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>'; g.setAttribute('aria-label','Focus: hold to slow down'); }
-  else if(a.dataset.thOrig!=null){ a.innerHTML=a.dataset.thOrig; a.setAttribute('aria-label',a.dataset.thLab); delete a.dataset.thOrig; } }catch(e){} }
+  else if(a.dataset.thOrig!=null){ a.innerHTML=a.dataset.thOrig; a.setAttribute('aria-label',a.dataset.thLab); a.style.visibility=''; delete a.dataset.thOrig; } }catch(e){} }
 function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return; thClear(G.th);
   const T=G.th={ph,t:0,eb:[],pb:[],mn:[],items:[],bits:[],sway:0,gen:null,wait:1.2,spell:null,si:-1,lives:TH.LIVES,score:G.thScore||0,power:2,graze:G.thGraze||0,
     fire:0,hold:0,pk:1,cam:null,panel:animate?0:1,ready:!animate,miss:0,spellMiss:0,bonus:null,tip:null,shield:0};
@@ -12055,9 +12055,12 @@ function thPlayer(dt){ const N=NAT, G=Game.mech, T=G.th, ctl=Game.state==='play'
   N.tu=clamp(N.tu+vu*dt,-TH.W+.45,TH.W-.45); N.tv=clamp(N.tv+vv*dt,-TH.H+.7,TH.VH-6.5*TH.K-2.2);
   [N.x,N.y]=thW(N.tu,N.tv);
   // shooting: hold to fire a needle stream; a full charge releases a Power Shot
-  if(ctl&&(held.attack||IS_TOUCH())){ T.fire-=dt; if(held.attack){ const b=T.hold; T.hold+=dt; if(b<TH.FULL&&T.hold>=TH.FULL){ Sound.tone('sine',1568,1568,.3,.18); Sound.tone('sine',2349,2349,.5,.14,.08); for(const bt of T.bits) thFx(bt.u,bt.v,10,0xff3a3a,3,.25); thFx(N.tu,N.tv+.6,14,0xff8a8a,3,.25); } /* ding! the bits turn red */ }
+  // (touch: both are automatic: the bits charge by themselves and fire the Power Shot a beat after they turn red)
+  const tch=IS_TOUCH();
+  if(ctl&&(held.attack||tch)){ T.fire-=dt; if(held.attack||tch){ const b=T.hold; T.hold+=dt; if(b<TH.FULL&&T.hold>=TH.FULL){ Sound.tone('sine',1568,1568,.3,.18); Sound.tone('sine',2349,2349,.5,.14,.08); for(const bt of T.bits) thFx(bt.u,bt.v,10,0xff3a3a,3,.25); thFx(N.tu,N.tv+.6,14,0xff8a8a,3,.25); } /* ding! the bits turn red */ }
     if(T.fire<=0){ T.fire=.07; const n=1+Math.floor(T.power), spread=foc?.08:.2; for(let k=0;k<=n;k++){ const o=(k-n/2); T.pb.push({u:N.tu+o*(foc?.18:.3),v:N.tv+.5,vu:o*spread*20,vv:46,r:.16,col:0x8ff8ff,dmg:.042,t:0}); } if(Math.random()<.4) Sound.sfx('mechshot'); } }
-  if(!(ctl&&held.attack)){ if(T.hold>=TH.FULL&&ctl) thPowerShot(); T.hold=0; if(!(ctl&&IS_TOUCH())) T.fire=0; }
+  if(tch){ if(!ctl) T.hold=0; else if(T.hold>=TH.FULL+.35){ thPowerShot(); T.hold=0; } }
+  else if(!(ctl&&held.attack)){ if(T.hold>=TH.FULL&&ctl) thPowerShot(); T.hold=0; T.fire=0; }
   if(ctl&&consume('special')){ if(N.sp>=100) run(thDrill); else { Sound.sfx('block'); Game.dmgNums.push({x:N.x+1.5,y:N.y,z:0,n:'DRILL '+Math.floor(N.sp)+'%',t:0,col:'#8fc8ff'}); } }
   // engine sparks, behind him (screen-down)
   if(Math.random()<.7){ const [x,y]=thW(N.tu+rnd(-.12,.12),N.tv-.55); FX.spawn(x,y,.2,-rnd(4,8),rnd(-.5,.5),0,.18,Math.random()<.5?0x3ff4ff:0xbff8ff,rnd(.12,.22),0,true); } }
@@ -12253,13 +12256,13 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   uText(N.sp>=100?K('special')+'  HEAVENLY DRILL READY':Math.floor(N.sp)+'%',R0+RW,y,`800 12px ${FB}`,N.sp>=100?'#9ff8ff':'#8f95ab','right'); y+=26;
   row('Graze',String(T.graze),'#fff');
   uText('Shot',R0,y,`700 15px ${FB}`,'#b9a8d8'); const cw=RW-60, ck=clamp(T.hold/TH.FULL,0,1); uRR(R0+60,y-11,cw,12,6); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); if(ck>0){ uRR(R0+60,y-11,Math.max(6,cw*ck),12,6); D.fillStyle=ck>=1?'#9ff8ff':'#5a8aff'; D.fill(); }
-  y+=22; uText(ck>=1?'POWER SHOT · release':tch?'hold Shoot to charge':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); y+=18;
+  y+=22; uText(tch?(ck>=1?'POWER SHOT!':'Power Shot charges by itself'):ck>=1?'POWER SHOT · release':'hold '+K('attack')+' to charge',R0+RW,y,`700 12px ${FB}`,ck>=1?'#9ff8ff':'#8f95ab','right'); y+=18;
   try{ const ch=Math.min(RW*.8,(tch?UH/ps:UH)-y-24); if(ch>60) thCockpit(R0,y,RW,ch,T,N); }catch(e){ console.error('cockpit',e); } D.restore();
   // left panel: the boss and the controls
   let L0=28, LW=fx-56, ly=46; D.save(); if(tch){ D.translate(L0,0); D.scale(ps,ps); L0=0; LW=LW/ps; } uCaps('BOSS',L0,ly,'#b9a8d8',11); ly+=34; uText('Hamza',L0,ly,`900 30px ${FD}`,'#f6dca0'); ly+=22; uText('the Endless Hunger',L0,ly,`italic 600 14px ${FB}`,'#b9a8d8'); ly+=30;
   uText('Phase '+['','I','II'][T.ph]+(T.ph===1?' · Gluttony':' · The Devourer'),L0,ly,`700 15px ${FB}`,'#fff'); ly+=34;
   if(T.shield){ uText('◆ SHIELDED · kill the eyes',L0,ly,`800 13px ${FB}`,'#ff8aff'); ly+=24; } else if(T.stun>0){ uText('◆ STUNNED · 1.5× damage',L0,ly,`800 13px ${FB}`,'#ffd45a'); ly+=24; }
-  if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shoot fires by itself','Hold Shoot: Power Shot','Hold Focus: slow + hitbox','Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
+  if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shots + Power Shot: automatic','Hold Focus: slow + hitbox','Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
   else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
   D.restore();
   // boss bar across the top of the field
@@ -14774,7 +14777,7 @@ function mobControls(x0,cw,H){ mobSeg(x0,8,cw,42,[['mob:ct:0','Touch controls'],
   D.save(); D.beginPath(); D.rect(x0,top+1,cw,vh-2); D.clip(); const y0=top+12; let y=y0-MOB.sy[c];
   if(c===0) for(const [ic,nm,ds] of mobTouchRows()){ D.beginPath(); D.arc(x0+32,y+20,17,0,7); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); D.strokeStyle=UIC.line2; D.lineWidth=1; D.stroke();
       uText(ic,x0+32,y+26,`800 16px ${FB}`,UIC.accL,'center'); uText(nm,x0+62,y+17,`800 15px ${FB}`,UIC.text); const n=uWrap(ds,x0+62,y+37,cw-78,17,`500 13px ${FB}`,UIC.mut,3); y+=Math.max(48,26+n*17)+8; }
-  else { const mech=twControlsRows().mech.concat([['Hamza bullet hell','Shoot fires by itself · hold Shoot for a Power Shot · hold Focus to slow down and show your hitbox · blue button: Heavenly Drill']]);
+  else { const mech=twControlsRows().mech.concat([['Hamza bullet hell','Shooting and the Power Shot are automatic: just move · hold Focus to slow down and show your hitbox · blue button: Heavenly Drill']]);
     for(const [a2,b2] of mech){ uText(a2,x0+16,y+16,`800 15px ${FB}`,UIC.accL); const n=uWrap(b2,x0+16,y+36,cw-32,17,`500 13px ${FB}`,'#cfd2de'); y+=26+n*17+12; } }
   D.restore(); const max=Math.max(0,y+MOB.sy[c]-y0-vh+20); MOB.sy[c]=clamp(MOB.sy[c],0,max);
   if(max>0){ const bh=Math.max(30,vh*vh/(vh+max)), by=top+4+(vh-8-bh)*(MOB.sy[c]/max); uRR(x0+cw-7,by,4,bh,2); D.fillStyle='rgba(255,255,255,.3)'; D.fill(); } }
