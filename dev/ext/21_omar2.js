@@ -126,9 +126,9 @@ const OM_MOON_GAP=2.2; /* a little over 2: they settle a hair inside it, still c
 function twMoonSep(s,x,z){ let ax=0, az=0; for(const o of (TW._moonS||[])){ if(o===s||o.done||o.px==null||o.col===s.col) continue; const dx=x-o.px, dz=z-o.pz, d=Math.hypot(dx,dz);
     if(d<OM_MOON_GAP){ const a=d>1e-3?Math.atan2(dz,dx):s.turn*9, k=(OM_MOON_GAP-d)/2; ax+=Math.cos(a)*k; az+=Math.sin(a)*k; twMoonClink(s,o,x,z,Math.cos(a),Math.sin(a)); } } /* each moves half, so both together make the full gap */
   return [ax,az]; }
-// when they meet they clink off each other like a deflect: a spark and a ping, and they bounce apart (at most every .5s per moon)
+// when they meet they bounce off each other with a spark (no sound) (at most every .5s per moon)
 function twMoonClink(s,o,x,z,nx,nz){ const t=Game.time; if((s.clinkT||0)>t||(o.clinkT||0)>t) return; s.clinkT=o.clinkT=t+.5;
-  const mx=(x+o.px)/2, mz=(z+o.pz)/2, my=groundY(mx,mz)+1.2; Sound.sfx('deflect'); FX.spark(mx,my,mz); FX.burst(mx,my,mz,8,OM_MOON_HEX[s.col],4,.2); FX.burst(mx,my,mz,8,OM_MOON_HEX[o.col],4,.2);
+  const mx=(x+o.px)/2, mz=(z+o.pz)/2, my=groundY(mx,mz)+1.2; FX.spark(mx,my,mz); /* silent: no clink */ FX.burst(mx,my,mz,8,OM_MOON_HEX[s.col],4,.2); FX.burst(mx,my,mz,8,OM_MOON_HEX[o.col],4,.2);
   for(const [q,k] of [[s,1],[o,-1]]){ const dot=q.vx*nx*k+q.vz*nz*k; if(dot<0){ q.vx-=2*dot*nx*k; q.vz-=2*dot*nz*k; } /* swirling: its heading bounces off */
     q.ox=(q.ox||0)+nx*k*.6; q.oz=(q.oz||0)+nz*k*.6; } } /* curving: a little knock off its path, which fades */
 function twMoonScythe(T,col,side,dur){ dur/=OM_MOON_SLOW; const m=twBB(twMoonTex(col),1.5,1.5,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
