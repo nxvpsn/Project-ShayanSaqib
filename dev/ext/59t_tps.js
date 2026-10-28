@@ -46,11 +46,16 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
       // it follows where Nathan is drawn (a quickboost flies there; it doesn't jump) and turns at a damped rate, never snapping
       if(TPS.yaw==null) TPS.yaw=ty; TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
       // further back, aimed at Ali's chest a third of the way toward Nathan: Ali sits in the lower middle, Nathan above him
-      const back=8, hgt=3.5, /* a touch further out: Nathan clears the top bar */ py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=py+1.3, look=[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)];
+      const py=Math.max(P.y,groundY(P.x,P.z)), up=clamp(((V.y||0)-py-1.5)*.35,0,6), near=Math.max(0,4-Math.hypot(V.x-P.x,V.z-P.z))*.4; /* he's high up: tilt up to keep him in frame; right on top of Ali: ease back */
+      TPS.sh=lerp(TPS.sh||0,(TPS.side||0)*.6,1-Math.exp(-dt*3)); /* a slight lead into a strafe */
+      const back=8+near, hgt=3.5+up*.3, /* a touch further out: Nathan clears the top bar */ want=[P.x-fx*back-fz*TPS.sh,py+hgt,P.z-fz*back+fx*TPS.sh], ly=py+1.3+up, look=[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)];
       if(!TPS.p){ TPS.p=[camera.position.x,camera.position.y,camera.position.z]; TPS.l=look.slice(); }
       const k=1-Math.exp(-dt*(TPS.fast||7)); /* TPS.fast: riding right behind Ali (the Full Counter's dash) */ for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],1-Math.exp(-dt*(TPS.fast||6))); }
       const sh=FX.shake, sx=sh?rnd(-sh,sh)*.4:0, sy=sh?rnd(-sh,sh)*.4:0;
-      camera.position.set(TPS.p[0]+sx,TPS.p[1]+sy,TPS.p[2]); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
+      // TPS.kick: a punch toward the look point (hits, parries; negative = recoil), TPS.fovK: a lens punch; both spring back
+      const kk=TPS.kick||0, kd=Math.hypot(TPS.l[0]-TPS.p[0],TPS.l[1]-TPS.p[1],TPS.l[2]-TPS.p[2])||1, kx=(TPS.l[0]-TPS.p[0])/kd*kk, ky=(TPS.l[1]-TPS.p[1])/kd*kk, kz=(TPS.l[2]-TPS.p[2])/kd*kk; TPS.kick=Math.abs(kk)<.01?0:kk*Math.exp(-dt*9);
+      camera.position.set(TPS.p[0]+sx+kx,TPS.p[1]+sy+ky,TPS.p[2]+kz); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
+      if(TPS.fovK){ TPS.fovK=Math.abs(TPS.fovK)<.05?0:TPS.fovK*Math.exp(-dt*7); if(!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovK; camera.updateProjectionMatrix(); } }
       // the lock-on marker: a slow cyan ring on the ground under Nathan (and a diamond over him, drawn in the UI)
       if(!TPS.ret){ const g=new THREE.Group(); for(const [r0,r1,op] of [[1.55,1.7,.85],[1.85,1.9,.45]]){ const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48,1,0,Math.PI*1.7),new THREE.MeshBasicMaterial({color:0x7fe8ff,transparent:true,opacity:op,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; g.add(m); } scene.add(g); TPS.ret=g; }
       TPS.ret.visible=true; TPS.ret.position.set(V.x,groundY(V.x,V.z)+.06,V.z); TPS.ret.rotation.y+=dt*.8;
