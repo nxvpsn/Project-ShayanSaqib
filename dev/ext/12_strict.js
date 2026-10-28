@@ -40,7 +40,7 @@ TWK.caotan.tsun=function*(T,ph){ const sp=twSp(T); T.heartEyes=1; twBark('caotan
     if(T.parried&&i<2) twBark('caotan',["Hmph! Lucky!","AGAIN?! Stop deflecting my feelings!"][i],true); }
   T.lockF=0;
   if(twComboEnd(T,2.5)){ twBark('caotan',"Three parries... my heart... it's going doki doki for the wrong reasons...",true); T.heartEyes=0; return; }
-  twBark('caotan',"*SLAP*",true); twBlast(T.x,T.z,2.4,.35,{col:0xff3a7a,dmg:3,shake:.5,h:.45}); twWave(T.x,T.z,{sp:8,max:9,col:0xff6ab0,delay:.35,r0:2.4}); /* the ring starts at the slap's edge, so one jump clears whichever reaches you */ yield .9; T.heartEyes=0; };
+  twBark('caotan',"*SLAP*",true); twBlast(T.x,T.z,2.4,1.35,{col:0xff3a7a,dmg:3,shake:.5,h:.45}); twWave(T.x,T.z,{sp:8,max:9,col:0xff6ab0,delay:1.35,r0:2.4}); /* a 1.35s indicator, then the slap; the ring starts at its edge, so one jump clears whichever reaches you */ yield 1.9; T.heartEyes=0; };
 // the tell: two short blinks where he stands, then he blinks out to about 9 units from you (before every rush, so it is never point blank)
 function twTsunFar(T){ const P=Player, base=Math.atan2(T.z-P.z,T.x-P.x); let best=null, bd=-1;
   for(let k=0;k<12;k++){ const a=base+(k%2?1:-1)*Math.ceil(k/2)*Math.PI/6, p=twClampXZ(P.x+Math.cos(a)*9,P.z+Math.sin(a)*9,1), d=Math.hypot(p.x-P.x,p.z-P.z); if(d>=8.5){ best=p; break; } if(d>bd){ bd=d; best=p; } } return best; }
