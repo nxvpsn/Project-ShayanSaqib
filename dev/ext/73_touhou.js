@@ -10,6 +10,7 @@
 // a full 1.5s charge fires a piercing blue Power Shot on release), special = Heavenly Drill (full gauge). No dash, no item drops.
 // The right panel shows Nathan in his cockpit (thCockpit): he flinches when hit, it smokes at 3-4 hearts and burns at 1-2 (his face follows), it explodes when he dies. The bits turn red (and ding) when the Power Shot is charged; the shot also fires four red bit lasers (minions first).
 // =====================================================================
+function thFocusKeys(){ return K('block')+' or '+K('dash'); }
 const TH={W:9,H:12,CX:-6,CZ:26,DZ:14,VH:8.6,HS:.42,HIT:.15,GRAZE:1.05,LIVES:5,FULL:1.5};
 TH.K=TH.HS*TH.CZ/(TH.CZ+TH.DZ); // world size on Hamza's plane -> field size
 function thOn(){ return !!(Game.mech&&Game.mech.th); }
@@ -60,7 +61,7 @@ function thSetup(ph,animate){ const G=Game.mech, N=NAT; if(!G||!N||!L.vd) return
 
 // ---------- player ----------
 function thPlayer(dt){ const N=NAT, G=Game.mech, T=G.th, ctl=Game.state==='play'&&!Game.dlg&&!G.busy&&T.ready&&!T.drill; N.t+=dt; N.inv=Math.max(0,N.inv-dt); N.flash=Math.max(0,N.flash-dt);
-  let [ix,iz]=ctl?inputVec():[0,0]; const iv=-iz, foc=ctl&&!!held.block; T.focus=foc;
+  let [ix,iz]=ctl?inputVec():[0,0]; const iv=-iz, foc=ctl&&!!(held.block||held.dash); T.focus=foc; /* focus: right click or Shift (dash is off here) */
   consume('dash'); /* no dash in the bullet hell */
   const sp=foc?4.8:11.5; let vu,vv; if(N.qb>0){ N.qb-=dt; vu=N.qbx*34; vv=N.qby*34; } else { vu=ix*sp; vv=iv*sp; }
   N.tu=clamp(N.tu+vu*dt,-TH.W+.45,TH.W-.45); N.tv=clamp(N.tv+vv*dt,-TH.H+.7,TH.VH-6.5*TH.K-2.2);
@@ -188,7 +189,7 @@ const TH_SP_K=100/(6.5*35), TH_SP_MAX=200;
 function thSpGain(d){ const N=NAT; if(!N) return; const b=N.sp||0; N.sp=Math.min(TH_SP_MAX,b+d*TH_SP_K); if(b<100&&N.sp>=100) thOp('drill'); else if(b<200&&N.sp>=200) thOp('drill2'); }
 const TH_PAT={
   *spiral(T){ let a=0; for(;;){ const m=thMouth(); T.jaw=.5; for(let k=0;k<5;k++) thB(m.u,m.v,a+k*1.2566,5.2,{col:0xff5a8a,r:.28}); for(let k=0;k<5;k++) thB(m.u,m.v,-a*1.3+k*1.2566+.6,3.8,{col:0xb06aff,r:.22}); a+=.21; yield .1; } },
-  *trough(T){ T.tip='Hold '+K('block')+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=1.65+k*.8, /* two bullet widths more room each side than at first (.85) */ l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
+  *trough(T){ T.tip='Hold '+thFocusKeys()+' to focus, then slide along with the gap'; let gu=0, dir=1; const row=()=>{ for(let k=0;;k++){ const o=1.65+k*.8, /* two bullet widths more room each side than at first (.85) */ l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,9,{col:0x7ab8ff,r:.2}); } };
     for(;;){ row(); gu+=dir*.3; if(Math.abs(gu)>TH.W-1.9){ dir=-dir; gu=clamp(gu,-(TH.W-1.9),TH.W-1.9); } yield .07; /* the gap slides at 4.3/s: focused (4.8/s) you can always catch up */ } },
   *cross(T){ for(let w=0;;w++){ const e=thEye(w%2?1:-1), a0=thAim(e.u,e.v); for(let k=-3;k<=3;k++) thB(e.u,e.v,a0+k*.16,7.2,{col:0xff3a3a,r:.24});
       if(w%3===0){ const m=thMouth(); T.jaw=.7; for(let k=0;k<28;k++) thB(m.u,m.v,k/28*6.283+w*.1,2.8,{col:0xffd04a,r:.3}); } Sound.sfx('swing'); yield .34; } },
@@ -211,7 +212,7 @@ const TH_PAT={
       thB(m.u,m.v,a,5.4,{col:0xc0603a,r:.72,bounce:3,life:14,onB:b=>{ for(let j=0;j<9;j++) thB(b.u,b.v,j/9*6.283+b.t,2.5,{col:0xffb08a,r:.2}); thFx(b.u,b.v,8,0xff8a5a,3,.2); Sound.sfx('squelch'); }});
       if(w%2===1){ for(const i of [-1,1]){ const e=thEye(i); for(let k=0;k<4;k++) thB(e.u,e.v,-Math.PI/2+i*(.3+k*.22),4.6,{col:0xffffff,r:.21,curl:-i*.28}); } }
       if(w%5===4) thPigDive3(); yield 1.05; } },
-  *throat(T){ T.tip='Focus ('+K('block')+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*.8)*4.6+Math.sin(t*.37)*1.3, gw=1.25; /* half-width: 3 bullet widths (0.4 each) narrower in all than the 1.85 it had (1.05 at first); it sways at most 4.2/s, under focused speed (4.8/s) */
+  *throat(T){ T.tip='Focus ('+thFocusKeys()+') and thread the throat'; let t=0; for(;;){ const gu=Math.sin(t*.8)*4.6+Math.sin(t*.37)*1.3, gw=1.25; /* half-width: 3 bullet widths (0.4 each) narrower in all than the 1.85 it had (1.05 at first); it sways at most 4.2/s, under focused speed (4.8/s) */
       for(let k=0;;k++){ const o=gw+k*.75, l=gu-o, r=gu+o; if(l<-TH.W-.3&&r>TH.W+.3) break; if(l>=-TH.W-.3) thB(l,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); if(r<=TH.W+.3) thB(r,TH.H+.6,-Math.PI/2,8,{col:0xff6a9a,r:.2}); }
       t+=.085; yield .085; } },
   *mitosis(T){ for(let w=0;;w++){ const m=thMouth(), a=thAim(m.u,m.v)+rnd(-.3,.3); T.jaw=.9; thB(m.u,m.v,a,3.6,{col:0xff2a5a,r:.8,split:.9+rnd(0,.4)}); Sound.sfx('squelch'); if(w%3===2){ for(const i of [-1,1]){ const e=thEye(i); thB(e.u,e.v,thAim(e.u,e.v),5.5,{col:0xffd04a,r:.5,split:.7}); } } yield .75; } },
@@ -325,7 +326,7 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
   uText('Phase '+['','I','II'][T.ph]+(T.ph===1?' · Gluttony':' · The Devourer'),L0,ly,`700 15px ${FB}`,'#fff'); ly+=34;
   if(T.shield){ uText('◆ SHIELDED · kill the eyes',L0,ly,`800 13px ${FB}`,'#ff8aff'); ly+=24; } else if(T.stun>0){ uText('◆ STUNNED · 1.5× damage',L0,ly,`800 13px ${FB}`,'#ffd45a'); ly+=24; }
   if(tch){ ly+=8; uCaps('TOUCH',L0,ly,'#b9a8d8',11); for(const l of ['Left thumb: move','Shots + Power Shot: automatic','Hold Focus: slow + hitbox','Drill (blue)']){ ly+=22; uText(l,L0,ly,`600 13px ${FB}`,'#d8d0f0'); } }
-  else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[K('block'),'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; const kw=uKey(k,L0,ly-5,false); uText(l,L0+kw+10,ly,`600 14px ${FB}`,'#d8d0f0'); } }
+  else { ly=UH-206; uCaps('CONTROLS',L0,ly,'#b9a8d8',11); ly+=10; for(const [k,l] of [['WASD','Move'],[[K('block'),K('dash')],'Focus (slow, hitbox)'],[K('attack'),'Shoot (hold: power shot)'],[K('special'),'Heavenly Drill']]){ ly+=28; let kx=L0; for(const kk of [].concat(k)) kx+=uKey(kk,kx,ly-5,false)+6; /* focus has two keys */ uText(l,kx+4,ly,`600 14px ${FB}`,'#d8d0f0'); } }
   D.restore();
   // boss bar across the top of the field
   const B=G.boss; if(B&&T.ready){ const k=clamp(B.hp/B.maxHp,0,1), bx=fx+10, bw=fw-20, byy=fy+10; D.fillStyle='rgba(0,0,0,.5)'; D.fillRect(bx,byy,bw,7); D.fillStyle=T.shield?'#b06aff':B.flash>0?'#fff':'#ff4a7a'; D.fillRect(bx,byy,bw*k,7);
@@ -345,7 +346,7 @@ function thHUD(){ const G=Game.mech, T=G.th, N=NAT; if(!T||!N) return; const a=T
     if(T.focus){ D.save(); D.translate(sx,sy); D.rotate(T.t*1.6); D.strokeStyle='rgba(255,106,176,.75)'; D.lineWidth=1.5; D.strokeRect(-gr*.72,-gr*.72,gr*1.44,gr*1.44); D.rotate(-T.t*3.2); D.strokeRect(-gr*.72,-gr*.72,gr*1.44,gr*1.44); D.restore();
       D.strokeStyle='rgba(255,255,255,.35)'; D.beginPath(); D.arc(sx,sy,gr,0,7); D.stroke(); }
     if(T.hold>.15){ const ck=clamp(T.hold/TH.FULL,0,1); D.strokeStyle=ck>=1?'#9ff8ff':'rgba(90,140,255,.85)'; D.lineWidth=3; D.beginPath(); D.arc(sx,sy,15,-Math.PI/2,-Math.PI/2+ck*Math.PI*2); D.stroke(); }
-    const r=T.focus?5:3.5; D.fillStyle='#ff2a4a'; D.beginPath(); D.arc(sx,sy,r+1.6,0,7); D.fill(); D.fillStyle='#fff'; D.beginPath(); D.arc(sx,sy,r,0,7); D.fill(); }
+    const [hx,hy]=toScreen(N.x,N.y-TH.HIT,0), r=Math.max(1,Math.hypot(hx-sx,hy-sy)); /* the white dot is the true hitbox (TH.HIT), the same in and out of focus */ D.fillStyle='#ff2a4a'; D.beginPath(); D.arc(sx,sy,r+1.6,0,7); D.fill(); D.fillStyle='#fff'; D.beginPath(); D.arc(sx,sy,r,0,7); D.fill(); }
   D.restore(); }
 // the play field on the UI canvas, from the play camera's fixed geometry (during camera moves the live projection is meaningless)
 function thField(){ const ppu=(UH/2)/(TH.CZ*Math.tan(camera.fov*Math.PI/360)), w=Math.round(TH.W*2*ppu), h=Math.round(Math.min(UH,TH.H*2*ppu)); return {x:Math.round((UW-w)/2),y:Math.round((UH-h)/2),w,h}; }
