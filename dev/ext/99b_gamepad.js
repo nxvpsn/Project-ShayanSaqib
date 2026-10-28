@@ -9,20 +9,20 @@
 // Rumble: Full Counter / Judgement Cut, and whenever an enemy gets stunned.
 // =====================================================================
 // standard-layout button index -> action ('' = nothing). 0 Cross 1 Circle 2 Square 3 Triangle 4 L1 5 R1 6 L2 7 R2 8 Share 9 Options 10 L3 11 R3
-const PAD_DEF=['jump','dash','','','','attack','special','block','','menu','','ff'];
-const PAD_ACTS=['','jump','attack','block','dash','special','confirm','ff','pause','menu','voices','mute'];
+const PAD_DEF=['jump','dash','','','','attack','special','block','','menu','ff','aimassist']; /* R3 toggles fireball aim assist, L3 fast-forwards */
+const PAD_ACTS=['','jump','attack','block','dash','special','confirm','ff','pause','menu','voices','mute','aimassist'];
 const PAD_GLYPH={ps:['✕','◯','□','△','L1','R1','L2','R2','Share','Options','L3','R3'],xb:['A','B','X','Y','LB','RB','LT','RT','View','Menu','LS','RS']};
 const PAD_COL={ps:['#7aa7ff','#ff6a6a','#e890d8','#4fd8a8'],xb:['#5fd86a','#ff5a5a','#5a9aff','#ffd040']};
 const PAD={mode:'kbm',map:PAD_DEF.slice(),glyph:'',prev:[],as:[],dp:{},stick:false,nav:{},rep:{},rs:{ang:0,t:-1e9},last:-1e9,id:'',had:false,toast:null,hintT:-1e9,talk:false};
 try{ const sp=SAVE.settings.pad||{}; if(sp.mode==='pad') PAD.mode='pad'; const sv=sp.map;
-  if(Array.isArray(sv)&&sv.length===12) PAD.map=sv.map(a=>PAD_ACTS.includes(a)?a:''); const g=sp.glyph; if(g==='ps'||g==='xb') PAD.glyph=g; }catch(e){}
+  if(Array.isArray(sv)&&sv.length===12){ PAD.map=sv.map(a=>PAD_ACTS.includes(a)?a:''); if(!PAD.map.includes('aimassist')&&PAD.map[11]==='ff'&&!PAD.map[10]){ PAD.map[10]='ff'; PAD.map[11]='aimassist'; } } /* old saves: fast-forward moves to L3, R3 gets the aim assist toggle */ const g=sp.glyph; if(g==='ps'||g==='xb') PAD.glyph=g; }catch(e){}
 const PAD_TXC=new Map();
 function twPadSave(){ SAVE.settings.pad={mode:PAD.mode,map:PAD.map.slice(),glyph:PAD.glyph||''}; saveWrite(); PAD_TXC.clear(); }
 function twPadOn(){ return PAD.mode==='pad'; }
 // glyphs: the toggle wins; until it is used, Xbox pads get Xbox names and everything else PlayStation ones
 function twPadSet(){ return PAD.glyph||(/xbox|xinput|045e/i.test(PAD.id)?'xb':'ps'); }
 function twPadName(i){ return PAD_GLYPH[twPadSet()][i]; }
-function twPadLabel(a){ const ali=ALI(); return {'':'Nothing',jump:'Jump / confirm',attack:'Attack',block:ali?'Getsuga Tenshou':'Fireball (magic)',dash:ali?'Teleport':'Dash',special:'Special',confirm:'Talk / advance',ff:'Fast-forward (hold)',pause:'Pause',menu:'Menu / timeline',voices:'Voices on / off',mute:'Mute'}[a]; }
+function twPadLabel(a){ const ali=ALI(); return {'':'Nothing',jump:'Jump / confirm',attack:'Attack',block:ali?'Getsuga Tenshou':'Fireball (magic)',dash:ali?'Teleport':'Dash',special:'Special',confirm:'Talk / advance',ff:'Fast-forward (hold)',pause:'Pause',menu:'Menu / timeline',voices:'Voices on / off',mute:'Mute',aimassist:'Fireball Aim Assist Toggle'}[a]; }
 function twPadShort(id){ id=String(id||''); if(/dualsense/i.test(id)||/054c.*0ce6/i.test(id)) return 'DualSense (PS5)'; if(/054c/i.test(id)||/wireless controller/i.test(id)) return 'DualShock 4 (PS4)';
   if(/xbox|xinput|045e/i.test(id)) return 'Xbox controller'; return id.replace(/\s*\(.*$/,'').slice(0,40)||'Controller'; }
 // K('act') names the pad button while the controller is on (Jump also talks, so Talk falls back to it)
@@ -69,6 +69,7 @@ function twPadPoll(){ const g=twPadGet(), now=performance.now();
 function twPadDown(i){ let a=PAD.map[i]; Sound.unlock();
   if(!a){ if(i===8&&TW.tut&&!TW.tut.leaving){ Sound.sfx('select'); twTutLeave(false); } return; } // an unbound Share leaves the tutorial (its button shows the glyph)
   if(a==='menu'){ if(twEscOk()) twEscOpen(); else { press('pause'); PAD.as[i]='pause'; } return; }
+  if(a==='aimassist'){ PAD.aimAssist=!twFbAssistOn(); try{ SAVE.settings.fbAssist=PAD.aimAssist; saveWrite(); }catch(e){} Sound.sfx('select'); Game.banner={name:'Fireball aim assist '+(PAD.aimAssist?'ON':'OFF'),sub:'',t:1.6,small:1}; return; }
   if(a==='voices'){ Voice.on=!Voice.on; if(!Voice.on) Voice.stop(); Game.banner={name:Voice.on?'Voices on':'Voices off',sub:'',t:1.6,small:1}; return; }
   if(a==='jump'){ const st=Game.state; // Jump is also "confirm": on the pause / death / end screens, and next to someone to talk to
     if(st==='paused'||st==='dead'||st==='end') a='confirm';
@@ -214,3 +215,12 @@ function twPadStuns(){ const L=[]; for(const T of TW.foes||[]) L.push([T,T.stun>
 
 // ---------- every frame, before the game reads its input ----------
 (function(){ const lp=loop; loop=function(){ try{ twPadPoll(); }catch(e){ console.error('pad',e); } return lp.apply(this,arguments); }; })();
+
+// ---------- fireball aim assist: only on a controller (on by default, R3 / "Fireball Aim Assist Toggle" flips it, saved) ----------
+// Off (keyboard + mouse always): the fireball goes exactly where the mouse / right stick points, else straight ahead; no snapping to foes.
+PAD.aimAssist=(function(){ try{ return SAVE.settings.fbAssist!==false; }catch(e){ return true; } })();
+function twFbAssistOn(){ return twPadOn()&&PAD.aimAssist!==false; }
+(function(){ const tf=twFireball; twFireball=function(big){ if(twFbAssistOn()) return tf.apply(this,arguments);
+    const P=Player, a=twAimAng(); if(a!=null){ P.ang=a; P.f=Math.cos(a)>=0?1:-1; }
+    const nf=nearestFoe, ta=twAimAng; nearestFoe=function(){ return null; }; twAimAng=function(){ return null; };
+    try{ return tf.apply(this,arguments); } finally{ nearestFoe=nf; twAimAng=ta; } }; })();

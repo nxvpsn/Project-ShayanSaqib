@@ -1,7 +1,7 @@
 // =====================================================================
 // IMPREGNATE, TWO OR THREE SPERM (phases II-III, 11b): each sperm that gets you = one clone, picked at random (no repeats) from the
 // FIREBALL clone (11c), the SPAZ and the DRILL clone; three = all of them. Phase I is always the fireball clone.
-// SPAZ: dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). One hit kills him (green bar), but a
+// SPAZ (lasts 30s, then melts): dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). One hit kills him (green bar), but a
 //   swing or a fireball that lands while he is mid-swing gets parried by accident. Getsugas always hit.
 //   Anything of Caotan's or the other clones' (blasts, lasers, waves, bolts, goo lobs, the fireball clone's fireball and rush,
 //   the drill clone's AoE) kills him outright. Ultimates kill him too (11d).
@@ -10,7 +10,7 @@
 //   out of; he explodes after. Your own Drill, while his is out, goes only for his drill and destroys it (he fizzles).
 //   No time freeze, no slow-mo, no screen chant: it all happens while you keep fighting.
 // =====================================================================
-const IMPX={leash:9, spazHp:1, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
+const IMPX={leash:9, spazLife:30, spazHp:1, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
 function impMkClone(kind,x,z){ const spr=new Sprite3D(96,96); spr.show(false);
   const C={kind,x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',swU:1,swN:0,sw:.2,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,dead:false,flash:0};
   IMP.extra.push(C);
@@ -28,7 +28,8 @@ function impEmerge(C,dt){ const P=Player; C.ang=Math.atan2(P.z-C.z,P.x-C.x); C.a
 function impSpaz(x,z){ const C=impMkClone('spaz',x,z); C.hp=IMPX.spazHp; return C; }
 function impSpazUpd(C,dt){ const P=Player; C.t+=dt; C.k+=dt; C.gy=groundY(C.x,C.z); C.swU=Math.min(1,C.swU+dt/.12); C.flash=Math.max(0,C.flash-dt); C.sayT-=dt;
   if(C.st==='emerge'){ if(C.t>.75&&!C.said){ C.said=1; if(C.al) twBark('gooali',"WAAAGH! Which one of you is the real one?! I'll just hit EVERYONE!",true); else twBark('gooshayan',"WAAAGH! Which one of you is the real one?! I'll just hit EVERYONE!",true); }
-    if(impEmerge(C,dt)){ C.emerge=1; C.ek=1; C.st='go'; C.k=0; } return; }
+    if(impEmerge(C,dt)){ C.emerge=1; C.ek=1; C.st='go'; C.k=0; C.life=IMPX.spazLife; } return; }
+  C.life-=dt; if(C.life<=0){ impSpazKill(C,'time'); return; } /* he only lasts 30s, then melts */
   // dash-jumps at random (toward you, away, sideways...) but never more than half a screen (IMPX.leash) from you: too far and he hops back at you
   if(!C.hop){ const L=IMPX.leash, dP=Math.hypot(P.x-C.x,P.z-C.z); let tx, tz;
     if(dP>L){ const a=Math.atan2(P.z-C.z,P.x-C.x)+rnd(-.5,.5), r=Math.min(dP-L*.4,rnd(5,8)); tx=C.x+Math.cos(a)*r; tz=C.z+Math.sin(a)*r; }
@@ -60,6 +61,7 @@ function impSpazHurt(C,n){ if(C.dead) return; C.hp-=n; C.flash=.25; Sound.sfx('h
 function impSpazKill(C,by){ if(C.dead) return; C.dead=true; C.hp=0; Sound.sfx('squelch'); Sound.sfx('gore'); shake(.35); FX.burst(C.x,C.y+1,C.z,40,0xffffff,6,.35,false); FX.ring(C.x,C.gy+.1,C.z,'#ffffff',2.2,.35);
   Game.dmgNums.push({x:C.x,y:C.y+3,z:C.z,n:'SPLAT',t:0,big:true,col:'#ffffff'}); twZone(C.x,C.z,1.1,999,{splat:1,op:.95,col:0xfaf6ff});
   if(by==='friendly') twBark('caotan',"Oops! Sorry, Junior! Friendly fire builds character!",true);
+  else if(by==='time'){ if(C.al) twBark('gooali',"Too much... spazzing... I'm... melting...",true); else twBark('gooshayan',"Too much... spazzing... I'm... melting...",true); }
   else if(C.al) twBark('gooali',"Worth it! Totally worth it! Bleeeegh!",true); else twBark('gooshayan',"Worth it! Totally worth it! Bleeeegh!",true); }
 // the spaz dies to anything of Caotan's or the other clones': hooks on the hazards' ally checks (blasts, lasers, waves) and goo lobs
 function impSpazArea(test){ for(const c of IMP.extra.slice()) if(c.kind==='spaz'&&!c.dead&&c.st!=='emerge'&&test(c)) impSpazKill(c,'friendly'); }

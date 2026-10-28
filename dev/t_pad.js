@@ -16,7 +16,8 @@ btn(5,1); H.frames(1); ok(R("held.attack"),'R1 holds attack'); btn(5,0); H.frame
 btn(7,1); H.frames(1); ok(R("held.block"),'R2 holds magic (block)'); btn(7,0); H.frames(1);
 btn(6,1); H.frames(1); ok(R("held.special"),'L2 special'); btn(6,0); H.frames(1);
 play(); btn(1,1); R("twPadPoll()"); ok(R("held.dash"),'Circle dash'); btn(1,0); R("twPadPoll()"); ok(!R("held.dash"),'Circle up');
-btn(11,1); H.frames(1); ok(R("held.ff"),'R3 ff'); btn(11,0); H.frames(1);
+btn(10,1); H.frames(1); ok(R("held.ff"),'L3 ff'); btn(10,0); H.frames(1);
+{ const a0=R("PAD.aimAssist"); btn(11,1); H.frames(1); btn(11,0); H.frames(1); ok(R("PAD.aimAssist")===!a0,'R3 toggles fireball aim assist'); btn(11,1); H.frames(1); btn(11,0); H.frames(1); }
 btn(3,1); btn(2,1); btn(4,1); btn(10,1); H.frames(1); ok(!R("['attack','block','dash','special','jump','confirm'].some(a=>held[a])"),'triangle/square/L1/L3 do nothing'); [3,2,4,10].forEach(i=>btn(i,0)); H.frames(1);
 play(); GP.axes=[.9,0,0,0]; H.frames(1); ok(R("Stick.x")>.8&&R("inputVec()[0]")>.8,'left stick moves'); GP.axes=[0,0,0,0]; H.frames(1); ok(R("Stick.x")===0,'stick released');
 play(); btn(13,1); H.frames(1); ok(R("held.down"),'dpad down'); btn(13,0); H.frames(1); ok(!R("held.down"),'dpad up');
