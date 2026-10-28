@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.19 (Oct 28): his melee moves (combo, grab, the meteor's end) happen at Ali's level (the ground unless Ali is airborne; he floats only between moves); his air-tear on a slash and the rush's cut are cyan, not red; his charge line and the overflow slashes are single clean blades; Ali's parry swings no longer count toward his kick";
+const DBG_PATCH="v1.20 (Oct 28): the Starbreaker mash is shot from Ali's side; his meter fills per level (2.8s each); the Getsuga bar at the top is gone (the circle gauge round Ali has numbered ticks)";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

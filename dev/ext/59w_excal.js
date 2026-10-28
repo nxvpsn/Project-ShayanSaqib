@@ -100,7 +100,7 @@ function npxMash(E){ const P=Player, [dx,dz]=np1Dir(), fx=-dx, fz=-dz, px=-fz, p
   Sound.sfx('parry'); Sound.sfx('crossboom'); Sound.tone('sawtooth',80,30,.6,.2); FX.hitstop=Math.max(FX.hitstop,.22); impactFrame([[1,2],[3,2],[2,1]]); shake(1.2); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1);
   npStar(P.x+fx*.9,P.y+1.6,P.z+fz*.9,0xffffff,2.6,.4); FX.burst(P.x+fx*.9,P.y+1.6,P.z+fz*.9,40,0xffffff,8,.3); FX.ring(P.x,P.y+.1,P.z,'#ffffff',4,.5);
   Game.dmgNums.push({x:P.x,y:P.y+3.2,z:P.z,n:'PARRIED!',t:0,big:true,col:'#ffffff'}); twBark('nathan',"You caught it?!",true);
-  NP1.cam={x:P.x-fx*3.2+px*1.6,y:P.y+1.6,z:P.z-fz*3.2+pz*1.6,lx:P.x+fx*2,ly:P.y+5,lz:P.z+fz*2}; }
+  NP1.cam={x:P.x-fx*2.4+px*5.2,y:P.y+2.2,z:P.z-fz*2.4+pz*5.2,lx:P.x+fx*.8,ly:P.y+2.6,lz:P.z+fz*.8}; /* off to Ali's side: him holding the blade back, in profile */ }
 function npxMashUpd(S,dt){ const P=Player, E=S.E, [dx,dz]=np1Dir(), fx=-dx, fz=-dz; if(!E||NP1.ex!==E){ npxMashEnd(S); return; }
   // the blade bears down on his sword; the meter pushes it back up
   const q={x:P.x+fx*.8,y:P.y+1.5+S.m*2.2,z:P.z+fz*.8}, hx=NB.x, hy=NB.y+2.9, hz=NB.z, h=(q.x-hx)*E.ux+(q.z-hz)*E.uz; E.ang=Math.atan2(h,q.y-hy); E.len=Math.hypot(q.x-hx,q.y-hy,q.z-hz)+6; E.snap=1;
@@ -262,12 +262,10 @@ function npxBoom(x,y,z,s){ s=s||1; const gy=groundY(x,z);
 (function(){ const nr=np1Reset; np1Reset=function(){ npxRavClear(); return nr.apply(this,arguments); }; })();
 // the meter: his three levels over the screen (and Ali's own charge under it while he holds)
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ npxSpeedLines(); }catch(e){ console.error('npx lines',e); } try{ const E=NP1.ex; if(E&&np1On()&&Game.letter<=.5) npxUI(E); }catch(e){ console.error('npx ui',e); } }; })();
-function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/6), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
+function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/(NPX.lvT*3)), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
       D.fillStyle='rgba(4,10,24,.75)'; D.fillRect(x,y,w,10); D.fillStyle=lv>i?on:off; D.fillRect(x,y,w*u,10); D.strokeStyle='rgba(255,255,255,.55)'; D.lineWidth=1; D.strokeRect(x+.5,y+.5,w-1,9); } };
   E.pulseUI=Math.max(0,E.pulseUI-1/20); D.save(); seg(by,k,E.lv,'#ffffff','#3ff4ff');
   const lab=E.phase==='charge'?(E.lv>=1?'LEVEL '+E.lv:'CHARGING'):E.phase==='window'?'NOW!':'', pu=1+.35*E.pulseUI;
   if(lab){ D.font=`900 ${Math.round(18*pu)}px ${FB}`; D.textAlign='center'; D.textBaseline='bottom'; D.lineWidth=4; D.strokeStyle='#04101e'; D.strokeText('STARBREAKER  ·  '+lab,UW/2,by-4);
     D.fillStyle=E.phase==='window'?`hsl(${(Game.time*600)%360},100%,65%)`:'#9ff8ff'; D.fillText('STARBREAKER  ·  '+lab,UW/2,by-4); }
-  const P=Player; if((P.charge||0)>.25&&E.phase!=='clash'){ const y2=by+18, alv=aliChargeLv(P.charge); seg(y2,Math.min(1,P.charge/ALI_CH.T[2]),alv,'#ff3a4a','#a01828');
-    D.font=`800 16px ${FB}`; D.textAlign='center'; D.textBaseline='top'; D.lineWidth=4; D.strokeStyle='#1a0408'; const t='GETSUGA  LV '+alv; D.strokeText(t,UW/2,y2+14); D.fillStyle='#ffb0b8'; D.fillText(t,UW/2,y2+14); }
-  D.restore(); }
+  D.restore(); } /* Ali's own charge shows on the circle gauge round him (08d) */

@@ -82,5 +82,6 @@ const ALI_WAVE_TALL=3.5;
       const T=ALI_CH.T, c=P.charge, lv=aliChargeLv(c), R=IS_TOUCH()?40:46, k=Math.min(1,c/T[2]), a0=-Math.PI/2;
       D.save(); D.translate(q[0],q[1]); D.lineCap='round'; D.strokeStyle='rgba(10,4,8,.6)'; D.lineWidth=7; D.beginPath(); D.arc(0,0,R,0,6.283); D.stroke();
       D.strokeStyle=lv>=3?`hsl(${(Game.time*500)%360},100%,65%)`:lv>=1?'#ff3a4a':'#ffb0b8'; D.lineWidth=5; D.beginPath(); D.arc(0,0,R,a0,a0+6.283*k); D.stroke();
-      for(let i=1;i<=3;i++){ const a=a0+6.283*(T[i-1]/T[2]); D.strokeStyle=lv>=i?'#ffffff':'rgba(255,255,255,.5)'; D.lineWidth=3; D.beginPath(); D.moveTo(Math.cos(a)*(R-7),Math.sin(a)*(R-7)); D.lineTo(Math.cos(a)*(R+7),Math.sin(a)*(R+7)); D.stroke(); }
+      for(let i=1;i<=3;i++){ const a=a0+6.283*(T[i-1]/T[2]); D.strokeStyle=lv>=i?'#ffffff':'rgba(255,255,255,.5)'; D.lineWidth=3; D.beginPath(); D.moveTo(Math.cos(a)*(R-7),Math.sin(a)*(R-7)); D.lineTo(Math.cos(a)*(R+7),Math.sin(a)*(R+7)); D.stroke();
+        D.font=`900 12px ${FB}`; D.textAlign='center'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='#1a0408'; D.strokeText(String(i),Math.cos(a)*(R+16),Math.sin(a)*(R+16)); D.fillStyle=lv>=i?'#ffffff':'rgba(255,255,255,.7)'; D.fillText(String(i),Math.cos(a)*(R+16),Math.sin(a)*(R+16)); }
       D.font=`900 ${IS_TOUCH()?14:15}px ${FB}`; D.textAlign='center'; D.textBaseline='middle'; D.lineWidth=4; D.strokeStyle='#1a0408'; const t=lv>=3?'MAX':'LV '+lv; D.strokeText(t,0,0); D.fillStyle=lv>=3?'#fff0a0':'#ffd0d4'; D.fillText(t,0,0); D.restore(); }catch(e){ console.error('charge gauge',e); } }; })();

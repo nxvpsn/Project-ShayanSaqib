@@ -7183,7 +7183,8 @@ const ALI_WAVE_TALL=3.5;
       const T=ALI_CH.T, c=P.charge, lv=aliChargeLv(c), R=IS_TOUCH()?40:46, k=Math.min(1,c/T[2]), a0=-Math.PI/2;
       D.save(); D.translate(q[0],q[1]); D.lineCap='round'; D.strokeStyle='rgba(10,4,8,.6)'; D.lineWidth=7; D.beginPath(); D.arc(0,0,R,0,6.283); D.stroke();
       D.strokeStyle=lv>=3?`hsl(${(Game.time*500)%360},100%,65%)`:lv>=1?'#ff3a4a':'#ffb0b8'; D.lineWidth=5; D.beginPath(); D.arc(0,0,R,a0,a0+6.283*k); D.stroke();
-      for(let i=1;i<=3;i++){ const a=a0+6.283*(T[i-1]/T[2]); D.strokeStyle=lv>=i?'#ffffff':'rgba(255,255,255,.5)'; D.lineWidth=3; D.beginPath(); D.moveTo(Math.cos(a)*(R-7),Math.sin(a)*(R-7)); D.lineTo(Math.cos(a)*(R+7),Math.sin(a)*(R+7)); D.stroke(); }
+      for(let i=1;i<=3;i++){ const a=a0+6.283*(T[i-1]/T[2]); D.strokeStyle=lv>=i?'#ffffff':'rgba(255,255,255,.5)'; D.lineWidth=3; D.beginPath(); D.moveTo(Math.cos(a)*(R-7),Math.sin(a)*(R-7)); D.lineTo(Math.cos(a)*(R+7),Math.sin(a)*(R+7)); D.stroke();
+        D.font=`900 12px ${FB}`; D.textAlign='center'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='#1a0408'; D.strokeText(String(i),Math.cos(a)*(R+16),Math.sin(a)*(R+16)); D.fillStyle=lv>=i?'#ffffff':'rgba(255,255,255,.7)'; D.fillText(String(i),Math.cos(a)*(R+16),Math.sin(a)*(R+16)); }
       D.font=`900 ${IS_TOUCH()?14:15}px ${FB}`; D.textAlign='center'; D.textBaseline='middle'; D.lineWidth=4; D.strokeStyle='#1a0408'; const t=lv>=3?'MAX':'LV '+lv; D.strokeText(t,0,0); D.fillStyle=lv>=3?'#fff0a0':'#ffd0d4'; D.fillText(t,0,0); D.restore(); }catch(e){ console.error('charge gauge',e); } }; })();
 
 // ----- 09_parry.js -----
@@ -13739,7 +13740,7 @@ function npxMash(E){ const P=Player, [dx,dz]=np1Dir(), fx=-dx, fz=-dz, px=-fz, p
   Sound.sfx('parry'); Sound.sfx('crossboom'); Sound.tone('sawtooth',80,30,.6,.2); FX.hitstop=Math.max(FX.hitstop,.22); impactFrame([[1,2],[3,2],[2,1]]); shake(1.2); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1);
   npStar(P.x+fx*.9,P.y+1.6,P.z+fz*.9,0xffffff,2.6,.4); FX.burst(P.x+fx*.9,P.y+1.6,P.z+fz*.9,40,0xffffff,8,.3); FX.ring(P.x,P.y+.1,P.z,'#ffffff',4,.5);
   Game.dmgNums.push({x:P.x,y:P.y+3.2,z:P.z,n:'PARRIED!',t:0,big:true,col:'#ffffff'}); twBark('nathan',"You caught it?!",true);
-  NP1.cam={x:P.x-fx*3.2+px*1.6,y:P.y+1.6,z:P.z-fz*3.2+pz*1.6,lx:P.x+fx*2,ly:P.y+5,lz:P.z+fz*2}; }
+  NP1.cam={x:P.x-fx*2.4+px*5.2,y:P.y+2.2,z:P.z-fz*2.4+pz*5.2,lx:P.x+fx*.8,ly:P.y+2.6,lz:P.z+fz*.8}; /* off to Ali's side: him holding the blade back, in profile */ }
 function npxMashUpd(S,dt){ const P=Player, E=S.E, [dx,dz]=np1Dir(), fx=-dx, fz=-dz; if(!E||NP1.ex!==E){ npxMashEnd(S); return; }
   // the blade bears down on his sword; the meter pushes it back up
   const q={x:P.x+fx*.8,y:P.y+1.5+S.m*2.2,z:P.z+fz*.8}, hx=NB.x, hy=NB.y+2.9, hz=NB.z, h=(q.x-hx)*E.ux+(q.z-hz)*E.uz; E.ang=Math.atan2(h,q.y-hy); E.len=Math.hypot(q.x-hx,q.y-hy,q.z-hz)+6; E.snap=1;
@@ -13901,15 +13902,13 @@ function npxBoom(x,y,z,s){ s=s||1; const gy=groundY(x,z);
 (function(){ const nr=np1Reset; np1Reset=function(){ npxRavClear(); return nr.apply(this,arguments); }; })();
 // the meter: his three levels over the screen (and Ali's own charge under it while he holds)
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ npxSpeedLines(); }catch(e){ console.error('npx lines',e); } try{ const E=NP1.ex; if(E&&np1On()&&Game.letter<=.5) npxUI(E); }catch(e){ console.error('npx ui',e); } }; })();
-function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/6), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
+function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/(NPX.lvT*3)), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
       D.fillStyle='rgba(4,10,24,.75)'; D.fillRect(x,y,w,10); D.fillStyle=lv>i?on:off; D.fillRect(x,y,w*u,10); D.strokeStyle='rgba(255,255,255,.55)'; D.lineWidth=1; D.strokeRect(x+.5,y+.5,w-1,9); } };
   E.pulseUI=Math.max(0,E.pulseUI-1/20); D.save(); seg(by,k,E.lv,'#ffffff','#3ff4ff');
   const lab=E.phase==='charge'?(E.lv>=1?'LEVEL '+E.lv:'CHARGING'):E.phase==='window'?'NOW!':'', pu=1+.35*E.pulseUI;
   if(lab){ D.font=`900 ${Math.round(18*pu)}px ${FB}`; D.textAlign='center'; D.textBaseline='bottom'; D.lineWidth=4; D.strokeStyle='#04101e'; D.strokeText('STARBREAKER  ·  '+lab,UW/2,by-4);
     D.fillStyle=E.phase==='window'?`hsl(${(Game.time*600)%360},100%,65%)`:'#9ff8ff'; D.fillText('STARBREAKER  ·  '+lab,UW/2,by-4); }
-  const P=Player; if((P.charge||0)>.25&&E.phase!=='clash'){ const y2=by+18, alv=aliChargeLv(P.charge); seg(y2,Math.min(1,P.charge/ALI_CH.T[2]),alv,'#ff3a4a','#a01828');
-    D.font=`800 16px ${FB}`; D.textAlign='center'; D.textBaseline='top'; D.lineWidth=4; D.strokeStyle='#1a0408'; const t='GETSUGA  LV '+alv; D.strokeText(t,UW/2,y2+14); D.fillStyle='#ffb0b8'; D.fillText(t,UW/2,y2+14); }
-  D.restore(); }
+  D.restore(); } /* Ali's own charge shows on the circle gauge round him (08d) */
 
 // ----- 59x_nbpolish.js -----
 // =====================================================================
@@ -17309,7 +17308,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.19 (Oct 28): his melee moves (combo, grab, the meteor's end) happen at Ali's level (the ground unless Ali is airborne; he floats only between moves); his air-tear on a slash and the rush's cut are cyan, not red; his charge line and the overflow slashes are single clean blades; Ali's parry swings no longer count toward his kick";
+const DBG_PATCH="v1.20 (Oct 28): the Starbreaker mash is shot from Ali's side; his meter fills per level (2.8s each); the Getsuga bar at the top is gone (the circle gauge round Ali has numbered ticks)";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -17772,7 +17771,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.19';
+const GAME_VERSION='v1.20';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 
