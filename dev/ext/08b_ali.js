@@ -34,9 +34,9 @@ function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=AL
   if(a.t>=C.dur){ P.aliAtk=null; P.f=a.f0; if(a.q) aliCombo((a.n+1)%3); else P.comboT=Math.max(.38,P.gAct==='g'?1.6-(Game.time-(P.gT||0)):0); } }
 function aliInput(dt){ const P=Player;
   if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
-  if(consume('block')) aliChainGetsuga();
+  consume('block'); /* the Getsuga fires on the release (08d: a tap = the base shot, the ticks = levels 1-3) */
   if(held.block&&!P.aliAtk&&P.dash<=0){ const before=P.charge; P.charge+=dt; aliChargeTick(before,P.charge); } /* the 3-stage charge: 08d_alicharge.js */
-  if(!held.block){ const lv=aliChargeLv(P.charge); if(lv>0) aliChargeRelease(lv); P.charge=0; } }
+  if(!held.block){ const lv=aliChargeLv(P.charge); if(lv>0) aliChargeRelease(lv); else if(P.charge>0) aliChainGetsuga(); P.charge=0; } }
 // the alternating chain: tier 0 = mashed (0.75x, slower), 1 = normal, 2 = 1.5x gold lining, 3 = 1.7x mini Jujishou, then back to 1
 const ALI_GT={mul:[.75,1,1.5,1.7],size:[1,1,1.2,1.4],sheet:['getsuga','getsuga','getsuga_gold','getsuga_jj']};
 function aliChainGetsuga(){ const P=Player, now=Game.time, since=now-(P.gT!=null?P.gT:-9), mashed=P.gAct==='g'&&since<1.6;

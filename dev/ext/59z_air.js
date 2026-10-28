@@ -1,7 +1,7 @@
 // =====================================================================
 // THE AIR (Nathan phase I on Ali's road, v1.16):
 // - Nathan deflects Getsugas: a standing Nathan parries every Getsuga Tenshou (not the LEVEL 3 Jujishou) and sends it off
-//   at an angle behind him (+6 posture). Down, OPEN, or in a sequence he takes them.
+//   at an angle behind him (no posture). Down, OPEN, or in a sequence he takes them.
 // - He flies: between moves his hover height drifts (NP1.hovT, 1.4 to 5.5 units), so he's often out of a ground swing's reach.
 // - Ali's forward blink: with lock-on, a blink toward Nathan goes to him, up to his height (so a floating or air-staggered
 //   Nathan can be hit). It stops 1.6 in front of him, never past; already on him, a second forward blink passes through to
@@ -13,12 +13,12 @@
 function npDeflect(b){ const P=Player, [dx,dz]=np1Dir(), back=Math.atan2(-dz,-dx)+(Math.random()<.5?1:-1)*rnd(.5,.85);
   b.hit.add(NB); b.deflected=1; b.dx=Math.cos(back); b.dz=Math.sin(back); b.x=NB.x+b.dx*1.4; b.z=NB.z+b.dz*1.4; b.g.position.set(b.x,b.y,b.z); b.g.rotation.y=-back; b.life=Math.max(b.life,.8); b.mul=0;
   if(typeof nbsSlash==='function') nbsSlash(.22,.35); npStar(NB.x+dx*.8,NB.y+1.6,NB.z+dz*.8,0x9ff8ff,1.3,.25); FX.spark(NB.x+dx*.8,NB.y+1.6,NB.z+dz*.8); Sound.sfx('deflect'); Sound.tone('square',1700,800,.07,.05);
-  Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'DEFLECTED',t:0,col:'#9ff8ff'}); try{ npPosture(6,'deflect'); }catch(e){} }
+  Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'DEFLECTED',t:0,col:'#9ff8ff'}); /* no posture: Getsuga spam isn't the answer either */ }
 (function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(npoOn()&&!NB.stunned&&!(NP1.openT>0)&&!NP1.seq&&!Game.script&&!(NP1.ex&&NP1.ex.phase!=='charge')&&!NPO.kick) for(const b of BEAMS){ if(!b.ali||b.hit.has(NB)||b.life<=0||(b.chLv||0)>=3||b.deflected) continue;
         const rad=(b.big?1.6:1.15)+1.8; if(Math.hypot(NB.x-b.x,NB.z-b.z)<rad&&Math.abs(b.y-(NB.y+1.5))<3.2) npDeflect(b); } }catch(e){ console.error('np deflect',e); } return ub.apply(this,arguments); }; })();
 // ---------- he flies ----------
 function npAir(dt){ if(NB.stunned||NP1.seq||NP1.alt!=null||NP1.ex||NP1.charging||Game.script) return; NP1.hovC=(NP1.hovC||0)-dt;
-  if(NP1.hovC<=0){ NP1.hovC=rnd(2,4); NP1.hovT=Math.random()<.4?1.4:rnd(2.5,5.5); } if(NP1.hovT!=null) NB.hov=lerp(NB.hov,NP1.hovT,1-Math.exp(-dt*1.5)); }
+  if(NP1.hovC<=0){ NP1.hovC=rnd(2,4); NP1.hovT=Math.random()<.4?1.4:rnd(2.4,4.2); } if(NP1.hovT!=null) NB.hov=lerp(NB.hov,NP1.hovT,1-Math.exp(-dt*1.5)); }
 (function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(npoOn()) npAir(dt); }catch(e){ console.error('np air',e); } return r; }; })();
 (function(){ const ns=np1Start; np1Start=function(){ const r=ns.apply(this,arguments); NP1.hovT=1.4; NP1.hovC=1.5; return r; }; })();
 // ---------- the forward blink ----------

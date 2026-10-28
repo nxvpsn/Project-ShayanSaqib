@@ -68,7 +68,7 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
       if(!g.sparked&&prog>=1){ g.sparked=1; twGashSparks(P,g.sparks||24); }
       for(let j=0;j<N&&n<SLASH_N;j++){ const a=P[j], b=P[j+1], ex0=j>0?.5:0, ex1=j<N-1?.5:0, dx=b[0]-a[0], dy=b[1]-a[1];
         const x0=a[0]-dx*ex0, y0=a[1]-dy*ex0, x1=b[0]+dx*ex1, y1=b[1]+dy*ex1, W=g.w*Math.pow(Math.sin(Math.PI*(j+.5)/N),g.taper==null?.8:g.taper), k=Math.max(0,Math.min(1,prog*N-j));
-        if(k<=0) continue; U.L.value[n].set(x0/UW,1-y0/UH,x1/UW,1-y1/UH); U.Q.value[n].set(W/UH*.85,k,op,(g.sd+j*.137)%1+(g.nodisp?2:0)); n++; } }
+        if(k<=0) continue; U.L.value[n].set(x0/UW,1-y0/UH,x1/UW,1-y1/UH); U.Q.value[n].set(W/UH*.85,k,op,(g.sd+j*.137)%1+(g.nodisp?2:0)+(g.blue?4:0)); n++; } } /* g.blue: Nathan's cyan tear (the shader swap in 59v) */
     U.n.value=n; slashPass.enabled=n>0; }; })();
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;

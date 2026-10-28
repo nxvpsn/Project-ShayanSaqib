@@ -6015,7 +6015,7 @@ function twGashSparks(P,n){ JC.sp=JC.sp||[]; for(let i=0;i<n;i++){ const j=Math.
       if(!g.sparked&&prog>=1){ g.sparked=1; twGashSparks(P,g.sparks||24); }
       for(let j=0;j<N&&n<SLASH_N;j++){ const a=P[j], b=P[j+1], ex0=j>0?.5:0, ex1=j<N-1?.5:0, dx=b[0]-a[0], dy=b[1]-a[1];
         const x0=a[0]-dx*ex0, y0=a[1]-dy*ex0, x1=b[0]+dx*ex1, y1=b[1]+dy*ex1, W=g.w*Math.pow(Math.sin(Math.PI*(j+.5)/N),g.taper==null?.8:g.taper), k=Math.max(0,Math.min(1,prog*N-j));
-        if(k<=0) continue; U.L.value[n].set(x0/UW,1-y0/UH,x1/UW,1-y1/UH); U.Q.value[n].set(W/UH*.85,k,op,(g.sd+j*.137)%1+(g.nodisp?2:0)); n++; } }
+        if(k<=0) continue; U.L.value[n].set(x0/UW,1-y0/UH,x1/UW,1-y1/UH); U.Q.value[n].set(W/UH*.85,k,op,(g.sd+j*.137)%1+(g.nodisp?2:0)+(g.blue?4:0)); n++; } } /* g.blue: Nathan's cyan tear (the shader swap in 59v) */
     U.n.value=n; slashPass.enabled=n>0; }; })();
 // world-space arc -> screen polyline (center c, unit dir u for 'forward', up = screen up via world y)
 function twArcPts(cx,cy,cz,ux,uz,R,a0,a1,N,flatY){ const P=[]; for(let i=0;i<=N;i++){ const a=lerp(a0,a1,i/N), f=Math.cos(a)*R, s=Math.sin(a)*R;
@@ -7012,9 +7012,9 @@ function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=AL
   if(a.t>=C.dur){ P.aliAtk=null; P.f=a.f0; if(a.q) aliCombo((a.n+1)%3); else P.comboT=Math.max(.38,P.gAct==='g'?1.6-(Game.time-(P.gT||0)):0); } }
 function aliInput(dt){ const P=Player;
   if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
-  if(consume('block')) aliChainGetsuga();
+  consume('block'); /* the Getsuga fires on the release (08d: a tap = the base shot, the ticks = levels 1-3) */
   if(held.block&&!P.aliAtk&&P.dash<=0){ const before=P.charge; P.charge+=dt; aliChargeTick(before,P.charge); } /* the 3-stage charge: 08d_alicharge.js */
-  if(!held.block){ const lv=aliChargeLv(P.charge); if(lv>0) aliChargeRelease(lv); P.charge=0; } }
+  if(!held.block){ const lv=aliChargeLv(P.charge); if(lv>0) aliChargeRelease(lv); else if(P.charge>0) aliChainGetsuga(); P.charge=0; } }
 // the alternating chain: tier 0 = mashed (0.75x, slower), 1 = normal, 2 = 1.5x gold lining, 3 = 1.7x mini Jujishou, then back to 1
 const ALI_GT={mul:[.75,1,1.5,1.7],size:[1,1,1.2,1.4],sheet:['getsuga','getsuga','getsuga_gold','getsuga_jj']};
 function aliChainGetsuga(){ const P=Player, now=Game.time, since=now-(P.gT!=null?P.gT:-9), mashed=P.gAct==='g'&&since<1.6;
@@ -7105,10 +7105,10 @@ function drawAliTip(){ const dt=1/60; ALT.mash=Math.max(0,ALT.mash-dt); ALT.al=c
 //   charging -> LV 1: black and red energy pours off the blade and shoots up in a thin column, a surging hum
 //   LV 2: more of it, a taller column, black and red lightning crackling around the blade
 //   LV 3: all of it bigger: the column goes up into the sky, lightning round his body too, the ground pulses, a low roar
-// Release: LV 1 a big black Getsuga (x2), LV 2 a bigger gold one (x3), LV 3 the Getsuga Jujishou (x4.5). Under 2s: nothing
-// (the tap already fired its Getsuga). ALI_CH.force = a stage shown without holding (cinematics).
+// The shot fires on the release: before the first tick, the base Getsuga (a tap); LV 1 a big black Getsuga (x2, twice as tall),
+// LV 2 a bigger gold one (x3, three times), LV 3 the Getsuga Jujishou (x4.5, four times). A circle gauge round him shows the ticks. ALI_CH.force = a stage shown without holding (cinematics).
 // =====================================================================
-const ALI_CH={T:[2,4,6],force:0,fx:null,snd:0};
+const ALI_CH={T:[2,4,6],force:0,fx:null,snd:0}; /* the three ticks of the circle gauge: holding past each one is a level */
 function aliChargeLv(c){ const T=ALI_CH.T; return c>=T[2]?3:c>=T[1]?2:c>=T[0]?1:0; }
 // the hold timer crossing its marks
 function aliChargeTick(b,a){ const T=ALI_CH.T;
@@ -7145,25 +7145,25 @@ function aliOverhead(c,cx,by,d,t,lv){ const feet=(ALS.feet[18]||[])[d]||79; alPa
         aliOverhead(c,cx,by,d,s.t||0,ALI_CH.force||aliChargeLv(P.charge||0)); return; }catch(e){ console.error('ali overhead',e); } }
     return da.apply(this,arguments); }; })();
 // ---------- the energy: a column off the blade tip, rising wisps, lightning from LV 2, the sky pillar at LV 3 ----------
-function aliChargeMake(){ const red=beamMesh(0xff1a2a,1), g=new THREE.CylinderGeometry(.5,.5,1,10,1,true); g.rotateX(Math.PI/2); g.translate(0,0,.5);
-  const dark=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x0a0004,transparent:true,opacity:.85,depthWrite:false,fog:false})); scene.add(dark);
-  red.userData.temp=1; dark.userData.temp=1; return {t:0,red,dark,bolts:[],ring:0}; }
+function aliChargeMake(){ return {t:0,flames:[],bolts:[],ring:0}; }
+// the fire: the charged fireball's flames (the same sheet), flaring up off the blade tip in a stack that grows with each level
+function aliChargeFlames(F,lv,tx,ty,tz,k){ const want=lv>=3?5:2+lv, size=1.5+lv*.9+k*.4; while(F.flames.length<want){ const e=pxvPlay('fireball_burn',{x:tx,y:ty,z:tz,size,depth:false,add:true}); if(!e) break; e.noAim=true; F.flames.push(e); }
+  while(F.flames.length>want){ pxvStop(F.flames.pop()); }
+  F.flames.forEach((e,i)=>{ const h=i*size*.62, wob=Math.sin(F.t*9+i*1.7)*.12*(1+i*.3); e.m.position.set(tx+wob,ty+h*(1+.06*Math.sin(F.t*13+i)),tz+Math.cos(F.t*7+i)*.06); const s=size*(1-i*.08)*(1+.07*Math.sin(F.t*17+i*2)); e.m.scale.set(s*(e.A.w/e.A.h),s,1); e.m.material.opacity=Math.max(.35,1-i*.12); }); }
 function aliChargeBolt(F,i,sc){ let B=F.bolts[i]; if(!B){ const g=aliBoltMesh(); scene.add(g); try{ g.children[2].material.color.setHex(0xff4a5a); }catch(e){} B=F.bolts[i]={bolt:g,x:0,y:0,z:0,g:{scale:{x:1}}}; }
   B.g.scale.x=sc; return B; }
-function aliChargeClear(){ const F=ALI_CH.fx; ALI_CH.fx=null; if(!F) return; for(const m of [F.red,F.dark]){ scene.remove(m); try{ m.geometry.dispose(); }catch(e){} } for(const B of F.bolts) if(B) scene.remove(B.bolt); }
+function aliChargeClear(){ const F=ALI_CH.fx; ALI_CH.fx=null; if(!F) return; for(const e of F.flames) try{ pxvStop(e); }catch(x){} for(const B of F.bolts) if(B) scene.remove(B.bolt); }
 function aliChargeFx(dt){ const P=Player, on=ALI()&&(ALI_CH.force>0||(P.charge||0)>.25)&&Game.state!=='dead'&&Game.state!=='title'&&Game.state!=='end';
   if(!on){ if(ALI_CH.fx) aliChargeClear(); return; }
   const T=ALI_CH.T, ch=ALI_CH.force?T[2]+.5:P.charge, lv=ALI_CH.force||aliChargeLv(ch), a0=lv?T[lv-1]:.25, k=lv>=3?1:Math.max(0,Math.min(1,(ch-a0)/(T[lv]-a0)));
   const F=ALI_CH.fx||(ALI_CH.fx=aliChargeMake()); F.t+=dt; const tx=P.x, ty=P.y+2.3, tz=P.z;
-  // the column: thin and short while charging, the sky at LV 3
-  const len=lv>=3?Math.min(140,8+F.t*60):[4*k,7+5*k,18+6*k][lv], w=[.06+.04*k,.13,.24,.6][lv]*(1+.18*Math.sin(F.t*31)+.08*Math.sin(F.t*53));
-  for(const m of [F.red,F.dark]){ m.position.set(tx,ty,tz); m.lookAt(tx,ty+10,tz+1e-4); m.scale.set(Math.max(.01,w),Math.max(.01,w),Math.max(.01,len)); }
-  F.red.material.opacity=lv?.9:.5+.4*k; F.dark.material.opacity=lv?.85:.5;
+  // the fire off the blade, bigger with every level
+  try{ aliChargeFlames(F,lv,tx,ty+.2,tz,k); }catch(e){ console.error('charge flames',e); }
   // the energy flows: streams spiral in from the air around him and up into the blade (Shayan's charge pulls its fire in
   // straight; Ali's curls), ribbons of black and red wind up his body, and wisps shoot on up off the tip
   const NS=6+lv*2, R=2.4+lv*.5, spin=7+lv*2; for(let i=0;i<NS;i++){ const fr=(F.t*1.5+i/NS)%1, a=i/NS*6.283+F.t*spin+fr*2.5, r=R*(1-fr*fr), y=P.y+.2+fr*2.1, x=P.x+Math.cos(a)*r, z=P.z+Math.sin(a)*r;
     FX.spawn(x,y,z,0,0,0,.1,i%2?0xff1a2a:0x0a0006,.14+fr*.16,0,!(i%2)); if(fr>.9) FX.spawn(tx,ty,tz,rnd(-.3,.3),rnd(5,9)*(1+lv*.3),rnd(-.3,.3),.4+lv*.1,i%2?0xff1a2a:0x0a0006,.2+lv*.05,0,!(i%2)); }
-  F.rib=(F.rib||0)-dt; if(F.rib<=0){ F.rib=.42-lv*.07; const a0=rnd(0,6.283), t0=F.t, dir=Math.random()<.5?1:-1, red=Math.random()<.5, rr=1+lv*.22;
+  F.rib=(F.rib||0)-dt; if(lv>=2&&F.rib<=0){ F.rib=.42-lv*.07; const a0=rnd(0,6.283), t0=F.t, dir=Math.random()<.5?1:-1, red=Math.random()<.5, rr=1+lv*.22;
     twGash({life:.55,rev:.08,fade:.25,w:8+lv*2,op:.75,sparks:0,col:red?0xff1a2a:0x140008,pts:()=>{ const t=F.t-t0; return twArcPts(P.x,P.y+.5+t*2.6,P.z,Math.cos(a0+t*6*dir),Math.sin(a0+t*6*dir),rr,-1,1,6,true); }}); }
   const n=[0,1,2,4][lv]; for(let i=0;i<n;i++){ const r=rnd(.1,.3)*(1+lv*.4), a=rnd(0,6.283); FX.spawn(tx+Math.cos(a)*r,ty+rnd(-.9,.2),tz+Math.sin(a)*r,rnd(-.4,.4),rnd(6,11)*(1+lv*.35),rnd(-.4,.4),.45+lv*.1,i%2?0x0a0006:0xff1a2a,.22+lv*.07,0,!(i%2)); }
   if(lv>=3){ const a=rnd(0,6.283), r=rnd(3,5); FX.spawn(P.x+Math.cos(a)*r,P.y+rnd(.2,2.5),P.z+Math.sin(a)*r,-Math.cos(a)*r*2.2,rnd(1,3),-Math.sin(a)*r*2.2,.45,Math.random()<.5?0xff1a2a:0x0a0006,.25,0,true); /* the air pulled in */
@@ -7175,9 +7175,16 @@ function aliChargeFx(dt){ const P=Player, on=ALI()&&(ALI_CH.force>0||(P.charge||
   // the hum, crackle and roar
   ALI_CH.snd-=dt; if(ALI_CH.snd<=0){ ALI_CH.snd=.28; Sound.hiss(250+lv*350,.32,.03+lv*.025,'bandpass'); if(lv>=2&&Math.random()<.7) Sound.hiss(5200,.06,.05+lv*.02,'highpass'); if(lv>=3) Sound.tone('sawtooth',48,54,.3,.05); } }
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments); try{ aliChargeFx(dt); }catch(e){ console.error('ali charge fx',e); } return r; }; })();
-// his waves stand tall: every Getsuga and Jujishou is 3.5x as tall on screen (the hit stays the same)
+// his waves stand tall: every Getsuga is 3.5x as tall on screen; the levels double, triple and quadruple that (the hit stays the same)
 const ALI_WAVE_TALL=3.5;
-(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ for(const b of BEAMS) if(b.ali&&b.pxv&&!b.pxv.tall) b.pxv.tall=ALI_WAVE_TALL; }catch(e){} return ub.apply(this,arguments); }; })();
+(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ for(const b of BEAMS) if(b.ali&&b.pxv&&!b.pxv.tall) b.pxv.tall=ALI_WAVE_TALL*(1+(b.chLv||0)); }catch(e){} return ub.apply(this,arguments); }; })();
+// the circle gauge round Ali while he holds: three ticks, the arc fills to the next level (full circle = level 3)
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ const P=Player; if(!ALI()||!((P.charge||0)>.25)||Game.state!=='play'||Game.letter>.5) return; const q=toScreen(P.x,P.y+1.3,P.z); if(q[2]>1) return;
+      const T=ALI_CH.T, c=P.charge, lv=aliChargeLv(c), R=IS_TOUCH()?40:46, k=Math.min(1,c/T[2]), a0=-Math.PI/2;
+      D.save(); D.translate(q[0],q[1]); D.lineCap='round'; D.strokeStyle='rgba(10,4,8,.6)'; D.lineWidth=7; D.beginPath(); D.arc(0,0,R,0,6.283); D.stroke();
+      D.strokeStyle=lv>=3?`hsl(${(Game.time*500)%360},100%,65%)`:lv>=1?'#ff3a4a':'#ffb0b8'; D.lineWidth=5; D.beginPath(); D.arc(0,0,R,a0,a0+6.283*k); D.stroke();
+      for(let i=1;i<=3;i++){ const a=a0+6.283*(T[i-1]/T[2]); D.strokeStyle=lv>=i?'#ffffff':'rgba(255,255,255,.5)'; D.lineWidth=3; D.beginPath(); D.moveTo(Math.cos(a)*(R-7),Math.sin(a)*(R-7)); D.lineTo(Math.cos(a)*(R+7),Math.sin(a)*(R+7)); D.stroke(); }
+      D.font=`900 ${IS_TOUCH()?14:15}px ${FB}`; D.textAlign='center'; D.textBaseline='middle'; D.lineWidth=4; D.strokeStyle='#1a0408'; const t=lv>=3?'MAX':'LV '+lv; D.strokeText(t,0,0); D.fillStyle=lv>=3?'#fff0a0':'#ffd0d4'; D.fillText(t,0,0); D.restore(); }catch(e){ console.error('charge gauge',e); } }; })();
 
 // ----- 09_parry.js -----
 // =====================================================================
@@ -13038,7 +13045,7 @@ function* nbPhantomRush(){ const C={n:1,par:0}; twBark('nathan',"Phantom rush! Y
 // - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
-const TPS={lock:1,FOV:55,on:0,fov0:null,p:null,l:null,bb:0,off:null,side:0,f:1,yaw:null};
+const TPS={lock:1,mdx:0,mdy:0,pitch:0,zx:0,FOV:55,on:0,fov0:null,p:null,l:null,bb:0,off:null,side:0,f:1,yaw:null};
 function tpsFight(){ return typeof NB!=='undefined'&&NB&&NB.alive&&ALI()&&!Game.mech&&L&&L.key==='flowers'; }
 function tpsOn(){ return tpsFight()&&!NB.inv&&(Game.state==='play'||Game.state==='dead')&&!Cam.cine&&!Game.script; }
 function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
@@ -13070,20 +13077,22 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
 // the camera
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const on=tpsOn();
     if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } TPS.yaw=null; for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; if(TPS.ret) TPS.ret.visible=false; } return uc.apply(this,arguments); }
-    try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, mv=Math.hypot(P.vx||0,P.vz||0), ty=TPS.lock||TPS.yaw==null?Math.atan2(V.z-P.z,V.x-P.x):(mv>1&&!P.cineFly?Math.atan2(P.vz,P.vx):TPS.yaw); /* unlocked: it follows where Ali runs */
+    try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, ty=TPS.lock||TPS.yaw==null?Math.atan2(V.z-P.z,V.x-P.x):TPS.yaw+TPS.mdx*.0032; /* unlocked: the mouse turns it */ if(!TPS.lock){ TPS.pitch=clamp(TPS.pitch+TPS.mdy*.0022,-.35,.6); } TPS.mdx=TPS.mdy=0;
       if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=TPS.FOV; camera.updateProjectionMatrix(); tpsBillboardTufts(); TPS.yaw=null; }
       // it follows where Nathan is drawn (a quickboost flies there; it doesn't jump) and turns at a damped rate, never snapping
-      if(TPS.yaw==null) TPS.yaw=ty; TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
+      if(TPS.yaw==null) TPS.yaw=ty; if(TPS.lock) TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); else TPS.yaw=ty; /* the mouse is not damped */ const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
       // further back, aimed at Ali's chest a third of the way toward Nathan: Ali sits in the lower middle, Nathan above him
       const py=Math.max(P.y,groundY(P.x,P.z)), up=clamp(((V.y||0)-py-1.5)*.35,0,6), near=Math.max(0,4-Math.hypot(V.x-P.x,V.z-P.z))*.4; /* he's high up: tilt up to keep him in frame; right on top of Ali: ease back */
       TPS.sh=lerp(TPS.sh||0,(TPS.side||0)*.6,1-Math.exp(-dt*3)); /* a slight lead into a strafe */
-      const back=8+near, hgt=3.5+up*.3, /* a touch further out: Nathan clears the top bar */ want=[P.x-fx*back-fz*TPS.sh,py+hgt,P.z-fz*back+fx*TPS.sh], ly=py+1.3+up, look=TPS.lock?[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)]:[P.x+fx*3,ly,P.z+fz*3];
+      const zx=TPS.zx||0, pt=TPS.lock?0:TPS.pitch, back=8+near+zx*7, hgt=3.5+up*.3+zx*2.6+pt*5, /* zx: zoomed out to keep all of him in frame */ want=[P.x-fx*back-fz*TPS.sh,py+hgt,P.z-fz*back+fx*TPS.sh], ly=py+1.3+up+zx*2.4-pt*2.5, look=TPS.lock?[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)]:[P.x+fx*3,ly,P.z+fz*3];
       if(!TPS.p){ TPS.p=[camera.position.x,camera.position.y,camera.position.z]; TPS.l=look.slice(); }
       const k=1-Math.exp(-dt*(TPS.fast||7)); /* TPS.fast: riding right behind Ali (the Full Counter's dash) */ for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],1-Math.exp(-dt*(TPS.fast||6))); }
       const sh=FX.shake, sx=sh?rnd(-sh,sh)*.4:0, sy=sh?rnd(-sh,sh)*.4:0;
       // TPS.kick: a punch toward the look point (hits, parries; negative = recoil), TPS.fovK: a lens punch; both spring back
       const kk=TPS.kick||0, kd=Math.hypot(TPS.l[0]-TPS.p[0],TPS.l[1]-TPS.p[1],TPS.l[2]-TPS.p[2])||1, kx=(TPS.l[0]-TPS.p[0])/kd*kk, ky=(TPS.l[1]-TPS.p[1])/kd*kk, kz=(TPS.l[2]-TPS.p[2])/kd*kk; TPS.kick=Math.abs(kk)<.01?0:kk*Math.exp(-dt*9);
       camera.position.set(TPS.p[0]+sx+kx,TPS.p[1]+sy+ky,TPS.p[2]+kz); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
+      // his whole body stays in frame: when his head leaves the top (or he's off the sides) the camera eases out, and back in when there's room
+      try{ if(TPS.lock){ camera.updateMatrixWorld(); const tp=toScreen(V.x,V.y+4.9,V.z), out=tp[2]>1||tp[1]<UH*.13||tp[0]<UW*.06||tp[0]>UW*.94, room=tp[2]<1&&tp[1]>UH*.27&&tp[0]>UW*.15&&tp[0]<UW*.85; TPS.zx=clamp(zx+(out?dt*2.4:room?-dt*.7:0),0,1); } else TPS.zx=Math.max(0,zx-dt); }catch(e){}
       if(TPS.fovK){ TPS.fovK=Math.abs(TPS.fovK)<.05?0:TPS.fovK*Math.exp(-dt*7); if(!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovK+(TPS.fovRun||0); camera.updateProjectionMatrix(); } } else if(TPS.fovRun&&!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovRun; camera.updateProjectionMatrix(); } /* TPS.fovRun: the lens opens a little with Ali's speed */
       // the lock-on marker: a slow cyan ring on the ground under Nathan (and a diamond over him, drawn in the UI)
       if(!TPS.ret){ const g=new THREE.Group(); for(const [r0,r1,op] of [[1.55,1.7,.85],[1.85,1.9,.45]]){ const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48,1,0,Math.PI*1.7),new THREE.MeshBasicMaterial({color:0x7fe8ff,transparent:true,opacity:op,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; g.add(m); } scene.add(g); TPS.ret=g; }
@@ -13133,8 +13142,8 @@ function tpiUpdate(){ const P=Player, W=TPI.W, Dd=TPI.D, ci=Math.floor(P.x/W), c
 // the ground lookup wraps around the field while it is endless
 (function(){ const ch=cellH; cellH=function(x,z){ if(TPI.on&&TPI.W){ x=((x%TPI.W)+TPI.W)%TPI.W; z=((z%TPI.D)+TPI.D)%TPI.D; } return ch(x,z); }; })();
 // lock-on on/off: middle click (unlocked: free run, the camera follows Ali; Getsugas still find him)
-function tpsLockToggle(){ TPS.lock=TPS.lock?0:1; const P=Player; Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:TPS.lock?'LOCK-ON':'LOCK-ON OFF',t:0,big:true,col:TPS.lock?'#7fe8ff':'#9aa8b8'}); Sound.sfx(TPS.lock?'ting':'block'); if(TPS.lock&&typeof NPP!=='undefined') NPP.engage={t:0}; }
-(function(){ try{ document.addEventListener('mousedown',e=>{ if(e.button===1&&tpsFight()){ e.preventDefault(); tpsLockToggle(); } },{capture:true}); document.addEventListener('auxclick',e=>{ if(e.button===1&&tpsFight()) e.preventDefault(); },{capture:true}); }catch(e){} })();
+function tpsLockToggle(){ TPS.lock=TPS.lock?0:1; TPS.mdx=TPS.mdy=0; TPS.pitch=0; try{ if(!TPS.lock){ if(ui.requestPointerLock) ui.requestPointerLock(); } else if(document.exitPointerLock&&document.pointerLockElement) document.exitPointerLock(); }catch(e){} const P=Player; Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:TPS.lock?'LOCK-ON':'LOCK-ON OFF',t:0,big:true,col:TPS.lock?'#7fe8ff':'#9aa8b8'}); Sound.sfx(TPS.lock?'ting':'block'); if(TPS.lock&&typeof NPP!=='undefined') NPP.engage={t:0}; }
+(function(){ try{ document.addEventListener('mousemove',e=>{ if(!TPS.lock&&tpsFight()){ TPS.mdx+=e.movementX||0; TPS.mdy+=e.movementY||0; } }); document.addEventListener('mousedown',e=>{ if(e.button===1&&tpsFight()){ e.preventDefault(); tpsLockToggle(); } },{capture:true}); document.addEventListener('auxclick',e=>{ if(e.button===1&&tpsFight()) e.preventDefault(); },{capture:true}); }catch(e){} })();
 
 // ----- 59u_nbsprite.js -----
 // =====================================================================
@@ -13202,7 +13211,7 @@ const NP1_TELL=.45, NP1_WIN=.3;
 const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab','excal']; /* excal: 59w_excal.js */
 const NP1_FIRST=['combo','bits','grab','meteor','cage','excal'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
-function np1Reset(){ np1Clear(); Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
+function np1Reset(){ np1Clear(); try{ if(typeof TPS!=='undefined'&&!TPS.lock) tpsLockToggle(); }catch(e){} Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
 function np1Start(){ np1Clear(); Object.assign(NP1,{live:1,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:NP1_FIRST.slice(),stunT:0,seq:null,cam:null,pdT:-9,hint:null});
   if(NB){ NB.barShow=0; NB.hov=1.4; NB.stunned=0; } }
 function np1Clear(){ for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(typeof NBC!=='undefined'&&NBC) endNBClash(); }catch(e){}
@@ -13233,12 +13242,25 @@ function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=M
 // (moving never escapes a red slash or the grab: only the dodge button does, inside the window)
 function* np1Glue(t){ for(let k=0;k<t;){ k+=NP1.dt; const [dx,dz]=np1Dir(), P=Player; NB.x=lerp(NB.x,P.x-dx*1.9,Math.min(1,NP1.dt*14)); NB.z=lerp(NB.z,P.z-dz*1.9,Math.min(1,NP1.dt*14)); NB.dsh=null; yield NP1.dt; } }
 function np1Lunge(){ const [dx,dz,d]=np1Dir(); if(d>2.6){ nbAfterimage(NB.x,NB.y,NB.z); NB.x=Player.x-dx*1.6; NB.z=Player.z-dz*1.6; NB.dsh=null; Sound.sfx('quickboost'); } }
-// the Assault Rush's charge: note k of three (rising, 1-2-3) and a bigger blue Judgement Cut spread fanning off the blade
+// the Judgement Cut shader, taught blue: a tear whose seed carries +4 draws in Nathan's cyan (04_vfx sets it from g.blue)
+(function(){ try{ let f=SlashShader.fragmentShader, ok=true; const sw=(a,b)=>{ if(f.indexOf(a)<0){ ok=false; return; } f=f.replace(a,b); };
+    sw("sd0=Q[i].w, sd=fract(sd0), dk=1.-step(1.5,sd0);","sd0=Q[i].w, bl=step(3.5,sd0); sd0-=bl*4.; float sd=fract(sd0), dk=1.-step(1.5,sd0);");
+    sw("vec3 vc=mix(vec3(.012,0.,.03),vec3(.32,.02,.16),sw*sw*1.3)+vec3(.9,.25,.4)*fil*.55+vec3(st)*(1.-e);","vec3 vc=mix(mix(vec3(.012,0.,.03),vec3(0.,.012,.03),bl),mix(vec3(.32,.02,.16),vec3(.02,.16,.34),bl),sw*sw*1.3)+mix(vec3(.9,.25,.4),vec3(.3,.7,1.),bl)*fil*.55+vec3(st)*(1.-e);");
+    sw("vec3 ec=mix(vec3(1.,.1,.2),vec3(1.,.95,.92),smoothstep(.82,.99,e));","vec3 ec=mix(mix(vec3(1.,.1,.2),vec3(.2,.65,1.),bl),mix(vec3(1.,.95,.92),vec3(.92,.98,1.),bl),smoothstep(.82,.99,e));");
+    sw("else rim=max(rim,exp(-(as-w)/(W*.45+1e-4))*tip*op); }","else { float rv=exp(-(as-w)/(W*.45+1e-4))*tip*op; if(rv>rim){ rim=rv; rimb=bl; } } }");
+    sw("float gash=0., rim=0., ab=0.; vec3 gcol=vec3(0.);","float gash=0., rim=0., ab=0., rimb=0.; vec3 gcol=vec3(0.);");
+    sw("c+=vec3(1.,.16,.26)*rim*1.15+vec3(1.,.9,.9)*pow(rim,4.)*.9;","c+=mix(vec3(1.,.16,.26),vec3(.2,.7,1.),rimb)*rim*1.15+mix(vec3(1.,.9,.9),vec3(.9,.96,1.),rimb)*pow(rim,4.)*.9;");
+    if(ok&&slashPass&&slashPass.material){ slashPass.material.fragmentShader=f; slashPass.material.needsUpdate=true; } }catch(e){ console.error('blue tear',e); } })();
+// a straight tear: N screen points from (x0,y0,z0) to (x1,y1,z1)
+function np1LinePts(x0,y0,z0,x1,y1,z1,N){ const P=[]; for(let i=0;i<=N;i++){ const u=i/N; P.push(toScreen(lerp(x0,x1,u),lerp(y0,y1,u),lerp(z0,z1,u))); } return P; }
+// the Assault Rush's charge: note k of three (rising, 1-2-3); the blade's light runs straight out of the hilt, like the
+// Judgement Cut line were his sword, longer and wider on each note (blue)
 function np1ChargeBeat(k){ const f=440*Math.pow(2,(k-1)*4/12); Sound.tone('sine',f,f*1.02,.4,.12); Sound.tone('square',f*2,f*2,.18,.04); Sound.hiss(1500+k*600,.3,.1+k*.04,'bandpass');
   const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, bx=NB.x+px*.9, by=NB.y+2.4, bz=NB.z+pz*.9, t0=Game.time;
   np1Glint(bx,by,bz,0x3a8aff,2+k*1.2); FX.burst(bx,by,bz,10+k*10,0x3a8aff,3+k*2,.3); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#3a8aff',1.5+k,.5); shake(.1*k);
-  for(let i=0;i<=k;i++){ const a0=Math.atan2(pz,px)+(i-k/2)*(.9/(k||1)), R=1.2+k*.9, dir=i%2?1:-1;
-    twGash({life:.6,rev:.06,fade:.25,w:10+k*7,op:.85,sparks:4+k*3,col:0x3a8aff,pts:()=>{ const t=Game.time-t0, a=a0+t*2.2*dir, s=1+t*1.4; return twArcPts(bx,by+t*.6,bz,Math.cos(a),Math.sin(a),R*s,-.9,.9,6); }}); } }
+  const L0=k>1?3.6*(k-1):0, L1=3.6*k, ux=px*.94, uy=.34, uz=pz*.94; /* out to his side and a little up, from the hilt */
+  if(NP1.chargeGash) NP1.chargeGash.life=0; NP1.chargeGash=twGash({life:k<3?.75:1.05,rev:.04,fade:.2,w:14+k*8,op:.95,taper:.12,sparks:4+k*4,blue:1,pts:()=>{ const t=Game.time-t0, L=lerp(L0,L1,Math.min(1,t/.22)), hx=NB.x+px*.6, hy=NB.y+2.2, hz=NB.z+pz*.6;
+    return np1LinePts(hx,hy,hz,hx+ux*L,hy+uy*L,hz+uz*L,8); }}); }
 // interrupted mid-charge: the charge collapses and he's down 5s
 function np1Interrupt(){ NP1.charging=0; NP1.gen=null; if(typeof NBS!=='undefined') NBS.fixRow=null; FX.burst(NB.x,NB.y+2.4,NB.z,50,0x3a8aff,8,.4); FX.burst(NB.x,NB.y+2.4,NB.z,30,0xffffff,6,.3); FX.flash=Math.max(FX.flash,.5); grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[3,2],[1,1]]); FX.hitstop=Math.max(FX.hitstop,.15); Sound.sfx('glass'); Sound.sfx('crossboom');
   twBark('nathan',"You... interrupted my-",true); np1Stun(5,'INTERRUPTED'); }
@@ -13457,7 +13479,7 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
   NP1.cd-=dt; const [,,d]=np1Dir(); if(np1Roam(dt,d)) return;
   if(NP1.cd<=0){ let k=NP1.order&&NP1.order.length?NP1.order.shift():NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)]; if(k===NP1.last) k=NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)];
     NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; return; }
-  if(!NB.dsh&&d<12&&Math.random()<dt*.35){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
+  if(!NB.dsh&&d<12&&(typeof TPS==='undefined'||TPS.lock)&&Math.random()<dt*.35){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
 // ---------- between moves: he circles you, follows you, or closes a long gap with one violent boost ----------
 // locked on and strafing: he runs the other way round, so you circle each other; unlocked (or standing): he follows on his
 // thrusters (never dash-spamming a runner); far away and running: one insanely fast boost with an engine roar to get in range
@@ -13466,7 +13488,7 @@ function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return f
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
   if(d>NP1_ROAM.far&&run>3&&NP1.dashCd<=0){ np1BigBoost(); return true; }
   let mx=0, mz=0;
-  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
+  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=rx*side*sp; mz=rz*side*sp; /* rx,rz is Ali's screen-left: he goes the other way round */ if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
   else { NP1.orbitR=0; if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; } }
   if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
     if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
@@ -14046,8 +14068,7 @@ function npFrame(dt){ npAmbient(dt); npStagger(dt); npSpeed(dt); npRet(dt); npAl
 // =====================================================================
 // NATHAN'S POSTURE (phase I on Ali's road; Sekiro's): a gold bar under his HP that grows from the centre. He parries Ali's
 // sword himself while he stands (no damage; +posture), and after NPO.nmax strikes (3-4) a bright strong parry kicks Ali
-// back 4.5 units and he goes straight into a random move. Posture comes from Ali's parries (+14), Nathan's parries of his
-// sword (+5, the kick +8), Getsuga hits (+8, at half damage), the Full Counter (+35), the dodge counter (+25), full parries
+// back 4.5 units and he goes straight into a random move. Posture comes from Ali's parries (+14), hits in OPEN windows, Getsuga hits in OPEN windows (+8), the Full Counter (+35), the dodge counter (+25), full parries
 // (+20/+15), the auto-parry's finish (+40) and the Starbreaker clash (+100). It decays after NPO.grace seconds without a
 // gain. Full = POSTURE BREAK: he's down 5s and everything lands at 2x (it was 1.5x while staggered).
 // =====================================================================
@@ -14064,11 +14085,11 @@ function npBreak(why){ NPO.lv=0; NPO.broken=1; const x=NB.x, y=NB.y+2.2, z=NB.z,
 function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45), mz=lerp(NB.z,P.z,.45), my=NB.y+1.6; NPO.npar++; const strong=NPO.npar>=NPO.nmax;
   P.aliAtk=null; P.comboT=0; if(typeof nbsSlash==='function') nbsSlash(.22,.35);
   if(!strong){ npStar(mx,my,mz,0x9ff8ff,1.1,.25); FX.spark(mx,my,mz); Sound.sfx('deflect'); Sound.tone('square',1900,900,.07,.05); FX.hitstop=Math.max(FX.hitstop,.05); shake(.2); if(typeof TPS!=='undefined') TPS.kick=Math.min(TPS.kick||0,-.15);
-    npPosture(5,'parried'); Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'PARRIED',t:0,col:'#9ff8ff'}); P.x-=dx*.5; P.z-=dz*.5; return; }
+    Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'PARRIED',t:0,col:'#9ff8ff'}); P.x-=dx*.5; P.z-=dz*.5; return; } /* no posture for swinging into his guard */
   // the strong one: a blinding star, the kick (4.5 units back, no damage), then straight into a move
   NPO.npar=0; NPO.nmax=3+Math.floor(Math.random()*2); npStar(mx,my,mz,0xffffff,2.6,.4); npStar(mx,my,mz,0x9ff8ff,1.6,.3); FX.burst(mx,my,mz,40,0xffffff,8,.3); FX.flash=.6; grade.uniforms.flashCol.value.set(.7,.95,1); FX.hitstop=Math.max(FX.hitstop,.14); impactFrame([[3,1],[1,1]]); shake(.9);
   Sound.sfx('parry'); Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.tone('sawtooth',120,40,.3,.12); if(typeof TPS!=='undefined'){ TPS.kick=-.5; TPS.fovK=-6; }
-  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'KICKED',t:0,big:true,col:'#9ff8ff'}); twBark('nathan',["Off.","My turn.","Predictable."][Math.floor(Math.random()*3)],true); npPosture(8,'kick');
+  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'KICKED',t:0,big:true,col:'#9ff8ff'}); twBark('nathan',["Off.","My turn.","Predictable."][Math.floor(Math.random()*3)],true);
   nbAfterimage(NB.x,NB.y,NB.z); NB.x=P.x-dx*1.2; NB.z=P.z-dz*1.2; NB.dsh=null; /* he steps in for the kick */
   const K={t:0,sx:P.x,sz:P.z}; NPO.kick=K; P.hurt=.4; P.aliAtk=null; P.charge=0; P.vx=P.vz=0; FX.ring(P.x,groundY(P.x,P.z)+.1,P.z,'#9ff8ff',2,.3);
   Game.fxUpd.push(dt=>{ if(NPO.kick!==K) return false; K.t+=dt; const u=Math.min(1,K.t/.32), e=1-Math.pow(1-u,3); P.x=K.sx+dx*4.5*e; P.z=K.sz+dz*4.5*e; P.y=Math.max(groundY(P.x,P.z),P.y);
@@ -14099,7 +14120,7 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
 // =====================================================================
 // THE AIR (Nathan phase I on Ali's road, v1.16):
 // - Nathan deflects Getsugas: a standing Nathan parries every Getsuga Tenshou (not the LEVEL 3 Jujishou) and sends it off
-//   at an angle behind him (+6 posture). Down, OPEN, or in a sequence he takes them.
+//   at an angle behind him (no posture). Down, OPEN, or in a sequence he takes them.
 // - He flies: between moves his hover height drifts (NP1.hovT, 1.4 to 5.5 units), so he's often out of a ground swing's reach.
 // - Ali's forward blink: with lock-on, a blink toward Nathan goes to him, up to his height (so a floating or air-staggered
 //   Nathan can be hit). It stops 1.6 in front of him, never past; already on him, a second forward blink passes through to
@@ -14111,12 +14132,12 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
 function npDeflect(b){ const P=Player, [dx,dz]=np1Dir(), back=Math.atan2(-dz,-dx)+(Math.random()<.5?1:-1)*rnd(.5,.85);
   b.hit.add(NB); b.deflected=1; b.dx=Math.cos(back); b.dz=Math.sin(back); b.x=NB.x+b.dx*1.4; b.z=NB.z+b.dz*1.4; b.g.position.set(b.x,b.y,b.z); b.g.rotation.y=-back; b.life=Math.max(b.life,.8); b.mul=0;
   if(typeof nbsSlash==='function') nbsSlash(.22,.35); npStar(NB.x+dx*.8,NB.y+1.6,NB.z+dz*.8,0x9ff8ff,1.3,.25); FX.spark(NB.x+dx*.8,NB.y+1.6,NB.z+dz*.8); Sound.sfx('deflect'); Sound.tone('square',1700,800,.07,.05);
-  Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'DEFLECTED',t:0,col:'#9ff8ff'}); try{ npPosture(6,'deflect'); }catch(e){} }
+  Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'DEFLECTED',t:0,col:'#9ff8ff'}); /* no posture: Getsuga spam isn't the answer either */ }
 (function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(npoOn()&&!NB.stunned&&!(NP1.openT>0)&&!NP1.seq&&!Game.script&&!(NP1.ex&&NP1.ex.phase!=='charge')&&!NPO.kick) for(const b of BEAMS){ if(!b.ali||b.hit.has(NB)||b.life<=0||(b.chLv||0)>=3||b.deflected) continue;
         const rad=(b.big?1.6:1.15)+1.8; if(Math.hypot(NB.x-b.x,NB.z-b.z)<rad&&Math.abs(b.y-(NB.y+1.5))<3.2) npDeflect(b); } }catch(e){ console.error('np deflect',e); } return ub.apply(this,arguments); }; })();
 // ---------- he flies ----------
 function npAir(dt){ if(NB.stunned||NP1.seq||NP1.alt!=null||NP1.ex||NP1.charging||Game.script) return; NP1.hovC=(NP1.hovC||0)-dt;
-  if(NP1.hovC<=0){ NP1.hovC=rnd(2,4); NP1.hovT=Math.random()<.4?1.4:rnd(2.5,5.5); } if(NP1.hovT!=null) NB.hov=lerp(NB.hov,NP1.hovT,1-Math.exp(-dt*1.5)); }
+  if(NP1.hovC<=0){ NP1.hovC=rnd(2,4); NP1.hovT=Math.random()<.4?1.4:rnd(2.4,4.2); } if(NP1.hovT!=null) NB.hov=lerp(NB.hov,NP1.hovT,1-Math.exp(-dt*1.5)); }
 (function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(npoOn()) npAir(dt); }catch(e){ console.error('np air',e); } return r; }; })();
 (function(){ const ns=np1Start; np1Start=function(){ const r=ns.apply(this,arguments); NP1.hovT=1.4; NP1.hovC=1.5; return r; }; })();
 // ---------- the forward blink ----------
@@ -17270,7 +17291,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.16 (Oct 28): Nathan deflects Getsugas (not the Jujishou) off behind him; he flies (his height drifts between moves); Ali's forward blink goes to him, up to his height, never past (a second one passes through); blinking into the grab = a front flip over his head, and its counter is three Jujishous back over the shoulder with the camera swung round";
+const DBG_PATCH="v1.17 (Oct 28): the camera zooms out to keep all of Nathan in frame and he flies lower; no posture from swinging into his guard or from deflected Getsugas; unlocked, the mouse turns the camera; he circles the other way round; his charge is one straight blue blade-line from the hilt, longer on each note; Ali's Getsuga fires on release (tap = base; ticks = LV 1-3 at 2x/3x/4x height) with the fireball's flames off the blade";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -17733,7 +17754,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.16';
+const GAME_VERSION='v1.17';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

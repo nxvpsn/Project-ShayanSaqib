@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.16 (Oct 28): Nathan deflects Getsugas (not the Jujishou) off behind him; he flies (his height drifts between moves); Ali's forward blink goes to him, up to his height, never past (a second one passes through); blinking into the grab = a front flip over his head, and its counter is three Jujishous back over the shoulder with the camera swung round";
+const DBG_PATCH="v1.17 (Oct 28): the camera zooms out to keep all of Nathan in frame and he flies lower; no posture from swinging into his guard or from deflected Getsugas; unlocked, the mouse turns the camera; he circles the other way round; his charge is one straight blue blade-line from the hilt, longer on each note; Ali's Getsuga fires on release (tap = base; ticks = LV 1-3 at 2x/3x/4x height) with the fireball's flames off the blade";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

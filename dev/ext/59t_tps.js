@@ -9,7 +9,7 @@
 // - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
-const TPS={lock:1,FOV:55,on:0,fov0:null,p:null,l:null,bb:0,off:null,side:0,f:1,yaw:null};
+const TPS={lock:1,mdx:0,mdy:0,pitch:0,zx:0,FOV:55,on:0,fov0:null,p:null,l:null,bb:0,off:null,side:0,f:1,yaw:null};
 function tpsFight(){ return typeof NB!=='undefined'&&NB&&NB.alive&&ALI()&&!Game.mech&&L&&L.key==='flowers'; }
 function tpsOn(){ return tpsFight()&&!NB.inv&&(Game.state==='play'||Game.state==='dead')&&!Cam.cine&&!Game.script; }
 function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
@@ -41,20 +41,22 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
 // the camera
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const on=tpsOn();
     if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } TPS.yaw=null; for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; if(TPS.ret) TPS.ret.visible=false; } return uc.apply(this,arguments); }
-    try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, mv=Math.hypot(P.vx||0,P.vz||0), ty=TPS.lock||TPS.yaw==null?Math.atan2(V.z-P.z,V.x-P.x):(mv>1&&!P.cineFly?Math.atan2(P.vz,P.vx):TPS.yaw); /* unlocked: it follows where Ali runs */
+    try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, ty=TPS.lock||TPS.yaw==null?Math.atan2(V.z-P.z,V.x-P.x):TPS.yaw+TPS.mdx*.0032; /* unlocked: the mouse turns it */ if(!TPS.lock){ TPS.pitch=clamp(TPS.pitch+TPS.mdy*.0022,-.35,.6); } TPS.mdx=TPS.mdy=0;
       if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=TPS.FOV; camera.updateProjectionMatrix(); tpsBillboardTufts(); TPS.yaw=null; }
       // it follows where Nathan is drawn (a quickboost flies there; it doesn't jump) and turns at a damped rate, never snapping
-      if(TPS.yaw==null) TPS.yaw=ty; TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
+      if(TPS.yaw==null) TPS.yaw=ty; if(TPS.lock) TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); else TPS.yaw=ty; /* the mouse is not damped */ const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
       // further back, aimed at Ali's chest a third of the way toward Nathan: Ali sits in the lower middle, Nathan above him
       const py=Math.max(P.y,groundY(P.x,P.z)), up=clamp(((V.y||0)-py-1.5)*.35,0,6), near=Math.max(0,4-Math.hypot(V.x-P.x,V.z-P.z))*.4; /* he's high up: tilt up to keep him in frame; right on top of Ali: ease back */
       TPS.sh=lerp(TPS.sh||0,(TPS.side||0)*.6,1-Math.exp(-dt*3)); /* a slight lead into a strafe */
-      const back=8+near, hgt=3.5+up*.3, /* a touch further out: Nathan clears the top bar */ want=[P.x-fx*back-fz*TPS.sh,py+hgt,P.z-fz*back+fx*TPS.sh], ly=py+1.3+up, look=TPS.lock?[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)]:[P.x+fx*3,ly,P.z+fz*3];
+      const zx=TPS.zx||0, pt=TPS.lock?0:TPS.pitch, back=8+near+zx*7, hgt=3.5+up*.3+zx*2.6+pt*5, /* zx: zoomed out to keep all of him in frame */ want=[P.x-fx*back-fz*TPS.sh,py+hgt,P.z-fz*back+fx*TPS.sh], ly=py+1.3+up+zx*2.4-pt*2.5, look=TPS.lock?[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)]:[P.x+fx*3,ly,P.z+fz*3];
       if(!TPS.p){ TPS.p=[camera.position.x,camera.position.y,camera.position.z]; TPS.l=look.slice(); }
       const k=1-Math.exp(-dt*(TPS.fast||7)); /* TPS.fast: riding right behind Ali (the Full Counter's dash) */ for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],1-Math.exp(-dt*(TPS.fast||6))); }
       const sh=FX.shake, sx=sh?rnd(-sh,sh)*.4:0, sy=sh?rnd(-sh,sh)*.4:0;
       // TPS.kick: a punch toward the look point (hits, parries; negative = recoil), TPS.fovK: a lens punch; both spring back
       const kk=TPS.kick||0, kd=Math.hypot(TPS.l[0]-TPS.p[0],TPS.l[1]-TPS.p[1],TPS.l[2]-TPS.p[2])||1, kx=(TPS.l[0]-TPS.p[0])/kd*kk, ky=(TPS.l[1]-TPS.p[1])/kd*kk, kz=(TPS.l[2]-TPS.p[2])/kd*kk; TPS.kick=Math.abs(kk)<.01?0:kk*Math.exp(-dt*9);
       camera.position.set(TPS.p[0]+sx+kx,TPS.p[1]+sy+ky,TPS.p[2]+kz); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
+      // his whole body stays in frame: when his head leaves the top (or he's off the sides) the camera eases out, and back in when there's room
+      try{ if(TPS.lock){ camera.updateMatrixWorld(); const tp=toScreen(V.x,V.y+4.9,V.z), out=tp[2]>1||tp[1]<UH*.13||tp[0]<UW*.06||tp[0]>UW*.94, room=tp[2]<1&&tp[1]>UH*.27&&tp[0]>UW*.15&&tp[0]<UW*.85; TPS.zx=clamp(zx+(out?dt*2.4:room?-dt*.7:0),0,1); } else TPS.zx=Math.max(0,zx-dt); }catch(e){}
       if(TPS.fovK){ TPS.fovK=Math.abs(TPS.fovK)<.05?0:TPS.fovK*Math.exp(-dt*7); if(!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovK+(TPS.fovRun||0); camera.updateProjectionMatrix(); } } else if(TPS.fovRun&&!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovRun; camera.updateProjectionMatrix(); } /* TPS.fovRun: the lens opens a little with Ali's speed */
       // the lock-on marker: a slow cyan ring on the ground under Nathan (and a diamond over him, drawn in the UI)
       if(!TPS.ret){ const g=new THREE.Group(); for(const [r0,r1,op] of [[1.55,1.7,.85],[1.85,1.9,.45]]){ const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48,1,0,Math.PI*1.7),new THREE.MeshBasicMaterial({color:0x7fe8ff,transparent:true,opacity:op,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; g.add(m); } scene.add(g); TPS.ret=g; }
@@ -104,5 +106,5 @@ function tpiUpdate(){ const P=Player, W=TPI.W, Dd=TPI.D, ci=Math.floor(P.x/W), c
 // the ground lookup wraps around the field while it is endless
 (function(){ const ch=cellH; cellH=function(x,z){ if(TPI.on&&TPI.W){ x=((x%TPI.W)+TPI.W)%TPI.W; z=((z%TPI.D)+TPI.D)%TPI.D; } return ch(x,z); }; })();
 // lock-on on/off: middle click (unlocked: free run, the camera follows Ali; Getsugas still find him)
-function tpsLockToggle(){ TPS.lock=TPS.lock?0:1; const P=Player; Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:TPS.lock?'LOCK-ON':'LOCK-ON OFF',t:0,big:true,col:TPS.lock?'#7fe8ff':'#9aa8b8'}); Sound.sfx(TPS.lock?'ting':'block'); if(TPS.lock&&typeof NPP!=='undefined') NPP.engage={t:0}; }
-(function(){ try{ document.addEventListener('mousedown',e=>{ if(e.button===1&&tpsFight()){ e.preventDefault(); tpsLockToggle(); } },{capture:true}); document.addEventListener('auxclick',e=>{ if(e.button===1&&tpsFight()) e.preventDefault(); },{capture:true}); }catch(e){} })();
+function tpsLockToggle(){ TPS.lock=TPS.lock?0:1; TPS.mdx=TPS.mdy=0; TPS.pitch=0; try{ if(!TPS.lock){ if(ui.requestPointerLock) ui.requestPointerLock(); } else if(document.exitPointerLock&&document.pointerLockElement) document.exitPointerLock(); }catch(e){} const P=Player; Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:TPS.lock?'LOCK-ON':'LOCK-ON OFF',t:0,big:true,col:TPS.lock?'#7fe8ff':'#9aa8b8'}); Sound.sfx(TPS.lock?'ting':'block'); if(TPS.lock&&typeof NPP!=='undefined') NPP.engage={t:0}; }
+(function(){ try{ document.addEventListener('mousemove',e=>{ if(!TPS.lock&&tpsFight()){ TPS.mdx+=e.movementX||0; TPS.mdy+=e.movementY||0; } }); document.addEventListener('mousedown',e=>{ if(e.button===1&&tpsFight()){ e.preventDefault(); tpsLockToggle(); } },{capture:true}); document.addEventListener('auxclick',e=>{ if(e.button===1&&tpsFight()) e.preventDefault(); },{capture:true}); }catch(e){} })();

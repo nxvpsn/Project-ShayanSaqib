@@ -1,8 +1,7 @@
 // =====================================================================
 // NATHAN'S POSTURE (phase I on Ali's road; Sekiro's): a gold bar under his HP that grows from the centre. He parries Ali's
 // sword himself while he stands (no damage; +posture), and after NPO.nmax strikes (3-4) a bright strong parry kicks Ali
-// back 4.5 units and he goes straight into a random move. Posture comes from Ali's parries (+14), Nathan's parries of his
-// sword (+5, the kick +8), Getsuga hits (+8, at half damage), the Full Counter (+35), the dodge counter (+25), full parries
+// back 4.5 units and he goes straight into a random move. Posture comes from Ali's parries (+14), hits in OPEN windows, Getsuga hits in OPEN windows (+8), the Full Counter (+35), the dodge counter (+25), full parries
 // (+20/+15), the auto-parry's finish (+40) and the Starbreaker clash (+100). It decays after NPO.grace seconds without a
 // gain. Full = POSTURE BREAK: he's down 5s and everything lands at 2x (it was 1.5x while staggered).
 // =====================================================================
@@ -19,11 +18,11 @@ function npBreak(why){ NPO.lv=0; NPO.broken=1; const x=NB.x, y=NB.y+2.2, z=NB.z,
 function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45), mz=lerp(NB.z,P.z,.45), my=NB.y+1.6; NPO.npar++; const strong=NPO.npar>=NPO.nmax;
   P.aliAtk=null; P.comboT=0; if(typeof nbsSlash==='function') nbsSlash(.22,.35);
   if(!strong){ npStar(mx,my,mz,0x9ff8ff,1.1,.25); FX.spark(mx,my,mz); Sound.sfx('deflect'); Sound.tone('square',1900,900,.07,.05); FX.hitstop=Math.max(FX.hitstop,.05); shake(.2); if(typeof TPS!=='undefined') TPS.kick=Math.min(TPS.kick||0,-.15);
-    npPosture(5,'parried'); Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'PARRIED',t:0,col:'#9ff8ff'}); P.x-=dx*.5; P.z-=dz*.5; return; }
+    Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'PARRIED',t:0,col:'#9ff8ff'}); P.x-=dx*.5; P.z-=dz*.5; return; } /* no posture for swinging into his guard */
   // the strong one: a blinding star, the kick (4.5 units back, no damage), then straight into a move
   NPO.npar=0; NPO.nmax=3+Math.floor(Math.random()*2); npStar(mx,my,mz,0xffffff,2.6,.4); npStar(mx,my,mz,0x9ff8ff,1.6,.3); FX.burst(mx,my,mz,40,0xffffff,8,.3); FX.flash=.6; grade.uniforms.flashCol.value.set(.7,.95,1); FX.hitstop=Math.max(FX.hitstop,.14); impactFrame([[3,1],[1,1]]); shake(.9);
   Sound.sfx('parry'); Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.tone('sawtooth',120,40,.3,.12); if(typeof TPS!=='undefined'){ TPS.kick=-.5; TPS.fovK=-6; }
-  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'KICKED',t:0,big:true,col:'#9ff8ff'}); twBark('nathan',["Off.","My turn.","Predictable."][Math.floor(Math.random()*3)],true); npPosture(8,'kick');
+  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'KICKED',t:0,big:true,col:'#9ff8ff'}); twBark('nathan',["Off.","My turn.","Predictable."][Math.floor(Math.random()*3)],true);
   nbAfterimage(NB.x,NB.y,NB.z); NB.x=P.x-dx*1.2; NB.z=P.z-dz*1.2; NB.dsh=null; /* he steps in for the kick */
   const K={t:0,sx:P.x,sz:P.z}; NPO.kick=K; P.hurt=.4; P.aliAtk=null; P.charge=0; P.vx=P.vz=0; FX.ring(P.x,groundY(P.x,P.z)+.1,P.z,'#9ff8ff',2,.3);
   Game.fxUpd.push(dt=>{ if(NPO.kick!==K) return false; K.t+=dt; const u=Math.min(1,K.t/.32), e=1-Math.pow(1-u,3); P.x=K.sx+dx*4.5*e; P.z=K.sz+dz*4.5*e; P.y=Math.max(groundY(P.x,P.z),P.y);

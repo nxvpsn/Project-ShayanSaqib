@@ -19,7 +19,7 @@ const NP1_TELL=.45, NP1_WIN=.3;
 const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab','excal']; /* excal: 59w_excal.js */
 const NP1_FIRST=['combo','bits','grab','meteor','cage','excal'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
-function np1Reset(){ np1Clear(); Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
+function np1Reset(){ np1Clear(); try{ if(typeof TPS!=='undefined'&&!TPS.lock) tpsLockToggle(); }catch(e){} Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
 function np1Start(){ np1Clear(); Object.assign(NP1,{live:1,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:NP1_FIRST.slice(),stunT:0,seq:null,cam:null,pdT:-9,hint:null});
   if(NB){ NB.barShow=0; NB.hov=1.4; NB.stunned=0; } }
 function np1Clear(){ for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(typeof NBC!=='undefined'&&NBC) endNBClash(); }catch(e){}
@@ -50,12 +50,25 @@ function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=M
 // (moving never escapes a red slash or the grab: only the dodge button does, inside the window)
 function* np1Glue(t){ for(let k=0;k<t;){ k+=NP1.dt; const [dx,dz]=np1Dir(), P=Player; NB.x=lerp(NB.x,P.x-dx*1.9,Math.min(1,NP1.dt*14)); NB.z=lerp(NB.z,P.z-dz*1.9,Math.min(1,NP1.dt*14)); NB.dsh=null; yield NP1.dt; } }
 function np1Lunge(){ const [dx,dz,d]=np1Dir(); if(d>2.6){ nbAfterimage(NB.x,NB.y,NB.z); NB.x=Player.x-dx*1.6; NB.z=Player.z-dz*1.6; NB.dsh=null; Sound.sfx('quickboost'); } }
-// the Assault Rush's charge: note k of three (rising, 1-2-3) and a bigger blue Judgement Cut spread fanning off the blade
+// the Judgement Cut shader, taught blue: a tear whose seed carries +4 draws in Nathan's cyan (04_vfx sets it from g.blue)
+(function(){ try{ let f=SlashShader.fragmentShader, ok=true; const sw=(a,b)=>{ if(f.indexOf(a)<0){ ok=false; return; } f=f.replace(a,b); };
+    sw("sd0=Q[i].w, sd=fract(sd0), dk=1.-step(1.5,sd0);","sd0=Q[i].w, bl=step(3.5,sd0); sd0-=bl*4.; float sd=fract(sd0), dk=1.-step(1.5,sd0);");
+    sw("vec3 vc=mix(vec3(.012,0.,.03),vec3(.32,.02,.16),sw*sw*1.3)+vec3(.9,.25,.4)*fil*.55+vec3(st)*(1.-e);","vec3 vc=mix(mix(vec3(.012,0.,.03),vec3(0.,.012,.03),bl),mix(vec3(.32,.02,.16),vec3(.02,.16,.34),bl),sw*sw*1.3)+mix(vec3(.9,.25,.4),vec3(.3,.7,1.),bl)*fil*.55+vec3(st)*(1.-e);");
+    sw("vec3 ec=mix(vec3(1.,.1,.2),vec3(1.,.95,.92),smoothstep(.82,.99,e));","vec3 ec=mix(mix(vec3(1.,.1,.2),vec3(.2,.65,1.),bl),mix(vec3(1.,.95,.92),vec3(.92,.98,1.),bl),smoothstep(.82,.99,e));");
+    sw("else rim=max(rim,exp(-(as-w)/(W*.45+1e-4))*tip*op); }","else { float rv=exp(-(as-w)/(W*.45+1e-4))*tip*op; if(rv>rim){ rim=rv; rimb=bl; } } }");
+    sw("float gash=0., rim=0., ab=0.; vec3 gcol=vec3(0.);","float gash=0., rim=0., ab=0., rimb=0.; vec3 gcol=vec3(0.);");
+    sw("c+=vec3(1.,.16,.26)*rim*1.15+vec3(1.,.9,.9)*pow(rim,4.)*.9;","c+=mix(vec3(1.,.16,.26),vec3(.2,.7,1.),rimb)*rim*1.15+mix(vec3(1.,.9,.9),vec3(.9,.96,1.),rimb)*pow(rim,4.)*.9;");
+    if(ok&&slashPass&&slashPass.material){ slashPass.material.fragmentShader=f; slashPass.material.needsUpdate=true; } }catch(e){ console.error('blue tear',e); } })();
+// a straight tear: N screen points from (x0,y0,z0) to (x1,y1,z1)
+function np1LinePts(x0,y0,z0,x1,y1,z1,N){ const P=[]; for(let i=0;i<=N;i++){ const u=i/N; P.push(toScreen(lerp(x0,x1,u),lerp(y0,y1,u),lerp(z0,z1,u))); } return P; }
+// the Assault Rush's charge: note k of three (rising, 1-2-3); the blade's light runs straight out of the hilt, like the
+// Judgement Cut line were his sword, longer and wider on each note (blue)
 function np1ChargeBeat(k){ const f=440*Math.pow(2,(k-1)*4/12); Sound.tone('sine',f,f*1.02,.4,.12); Sound.tone('square',f*2,f*2,.18,.04); Sound.hiss(1500+k*600,.3,.1+k*.04,'bandpass');
   const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, bx=NB.x+px*.9, by=NB.y+2.4, bz=NB.z+pz*.9, t0=Game.time;
   np1Glint(bx,by,bz,0x3a8aff,2+k*1.2); FX.burst(bx,by,bz,10+k*10,0x3a8aff,3+k*2,.3); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#3a8aff',1.5+k,.5); shake(.1*k);
-  for(let i=0;i<=k;i++){ const a0=Math.atan2(pz,px)+(i-k/2)*(.9/(k||1)), R=1.2+k*.9, dir=i%2?1:-1;
-    twGash({life:.6,rev:.06,fade:.25,w:10+k*7,op:.85,sparks:4+k*3,col:0x3a8aff,pts:()=>{ const t=Game.time-t0, a=a0+t*2.2*dir, s=1+t*1.4; return twArcPts(bx,by+t*.6,bz,Math.cos(a),Math.sin(a),R*s,-.9,.9,6); }}); } }
+  const L0=k>1?3.6*(k-1):0, L1=3.6*k, ux=px*.94, uy=.34, uz=pz*.94; /* out to his side and a little up, from the hilt */
+  if(NP1.chargeGash) NP1.chargeGash.life=0; NP1.chargeGash=twGash({life:k<3?.75:1.05,rev:.04,fade:.2,w:14+k*8,op:.95,taper:.12,sparks:4+k*4,blue:1,pts:()=>{ const t=Game.time-t0, L=lerp(L0,L1,Math.min(1,t/.22)), hx=NB.x+px*.6, hy=NB.y+2.2, hz=NB.z+pz*.6;
+    return np1LinePts(hx,hy,hz,hx+ux*L,hy+uy*L,hz+uz*L,8); }}); }
 // interrupted mid-charge: the charge collapses and he's down 5s
 function np1Interrupt(){ NP1.charging=0; NP1.gen=null; if(typeof NBS!=='undefined') NBS.fixRow=null; FX.burst(NB.x,NB.y+2.4,NB.z,50,0x3a8aff,8,.4); FX.burst(NB.x,NB.y+2.4,NB.z,30,0xffffff,6,.3); FX.flash=Math.max(FX.flash,.5); grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[3,2],[1,1]]); FX.hitstop=Math.max(FX.hitstop,.15); Sound.sfx('glass'); Sound.sfx('crossboom');
   twBark('nathan',"You... interrupted my-",true); np1Stun(5,'INTERRUPTED'); }
@@ -274,7 +287,7 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
   NP1.cd-=dt; const [,,d]=np1Dir(); if(np1Roam(dt,d)) return;
   if(NP1.cd<=0){ let k=NP1.order&&NP1.order.length?NP1.order.shift():NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)]; if(k===NP1.last) k=NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)];
     NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; return; }
-  if(!NB.dsh&&d<12&&Math.random()<dt*.35){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
+  if(!NB.dsh&&d<12&&(typeof TPS==='undefined'||TPS.lock)&&Math.random()<dt*.35){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
 // ---------- between moves: he circles you, follows you, or closes a long gap with one violent boost ----------
 // locked on and strafing: he runs the other way round, so you circle each other; unlocked (or standing): he follows on his
 // thrusters (never dash-spamming a runner); far away and running: one insanely fast boost with an engine roar to get in range
@@ -283,7 +296,7 @@ function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return f
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
   if(d>NP1_ROAM.far&&run>3&&NP1.dashCd<=0){ np1BigBoost(); return true; }
   let mx=0, mz=0;
-  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
+  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=rx*side*sp; mz=rz*side*sp; /* rx,rz is Ali's screen-left: he goes the other way round */ if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
   else { NP1.orbitR=0; if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; } }
   if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
     if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
