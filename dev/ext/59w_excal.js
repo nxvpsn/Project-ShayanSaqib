@@ -1,8 +1,9 @@
 // =====================================================================
 // NATHAN'S STARBREAKER (phase I on Ali's road, move 'excal'): he blinks 22 units away and raises his laser sword; it
-// charges in three levels, 2s each (a meter over the screen: CHARGING, LEVEL 1, 2, 3), the blade growing each level, and
-// at level 3 it reaches straight up into the sky (the planet-cutter). Then a RAINBOW glint: from the glint on, for
-// NPX.win, a LEVEL 3 Getsuga (08d_alicharge.js, 6s of holding: start when he starts) or Ali's Q answers it. Either one
+// charges in three levels, NPX.lvT each (a meter over the screen: CHARGING, LEVEL 1, 2, 3), a blue blade-line out of the hilt
+// growing with it, and at level 3 it reaches straight up into the sky (the planet-cutter): the rainbow glint zig-zags up it
+// as five impact frames, the sword flares (blue lines fanning off it), he holds NPX.flareT, then the DEEP RED with sparks is
+// the parry's timing. From the rainbow on, a LEVEL 3 Getsuga (08d_alicharge.js) or Ali's Q answers it. Either one
 // clashes with the blade for a moment, then a dense explosion staggers him for 4s. Released before the glint, the level 3
 // Getsuga is swatted away (TOO EARLY). No answer: the blade comes down along a line locked on the glint (a dark strip on the
 // ground). Out of the line it only cuts the ground, leaving a black ravine for the rest of the fight: walk into it and you
@@ -11,15 +12,22 @@
 // The clash, from over Ali's shoulder: the blade meets the Jujishou and it starts to give; Ali dashes in with the Full Counter
 // and drives it into Nathan; on the brink he stops time (grey), blinks into the sky and watches the explosion from above.
 // =====================================================================
-const NPX={L:[3.5,9,24,260],W:[.16,.32,.6,1.3],lvT:2.8,hold:.5,win:.9,swing:.12,half:1.3,mashT:4,rav:[],fall:null,spd:null};
+const NPX={L:[3.5,9,24,260],W:[.16,.32,.6,1.3],lvT:2.8,flareT:1,swing:.12,half:1.3,mashT:4,rav:[],fall:null,spd:null}; /* flareT: his hold after the level 3 flare, before the deep red */
 // ---------- the move ----------
 NP1M.excal=function*(){ const E=npxStart();
   twBark('nathan',"Stand still, wanderer. This one cuts planets.",true);
-  np1Hint('excal','STARBREAKER: hold '+K('block')+' from his first level and let the LEVEL 3 Getsuga go on the rainbow glint; or parry the DEEP RED and mash; or blink ('+K('dash')+') right before it lands');
-  while(E.t<NPX.lvT*3+NPX.hold){ E.beat=E.clock; const dt=NP1.dt; E.t+=dt; const lv=Math.min(3,Math.floor(E.t/NPX.lvT)); if(lv>E.lv){ E.lv=lv; npxLevel(E,lv); } yield dt; } /* slower than Ali's: his level 3 comes first */
-  // the rainbow glint: the line locks onto Ali and follows him until the blade is halfway down
-  { const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } E.phase='window'; E.lock=1; E.landT=Game.time+NPX.win+NPX.swing; npxGlint(NB.x,NB.y+2.9,NB.z); npxGlint(NB.x,NB.y+14,NB.z); npxLine(E);
-  for(let w=0;w<NPX.win;){ E.beat=E.clock; if(E.phase!=='window') return; const dt=NP1.dt; w+=dt; if(E.lock){ const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } E.ang=lerp(0,-.3,Math.min(1,w/NPX.win)); if(!E.deep&&E.landT-Game.time<=NP1_TELL){ E.deep=1; np1Tell('deep'); } /* the deep red: the parry's timing */ yield dt; }
+  np1Hint('excal','STARBREAKER: hold '+K('block')+' from his first level and let the LEVEL 3 Getsuga go once his hits level 3 (the rainbow); or parry the DEEP RED and mash; or blink ('+K('dash')+') right before it lands');
+  while(E.t<NPX.lvT*3){ E.beat=E.clock; const dt=NP1.dt; E.t+=dt; const lv=Math.min(3,Math.floor(E.t/NPX.lvT)); if(lv>E.lv){ E.lv=lv; npxLevel(E,lv); } yield dt; } /* slower than Ali's: his level 3 comes first */
+  // level 3: the line locks onto Ali; the rainbow glint zig-zags up the blade as five impact frames
+  { const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } E.phase='window'; E.lock=1; E.landT=Game.time+.4+NPX.flareT+NP1_TELL+NPX.swing;
+  for(let i=0;i<5;i++){ E.beat=E.clock; const sg=i%2?1:-1, px=-E.uz, pz=E.ux, h=NB.y+2.9+3+i*4.5; npxGlint(NB.x+px*sg*1.6,h,NB.z+pz*sg*1.6); impactFrame([[i%2?3:1,3]]); FX.flash=1; grade.uniforms.flashCol.value.set(i%2?1:.2,i%2?1:.9,1); FX.hitstop=Math.max(FX.hitstop,.03); Sound.tone('square',900+i*300,900+i*300,.05,.07); shake(.3);
+    for(let w=0;w<.08;){ const dt=NP1.dt; w+=dt; E.beat=E.clock; if(E.phase!=='window') return; yield dt; } }
+  // the flare: a heavy sound, the sword charging even more: blue lines fanning off the blade, the blade pulsing wider
+  npxFlare(E);
+  for(let w=0;w<NPX.flareT;){ E.beat=E.clock; if(E.phase!=='window') return; const dt=NP1.dt; w+=dt; if(E.lock){ const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } yield dt; }
+  // the deep red with sparks: the parry's timing; the line it will cut appears
+  np1Tell('deep'); E.deep=1; E.landT=Game.time+NP1_TELL+NPX.swing; /* re-anchored: the impact frames' hitstops drift it */ npxSparks(E); npxLine(E);
+  for(let w=0;w<NP1_TELL;){ E.beat=E.clock; if(E.phase!=='window') return; const dt=NP1.dt; w+=dt; if(E.lock){ const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } E.ang=lerp(0,-.3,Math.min(1,w/NP1_TELL)); yield dt; }
   // the swing: so fast there's no running out of it (NPX.swing); it unlocks halfway down
   E.phase='swing'; if(typeof NBS!=='undefined'){ NBS.fixRow=null; nbsSlash(.2,.4); } Sound.sfx('swing'); Sound.sfx('beam'); Sound.tone('sawtooth',400,60,.3,.14); Sound.hiss(1200,.2,.3,'bandpass');
   const hy=NB.y+2.9, th0=E.ang; let th1=0;
@@ -35,11 +43,26 @@ function npxStart(){ const P=Player, [dx,dz]=np1Dir();
   if(typeof NBS!=='undefined') NBS.fixRow=3; /* the sword raised */
   const E={t:0,lv:-1,phase:'charge',nx:NB.x,nz:NB.z,ang:0,len:NPX.L[0],w:NPX.W[0],dl:NPX.L[0],ux:dx,uz:dz,beat:0,clock:0,fade:1,pulse:0,pulseUI:0,snap:0};
   NP1.ex=E; npxSword(E); return E; }
-function npxLevel(E,lv){ E.pulse=1; if(lv<1) return; E.len=NPX.L[lv]; E.w=NPX.W[lv]; E.pulseUI=1;
+function npxLevel(E,lv){ E.pulse=1; if(lv<1) return; E.len=NPX.L[lv]; E.w=NPX.W[lv]; E.pulseUI=1; npxBladeLine(E,lv);
   const hx=NB.x, hy=NB.y+2.9, hz=NB.z; FX.burst(hx,hy,hz,20+lv*15,0x9ff8ff,5+lv*2,.4); FX.burst(hx,hy,hz,15+lv*10,0xffffff,4+lv*2,.3); FX.ring(hx,groundY(hx,hz)+.1,hz,'#3ff4ff',2+lv*1.5,.5); shake(.2+lv*.2);
   Sound.tone('sawtooth',120+lv*60,600+lv*300,.5,.1); Sound.hiss(2000+lv*1000,.4,.15+lv*.05,'bandpass');
   if(lv===3){ Sound.sfx('choir'); Sound.sfx('crossboom'); FX.flash=Math.max(FX.flash,.4); grade.uniforms.flashCol.value.set(.5,.95,1); twBark('nathan',"Level three. Look up.",true); }
   Game.dmgNums.push({x:hx,y:hy+2,z:hz,n:'LEVEL '+lv,t:0,big:true,col:'#9ff8ff'}); }
+// the charge's light: the Assault Rush's blue Judgement Cut blade-line, out of the hilt along the blade, wider each level,
+// following the blade's length and angle every frame until the cut
+function npxBladeLine(E,lv){ if(E.gash) E.gash.life=0; E.gash=twGash({life:60,rev:.05,fade:.3,w:16+lv*10,op:.95,taper:.1,sparks:6+lv*6,blue:1,alive:()=>NP1.ex===E&&E.phase!=='cut'&&E.phase!=='clash',
+    pts:()=>{ const s=Math.sin(E.ang), c=Math.cos(E.ang), dx=E.ux*s, dy=c, dz=E.uz*s, hx=NB.x, hy=NB.y+2.9, hz=NB.z, L=Math.min(E.dl,70); return np1LinePts(hx,hy,hz,hx+dx*L,hy+dy*L,hz+dz*L,1); }}); }
+// the level 3 flare: six blue lines fanning out of the hilt beside the blade, the blade wider, the air shaking
+function npxFlare(E){ const hx=NB.x, hy=NB.y+2.9, hz=NB.z, px=-E.uz, pz=E.ux; E.w=NPX.W[3]*1.45; E.pulse=1.5;
+  Sound.sfx('crossboom'); Sound.sfx('choir'); Sound.tone('sawtooth',40,90,1.4,.3); Sound.hiss(250,1.6,.5,'lowpass'); Sound.hiss(4500,.5,.3,'bandpass'); shake(1.6); FX.flash=1; grade.uniforms.flashCol.value.set(.5,.95,1); impactFrame([[1,2],[3,2],[2,1]]); FX.hitstop=Math.max(FX.hitstop,.12);
+  for(let i=0;i<6;i++){ const sg=i%2?1:-1, a=(.18+Math.floor(i/2)*.16)*sg, c=Math.cos(a), sn=Math.sin(a), L=18+i*5, t0=Game.time;
+    twGash({life:1.3,rev:.08,fade:.4,w:22-i*2,op:.9,taper:.2,sparks:12,blue:1,pts:()=>{ const u=Math.min(1,(Game.time-t0)/.25); return np1LinePts(hx,hy,hz,hx+px*sn*L*u,hy+c*L*u,hz+pz*sn*L*u,1); }}); }
+  FX.burst(hx,hy+6,hz,80,0x3ff4ff,12,.5); FX.burst(hx,hy+6,hz,50,0xffffff,9,.4); FX.ring(hx,groundY(hx,hz)+.1,hz,'#3ff4ff',14,.9); FX.ring(hx,groundY(hx,hz)+.12,hz,'#ffffff',8,.7);
+  for(let i=0;i<60;i++){ const a=rnd(0,6.283), d=rnd(2,12); FX.spawn(hx+Math.cos(a)*d,groundY(hx,hz)+.2,hz+Math.sin(a)*d,0,rnd(3,8),0,.9,i%2?0x9a9080:0x3ff4ff,.35,6,i%2===0); }
+  if(typeof TPS!=='undefined'){ TPS.kick=.6; TPS.fovK=6; } twBark('nathan',"Now it's a star.",true); }
+// the deep red's sparks: steel grinding off the hilt and the ground cracking red
+function npxSparks(E){ const hx=NB.x, hy=NB.y+2.9, hz=NB.z; for(let i=0;i<4;i++){ FX.spark(hx+rnd(-.4,.4),hy+rnd(-.3,.6),hz+rnd(-.4,.4)); } FX.burst(hx,hy,hz,40,0xff2a3a,8,.35); FX.burst(hx,hy,hz,20,0x5a0008,6,.4);
+  for(let i=0;i<8;i++){ const a=i/8*6.283+rnd(-.2,.2); FX.line(hx+Math.cos(a)*1.2,hz+Math.sin(a)*1.2,a,rnd(2,5),.14,0xff2a3a,.9); } Sound.sfx('deflect'); Sound.tone('sawtooth',160,40,.5,.14); shake(.5); }
 // ---------- his blade: cyan with a white core inside a dark sheath (it reads against the bright sky) ----------
 function npxSword(E){ const outer=beamMesh(0x3ff4ff,1), core=beamMesh(0xffffff,.42), g=new THREE.CylinderGeometry(1.7,1.7,1,10,1,true); g.rotateX(Math.PI/2); g.translate(0,0,.5);
   const dark=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x041030,transparent:true,opacity:.5,depthWrite:false,fog:false})); scene.add(dark);
@@ -265,7 +288,7 @@ function npxBoom(x,y,z,s){ s=s||1; const gy=groundY(x,z);
 function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/(NPX.lvT*3)), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
       D.fillStyle='rgba(4,10,24,.75)'; D.fillRect(x,y,w,10); D.fillStyle=lv>i?on:off; D.fillRect(x,y,w*u,10); D.strokeStyle='rgba(255,255,255,.55)'; D.lineWidth=1; D.strokeRect(x+.5,y+.5,w-1,9); } };
   E.pulseUI=Math.max(0,E.pulseUI-1/20); D.save(); seg(by,k,E.lv,'#ffffff','#3ff4ff');
-  const lab=E.phase==='charge'?(E.lv>=1?'LEVEL '+E.lv:'CHARGING'):E.phase==='window'?'NOW!':'', pu=1+.35*E.pulseUI;
+  const lab=E.phase==='charge'?(E.lv>=1?'LEVEL '+E.lv:'CHARGING'):E.phase==='window'?(E.deep?'PARRY!':'LEVEL 3: GETSUGA NOW'):'', pu=1+.35*E.pulseUI;
   if(lab){ D.font=`900 ${Math.round(18*pu)}px ${FB}`; D.textAlign='center'; D.textBaseline='bottom'; D.lineWidth=4; D.strokeStyle='#04101e'; D.strokeText('STARBREAKER  ·  '+lab,UW/2,by-4);
     D.fillStyle=E.phase==='window'?`hsl(${(Game.time*600)%360},100%,65%)`:'#9ff8ff'; D.fillText('STARBREAKER  ·  '+lab,UW/2,by-4); }
   D.restore(); } /* Ali's own charge shows on the circle gauge round him (08d) */

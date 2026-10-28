@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.24 (Oct 28): no parrying by mashing: the first attack press after a red tell decides (inside the last 0.3s = parry; earlier = a whiff no later press saves); Nathan flies after you instead of stuttering";
+const DBG_PATCH="v1.25 (Oct 28): the Starbreaker's charge is the blue blade-line out of the hilt, wider each level; at level 3 the rainbow glint zig-zags up the blade as five impact frames, a heavy flare, a one-second hold, then the deep red glint with sparks is the parry. Nathan parries every Getsuga (hovering or mid-move too), sending them behind him left and right in turn; Ali spams Getsugas at three a second; charged waves are one crescent in front of a wall of energy, taller per level.";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

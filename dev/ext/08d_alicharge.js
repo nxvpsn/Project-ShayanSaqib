@@ -75,10 +75,23 @@ function aliChargeFx(dt){ const P=Player, on=ALI()&&(ALI_CH.force>0||(P.charge||
   ALI_CH.snd-=dt; if(ALI_CH.snd<=0){ ALI_CH.snd=.28; Sound.hiss(250+lv*350,.32,.03+lv*.025,'bandpass'); if(lv>=2&&Math.random()<.7) Sound.hiss(5200,.06,.05+lv*.02,'highpass'); if(lv>=3) Sound.tone('sawtooth',48,54,.3,.05); } }
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments); try{ aliChargeFx(dt); }catch(e){ console.error('ali charge fx',e); } return r; }; })();
 // his waves stand tall with volume: a column of crescents (not a stretched one): 3 for the base shot, 6 / 9 / 12 for the levels
-const ALI_WAVE_N=[3,6,9,12];
-function aliWaveStack(b){ b.stacked=1; const e0=b.pxv; if(!e0||!e0.A) return; const k=Object.keys(PXV_ATLAS).find(n=>PXV_ATLAS[n]===e0.A)||'getsuga', K=ALI_WAVE_N[b.chLv||0], sz=e0.sz, step=sz*.4;
-  for(let i=0;i<K;i++){ const dy=(i-(K-1)/2)*step; if(Math.abs(dy)<1e-6) continue; const e=pxvAttach(k,b.g,sz); if(!e) break; e.dir=b; e.dy=dy; e.m.position.y=dy; b.extra=(b.extra||[]).concat([e]); } }
-(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ for(const b of BEAMS){ if(b.ali&&b.pxv&&!b.stacked) aliWaveStack(b); if(b.extra) for(const e of b.extra) e.m.position.y=e.dy; } }catch(e){ console.error('wave stack',e); } return ub.apply(this,arguments); }; })();
+// the wave's body: one crescent (bigger per level) in front of a continuous wall of energy, taller per level (base, double, triple, quadruple):
+// two crossed pixel planes (across the path and along it, so it has depth from any angle), banded red/black with a white lip top and bottom, the bands streaming upward
+const ALI_WAVE_H=[1.5,2.4,3.4,4.4], ALI_WALL={t:null};
+function aliWallTex(){ if(ALI_WALL.t) return ALI_WALL.t; try{ const W=16, H=64, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), img=x.createImageData(W,H), d=img.data;
+    for(let j=0;j<H;j++) for(let i=0;i<W;i++){ const u=Math.abs(i-(W-1)/2)/((W-1)/2), band=(j%8)<3, lip=j<3||j>H-4; let r,g,b,a;
+      if(lip){ r=g=b=244; a=255; } else if(u>.84){ r=36; g=0; b=4; a=215; } else if(u<.32){ r=band?240:228; g=band?228:34; b=band?228:52; a=235; } else { r=band?226:132; g=0; b=band?34:4; a=222; }
+      a=Math.round(a*Math.min(1,.25+Math.min(j,H-1-j)/5)*(1-u*u*.5)); const o=(j*W+i)*4; d[o]=r; d[o+1]=g; d[o+2]=b; d[o+3]=a; }
+    x.putImageData(img,0,0); const t=new THREE.CanvasTexture(c); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.wrapT=THREE.RepeatWrapping; ALI_WALL.t=t; return t; }catch(e){ console.error('wall tex',e); return null; } }
+function aliWaveStack(b){ b.stacked=1; const e0=b.pxv; if(!e0||!e0.A) return; const lv=b.chLv||0, sz=e0.sz, h=GS*ALI_WAVE_H[lv], w=GS*(1+lv*.18); e0.sz=sz*(1+lv*.12);
+  const t=aliWallTex(); if(!t) return; const geo=new THREE.PlaneGeometry(1,1); b.wall=[]; b.wallH=h; /* the group already turns with the wave (its +X is the travel direction) */
+  for(let i=0;i<2;i++){ const tx=t.clone(); tx.needsUpdate=true; const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,fog:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,opacity:i?.55:.9}));
+    m.scale.set(i?w*.55:w,h,1); m.rotation.y=i?0:Math.PI/2; /* across the path, then along it */ m.renderOrder=i?8:9; b.g.add(m); b.wall.push(m); } }
+(function(){ const ub=updateBeams; updateBeams=function(dt){ let walled=null; try{ for(const b of BEAMS){ if(b.ali&&b.pxv&&!b.stacked) aliWaveStack(b);
+      if(b.wall){ (walled||(walled=[])).push(b); for(let i=0;i<b.wall.length;i++){ const m=b.wall[i], mt=m.material.map; if(mt) mt.offset.y=(mt.offset.y||0)-dt*1.6; m.scale.x=(i?.55:1)*GS*(1+(b.chLv||0)*.18)*(1+.08*Math.sin(Game.time*40+i)); } } } }catch(e){ console.error('wave wall',e); }
+    const r=ub.apply(this,arguments);
+    try{ if(walled) for(const b of walled){ if(BEAMS.includes(b)){ const k=Math.min(1,b.life*4); for(let i=0;i<b.wall.length;i++) b.wall[i].material.opacity=k*(i?.5:.85); } /* the base sets every child to full */
+        else { for(const m of b.wall){ try{ m.material.map&&m.material.map.dispose(); m.material.dispose(); }catch(x){} } b.wall=null; } } }catch(e){ console.error('wave wall',e); } return r; }; })();
 // the circle gauge round Ali while he holds: three ticks, the arc fills to the next level (full circle = level 3)
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ const P=Player; if(!ALI()||!((P.charge||0)>.25)||Game.state!=='play'||Game.letter>.5) return; const q=toScreen(P.x,P.y+1.3,P.z); if(q[2]>1) return;
       const T=ALI_CH.T, c=P.charge, lv=aliChargeLv(c), R=IS_TOUCH()?40:46, k=Math.min(1,c/T[2]), a0=-Math.PI/2;

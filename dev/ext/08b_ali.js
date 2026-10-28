@@ -40,7 +40,7 @@ function aliInput(dt){ const P=Player;
 // the alternating chain: tier 0 = mashed (0.75x, slower), 1 = normal, 2 = 1.5x gold lining, 3 = 1.7x mini Jujishou, then back to 1
 const ALI_GT={mul:[.75,1,1.5,1.7],size:[1,1,1.2,1.4],sheet:['getsuga','getsuga','getsuga_gold','getsuga_jj']};
 function aliChainGetsuga(){ const P=Player, now=Game.time, since=now-(P.gT!=null?P.gT:-9), mashed=P.gAct==='g'&&since<1.6;
-  if(since<(mashed?.5:.18)) return; // mashing is slow; right after a cut it is instant
+  if(since<(mashed?.33:.18)) return; // spam runs at three a second; right after a cut it is instant
   const tier=mashed?0:(P.gAct==='b'&&since<1.6&&(P.gTier||0)>=1)?(P.gTier>=3?1:P.gTier+1):1; P.gTier=tier; P.gT=now; P.gAct='g';
   const n0=BEAMS.length; TW._aliRC=1; try{ aliGetsuga(false); }finally{ TW._aliRC=0; } const b=BEAMS.length>n0?BEAMS[BEAMS.length-1]:null;
   if(b){ b.mul=ALI_GT.mul[tier]; b.tier=tier; const k=ALI_GT.sheet[tier], sz=GS*ALI_GT.size[tier];

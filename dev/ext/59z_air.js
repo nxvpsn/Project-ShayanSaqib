@@ -11,12 +11,15 @@
 //   it = the flip counter: Ali keeps flying away, somersaulting, facing the camera (which has swung round in front of him),
 //   firing three Jujishous back over his shoulder into Nathan; then the camera swings back behind Ali.
 // =====================================================================
-function npDeflect(b){ const P=Player, [dx,dz]=np1Dir(), back=Math.atan2(-dz,-dx)+(Math.random()<.5?1:-1)*rnd(.5,.85);
+function npDeflect(b){ const P=Player, [dx,dz]=np1Dir(); NP1.deflSide=-(NP1.deflSide||1); const back=Math.atan2(-dz,-dx)+NP1.deflSide*.7; /* behind him, left and right in turn */
   b.hit.add(NB); b.deflected=1; b.dx=Math.cos(back); b.dz=Math.sin(back); b.x=NB.x+b.dx*1.4; b.z=NB.z+b.dz*1.4; b.g.position.set(b.x,b.y,b.z); b.g.rotation.y=-back; b.life=Math.max(b.life,.8); b.mul=0;
   if(typeof nbsSlash==='function') nbsSlash(.22,.35); npStar(NB.x+dx*.8,NB.y+1.6,NB.z+dz*.8,0x9ff8ff,1.3,.25); FX.spark(NB.x+dx*.8,NB.y+1.6,NB.z+dz*.8); Sound.sfx('deflect'); Sound.tone('square',1700,800,.07,.05);
   Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'DEFLECTED',t:0,col:'#9ff8ff'}); /* no posture: Getsuga spam isn't the answer either */ }
-(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(npoOn()&&!NB.stunned&&!(NP1.openT>0)&&!NP1.seq&&!Game.script&&!(NP1.ex&&NP1.ex.phase!=='charge')&&!NPO.kick) for(const b of BEAMS){ if(!b.ali||b.hit.has(NB)||b.life<=0||(b.chLv||0)>=3||b.deflected) continue;
-        const rad=(b.big?1.6:1.15)+1.8; if(Math.hypot(NB.x-b.x,NB.z-b.z)<rad&&Math.abs(b.y-(NB.y+1.5))<3.2) npDeflect(b); } }catch(e){ console.error('np deflect',e); } return ub.apply(this,arguments); }; })();
+// he parries every wave that isn't a punish: not while stunned, OPEN, kicked, in a counter of Ali's (dodge counter, Full Counter, flip counter), in a cutscene or past the Starbreaker's charge.
+// The catch radius covers a frame of flight (the base hit, rad+1.2, has no height check either), so a wave can't skip from outside it into his body at a low frame rate.
+const NP_DEFL_HIT=new Set(['counter','fc','flipctr']);
+(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(npoOn()&&!NB.stunned&&!(NP1.openT>0)&&!(NP1.seq&&NP_DEFL_HIT.has(NP1.seq.k))&&!Game.script&&!(NP1.ex&&NP1.ex.phase!=='charge')&&!NPO.kick) for(const b of BEAMS){ if(!b.ali||b.ctr||b.hit.has(NB)||b.life<=0||(b.chLv||0)>=3||b.deflected) continue;
+        const rad=(b.big?1.6:1.15)+1.2+Math.max(0,b.sp*dt)+.3; if(Math.hypot(NB.x-b.x,NB.z-b.z)<rad) npDeflect(b); } }catch(e){ console.error('np deflect',e); } return ub.apply(this,arguments); }; })();
 // ---------- he flies ----------
 const NP_MELEE={combo:1,grab:1,meteor:1};
 function npAir(dt){ if(NB.stunned||NP1.seq||NP1.alt!=null||NP1.ex||Game.script) return;
