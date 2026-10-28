@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: Nathan phase I: one beat for red slashes and blue grabs (flash, lands 0.45s later; parry/blink in the last 0.3s), grabs only up close after a zig-zag, his swing synced to the hit; endless field; Ali swings with the sword draw";
-const DBG_NEW=['nathan:combo','nathan:grab','nathan:*'];
+const DBG_PATCH="Oct 28: Black Crescent moons: easier to catch (body hitbox 1.6, a swing within 2.6 dyes your moon); waves 2 and 3 have one wrong-colour scythe (was 2)";
+const DBG_NEW=['omar:lc'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

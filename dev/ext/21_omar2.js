@@ -121,7 +121,7 @@ function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THR
   sh.rotation.x=rg.rotation.x=-Math.PI/2; g.add(sh,rg); g.userData.tw=1; scene.add(g); return g; }
 // moon scythes of opposite colours never run into each other: their centres stay OM_MOON_GAP apart (touch radius 1 each,
 // so their hitboxes never overlap); same-colour ones pass through each other as before
-const OM_MOON_SLOW=.75; /* moon scythes fly 25% slower (curve and swirl) */
+const OM_MOON_SLOW=.75, OM_MOON_HIT=1.6, OM_MOON_REACH=2.6; /* touching one (body) / swinging at one (sword reach) dyes your moon */ /* moon scythes fly 25% slower (curve and swirl) */
 const OM_MOON_GAP=2.2; /* a little over 2: they settle a hair inside it, still clear of touching */
 function twMoonSep(s,x,z){ let ax=0, az=0; for(const o of (TW._moonS||[])){ if(o===s||o.done||o.px==null||o.col===s.col) continue; const dx=x-o.px, dz=z-o.pz, d=Math.hypot(dx,dz);
     if(d<OM_MOON_GAP){ const a=d>1e-3?Math.atan2(dz,dx):s.turn*9, k=(OM_MOON_GAP-d)/2; ax+=Math.cos(a)*k; az+=Math.sin(a)*k; twMoonClink(s,o,x,z,Math.cos(a),Math.sin(a)); } } /* each moves half, so both together make the full gap */
@@ -145,7 +145,8 @@ function twMoonScythe(T,col,side,dur){ dur/=OM_MOON_SLOW; const m=twBB(twMoonTex
       s.px=x; s.pz=z; const gy=groundY(x,z); m.position.set(x,gy+1.2,z); m.rotation.z+=dt*14; g.position.set(x,gy+.05,z);
       if(s.t>=3&&!s.done){ s.done=true; Sound.sfx('crossboom'); shake(.25); FX.burst(x,gy+1.2,z,30,OM_MOON_HEX[col],6,.35); FX.ring(x,gy+.1,z,OM_MOON[col],2.2,.35); if(play&&twInR(x,z,1.6,2.4)) twHitP(2,x,z,{ub:true}); return false; }
       if(Math.random()<.8) FX.spawn(x,gy+1.2,z,0,.3,0,.35,OM_MOON_HEX[col],.25,0,true);
-      if(play&&!s.done&&Math.hypot(P2.x-x,P2.z-z)<1&&P2.y<gy+2){ const r=twHitP(2,x,z,{melee:true,pierce:true,noGuard:true,win:.3});
+      const dP=Math.hypot(P2.x-x,P2.z-z), swung=Game.time-twParryClock()<.15; /* easier to catch: a bigger body hitbox, and a swing reaches them */
+      if(play&&!s.done&&P2.y<gy+2&&(dP<OM_MOON_HIT||(swung&&dP<OM_MOON_REACH))){ const r=dP<OM_MOON_HIT?twHitP(2,x,z,{melee:true,pierce:true,noGuard:true,win:.3}):(twMeleeParry(x,z,{}),'parry');
         if(r==='parry'||r==='hit'){ s.done=true; const M=TW.moon; if(M&&M.pl!==col){ M.pl=col; Game.dmgNums.push({x:P2.x,y:P2.y+3,z:P2.z,n:col==='w'?'RED MOON':'DARK PURPLE MOON',t:0,big:true,col:OM_MOON[col]}); }
           FX.burst(x,gy+1.2,z,24,OM_MOON_HEX[col],5,.3); return false; } }
       return true; }, kill(){ scene.remove(m); scene.remove(g); }}); }
@@ -280,9 +281,9 @@ TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=grou
     if(TW.moon.pl===TW.moon.om) twBark('omar',"...You matched. Like a couple's outfit. Disgusting.",true);
     // 2) double flood: 5 seconds, then his moon flips and it runs again at once
     TW.moon.pl=null; TW.moon.total=0; twBark('omar',"Double moon. Double flood. Double the edge.",true); yield 1.6;
-    yield* twMoonRound(T,OM_WAVE23,[.15],2,1); const prev=TW.moon.om; TW.moon.om=prev==='w'?'p':'w';
+    yield* twMoonRound(T,OM_WAVE23,[.15],1,1); /* one wrong-colour scythe (was 2) */ const prev=TW.moon.om; TW.moon.om=prev==='w'?'p':'w';
     { const M=TW.moon; M.left=M.total=OM_WAVE23; M.pulse=1; Sound.sfx('gong'); twBig(M.om==='w'?'NOW RED':'NOW DARK PURPLE',{size:52,col:OM_MOON[M.om],y:UH*.24,dur:1}); let t=0, fired=false;
-      twMoonWrongs(T,2,.45); twMoonRight(T,1.3); while(t<OM_WAVE23){ if(!fired&&t>=.15){ fired=true; twMoonBarrage(T,1.25); } yield .05; t+=.05; M.left=Math.max(0,OM_WAVE23-t); M.pulse=Math.max(0,M.pulse-.15); } yield* twMoonFlood(T); }
+      twMoonWrongs(T,1,.45); twMoonRight(T,1.3); while(t<OM_WAVE23){ if(!fired&&t>=.15){ fired=true; twMoonBarrage(T,1.25); } yield .05; t+=.05; M.left=Math.max(0,OM_WAVE23-t); M.pulse=Math.max(0,M.pulse-.15); } yield* twMoonFlood(T); }
     yield .8; SL.stop=true; TW.moon=null;
     // the black crescent swells over the sky, and the dark pours out of it over the whole screen: into the Iai
     twBark('omar',"Now my moon swallows the sky.",true); Sound.sfx('void'); Sound.sfx('drone'); cineSet(c.x,gy0+.8,A.z1+3,c.x,gy0+8,A.z0-3);
