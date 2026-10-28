@@ -124,6 +124,10 @@ TWK.caotan.lc1=function*(T){ twLCPrep(T); const c=twCenter(), A=twLock(), Pl=Pla
   T.lcDone[2]=1; yield T.stun; };
 
 // ---------- LIMIT CUT II: Megane Supernova (glint x10) ----------
+// where Hikari-chan lands: thrown toward you (3.5-6.5 from him); if that leaves the safe spot behind her more than 6 from you,
+// she lands so the spot is 5 from you instead, on the side toward Caotan (the spot is always 1.5 past her, away from him)
+function caoPillowSpot(T,Pl,p){ const d=Math.hypot(p.x-T.x,p.z-T.z)||1, sx=p.x+(p.x-T.x)/d*1.5, sz=p.z+(p.z-T.z)/d*1.5, ds=Math.hypot(sx-Pl.x,sz-Pl.z); if(ds<=6) return p;
+  const tx=Pl.x+(sx-Pl.x)/ds*5, tz=Pl.z+(sz-Pl.z)/ds*5, e=Math.hypot(tx-T.x,tz-T.z)||1; return twClampXZ(tx-(tx-T.x)/e*1.5,tz-(tz-T.z)/e*1.5,2.4); }
 TWK.caotan.lc2=function*(T){ twLCPrep(T); const c=twCenter(), Pl=Player; yield twMoveTo(T,c.x,c.z-1.5,.6);
   T.showN=1; Game.letterTo=.35; twCutin('caotan','MEGANE SUPERNOVA','Limit Break  ·  Glint ×10','#9fd8ff',2.2); grade.uniforms.tint.value.set(1.02,1.04,1.16); twBark('caotan',"Ten glints. No one has ever survived ten glints. Mostly because no one has tried.",true); yield 1.7;
   for(let i=1;i<=10;i++){ T.push=.4; T.glintN=i; T.glintT=.7; Sound.sfx('ting'); FX.flash=.15+i*.03; grade.uniforms.flashCol.value.set(1,1,1); twBig('✦ '+i+' ✦',{size:50+i*5,y:UH*.2,dur:.75,col:i===10?'#ffffff':'#bfe4ff'}); shake(.1+i*.03);
@@ -143,7 +147,7 @@ TWK.caotan.lc2=function*(T){ twLCPrep(T); const c=twCenter(), Pl=Player; yield t
       for(let k=0;k<2;k++){ twCaoNose(Pl.x+Pl.vx*.35,Pl.z+Pl.vz*.35,.6); yield .3; } yield .35; }
     else { twBark('caotan',"TEN. MEGANE... SUPERNOVAAAA!",true); yield .3;
       // he yeets Hikari-chan. she is the only cover in the world.
-      const a=Math.atan2(Pl.z-T.z,Pl.x-T.x)+rnd(-.7,.7), r=clamp(Math.hypot(Pl.x-T.x,Pl.z-T.z)*.8,3.5,6.5), p=twClampXZ(T.x+Math.cos(a)*r,T.z+Math.sin(a)*r,2.4), m=twBB(texPillow(),1.3,3.4), ux=(p.x-T.x)/Math.hypot(p.x-T.x,p.z-T.z), uz=(p.z-T.z)/Math.hypot(p.x-T.x,p.z-T.z), s={x:p.x+ux*1.5,z:p.z+uz*1.5};
+      const a=Math.atan2(Pl.z-T.z,Pl.x-T.x)+rnd(-.7,.7), r=clamp(Math.hypot(Pl.x-T.x,Pl.z-T.z)*.8,3.5,6.5), p=caoPillowSpot(T,Pl,twClampXZ(T.x+Math.cos(a)*r,T.z+Math.sin(a)*r,2.4)), m=twBB(texPillow(),1.3,3.4), ux=(p.x-T.x)/Math.hypot(p.x-T.x,p.z-T.z), uz=(p.z-T.z)/Math.hypot(p.x-T.x,p.z-T.z), s={x:p.x+ux*1.5,z:p.z+uz*1.5};
       const safe=FX.marker(s.x,s.z,1.5,0x5ab0ff,3.1); TW.caoSafe=s; let landed=false; twThrow({x:T.x,y:T.y+1.5,z:T.z,tx:p.x,tz:p.z,dur:.7,h:4,mesh:m,spin:12,r:.6,col:0xffffff,keepMesh:true,onLand(){ landed=true; m.rotation.z=0; Sound.sfx('crash'); FX.burst(p.x,groundY(p.x,p.z)+.5,p.z,20,0xffffff,4,.3); }});
       yield .75; twBig('HIDE BEHIND HIKARI-CHAN!',{size:54,col:'#bfe4ff',dur:2.2,y:UH*.62}); Sound.sfx('drone'); Sound.sfx('choir');
       const ch={t:0}; twHz({upd(dt){ ch.t+=dt; FX.flash=Math.min(.7,ch.t*.35); grade.uniforms.flashCol.value.set(.85,.95,1); for(let k=0;k<6;k++){ const aa=rnd(0,6.28), rr=rnd(1,10); FX.spawn(T.x+Math.cos(aa)*rr,T.y+rnd(0,4),T.z+Math.sin(aa)*rr,-Math.cos(aa)*rr*1.4,0,-Math.sin(aa)*rr*1.4,.6,0xffffff,.35,0,true); } return ch.t<2.2; }});
