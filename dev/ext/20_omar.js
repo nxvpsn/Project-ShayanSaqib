@@ -132,7 +132,7 @@ TWK.omar.harvest=function*(T,ph){ const sp=twSp(T); twBark('omar',"Lanternbrook'
           if(Math.random()<.9) FX.spawn(o.x,gy+1,o.z,0,.4,0,.3,0xff8ab0,.25,0,true);
           if(d<1.05&&P.y<gy+2.2){ const r=twHitP(2,o.x,o.z,{melee:true,heavy:true,onParry:()=>{ o.st='back'; o.t=0; o.sx=o.x; o.sz=o.z; Game.dmgNums.push({x:o.x,y:gy+2.2,z:o.z,n:'FREED',t:0,col:'#bfe8ff'}); }});
             if(o.st==='rush'){ if(r!=='none'){ FX.burst(o.x,gy+1,o.z,16,0xbfe8ff,4,.3); o.st='gone'; scene.remove(o.m); continue; } } } }
-        else if(o.st==='back'){ const u=Math.min(1,o.t/.3); o.x=lerp(o.sx,T.x,u); o.z=lerp(o.sz,T.z,u); if(u>=1){ if(!T.hide) twHurt(T,1.5,'bolt'); FX.burst(T.x,T.y+1.4,T.z,14,0xbfe8ff,4,.3); Sound.sfx('hit'); o.st='gone'; scene.remove(o.m); continue; } }
+        else if(o.st==='back'){ const u=Math.min(1,o.t/.3); o.x=lerp(o.sx,T.x,u); o.z=lerp(o.sz,T.z,u); if(u>=1){ if(!T.hide) twHurt(T,1.5,'soul'); /* 'soul': never parried by his Sekiro stance (21_omar2) */ FX.burst(T.x,T.y+1.4,T.z,14,0xbfe8ff,4,.3); Sound.sfx('hit'); o.st='gone'; scene.remove(o.m); continue; } }
         const tl=o.st==='tell'; o.m.position.set(o.x,groundY(o.x,o.z)+1+(tl?Math.sin(o.t*40)*.15:Math.sin(H.a*3+o.i)*.15),o.z); o.m.scale.setScalar(tl?1.35:o.st==='rush'?1.2:1);
         o.m.material.color.setHex(tl||o.st==='rush'?0xffb0c8:0xbfe8ff); }
       return any&&H.live; }, kill(){ souls.forEach(o=>scene.remove(o.m)); }});

@@ -1,0 +1,230 @@
+// =====================================================================
+// NATHAN, PHASE I (Ali's road, the third-person fight of 59t_tps): a real fight on top of the training dummy.
+// Three phases are planned; only phase I exists: at 0 HP he stops dead and the fight goes no further (NP1.done).
+// Colour language: a RED flash = parry it (attack just before it lands) or dodge it (blink); a BLUE flash = a grab,
+// only a blink timed at the last moment beats it (a perfect dodge, and attacking during it is a dodge counter).
+//   combo    Assault Boost combo: 3-4 slashes, each after 1-2 quickboosts around you; parry them all = stagger
+//   bits     Funnel Snipe: bits hang in the sky around you; each shines red, then its laser is instant
+//   cage     Funnel Cage: six bits ring you and fire in a quick rhythm; parry all six = they burst and he staggers
+//   glint3   Trinity Glint (cinematic): three glints flash one after another, then three strikes in that order;
+//            parry the first and the other two parry themselves
+//   grab     Grapple Lock (BLUE): he locks on hard and boosts in; blink at the last moment = perfect dodge
+//   clash    Hyper Beam: he charges from range; a Getsuga in the air when he fires meets it (mash to win), else it
+//            tracks you and can't be dodged
+//   curtain  Funnel Curtain: a deep wall of energy rolls at you (too deep to blink through); a Getsuga cuts a lane in it
+//   grid     Overload Grid: the bits electrify the ground; double jump and hold jump to float over it
+// Getsugas fly until they reach him (infinite range), aimed by the lock-on; Ali's sword hurts him here.
+// =====================================================================
+const NP1={live:0,done:0,hp:350,max:350,lunge:0,pdPending:0,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,objs:[],seq:null,cam:null,
+  blinkT:-9,pdT:-9,pdFrom:-9,hint:null,seen:{},dt:1/60,bar:0};
+const NP1_POOL=['combo','combo','bits','cage','glint3','grab','grab','clash','curtain','grid'];
+const NP1_FIRST=['combo','bits','grab','glint3','curtain','cage','grid','clash'];
+function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
+function np1Reset(){ np1Clear(); Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
+function np1Start(){ np1Clear(); Object.assign(NP1,{live:1,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:NP1_FIRST.slice(),stunT:0,seq:null,cam:null,pdT:-9,hint:null});
+  if(NB){ NB.barShow=0; NB.hov=1.4; NB.stunned=0; } }
+function np1Clear(){ for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(typeof NBC!=='undefined'&&NBC) endNBClash(); }catch(e){}
+  const P=Player; if(P&&NP1.seq){ P.cineFly=false; P.cineAnim=null; P.inv=Math.min(P.inv,1); } NP1.seq=null; NP1.cam=null; NP1.lunge=0; NP1.pdPending=0; if(NB){ NB.stunned=0; NB.hov=1.4; if(NB.mesh) NB.mesh.visible=true; } Game.letterTo=0; }
+function np1Obj(o){ NP1.objs.push(o); return o; }
+function np1Hint(key,text){ if(NP1.seen[key]) return; NP1.seen[key]=1; NP1.hint={text,t:0,dur:2.6}; }
+function np1Dir(){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
+// a glint: a bright star that pops and fades (red = parry/dodge, blue = grab, white = cinematic)
+function np1Glint(x,y,z,col,s){ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:col,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g);
+  const st=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); st.userData.temp=1; scene.add(st); const k={t:0}; s=s||3;
+  np1Obj({upd(dt){ k.t+=dt; const u=k.t/.42, a=Math.max(0,1-u); g.position.set(x,y,z); st.position.set(x,y,z); g.scale.set(s*(1+u)*1.6,s*(1+u)*.35,1); st.scale.setScalar(s*.7*a+.01); g.material.opacity=a; st.material.opacity=a; return u<1; },
+    kill(){ scene.remove(g); scene.remove(st); }}); Sound.sfx('ting'); }
+// a laser: a coloured beam with a white core, from a to b, fading out
+function np1Beam(ax,ay,az,bx,by,bz,col,w,life){ const m1=beamMesh(col,w), m2=beamMesh(0xffffff,w*.4); for(const m of [m1,m2]){ m.userData.temp=1; m.position.set(ax,ay,az); m.lookAt(bx,by,bz+1e-4); m.scale.set(1,1,Math.max(.01,Math.hypot(bx-ax,by-ay,bz-az))); }
+  const k={t:0}; np1Obj({upd(dt){ k.t+=dt; const a=Math.max(0,1-k.t/life); for(const m of [m1,m2]){ m.scale.x=m.scale.y=Math.max(.01,a); } return k.t<life; }, kill(){ scene.remove(m1); scene.remove(m2); }}); }
+// staggered: he hangs there, open, and takes 1.5x
+function np1Stun(t,why){ NP1.gen=null; NP1.stunT=Math.max(NP1.stunT,t); NB.stunned=1; NB.dsh=null; Sound.sfx('glass'); shake(.4); FX.burst(NB.x,NB.y+2.2,NB.z,30,0x9ff8ff,6,.35);
+  Game.dmgNums.push({x:NB.x,y:NB.y+4.4,z:NB.z,n:why||'STAGGERED',t:0,big:true,col:'#9ff8ff'}); for(const o of NP1.objs) if(o.bit&&!o.dead){ try{ o.kill(); }catch(e){} o.dead=1; } NB.mesh.visible=true; Game.letterTo=0; }
+// the player's hit test: red attacks are parryable (melee rules, the silver slash shows at the contact point near you)
+function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=Math.hypot(dx,dz)||1; return twHitP(dmg,P.x+dx/d*1.2,P.z+dz/d*1.2,{melee:true,win:.3,onParry}); }
+// ---------- moves ----------
+const NP1M={
+  // Assault Boost combo: around you, around you, in, SLASH; parry every slash and he staggers
+  *combo(){ const n=Math.random()<.5?3:4; let par=0; if(Math.random()<.5) twBark('nathan',"Assault boost. Try to keep up.",true);
+    np1Hint('red','RED flash: parry ('+K('attack')+' as it lands) or blink ('+K('dash')+')');
+    for(let i=0;i<n;i++){ const hops=1+(Math.random()<.5?1:0);
+      for(let h=0;h<hops;h++){ const P=Player, a=Math.atan2(NB.z-P.z,NB.x-P.x)+(h%2?1:-1)*rnd(.9,1.6)*(i%2?1:-1), r=rnd(4.5,6.5); nbBoost(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r); yield .16; }
+      { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*1.7,P.z-dz*1.7); }
+      np1Glint(NB.x,NB.y+2.6,NB.z,0xff2a3a,3.2); if(typeof nbsSlash==='function') nbsSlash(.72,0); /* the trail peaks as it lands */ yield .36;
+      Sound.sfx('swing'); const P=Player, [dx,dz,d]=np1Dir();
+      if(d<3.4){ const r=np1HitRed(2,NB.x,NB.z,()=>{ par++; FX.burst(NB.x,NB.y+2,NB.z,12,0xffffff,4,.2); }); if(r==='parry'){ nbBoost(NB.x-dx*2.2,NB.z-dz*2.2); } }
+      yield .22; }
+    if(par>=n){ np1Stun(2.6,'FULL PARRY'); return; } yield .3; },
+  // Funnel Snipe: bits in the sky; each shines red, then fires at once
+  *bits(){ const P=Player, n=5, bs=[]; twBark('nathan',"Funnels. Look up, wanderer.",true); Sound.sfx('charge'); np1Hint('red','RED flash: parry ('+K('attack')+' as it lands) or blink ('+K('dash')+')');
+    for(let i=0;i<n;i++){ const a=rnd(0,6.28), r=rnd(5,9), b=nbBit(NB.x,NB.y+2,NB.z); b.tx=P.x+Math.cos(a)*r; b.tz=P.z+Math.sin(a)*r; b.ty=groundY(b.tx,b.tz)+rnd(4,7); b.ph=rnd(0,6.28); bs.push(b);
+      np1Obj({bit:1,upd(dt){ if(b.gone) return false; b.x=lerp(b.x,b.tx+Math.sin(Game.time*1.3+b.ph)*.6,Math.min(1,dt*4)); b.y=lerp(b.y,b.ty+Math.sin(Game.time*2+b.ph)*.3,Math.min(1,dt*4)); b.z=lerp(b.z,b.tz,Math.min(1,dt*4)); b.m.position.set(b.x,b.y,b.z); b.m.lookAt(Player.x,Player.y+1,Player.z); return true; }, kill(){ if(!b.gone){ b.gone=1; nbKillBit(b); } }}); }
+    yield 1;
+    for(let k=0;k<6;k++){ const live=bs.filter(b=>!b.gone); if(!live.length) break; const b=live[Math.floor(Math.random()*live.length)];
+      b.m.children.forEach(c=>c.material.color.setHex(0xff2a3a)); np1Glint(b.x,b.y,b.z,0xff2a3a,2.4); yield .45;
+      if(b.gone) continue; const P2=Player, ty=P2.y+1; np1Beam(b.x,b.y,b.z,P2.x+(P2.x-b.x)*.6,ty+(ty-b.y)*.6,P2.z+(P2.z-b.z)*.6,0xff2a3a,.14,.22); Sound.sfx('mechshot');
+      const r=np1HitRed(2,b.x,b.z); if(r==='parry'){ b.gone=1; nbKillBit(b); Game.dmgNums.push({x:P2.x,y:P2.y+3,z:P2.z,n:'BIT DOWN',t:0,col:'#ff8a9a'}); }
+      else b.m.children.forEach(c=>c.material.color.setHex(0x9ff8ff));
+      yield Math.random()<.35?.2:.55; }
+    for(const b of bs) if(!b.gone){ b.gone=1; nbKillBit(b); } yield .4; },
+  // Funnel Cage: six bits ring you and fire in rhythm; parry all six and they burst
+  *cage(){ const P=Player, n=6, a0=rnd(0,6.28), bs=[]; let par=0; twBark('nathan',"Six funnels. Six chances to fail.",true); Sound.sfx('charge');
+    for(let i=0;i<n;i++){ const a=a0+i*6.283/n, b=nbBit(NB.x,NB.y+2,NB.z); b.a=a; bs.push(b);
+      np1Obj({bit:1,upd(dt){ if(b.gone) return false; const P2=Player, tx=P2.x+Math.cos(b.a)*5, tz=P2.z+Math.sin(b.a)*5, ty=P2.y+2.2; b.x=lerp(b.x,tx,Math.min(1,dt*6)); b.y=lerp(b.y,ty,Math.min(1,dt*6)); b.z=lerp(b.z,tz,Math.min(1,dt*6)); b.a+=dt*.5; b.m.position.set(b.x,b.y,b.z); b.m.lookAt(P2.x,P2.y+1,P2.z); return true; }, kill(){ if(!b.gone){ b.gone=1; nbKillBit(b); } }}); }
+    yield 1.1;
+    for(let i=0;i<n;i++){ const b=bs[i]; if(b.gone) continue; b.m.children.forEach(c=>c.material.color.setHex(0xff2a3a)); np1Glint(b.x,b.y,b.z,0xff2a3a,2.2); yield .32;
+      if(b.gone) continue; const P2=Player; np1Beam(b.x,b.y,b.z,P2.x,P2.y+1,P2.z,0xff2a3a,.12,.18); Sound.sfx('mechshot');
+      if(np1HitRed(1,b.x,b.z)==='parry'){ par++; b.gone=1; nbKillBit(b); } yield .12; }
+    for(const b of bs) if(!b.gone){ b.gone=1; nbKillBit(b); }
+    if(par>=n){ np1Stun(2.2,'CAGE BROKEN'); return; } yield .4; },
+  // Trinity Glint: three glints flash one after another, then three strikes in the same order; parry the first, the rest parry themselves
+  *glint3(){ const P=Player, a0=Math.atan2(NB.z-P.z,NB.x-P.x), spots=[a0+rnd(-.4,.4),a0+2.1+rnd(-.3,.3),a0-2.1+rnd(-.3,.3)].map(a=>({a}));
+    twBark('nathan',"Trinity. Read it, or bleed.",true); Game.letterTo=.4; np1Hint('glint3','Parry the FIRST strike and the next two follow');
+    NB.mesh.visible=false; FX.burst(NB.x,NB.y+2,NB.z,20,0x9ff8ff,6,.3); Sound.sfx('quickboost');
+    for(const s of spots){ const P2=Player; s.x=P2.x+Math.cos(s.a)*2.6; s.z=P2.z+Math.sin(s.a)*2.6; np1Glint(s.x,groundY(s.x,s.z)+2.4,s.z,0xffffff,3.6); yield .17; }
+    yield .3; let auto=false, par=0;
+    for(let i=0;i<3;i++){ const s=spots[i], P2=Player; s.x=P2.x+Math.cos(s.a)*1.8; s.z=P2.z+Math.sin(s.a)*1.8; NB.x=s.x; NB.z=s.z; NB.dsh=null; NB.mesh.visible=true; nbAfterimage(s.x,NB.y,s.z);
+      np1Glint(s.x,groundY(s.x,s.z)+2.4,s.z,0xff2a3a,2.6); if(typeof nbsSlash==='function') nbsSlash(i===0?.64:.4,0); yield i===0?.32:.2; Sound.sfx('swing');
+      if(auto){ twMeleeParry(s.x,s.z,{}); par++; } else { const r=np1HitRed(2,s.x,s.z); if(r==='parry'){ par++; if(i===0){ auto=true; Game.dmgNums.push({x:P2.x,y:P2.y+3.4,z:P2.z,n:'READ IT',t:0,big:true,col:'#ffffff'}); } } }
+      yield .14; }
+    Game.letterTo=0; NB.mesh.visible=true; if(par>=3){ np1Stun(3,'TRINITY BROKEN'); return; } yield .4; },
+  // Grapple Lock: BLUE. He locks on hard and boosts in; a blink at the last moment is a perfect dodge
+  *grab(){ twBark('nathan',"Got you.",true); np1Hint('blue','BLUE flash: blink ('+K('dash')+') at the LAST moment');
+    np1Glint(NB.x,NB.y+2.6,NB.z,0x3a8aff,4.2); FX.flash=.35; grade.uniforms.flashCol.value.set(.3,.55,1); Sound.sfx('charge'); yield .7;
+    const g={t:0,v:26}; NB.dsh=null; Sound.sfx('quickboost');
+    NP1.lunge=1; NP1.pdPending=0;
+    while(g.t<1.3){ const dt=NP1.dt; g.t+=dt; const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.1); NBS.bdir=Math.atan2(dz,dx); } const st=Math.min(d,g.v*dt); NB.x+=dx/d*st; NB.z+=dz/d*st;
+      if(Math.random()<.8) FX.spawn(NB.x+rnd(-.5,.5),NB.y+rnd(.5,3),NB.z,-dx/d*4,0,-dz/d*4,.3,0x3a8aff,.35,0,true); if(g.t%.05<dt) nbAfterimage(NB.x,NB.y,NB.z);
+      if(NP1.pdPending||(d<1.5&&Game.time-NP1.blinkT<.3)){ NP1.lunge=0; NP1.pdPending=0; np1PerfectDodge(dx/d,dz/d); for(let k=0;k<14;k++){ NB.x+=dx/d*.35; NB.z+=dz/d*.35; yield NP1.dt; } yield .9; return; }
+      if(d<1.5&&P.inv<=0&&!P.cineFly){ NP1.lunge=0; np1Grabbed(); yield 1.2; return; }
+      yield dt; }
+    NP1.lunge=0; yield .4; },
+  // Hyper Beam: he charges from range; a Getsuga in the air when he fires meets it; otherwise it tracks you
+  *clash(){ const P=Player, a=Math.atan2(NB.z-P.z,NB.x-P.x); nbBoost(P.x+Math.cos(a)*11,P.z+Math.sin(a)*11); yield .2; NB.hov=3.2;
+    twBark('nathan',"Hyper beam. Full output.",true); np1Hint('clash','Fire a GETSUGA ('+K('block')+') as he fires: meet his beam');
+    const orb=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x3ff4ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); orb.userData.temp=1; scene.add(orb); const k={t:0};
+    const ob=np1Obj({upd(dt){ k.t+=dt; const f=nbFace(), [dx,dz]=np1Dir(); orb.position.set(f.x+dx*1.2,f.y,f.z+dz*1.2); orb.scale.setScalar(.5+Math.min(1,k.t/2.4)*3.2+Math.sin(k.t*30)*.2); if(Math.random()<.7){ const r=rnd(1.5,3), aa=rnd(0,6.28); FX.spawn(orb.position.x+Math.cos(aa)*r,orb.position.y+rnd(-1,1),orb.position.z+Math.sin(aa)*r,-Math.cos(aa)*r*2,0,-Math.sin(aa)*r*2,.3,0x9ff8ff,.25,0,true); } return true; }, kill(){ scene.remove(orb); }});
+    Sound.sfx('charge'); yield 1.2; Sound.sfx('charge'); yield 1.2;
+    const met=BEAMS.some(b=>b.ali&&b.life>0)||Game.time-(Player.gT!=null?Player.gT:-9)<.45; ob.kill(); ob.dead=1;
+    if(met){ const P2=Player; P2.cineFly=true; P2.cineAnim='beam'; P2.vx=P2.vz=0; startNBClash('beam'); Sound.sfx('crossboom'); shake(.6); np1Hint('mash','MASH '+K('attack')+'!');
+      let t=0; while(t<4&&NBC&&!NBC.res){ t+=NP1.dt; yield NP1.dt; }
+      const won=NBC&&NBC.res==='win'; if(won){ yield .6; } endNBClash(); P2.cineFly=false; P2.cineAnim=null; NB.hov=1.4;
+      if(won){ nbDamage(20,'np1'); if(!NP1.done) np1Stun(2.8,'BEAM BROKEN'); return; } P2.inv=0; hurtPlayer(3,NB.x,NB.z); yield .8; return; }
+    Sound.sfx('beam'); shake(.8); const bt={t:0}; let hit=false;
+    while(bt.t<.7){ bt.t+=NP1.dt; const f=nbFace(), P2=Player; np1Beam(f.x,f.y,f.z,P2.x+(P2.x-f.x)*.3,P2.y+.8,P2.z+(P2.z-f.z)*.3,0x3ff4ff,.9,.06); if(!hit&&P2.inv<=0){ hit=true; P2.inv=0; P2.dash=0; hurtPlayer(4,f.x,f.z); } yield NP1.dt; }
+    NB.hov=1.4; yield .6; },
+  // Funnel Curtain: a deep wall of energy rolls at you; a Getsuga cuts a lane through it
+  *curtain(){ const P=Player, a=Math.atan2(NB.z-P.z,NB.x-P.x); nbBoost(P.x+Math.cos(a)*14,P.z+Math.sin(a)*14); yield .25;
+    twBark('nathan',"Funnel curtain. No way through.",true); np1Hint('curtain','Too deep to blink through: cut a lane with a GETSUGA ('+K('block')+')');
+    const [dx,dz]=np1Dir(), ux=dx, uz=dz, px=-uz, pz=ux, N=26, SW=.8, DEPTH=6, H=4.6, alive=new Array(N).fill(1);
+    const ox=NB.x, oz=NB.z, segs=[]; for(let i=0;i<N;i++){ const g=new THREE.Group(); for(const k of [0,1,2]){ const m=new THREE.Mesh(new THREE.PlaneGeometry(SW*.94,H),new THREE.MeshBasicMaterial({color:k===1?0x9ff8ff:0x3ff4ff,transparent:true,opacity:k===1?.3:.55,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.position.set(0,H/2,-k*DEPTH/2); g.add(m); } /* near face at the front, the rest behind it */
+      g.userData.temp=1; scene.add(g); segs.push(g); }
+    // s = distance from Nathan's side along the line toward you (the wall's near face moves toward you)
+    let s0=3; const W=np1Obj({upd(dt){ s0+=3.4*dt; for(let i=0;i<N;i++){ const g=segs[i]; if(!alive[i]){ g.visible=false; continue; } const l=(i-(N-1)/2)*SW, x=ox+ux*s0+px*l, z=oz+uz*s0+pz*l; g.position.set(x,groundY(x,z)+.05,z); g.rotation.y=Math.atan2(ux,uz); g.children.forEach(m=>m.material.opacity=(m.material.color.getHex()===0x9ff8ff?.3:.5)+Math.sin(Game.time*12+i)*.08); }
+        // Getsugas carve a lane: every segment within reach of a passing Getsuga goes out
+        for(const b of BEAMS){ if(!b.ali||b.life<=0) continue; const rx=b.x-ox, rz=b.z-oz, s=rx*ux+rz*uz, l=rx*px+rz*pz; if(s<s0-DEPTH-.5||s>s0+.5) continue;
+          for(let i=0;i<N;i++){ if(alive[i]&&Math.abs((i-(N-1)/2)*SW-l)<1.25){ alive[i]=0; const x=ox+ux*s+px*(i-(N-1)/2)*SW, z=oz+uz*s+pz*(i-(N-1)/2)*SW; FX.burst(x,groundY(x,z)+1.5,z,10,0x9ff8ff,5,.3); Sound.sfx('glass'); } } }
+        // inside a live segment = hit (once), unparryable; the wall is deeper than a blink
+        const P2=Player, rx=P2.x-ox, rz=P2.z-oz, s=rx*ux+rz*uz, l=rx*px+rz*pz, i=Math.round(l/SW+(N-1)/2);
+        if(!W.hit&&s<=s0&&s>=s0-DEPTH&&i>=0&&i<N&&alive[i]&&P2.y<groundY(P2.x,P2.z)+H&&P2.inv<=0){ W.hit=1; twHitP(2,P2.x-ux,P2.z-uz,{ub:true,pierce:true}); }
+        return s0<Math.hypot(P2.x-ox,P2.z-oz)+DEPTH+6&&s0<40; }, kill(){ segs.forEach(g=>scene.remove(g)); }});
+    while(NP1.objs.includes(W)) yield .1; yield .3; },
+  // Overload Grid: bits dive into the ground and electrify it; float over it (double jump, hold jump)
+  *grid(){ const P=Player, cx=P.x, cz=P.z, R=11, bs=[]; twBark('nathan',"Overload. The ground is mine.",true); np1Hint('grid','Get off the ground: double jump and HOLD '+K('jump')+' to float');
+    for(let i=0;i<6;i++){ const a=i*6.283/6, b=nbBit(NB.x,NB.y+2,NB.z), tx=cx+Math.cos(a)*R*.8, tz=cz+Math.sin(a)*R*.8; bs.push(b); const k={t:0};
+      np1Obj({bit:1,upd(dt){ if(b.gone) return false; k.t+=dt; const u=Math.min(1,k.t/.7); b.x=lerp(b.x,tx,u); b.z=lerp(b.z,tz,u); b.y=lerp(b.y,groundY(tx,tz)+.4,u); b.m.position.set(b.x,b.y,b.z); b.m.lookAt(b.x,b.y-1,b.z); return true; }, kill(){ if(!b.gone){ b.gone=1; nbKillBit(b); } }}); }
+    // the tell: a crackling ring and lines between the bits, 1.6s
+    const st={t:0,on:0,hit:0}; np1Obj({upd(dt){ st.t+=dt; const gy=groundY(cx,cz);
+        if(st.t<1.6){ if(Math.random()<.35) FX.ring(cx,gy+.08,cz,'#3a8aff',R*(.4+Math.random()*.6),.3); if(Math.random()<.5){ const a=rnd(0,6.28), r=rnd(0,R); FX.spark(cx+Math.cos(a)*r,gy+.2,cz+Math.sin(a)*r); } return true; }
+        if(!st.on){ st.on=1; Sound.sfx('crossboom'); shake(.5); FX.flash=.3; grade.uniforms.flashCol.value.set(.3,.6,1); }
+        for(let k=0;k<6;k++){ const a=rnd(0,6.28), r=rnd(0,R), x=cx+Math.cos(a)*r, z=cz+Math.sin(a)*r; FX.spawn(x,groundY(x,z)+.15,z,rnd(-1,1),rnd(1,3),rnd(-1,1),.25,k%2?0x9ff8ff:0xffffff,.3,0,true); }
+        if(Math.random()<.3){ const a=rnd(0,6.28), r=rnd(2,R), x=cx+Math.cos(a)*r, z=cz+Math.sin(a)*r, x2=x+rnd(-2.5,2.5), z2=z+rnd(-2.5,2.5); np1Beam(x,groundY(x,z)+.15,z,x2,groundY(x2,z2)+.15,z2,0x3a8aff,.06,.12); }
+        const P2=Player, on=P2.y<groundY(P2.x,P2.z)+.6; if(!st.hit&&on&&Math.hypot(P2.x-cx,P2.z-cz)<R+1&&P2.inv<=0){ st.hit=1; twHitP(3,P2.x,P2.z+.01,{ub:true,pierce:true}); }
+        return st.t<4.4; }, kill(){}});
+    yield 2.6; { const live=bs.filter(b=>!b.gone); if(live.length){ const b=live[0], P2=Player; b.m.children.forEach(c=>c.material.color.setHex(0xff2a3a)); np1Glint(b.x,b.y+1,b.z,0xff2a3a,2.4); yield .45; np1Beam(b.x,b.y,b.z,P2.x,P2.y+1,P2.z,0xff2a3a,.12,.2); Sound.sfx('mechshot'); np1HitRed(1,b.x,b.z); } }
+    yield 1.6; for(const b of bs) if(!b.gone){ b.gone=1; nbKillBit(b); } yield .3; } };
+// ---------- the perfect dodge and the dodge counter ----------
+function np1PerfectDodge(dx,dz){ const P=Player; NP1.pdT=Game.time+.8; NP1.pdFrom=Game.time; Game.slowT=Math.max(Game.slowT,.55); Sound.sfx('whoosh'); Sound.sfx('dash'); P.inv=Math.max(P.inv,.9);
+  FX.flash=.25; grade.uniforms.flashCol.value.set(.35,.6,1); for(let i=0;i<3;i++){ try{ const g=aliGhost(P.x-dx*i*.7,P.y,P.z-dz*i*.7); if(g&&g.mesh) g.mesh.material.color.setHex(0x3a8aff); }catch(e){} }
+  FX.burst(P.x,P.y+1,P.z,40,0x3a8aff,5,.45); FX.burst(P.x,P.y+1,P.z,20,0xbfe0ff,3,.5); for(let i=0;i<24;i++){ const a=rnd(0,6.28); FX.spawn(P.x+Math.cos(a)*.8,P.y+rnd(.2,2),P.z+Math.sin(a)*.8,Math.cos(a)*2,rnd(0,2),Math.sin(a)*2,.6,i%2?0x3a8aff:0x9fd0ff,.3,0,true); }
+  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); np1Hint('counter','Attack ('+K('attack')+') now: DODGE COUNTER'); }
+// the counter: Ali zips past him, the camera snaps round to face Ali (Nathan behind him), judgement cuts rain on Nathan; 1.6s
+function np1Counter(){ const P=Player, [dx,dz]=np1Dir(), fx=-dx, fz=-dz; /* from Ali through Nathan */
+  P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=0; Game.slowT=0; NP1.pdT=-9; NP1.gen=null; NB.dsh=null;
+  NP1.seq={k:'counter',t:0,sx:P.x,sz:P.z,ex:NB.x+fx*3.4,ez:NB.z+fz*3.4,fx,fz,cuts:0}; Sound.sfx('dash'); Sound.sfx('whoosh'); FX.flash=.3; grade.uniforms.flashCol.value.set(1,.2,.3); }
+function np1SeqUpd(dt){ const S=NP1.seq, P=Player; S.t+=dt;
+  if(S.k==='counter'){ const u=Math.min(1,S.t/.14); P.x=lerp(S.sx,S.ex,u); P.z=lerp(S.sz,S.ez,u); P.y=groundY(P.x,P.z); P.ang=Math.atan2(S.fz,S.fx);
+    if(u<1){ if(Math.random()<.9) FX.spawn(P.x,P.y+rnd(.3,1.6),P.z,0,0,0,.25,Math.random()<.5?0xff2a3a:0x3a8aff,.4,0,true); return; }
+    if(!S.snap){ S.snap=1; P.cineAnim='aliIai'; NB.stunned=1; NP1.cam={x:P.x+S.fx*4.6,y:P.y+1.7,z:P.z+S.fz*4.6,lx:P.x,ly:P.y+1.4,lz:P.z}; Sound.sfx('secret'); }
+    // judgement cuts across Nathan, one every .07s
+    while(S.cuts<12&&S.t>.2+S.cuts*.07){ S.cuts++; const q=toScreen(NB.x,NB.y+2.2,NB.z), a=rnd(0,Math.PI), L0=rnd(220,420), mx=q[0]+rnd(-60,60), my=q[1]+rnd(-80,60);
+      JC.lines.push({x0:mx-Math.cos(a)*L0/2,y0:my-Math.sin(a)*L0/2,x1:mx+Math.cos(a)*L0/2,y1:my+Math.sin(a)*L0/2,t:0}); if(JC.lines.length>16) JC.lines.shift();
+      Sound.sfx(S.cuts%2?'swing':'hit'); FX.spark(NB.x+rnd(-.7,.7),NB.y+rnd(1,3.2),NB.z); shake(.08); nbDamage(1.6,false); if(NP1.done) break; }
+    if(!S.boom&&S.t>1.1){ S.boom=1; JC.flash=1; impactFrame([[3,2],[1,1]]); Sound.sfx('crossboom'); shake(.7); FX.burst(NB.x,NB.y+2,NB.z,40,0xff2a3a,7,.35); FX.burst(NB.x,NB.y+2,NB.z,20,0x0c0814,5,.4,false); }
+    if(S.t>1.6){ NP1.seq=null; NP1.cam=null; P.cineFly=false; P.cineAnim=null; P.inv=.6; if(!NP1.done) np1Stun(1.2,'COUNTERED'); } return; }
+  if(S.k==='grab'){ const u=S.t; if(u<.45){ P.x=lerp(P.x,NB.x+S.fx*.6,.3); P.z=lerp(P.z,NB.z+S.fz*.6,.3); P.y=groundY(P.x,P.z)+u*4; }
+    else if(u<.6){ P.y=Math.max(groundY(P.x,P.z),P.y-dt*30); }
+    else if(!S.slam){ S.slam=1; P.y=groundY(P.x,P.z); Sound.sfx('slam'); shake(.8); FX.burst(P.x,P.y+.3,P.z,30,0x3a8aff,6,.35); FX.ring(P.x,P.y+.1,P.z,'#3a8aff',3,.4); }
+    if(u>.75){ NP1.seq=null; P.cineFly=false; P.cineAnim=null; P.inv=0; P.dash=0; hurtPlayer(4,NB.x,NB.z); } } }
+function np1Grabbed(){ const P=Player, [dx,dz]=np1Dir(); NP1.seq={k:'grab',t:0,fx:dx,fz:dz}; P.cineFly=true; P.cineAnim='hurt'; P.aliAtk=null; P.vx=P.vz=P.vy=0; P.inv=99;
+  Sound.sfx('punch'); Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'GRABBED',t:0,big:true,col:'#8fc4ff'}); twBark('nathan',"Down you go.",true); }
+// ---------- the per-frame brain ----------
+function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
+  NB.barShow=0; NP1.bar=Math.min(1,NP1.bar+dt*1.5);
+  for(let i=NP1.objs.length-1;i>=0;i--){ const o=NP1.objs[i]; let keep=false; if(!o.dead){ try{ keep=o.upd(dt)!==false; }catch(e){ console.error('np1 obj',e); } } if(!keep){ try{ o.kill&&o.kill(); }catch(e){} NP1.objs.splice(i,1); } }
+  if(NP1.seq){ np1SeqUpd(dt); return; }
+  if(NP1.done||!tpsOn()) return; /* no moves in cutscenes */
+  // a perfect dodge: an attack inside its window is a dodge counter
+  if(NP1.pdT>Game.time&&twParryClock()>NP1.pdFrom){ np1Counter(); return; }
+  if(NP1.stunT>0){ NP1.stunT-=dt; if(NP1.stunT<=0){ NB.stunned=0; NP1.cd=.6; } return; }
+  if(NP1.gen){ NP1.wait-=dt; while(NP1.gen&&NP1.wait<=0){ const r=NP1.gen.next(); if(r.done){ NP1.gen=null; NP1.cd=rnd(.7,1.2); } else NP1.wait+=r.value; } return; }
+  NP1.cd-=dt; const [,,d]=np1Dir();
+  if(d>15&&!NB.dsh){ const a=Math.atan2(NB.z-P.z,NB.x-P.x); nbBoost(P.x+Math.cos(a)*rnd(6,8),P.z+Math.sin(a)*rnd(6,8)); NP1.cd=Math.max(NP1.cd,.3); return; }
+  if(NP1.cd<=0){ let k=NP1.order&&NP1.order.length?NP1.order.shift():NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)]; if(k===NP1.last) k=NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)];
+    NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; return; }
+  if(!NB.dsh&&Math.random()<dt*.9){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
+function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
+  NB.stunned=1; NB.dsh=null; NB.hov=.7; Game.letterTo=0; Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[3,2]]);
+  twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'Phase II is not built yet: the fight stops here',t:0}; }
+// ---------- hooks ----------
+(function(){ const un=updateNB; updateNB=function(dt){ const r=un.apply(this,arguments); try{ if(tpsFight()) np1Update(dt); }catch(e){ console.error('nathan phase 1',e); } return r; }; })();
+// damage: phase I's own HP; staggered he takes 1.5x; the ultimate is scaled down for this phase
+(function(){ const nd=nbDamage; nbDamage=function(d,ult){ if(!tpsFight()||!NP1.live) return nd.apply(this,arguments); if(!NB||!NB.alive) return;
+    if(NP1.done){ FX.spark(NB.x,NB.y+2,NB.z); return; } if(ult&&ult!=='np1') d*=d>=25?.3:.5; if(NP1.melee) d*=.4; /* ultimates and the mini Judgement Cut are scaled for this phase */ /* his sword is fast at 3x run speed */ if(NP1.stunT>0||NB.stunned) d*=1.5;
+    NP1.hp=Math.max(0,NP1.hp-d); NB.flash=.07; FX.spark(NB.x+rnd(-.6,.6),NB.y+rnd(1,3),NB.z+.3); Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'-'+(Math.round(d*100)/100),t:0,big:!!ult,col:'#9ff8ff'}); addSP(ult?0:.18);
+    if(NP1.hp<=0) np1Down(); }; })();
+// Ali's sword reaches him here (the base game only lets Shayan's)
+(function(){ const mh=meleeHits; meleeHits=function(x,z,y,rad,ang,arc,dmg,set){ let any=mh.apply(this,arguments);
+    try{ if(tpsFight()&&NP1.live&&ALI()&&NB&&NB.alive&&!set.has(NB)&&NB.y-y<3.6){ const d=Math.hypot(NB.x-x,NB.z-z); if(d<rad+1.3&&(d<1.6||angDiff(Math.atan2(NB.z-z,NB.x-x),ang)<arc)){ set.add(NB); any=true; NP1.melee=1; try{ nbDamage(dmg); } finally{ NP1.melee=0; } Sound.sfx('hit'); FX.hitstop=Math.max(FX.hitstop,.04); } } }catch(e){ console.error('np1 melee',e); }
+    return any; }; })();
+// Getsugas: always aimed at him, and they fly until they reach him (life topped up until they pass him)
+(function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ if(tpsFight()&&o&&o.ali&&NB){ const P=Player; P.ang=Math.atan2(NB.z-P.z,NB.x-P.x); } return fb.apply(this,arguments); }; })();
+(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(tpsFight()&&NB) for(const b of BEAMS){ if(!b.ali||b.hit.has(NB)) continue; b.trav=(b.trav||0)+b.sp*dt; const ahead=(NB.x-b.x)*b.dx+(NB.z-b.z)*b.dz; if(ahead>-1&&b.trav<90) b.life=Math.max(b.life,.5); } }catch(e){ console.error('np1 getsuga',e); } return ub.apply(this,arguments); }; })();
+// during a perfect dodge the attack is always the dodge counter, never the mini Judgement Cut (the banked parries stay)
+(function(){ const mj=twMiniJC; twMiniJC=function(){ if(tpsFight()&&NP1.pdT>Game.time){ Player.swingT=Game.time; return; } return mj.apply(this,arguments); }; })();
+// the blink: its time, for the perfect dodge
+(function(){ const at=aliTeleport; aliTeleport=function(){ NP1.blinkT=Game.time; try{ if(NP1.lunge&&NB&&Math.hypot(NB.x-Player.x,NB.z-Player.z)<3.8) NP1.pdPending=1; }catch(e){} return at.apply(this,arguments); }; })(); /* a blink while his lunge is about to land = perfect */
+// retries and leaving the fight start phase I over
+(function(){ const nr=nbRespawn; nbRespawn=function(){ np1Reset(); return nr.apply(this,arguments); }; })();
+(function(){ const rm=nbRemove; nbRemove=function(){ np1Reset(); return rm.apply(this,arguments); }; })();
+// the counter's camera: in front of Ali, looking back at him, Nathan behind him; flat sprites face it
+(function(){ const uc=updateCamera; updateCamera=function(dt){ const C=NP1.cam; if(!C||!tpsFight()) return uc.apply(this,arguments);
+    try{ camera.position.set(C.x,C.y,C.z); camera.lookAt(C.lx,C.ly,C.lz); TPS.p=[C.x,C.y,C.z]; TPS.l=[C.lx,C.ly,C.lz];
+      for(const s of SPRITES) if(s&&s.mesh) s.mesh.quaternion.copy(camera.quaternion); if(NB&&NB.mesh){ NB.mesh.quaternion.copy(camera.quaternion); NB.mesh.scale.x=1; } }catch(e){ console.error('np1 camera',e); return uc.apply(this,arguments); } }; })();
+// his phase I bar and the hints
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(!tpsFight()||!NP1.live||Game.letter>.5) return;
+      const TT=IS_TOUCH(), bw=TT?520:620, bx=(UW-bw)/2, by=UH-46, k=Math.max(0,NP1.hp/NP1.max), a=NP1.bar;
+      D.save(); D.globalAlpha=a; D.fillStyle='rgba(6,10,20,.75)'; D.fillRect(bx-4,by-24,bw+8,40); D.font=`800 16px ${FB}`; D.fillStyle='#bfefff'; D.textAlign='left'; D.fillText('NATHAN',bx,by-8);
+      D.textAlign='right'; D.fillStyle=NP1.done?'#ffd45a':'#7fdcff'; D.fillText(NP1.done?'PHASE I CLEARED':'PHASE I',bx+bw,by-8); D.fillStyle='#14202c'; D.fillRect(bx,by,bw,10);
+      D.fillStyle=NB&&NB.stunned?'#ffffff':'#3ff4ff'; D.fillRect(bx,by,bw*k,10); D.strokeStyle='#bfefff'; D.lineWidth=1; D.strokeRect(bx+.5,by+.5,bw-1,9); D.restore();
+      const H=NP1.hint; if(H){ H.t+=1/60; if(H.t>H.dur) NP1.hint=null; else { const al=Math.min(1,H.t*4,(H.dur-H.t)*3); D.save(); D.globalAlpha=al; D.font=`800 ${TT?20:22}px ${FB}`; D.textAlign='center'; D.lineWidth=5; D.strokeStyle='#06101c'; D.strokeText(H.text,UW/2,UH*.2); D.fillStyle='#e8f6ff'; D.fillText(H.text,UW/2,UH*.2); D.restore(); } }
+    }catch(e){ console.error('np1 ui',e); } }; })();
+// Ali's iaido for the dodge counter (img/ali/ali_iai.png: 96px cells, columns = facings S..SW, 18 rows = the sword draw,
+// cut and re-sheathe): he faces the camera, draws and cuts as he lands, holds while the cuts rain, sheathes on the boom
+const ALI_IAI={img:null,ok:false,off:null,N:18,feet:77};
+(function(){ try{ const im=new Image(); im.onload=()=>{ ALI_IAI.ok=im.width>0; }; im.src='img/ali/ali_iai.png'; ALI_IAI.img=im; }catch(e){} })();
+function aliIaiFrame(t){ const k=t<.14?.1:t<.45?.1+(t-.14)/.31*.25:t<.95?.35+(t-.45)/.5*.25:t<1.15?.6+(t-.95)/.2*.3:Math.min(1,.9+(t-1.15)*.4); return Math.min(ALI_IAI.N-1,Math.floor(k*ALI_IAI.N)); }
+(function(){ const da=drawAliHD; drawAliHD=function(c,cx,by,f,s){ if(!s||s.anim!=='aliIai') return da.apply(this,arguments);
+    if(!ALI_IAI.ok){ return da.call(this,c,cx,by,f,Object.assign({},s,{anim:'charge'})); }
+    try{ if(!ALI_IAI.off) ALI_IAI.off=mkCanvas(96,96); const [ocv,oc]=ALI_IAI.off, S=NP1.seq, r=aliIaiFrame(S?S.t:2); oc.clearRect(0,0,96,96); oc.imageSmoothingEnabled=false;
+      oc.drawImage(ALI_IAI.img,0,r*96,96,96,0,0,96,96); c.save(); c.imageSmoothingEnabled=false; c.translate(Math.round(cx),Math.round(by-1)); c.drawImage(ocv,-48,-ALI_IAI.feet,96,96); c.restore(); SHA.drawn=true; /* column 0: facing the camera */
+    }catch(e){ console.error('ali iai',e); return da.call(this,c,cx,by,f,Object.assign({},s,{anim:'charge'})); } }; })();
