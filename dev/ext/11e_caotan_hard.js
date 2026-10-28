@@ -76,7 +76,7 @@ function caoPillow(T,o){ const sp=twSp(T), m=twBB(texPillow(),o.big||.95,(o.big|
     if(!s.hit&&Math.hypot(P2.x-s.x,P2.z-s.z)<(o.big?1.3:1)&&(o.lane||P2.y<gy+.9)){ const r=twHitP(2,s.x,s.z); if(r!=='none') s.hit=true; }
     return s.t<6; }, kill(){ scene.remove(m); }}); }
 function* caoPillowWait(){ let w=0; while(!Voice.speaking&&w<.6&&Voice.on){ yield .05; w+=.05; } if(Voice.speaking){ let v=0; while(Voice.speaking&&v<3){ yield .05; v+=.05; } } else yield Math.max(0,.9-w); }
-function* caoPillowReturn(T,ph){ const sp=twSp(T), n=ph>=3?2:1; if(n>1) twBark('caotan',"Hikari, Sakura! Return to sender! ...And return AGAIN!",true); else twBark('caotan',"Hikari, Sakura! Return to sender!",true); yield* caoPillowWait();
+function* caoPillowReturn(T,ph){ const sp=twSp(T), n=ph>=3?2:1; if(n>1) twBark('caotan',"Hikari, Sakura, GO! And COME BACK!",true); else twBark('caotan',"Hikari, Sakura, GO!",true); /* voiced: the shout is the tell, the pillows fly as it ends */ yield* caoPillowWait();
   const P=Player, a0=Math.atan2(P.z-T.z,P.x-T.x); T.cast=.5; Sound.sfx('whoosh');
   for(const off of [-.42,.42]) caoPillow(T,{a:a0+off,curl:off<0?1.1:-1.1,ret:'player',returns:n});
   yield (n>1?4.6:3)/sp; }

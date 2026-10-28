@@ -1,7 +1,7 @@
 // =====================================================================
-// IMPREGNATE, TWO OR THREE SPERM (phases II-III, 11b): two that get you = the SPAZ + the DRILL clone, three = those plus the
-// fireball clone (11c).
-// SPAZ: dash-jumps all over the arena spamming swings (they can hurt you, and you can parry them). 2 hits kill him, but a
+// IMPREGNATE, TWO OR THREE SPERM (phases II-III, 11b): each sperm that gets you = one clone, picked at random (no repeats) from the
+// FIREBALL clone (11c), the SPAZ and the DRILL clone; three = all of them. Phase I is always the fireball clone.
+// SPAZ: dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). 2 hits kill him, but a
 //   swing or a fireball that lands while he is mid-swing gets parried by accident. Getsugas always hit (one kills him).
 //   Anything of Caotan's or the other clones' (blasts, lasers, waves, bolts, goo lobs, the fireball clone's fireball and rush,
 //   the drill clone's AoE) kills him outright. Ultimates kill him too (11d).
@@ -10,7 +10,7 @@
 //   out of; he explodes after. Your own Drill, while his is out, goes only for his drill and destroys it (he fizzles).
 //   No time freeze, no slow-mo, no screen chant: it all happens while you keep fighting.
 // =====================================================================
-const IMPX={spazHp:2, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
+const IMPX={leash:9, spazHp:2, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
 function impMkClone(kind,x,z){ const spr=new Sprite3D(96,96); spr.show(false);
   const C={kind,x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',swU:1,swN:0,sw:.2,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,dead:false,flash:0};
   IMP.extra.push(C);
@@ -29,8 +29,11 @@ function impSpaz(x,z){ const C=impMkClone('spaz',x,z); C.hp=IMPX.spazHp; return 
 function impSpazUpd(C,dt){ const P=Player; C.t+=dt; C.k+=dt; C.gy=groundY(C.x,C.z); C.swU=Math.min(1,C.swU+dt/.12); C.flash=Math.max(0,C.flash-dt); C.sayT-=dt;
   if(C.st==='emerge'){ if(C.t>.75&&!C.said){ C.said=1; if(C.al) twBark('gooali',"WAAAGH! Which one of you is the real one?! I'll just hit EVERYONE!",true); else twBark('gooshayan',"WAAAGH! Which one of you is the real one?! I'll just hit EVERYONE!",true); }
     if(impEmerge(C,dt)){ C.emerge=1; C.ek=1; C.st='go'; C.k=0; } return; }
-  // dash-jumps all over the place: half the hops toward you, half anywhere
-  if(!C.hop){ const near=Math.random()<.5, q=near?twClampXZ(P.x+rnd(-2.5,2.5),P.z+rnd(-2.5,2.5),1):twClampXZ(C.x+rnd(-8,8),C.z+rnd(-7,7),1.2);
+  // dash-jumps at random (toward you, away, sideways...) but never more than half a screen (IMPX.leash) from you: too far and he hops back at you
+  if(!C.hop){ const L=IMPX.leash, dP=Math.hypot(P.x-C.x,P.z-C.z); let tx, tz;
+    if(dP>L){ const a=Math.atan2(P.z-C.z,P.x-C.x)+rnd(-.5,.5), r=Math.min(dP-L*.4,rnd(5,8)); tx=C.x+Math.cos(a)*r; tz=C.z+Math.sin(a)*r; }
+    else { const a=rnd(0,6.283), r=rnd(2.5,7); tx=C.x+Math.cos(a)*r; tz=C.z+Math.sin(a)*r; const e=Math.hypot(tx-P.x,tz-P.z); if(e>L){ tx=P.x+(tx-P.x)*L/e; tz=P.z+(tz-P.z)*L/e; } }
+    const q=twClampXZ(tx,tz,1.2);
     C.hop={sx:C.x,sz:C.z,tx:q.x,tz:q.z,t:0,dur:Math.max(.25,Math.hypot(q.x-C.x,q.z-C.z)/14),rest:rnd(.05,.3)}; Sound.sfx('djump'); }
   const H=C.hop; H.t+=dt; const u=Math.min(1,H.t/H.dur); C.x=lerp(H.sx,H.tx,u); C.z=lerp(H.sz,H.tz,u); C.y=C.gy+Math.sin(u*Math.PI)*1.4; if(H.dur>0&&u<1) C.ang=Math.atan2(H.tz-H.sz,H.tx-H.sx);
   if(u<1&&Math.random()<.6) FX.spawn(C.x,C.y+rnd(.3,1.3),C.z,0,0,0,.25,0xffffff,.28,0,true);
@@ -106,9 +109,9 @@ function* impDrillVsDrill(C){ const P=Player, gy=P.y; let d=null; C.held=1;
     E.dead=1; scene.remove(E.g); C.drill=null; d.dead=1; scene.remove(d.g); d=null; try{ fxLights[1].intensity=0; }catch(err){}
     if(!C.dead) impGo(C,'fizzle'); yield wait(.4);
   } finally { if(d){ d.dead=1; scene.remove(d.g); } C.held=0; P.cineFly=false; P.cineAnim=null; P.inv=.8; P.vy=-2; } }
-// ---------- over their heads: the drill clone's chant (and how far along it is), the spaz's hits left ----------
+// ---------- over their heads: the drill clone's chant (under his drill) and how far along it is, the spaz's hits left ----------
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(Game.state!=='play') return;
-    for(const C of IMP.extra){ if(C.dead||!C.emerge) continue; const q=toScreen(C.x,C.y+(C.kind==='drill'?6.2:3),C.z); if(!(q[2]<1)) continue;
+    for(const C of IMP.extra){ if(C.dead||!C.emerge) continue; const q=toScreen(C.x,C.y+(C.kind==='drill'?2.6:3),C.z); /* the drill clone's chant sits under his drill, just over his head */ if(!(q[2]<1)) continue;
       if(C.kind==='drill'&&C.st==='chant'){ const k=C.chantK||0, i=Math.min(3,Math.floor(k*4)), ph=PHRASES[i], sub=(k*4-i), shown=ph.slice(0,Math.max(1,Math.ceil(ph.length*Math.min(1,sub*1.6))));
         D.save(); D.font=`900 18px ${FB}`; D.textAlign='center'; D.lineWidth=4; D.strokeStyle='#1a0408'; D.strokeText(shown,q[0],q[1]); D.fillStyle=i===3?'#ffd45a':'#ff6a4a'; D.fillText(shown,q[0],q[1]); D.restore();
         D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(q[0]-50,q[1]+8,100,7); D.fillStyle='#ff4a2a'; D.fillRect(q[0]-49,q[1]+9,Math.max(0,98*k),5); }

@@ -11,12 +11,15 @@ const IMPC={dash:18, charge:1.4, fbSp:15, fbDmg:3, rushSp:17, rushDmg:0, down:3}
 IMP.down=null; IMP.clone=null; IMP.extra=[]; /* clone = the fireball clone; extra = the spaz and drill clones (11f_impmulti.js) */
 function impBusy(){ return !!IMP.down||!!IMP.clone||IMP.extra.length>0; }
 NAMES.gooshayan='Goo Shayan'; NAMES.gooali='Goo Ali';
-// the sperm got you (n of them): 1 = the fireball clone, 2 = the spaz + the drill clone, 3 = all three
-function impDown(n){ n=n||1; const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); Sound.sfx('squelch');
+// the sperm got you (n of them): phase I = always the fireball clone; phases II-III = n different clones picked at random
+// from the fireball, spaz and drill clones (three = all of them)
+function impDown(n,ph){ n=n||1; const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); Sound.sfx('squelch');
   twHeartBurst(P.x,P.z,24); shake(.5); FX.hitstop=Math.max(FX.hitstop,.1); FX.burst(P.x,P.y+1,P.z,24,0xff8ac8,4,.3);
   twBark('caotan',"Congratulations, senpai! It's a... it's a YOU!",true);
   const D=IMP.down={t:0,dur:IMPC.down,n}; P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; P.vx=P.vz=0;
-  const made=[]; if(n!==2) made.push(impClone(P.x,P.z,{quiet:n>1})); if(n>=2){ made.push(impSpaz(P.x,P.z)); made.push(impDrillClone(P.x,P.z)); }
+  const pool=['fb','spaz','drill']; for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; } /* fair shuffle */
+  const kinds=!(ph>=2)?['fb']:pool.slice(0,Math.min(3,n)).sort((a,b)=>(a==='fb'?0:1)-(b==='fb'?0:1)), made=[];
+  for(const k of kinds) made.push(k==='fb'?impClone(P.x,P.z,{quiet:kinds.length>1}):k==='spaz'?impSpaz(P.x,P.z):impDrillClone(P.x,P.z)); D.kinds=kinds;
   const base=rnd(0,6.28); made.forEach((c,i)=>{ c.slot=base+i*6.283/made.length; }); /* they squeeze out around you, spaced apart */
   // the down timer (any mix of clones): you lie there for 3s, invulnerable, then get up
   twHz({upd(dt,play){ if(IMP.down!==D) return false; if(play) D.t+=dt;

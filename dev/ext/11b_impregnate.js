@@ -44,7 +44,7 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
       const d2=Math.hypot(P.x-S.x,P.z-S.z);
       if(d2<2.1&&impSwinging()){ impSmack(S); return; }
       if(d2<.9&&Math.abs(P.y+1-S.y)<1.6&&!(P.inv>0)&&!(P.dash>0)&&!impBusy()){ S.dead=true; /* every other sperm still flying zooms in too: the count decides the clones */
-        let n=1; for(const o of IMP.list) if(o!==S&&!o.dead&&(o.st==='fly'||o.st==='wait')){ if(o.st==='wait'){ o.s.visible=true; o.x=o.T.x; o.z=o.T.z; } o.st='zoom'; o.t=0; n++; } impDown(n); return; }
+        let n=1; for(const o of IMP.list) if(o!==S&&!o.dead&&(o.st==='fly'||o.st==='wait')){ if(o.st==='wait'){ o.s.visible=true; o.x=o.T.x; o.z=o.T.z; } o.st='zoom'; o.t=0; n++; } impDown(n,S.T&&S.T.phase); return; }
     }
   else if(S.st==='wait'){ const T=S.T, P2=Player; S.wt-=dt; S.x=T.x; S.z=T.z; S.y=T.y+1.1;
       if(S.wt<=0){ const a=Math.atan2(P2.z-T.z,P2.x-T.x)+S.off; S.st='fly'; s.visible=true; S.x=T.x+Math.cos(a)*.8; S.z=T.z+Math.sin(a)*.8; S.vx=Math.cos(a)*S.spd; S.vz=Math.sin(a)*S.spd; S.t=0; Sound.sfx('whoosh'); } }
