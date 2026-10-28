@@ -8,7 +8,8 @@ Details for everything here: `dev/docs/ARCHITECTURE.md` (grep it, never read it 
 - Never read `index.html`, `dev/ext.js`, `dev/ext/02_shsprite.js` (blocked). Never read a big file whole: `grep -n`, then `sed -n 'a,bp' f | cut -c1-400` (`dev/game.js` is 790 KB).
 - Search with `grep -rn PAT dev/ext dev/game.js --exclude=02_shsprite.js`. Grep ARCHITECTURE.md for the file or system row you need.
 - Don't re-read a file you just edited, re-run passing tests, or explore code the request doesn't touch.
-- No subagents, no Playwright. The Node harness covers logic; `preview_cast.js` renders sprites to a PNG; the owner checks visuals live.
+- No subagents. The Node harness covers logic; `preview_cast.js` renders sprites to a PNG; the owner checks visuals live.
+- **Screenshots (`dev/shot.js`, headless Playwright on the real game) only when the owner says "use screenshot method"**, and even then only if it is worth it for the task (a visual change where a still would catch the bug). If missing the bug and fixing it in a later prompt would cost fewer tokens, ask "are you sure?" first. Never unasked. At most 4 shots a push; looking at a shot costs ~1.5k tokens.
 
 ## Where things are
 - `dev/ext/*.js`: every change since the original game, concatenated in filename order. Edit these.

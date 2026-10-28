@@ -183,6 +183,7 @@ dev/base/original.html        (original game, commit 6c09a24, its voice data str
 | `REAL=1 node t_coop.js ext.js` | co-op host logic: the friend's Ali, revives, ready, leave | 1 min |
 | `NOHOST=1 SECS=40 ULT=1 node t_sync.js ext.js` | low-latency co-op between two game instances | 2 min |
 | `t_sha`, `t_esc`, `t_esc2`, `t_aim`, `t_ui` | save keys, sprite paths, Esc timeline, mouse aim, timeline UI | <1 min each |
+| `shot.js` | screenshots of the real game, headless (preinstalled Playwright; three.js from `.cdn_cache/`, the CDN host is blocked): `node shot.js --scene fight --eval "NP1.gen=NP1M.excal(); NP1.wait=0" --wait 9 --out /tmp/x.png`; game time is stepped with rendering stubbed; only when the owner says "use screenshot method" (CLAUDE.md) | ~1 min a shot |
 | `t_pad` | controller: fake pad drives gameplay, timeline, Controls card + drop-down, aim, glyphs, rumble | <1 min |
 | `t_cast` | every cast draw in every pose, Shayan's slashes / flip / glide / Full Counter, Getsuga trails, lasers, mech layers | <1 min |
 

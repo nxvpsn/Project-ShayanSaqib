@@ -87,10 +87,9 @@ function npAli(dt){ const P=Player, sp=Math.hypot(P.vx||0,P.vz||0), gy=groundY(P
 // ---------- 11. hit-stop by weight: Ali's heavy hits on him (charged Getsugas, the Jujishou, ults) freeze the frame longer ----------
 (function(){ const nd=nbDamage; nbDamage=function(d,ult){ const on=npOn()&&!NP1.done, h0=NP1.hp; const r=nd.apply(this,arguments);
     try{ if(on&&NP1.hp<h0){ const dd=h0-NP1.hp; if(dd>=10){ FX.hitstop=Math.max(FX.hitstop,.12); Game.slowT=Math.max(Game.slowT||0,.12); impactFrame([[3,1]]); } else if(dd>=4) FX.hitstop=Math.max(FX.hitstop,.07); } }catch(e){} return r; }; })();
-// ---------- 12. his slashes cut the air: a cyan tear sweeps from him toward Ali as each red slash lands, and scars the ground ----------
+// ---------- 12. his slashes scar the ground where they land (the tear itself is kept for his charge and the rend) ----------
 (function(){ const hr=np1HitRed; np1HitRed=function(dmg,fx,fz){ const r=hr.apply(this,arguments);
     try{ if(npOn()&&Math.hypot(fx-NB.x,fz-NB.z)<1){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, l=Math.hypot(dx,dz)||1, ux=dx/l, uz=dz/l, gy=groundY(NB.x,NB.z);
-        twGash({life:.35,rev:.05,fade:.16,w:16,op:.85,sparks:8,blue:1,pts:()=>twArcPts(NB.x+ux*1.2,NB.y+2.2,NB.z+uz*1.2,ux,uz,2.6,-1,1,7)});
         FX.line(NB.x+ux*2.2,NB.z+uz*2.2,Math.atan2(uz,ux)+Math.PI/2,3.4,.18,0x3ff4ff,.5); for(let i=0;i<6;i++) FX.spawn(NB.x+ux*rnd(1,3),gy+.1,NB.z+uz*rnd(1,3),rnd(-1,1),rnd(1,3),rnd(-1,1),.4,0x9a9080,.3,0,false); } }catch(e){ console.error('np slash fx',e); }
     return r; }; })();
 // ---------- 13. the grab's slam: a crater ring, a dust wall and a heavy camera dip when Ali hits the ground ----------

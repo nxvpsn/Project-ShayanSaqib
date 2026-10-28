@@ -19,7 +19,7 @@ const NP1_TELL=.45, NP1_WIN=.3;
 const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab','excal']; /* excal: 59w_excal.js */
 const NP1_FIRST=['combo','bits','grab','meteor','cage','excal'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
-function np1Reset(){ np1Clear(); try{ if(typeof TPS!=='undefined'&&!TPS.lock) tpsLockToggle(); }catch(e){} Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
+function np1Reset(){ np1Clear(); try{ if(typeof TPS!=='undefined'&&!TPS.lock) tpsLockToggle(); if(typeof tpsCursorFree==='function') tpsCursorFree(); }catch(e){} Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
 function np1Start(){ np1Clear(); Object.assign(NP1,{live:1,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:NP1_FIRST.slice(),stunT:0,seq:null,cam:null,pdT:-9,hint:null});
   if(NB){ NB.barShow=0; NB.hov=1.4; NB.stunned=0; } }
 function np1Clear(){ NP1.cur=null; for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(typeof NBC!=='undefined'&&NBC) endNBClash(); }catch(e){}
@@ -89,7 +89,7 @@ function* np1Rend(){ const P=Player; if(Game.state!=='play') return; NP1.seq={k:
   let n=0, t=0; while(n<5){ t+=NP1.dt; if(Game.state!=='play'||!NP1.seq){ break; } if(t<NP1_REND[n]){ yield NP1.dt; continue; } n++; const last=n===5;
     // he dashes through to the other side and cuts on the way
     nbAfterimage(NB.x,NB.y,NB.z); side=-side; NB.x=P.x+px*side*1.7-dx*.3; NB.z=P.z+pz*side*1.7-dz*.3; NB.dsh=null; if(typeof nbsSlash==='function') nbsSlash(.26,.3);
-    const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a); twGash({life:last?.9:.5,rev:.05,fade:last?.3:.18,w:last?34:20,sparks:last?40:14,pts:()=>twArcPts(P.x,P.y+1.3,P.z,ux,uz,last?3.2:2.2,-1.1,1.1,7)});
+    const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a); twGash({life:last?.9:.5,rev:.05,fade:last?.3:.18,w:last?34:20,sparks:last?40:14,blue:1,pts:()=>twArcPts(P.x,P.y+1.3,P.z,ux,uz,last?3.2:2.2,-1.1,1.1,7)});
     try{ const q=toScreen(P.x,P.y+1.3,P.z), L0=last?520:360, sa=rnd(0,Math.PI); JC.lines.push({x0:q[0]-Math.cos(sa)*L0/2,y0:q[1]-Math.sin(sa)*L0/2,x1:q[0]+Math.cos(sa)*L0/2,y1:q[1]+Math.sin(sa)*L0/2,t:0,ttl:last?.5:.3}); if(JC.lines.length>16) JC.lines.shift(); }catch(e){}
     Sound.sfx('swing'); Sound.sfx(last?'crossboom':'hit'); FX.spark(P.x,P.y+1.2,P.z); FX.burst(P.x,P.y+1.3,P.z,last?40:14,0xff2a3a,last?8:4,.3); JC.flash=Math.max(JC.flash||0,last?.9:.35); shake(last?1.2:.35); FX.hitstop=Math.max(FX.hitstop,last?.2:.06);
     Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:last?'METEOR REND':'×'+n,t:0,big:last,col:'#ff6a7a'}); hurtPlayer(.8,NB.x,NB.z); P.inv=99; P.hurt=0; P.cineFly=true; P.cineAnim='hurt'; if(Game.state!=='play') break;
@@ -127,9 +127,6 @@ const NP1M={
       for(let t=0;t<.22;){ t+=NP1.dt; const u=Math.min(1,t/.22), e=u*u, P=Player, [dx,dz]=np1Dir(); const tx=P.x-dx*1.6, tz=P.z-dz*1.6; NB.x=lerp(sx,tx,e); NB.z=lerp(sz,tz,e); NB.dsh=null; if(typeof NBS!=='undefined') NBS.bdir=Math.atan2(tz-sz,tx-sx);
         nbAfterimage(NB.x,NB.y,NB.z); for(let i=0;i<4;i++) FX.spawn(NB.x+rnd(-.5,.5),NB.y+rnd(.5,3),NB.z+rnd(-.5,.5),-dx*rnd(6,14),rnd(-.5,.5),-dz*rnd(6,14),.3,i%2?0xff2a3a:0xffffff,.3,0,true); yield NP1.dt; } }
     Sound.sfx('swing'); np1Lunge(); const P=Player, [dx,dz]=np1Dir(), r=np1HitRed(3,NB.x,NB.z);
-    // the blue Judgement Cut across him
-    { const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a), big=r==='parry'; twGash({life:.7,rev:.05,fade:.25,w:big?30:22,op:.9,sparks:big?30:14,blue:1,pts:()=>twArcPts(P.x,P.y+1.3,P.z,ux,uz,big?3:2.4,-1.1,1.1,7)});
-      try{ const q=toScreen(P.x,P.y+1.3,P.z), sa=rnd(0,Math.PI), L0=big?520:380; JC.lines.push({x0:q[0]-Math.cos(sa)*L0/2,y0:q[1]-Math.sin(sa)*L0/2,x1:q[0]+Math.cos(sa)*L0/2,y1:q[1]+Math.sin(sa)*L0/2,t:0,ttl:.4}); if(JC.lines.length>16) JC.lines.shift(); }catch(e){} }
     if(r==='parry'){ FX.flash=.7; grade.uniforms.flashCol.value.set(.5,.75,1); impactFrame([[1,2],[3,2],[2,1]]); FX.hitstop=Math.max(FX.hitstop,.2); shake(1.1); Sound.sfx('crossboom'); Sound.sfx('slam'); FX.burst(P.x,P.y+1.2,P.z,50,0xffffff,8,.35); FX.burst(P.x,P.y+1.2,P.z,30,0x3a8aff,7,.4);
       Game.dmgNums.push({x:P.x,y:P.y+3.4,z:P.z,n:'PARRIED THE RUSH',t:0,big:true,col:'#8fc4ff'}); np1Shove(9,.55,'aliDrag'); }
     else if(r==='hit'){ np1Shove(6,.45,'hurt'); }
@@ -289,20 +286,20 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
     NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; return; }
   if(!NB.dsh&&d<12&&(typeof TPS==='undefined'||TPS.lock)&&Math.random()<dt*.35){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
 // ---------- between moves: he circles you, follows you, or closes a long gap with one violent boost ----------
-// locked on and strafing: he runs the other way round, so you circle each other; unlocked (or standing): he follows on his
-// thrusters (never dash-spamming a runner); far away and running: one insanely fast boost with an engine roar to get in range
-const NP1_ROAM={orbit:8,follow:10,near:4.5,far:18,dashCd:2.6,dashT:.2};
+// locked on and strafing: he runs the other way round, so you circle each other; otherwise he holds his ground (no creeping
+// after you); far away: one insanely fast boost with an engine roar, landing a quarter inside his range
+const NP1_ROAM={orbit:8,far:14,land:3.75,dashCd:2.6,dashT:.2}; /* land: 25% inside his 5-unit range, for the scare */
 function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return false; NP1.dashCd=Math.max(0,(NP1.dashCd||0)-dt);
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
-  if(d>NP1_ROAM.far&&run>3&&NP1.dashCd<=0){ np1BigBoost(); return true; }
+  if(d>NP1_ROAM.far&&NP1.dashCd<=0){ np1BigBoost(); return true; } /* far: one boost in; otherwise he never creeps after you (that stuttered) */
   let mx=0, mz=0;
   if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=rx*side*sp; mz=rz*side*sp; /* rx,rz is Ali's screen-left: he goes the other way round */ if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
-  else { NP1.orbitR=0; if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; } }
+  else NP1.orbitR=0;
   if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
     if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
   return false; }
 // the closing boost: ~.2s to 5 units in front of you whatever the gap, with the engine screaming
-function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*5, tz=P.z-dz*5; NP1.dashCd=NP1_ROAM.dashCd; NP1.cd=Math.min(NP1.cd,.25);
+function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*NP1_ROAM.land, tz=P.z-dz*NP1_ROAM.land; NP1.dashCd=NP1_ROAM.dashCd; NP1.cd=Math.min(NP1.cd,.25);
   Sound.sfx('qbRoar'); Sound.sfx('qbRoar'); Sound.tone('sawtooth',90,900,.5,.2); Sound.hiss(400,.5,.45,'lowpass'); Sound.hiss(3500,.35,.25,'bandpass'); Sound.tone('square',60,240,.3,.08);
   FX.burst(NB.x,NB.y+2,NB.z,40,0x3ff4ff,8,.35); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#3ff4ff',4,.4); if(typeof npShock==='function') npShock(NB.x,NB.y+2,NB.z,-dx,-dz,1.8); shake(.4); if(typeof NPX!=='undefined') NPX.spd={t:0};
   nbBoost(tx,tz); if(NB.dsh){ NB.dsh.d=NP1_ROAM.dashT; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,NP1_ROAM.dashT+.15); NBS.bdir=Math.atan2(tz-NB.z,tx-NB.x); }
