@@ -13510,8 +13510,10 @@ function aliPoseDir(){ const P=Player; let a=P.ang||0; if(typeof tpsOn==='functi
 // ground). Out of the line it only cuts the ground, leaving a black ravine for the rest of the fight: walk into it and you
 // fall to your death (floating or jumping over is fine). In the line: a huge hit that throws you clear of the cut.
 // The Q answer (my cinematic): time stops, a low shot up Ali's black-and-red sky column, a colossal Jujishou, the clash.
+// The clash, from over Ali's shoulder: the blade meets the Jujishou and it starts to give; Ali dashes in with the Full Counter
+// and drives it into Nathan; on the brink he stops time (grey), blinks into the sky and watches the explosion from above.
 // =====================================================================
-const NPX={L:[3.5,9,24,260],W:[.16,.32,.6,1.3],hold:.5,win:.9,half:1.3,rav:[],fall:null};
+const NPX={L:[3.5,9,24,260],W:[.16,.32,.6,1.3],hold:.5,win:.9,half:1.3,rav:[],fall:null,spd:null};
 // ---------- the move ----------
 NP1M.excal=function*(){ const E=npxStart();
   twBark('nathan',"Stand still, wanderer. This one cuts planets.",true);
@@ -13601,8 +13603,11 @@ function npxFallEnd(){ const P=Player; if(!NPX.fall) return; NPX.fall=null; P.ci
 function* npxCamTo(B,dur){ const A=Object.assign({},NP1.cam), t0=Game.time; for(let u=0;u<1;){ yield wait(0); u=Math.min(1,(Game.time-t0)/dur); const e=u*(2-u); for(const k in B) NP1.cam[k]=lerp(A[k],B[k],e); } }
 function* npxClash(kind,b){ const E=NP1.ex, P=Player; if(!E) return; E.phase='clash'; E.snap=1; NP1.gen=null; NP1.lunge=0;
   P.cineFly=true; P.inv=99; P.vx=P.vz=P.vy=0; P.aliAtk=null; P.charge=0; Game.letterTo=.5;
-  const d0=Math.hypot(NB.x-P.x,NB.z-P.z)||1, ux=(NB.x-P.x)/d0, uz=(NB.z-P.z)/d0, px=-uz, pz=ux, gy=groundY(P.x,P.z);
+  const d0=Math.hypot(NB.x-P.x,NB.z-P.z)||1, ux=(NB.x-P.x)/d0, uz=(NB.z-P.z)/d0, px=-uz, pz=ux, gy=groundY(P.x,P.z), gN=groundY(NB.x,NB.z);
   P.ang=Math.atan2(uz,ux); P.f=ux>=0?1:-1; E.ux=-ux; E.uz=-uz; /* his blade comes down toward Ali */
+  // Ali's point of view: over his shoulder, down the line at the blade
+  const pov=(back,up,side,ahead,lh)=>({x:P.x-ux*back+px*side,y:P.y+up,z:P.z-uz*back+pz*side,lx:P.x+ux*ahead,ly:P.y+lh,lz:P.z+uz*ahead});
+  const follow=(B,k)=>{ for(const key in B) NP1.cam[key]=lerp(NP1.cam[key],B[key],k); }, fov=v=>{ try{ camera.fov=v; camera.updateProjectionMatrix(); }catch(e){} };
   if(kind==='q'){ P.sp=0; P.cineAnim='charge'; ALI_CH.force=3; zwStart(); Voice.stop();
     Game.dmgNums.push({x:P.x,y:P.y+3.4,z:P.z,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff3a4a'});
     // low behind Ali, looking up his black-and-red column at the sky blade, then pulling out
@@ -13611,30 +13616,56 @@ function* npxClash(kind,b){ const E=NP1.ex, P=Player; if(!E) return; E.phase='cl
     Voice.bark('aliGetsugaBig'); yield wait(.5); zwEnd(); ALI_CH.force=0;
     const n0=BEAMS.length; aliGetsuga(true); b=BEAMS.length>n0?BEAMS[BEAMS.length-1]:null; if(b){ if(b.pxv) b.pxv.sz*=2.6; b.g.scale.multiplyScalar(2); }
     FX.flash=.8; grade.uniforms.flashCol.value.set(1,.1,.15); shake(1.2); Sound.sfx('slam'); FX.burst(P.x,P.y+1.6,P.z,80,0xff1a2a,10,.45); FX.burst(P.x,P.y+1.6,P.z,60,0x0a0006,9,.5,false); }
-  else Game.dmgNums.push({x:P.x,y:P.y+3.4,z:P.z,n:'CLASH!',t:0,big:true,col:'#ffffff'});
+  else { Game.dmgNums.push({x:P.x,y:P.y+3.4,z:P.z,n:'CLASH!',t:0,big:true,col:'#ffffff'}); NP1.cam=pov(5,2.2,1.4,8,3.2); }
   if(b){ b.hit.add(NB); b.mul=0; }
   P.cineAnim='beam'; if(typeof NBS!=='undefined'){ NBS.fixRow=null; nbsSlash(.4,.3); } Sound.sfx('swing'); Sound.sfx('beam');
-  // side-on, the whole duel in frame
-  const mx=lerp(P.x,NB.x,.4), mz=lerp(P.z,NB.z,.4), R0=Math.max(16,d0*.75); NP1.cam={x:mx+px*R0,y:gy+5,z:mz+pz*R0,lx:mx,ly:gy+4.5,lz:mz};
   const H=()=>[NB.x,NB.y+2.9,NB.z], aim=(q)=>{ const [hx,hy,hz]=H(), h=(q.x-hx)*E.ux+(q.z-hz)*E.uz; return [Math.atan2(h,q.y-hy),Math.hypot(q.x-hx,q.y-hy,q.z-hz)]; };
-  // the blade comes down onto it
+  const sparks=(q,n)=>{ for(let i=0;i<n;i++) FX.spawn(q.x,q.y,q.z,rnd(-6,6),rnd(-2,8),rnd(-6,6),.3,[0xffffff,0x3ff4ff,0xff2a3a,0xffd45a][i%4],.3,6,true); };
+  let tick=0; const grind=(q,dt,hard)=>{ tick-=dt; if(tick>0) return; tick=hard?.06:.09; FX.burst(q.x,q.y,q.z,hard?16:10,Math.random()<.5?0x3ff4ff:0xff2a3a,6,.25); Sound.hiss(900,.1,.12,'bandpass'); Sound.tone('square',rnd(300,600),rnd(150,300),.08,.04); shake(hard?.45:.3);
+    const cy=Math.random()<.5; FX.flash=Math.max(FX.flash,hard?.22:.15); grade.uniforms.flashCol.value.set(cy?.4:1,cy?.95:.2,cy?1:.25); if(Math.random()<(hard?.35:.2)) impactFrame([[3,1]]); };
+  // 1. his blade comes down onto the Jujishou
   const th0=E.ang, L0=E.len, q0=b?{x:b.x,y:b.y,z:b.z}:{x:lerp(P.x,NB.x,.3),y:gy+1.6,z:lerp(P.z,NB.z,.3)};
-  for(let t0=Game.time,u=0;u<1;){ yield wait(0); u=Math.min(1,(Game.time-t0)/.42); const q=b||q0, [th,L]=aim(q); E.ang=lerp(th0,th,u*u); E.len=lerp(L0,L,Math.sqrt(u)); if(b) b.life=Math.max(b.life,1); }
-  // locked: they grind, Ali's side slowly winning
-  const q=b||q0, c0={x:q.x,y:q.y,z:q.z}; if(b) b.sp=0; let tick=0;
-  for(let t0=Game.time,s=0;s<1.8;){ yield wait(0); const nt=Game.time-t0, dt=nt-s; s=nt; const push=Math.min(1.5,s*.9)+Math.sin(s*23)*.15;
-    q.x=c0.x+ux*push; q.z=c0.z+uz*push; q.y=c0.y; if(b){ b.life=Math.max(b.life,1); b.g.position.set(q.x,q.y,q.z); }
-    const [th,L]=aim(q); E.ang=th; E.len=L;
-    for(let i=0;i<4;i++) FX.spawn(q.x,q.y,q.z,rnd(-6,6),rnd(-2,8),rnd(-6,6),.3,[0xffffff,0x3ff4ff,0xff2a3a,0xffd45a][i],.3,6,true);
-    tick-=dt; if(tick<=0){ tick=.09; FX.burst(q.x,q.y,q.z,10,Math.random()<.5?0x3ff4ff:0xff2a3a,6,.25); Sound.hiss(900,.1,.12,'bandpass'); Sound.tone('square',rnd(300,600),rnd(150,300),.08,.04); shake(.3);
-      const cy=Math.random()<.5; FX.flash=Math.max(FX.flash,.15); grade.uniforms.flashCol.value.set(cy?.4:1,cy?.95:.2,cy?1:.25); if(Math.random()<.25) impactFrame([[3,1]]); }
-    NP1.cam.x=lerp(NP1.cam.x,mx+px*R0*.8,dt*.8); NP1.cam.z=lerp(NP1.cam.z,mz+pz*R0*.8,dt*.8); }
-  // the explosion; the blade shatters; he's staggered
-  npxBoom(q.x,q.y,q.z,kind==='q'?1.3:1); if(b) b.life=0;
+  for(let t0=Game.time,u=0;u<1;){ yield wait(0); u=Math.min(1,(Game.time-t0)/.42); const q=b||q0, [th,L]=aim(q); E.ang=lerp(th0,th,u*u); E.len=lerp(L0,L,Math.sqrt(u)); if(b) b.life=Math.max(b.life,1); follow(pov(5,2.2,1.4,8,3.2),.2); }
+  const q=b||q0, c0={x:q.x,y:q.y,z:q.z}; if(b) b.sp=0;
+  const put=()=>{ if(b){ b.life=Math.max(b.life,1); b.x=q.x; b.y=q.y; b.z=q.z; b.g.position.set(q.x,q.y,q.z); } const [th,L]=aim(q); E.ang=th; E.len=L; };
+  FX.burst(q.x,q.y,q.z,40,0xffffff,9,.3); FX.burst(q.x,q.y,q.z,30,0x3ff4ff,8,.35); Sound.sfx('parry'); Sound.sfx('crossboom'); shake(.9); FX.flash=Math.max(FX.flash,.5); impactFrame([[3,1],[1,1]]);
+  // 2. it holds, then starts to give
+  for(let t0=Game.time,s=0;s<.4;){ yield wait(0); const nt=Game.time-t0, dt=nt-s; s=nt; const k=s/.4; q.x=c0.x-ux*.8*k; q.z=c0.z-uz*.8*k; q.y=c0.y; put(); sparks(q,4); grind(q,dt); follow(pov(5,2.2,1.4,8,3.2),.15); }
+  // 3. Ali dashes in behind it: the Full Counter
+  { const sx=P.x, sz=P.z, ex=q.x-ux*1.5, ez=q.z-uz*1.5; let gt=0; NPX.spd={t:0}; P.cineAnim='dash';
+    Sound.sfx('dash'); Sound.sfx('whoosh'); Sound.hiss(2600,.24,.32,'bandpass'); Sound.tone('sawtooth',160,1700,.2,.08); twBark('ali',"Not today.",true);
+    for(let t0=Game.time,u=0;u<1;){ yield wait(0); const nt=Math.min(1,(Game.time-t0)/.16), e=1-Math.pow(1-nt,3); u=nt; P.x=lerp(sx,ex,e); P.z=lerp(sz,ez,e); P.y=groundY(P.x,P.z);
+      gt--; if(gt<=0){ gt=1; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0xff3a4a); }catch(e){} }
+      for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),-ux*rnd(6,14),rnd(-.3,.6),-uz*rnd(6,14),.3,i%2?0xff3a4a:0xffffff,.3,0,true);
+      follow(pov(4.2,1.9,1.1,7,3),.55); fov(TPS.FOV+16*Math.sin(u*Math.PI/2)); }
+    P.ang=Math.atan2(uz,ux); P.cineAnim='aliS1'; shFullCounterFX(); Sound.sfx('slam'); FX.hitstop=Math.max(FX.hitstop,.1); fov(TPS.FOV+6); }
+  // 4. together they drive it into him
+  { const qs={x:q.x,z:q.z}, qe={x:NB.x-ux*1.6,z:NB.z-uz*1.6};
+    for(let t0=Game.time,s=0;s<1.4;){ yield wait(0); const nt=Game.time-t0, dt=nt-s; s=nt; const k0=Math.min(1,s/1.4), k=k0*k0*(3-2*k0), j=Math.sin(s*31)*.12;
+      q.x=lerp(qs.x,qe.x,k)+px*j; q.z=lerp(qs.z,qe.z,k)+pz*j; q.y=c0.y; put(); P.x=q.x-ux*1.4; P.z=q.z-uz*1.4; P.y=groundY(P.x,P.z); P.cineAnim=Math.floor(s*7)%2?'aliS1':'aliS2';
+      sparks(q,6); grind(q,dt,true); FX.spawn(P.x,P.y+.1,P.z,-ux*4+rnd(-1,1),rnd(.5,2),-uz*4+rnd(-1,1),.5,0x8a8070,.4,0,false); /* his heels digging in */
+      follow(pov(4,1.8,1.2,6,3),.2); fov(lerp(camera.fov,TPS.FOV+4,dt*4)); } }
+  // 5. on the brink: time stops (grey), Ali blinks into the sky above him and looks down
+  zwStart(); FX.flash=Math.max(FX.flash,.5); grade.uniforms.flashCol.value.set(1,1,1); Sound.sfx('secret');
+  try{ aliGhost(P.x,P.y,P.z); }catch(e){} FX.burst(P.x,P.y+1,P.z,16,0x0c0814,4,.3,false);
+  P.x=NB.x-ux*7+px*3; P.z=NB.z-uz*7+pz*3; P.y=gN+15; P.ang=Math.atan2(NB.z-P.z,NB.x-P.x); P.f=Math.cos(P.ang)>=0?1:-1; P.cineAnim='glide'; Sound.sfx('swing');
+  NP1.cam={x:P.x-ux*4.5+px*1.6,y:P.y+3.4,z:P.z-uz*4.5+pz*1.6,lx:NB.x,ly:gN+1.5,lz:NB.z}; fov(TPS.FOV);
+  yield wait(.75);
+  // 6. time resumes into the explosion, watched from above
+  zwEnd(); npxBoom(q.x,q.y,q.z,kind==='q'?1.8:1.5); if(b) b.life=0;
   { const [hx,hy,hz]=H(); for(let i=0;i<60;i++){ const u=rnd(0,1), x=lerp(hx,q.x,u), y=lerp(hy,q.y,u), z=lerp(hz,q.z,u); FX.spawn(x,y,z,rnd(-4,4),rnd(-1,5),rnd(-4,4),.6,i%2?0x3ff4ff:0xffffff,.3,6,true); } }
-  NP1.ex=null; nbDamage(kind==='q'?36:28,'np1'); if(!NP1.done) np1Stun(4,'OVERPOWERED');
-  yield wait(1.1);
-  NP1.cam=null; Game.letterTo=0; P.cineFly=false; P.cineAnim=null; P.inv=.8; ALI_CH.force=0; }
+  NP1.ex=null; nbDamage(kind==='q'?36:28,'np1'); if(!NP1.done) np1Stun(4.5,'OVERPOWERED');
+  { const c1=Object.assign({},NP1.cam); for(let t0=Game.time,s=0;s<1.6;){ yield wait(0); s=Game.time-t0; const k=Math.min(1,s/1.6); NP1.cam.x=lerp(c1.x,c1.x+ux*2.5,k); NP1.cam.z=lerp(c1.z,c1.z+uz*2.5,k); NP1.cam.y=lerp(c1.y,c1.y-1.5,k); P.y=gN+15+Math.sin(s*3)*.15; } }
+  // 7. he drops back down
+  { const y0=P.y; P.cineAnim='fall'; Sound.sfx('whoosh');
+    for(let t0=Game.time,u=0;u<1;){ yield wait(0); u=Math.min(1,(Game.time-t0)/.45); P.y=lerp(y0,groundY(P.x,P.z),u*u); follow(pov(5.5,2.4,1.4,8,2.6),.25); }
+    P.y=groundY(P.x,P.z); FX.burst(P.x,P.y+.2,P.z,20,0x8a8070,4,.4,false); FX.ring(P.x,P.y+.1,P.z,'#ffffff',2,.3); Sound.sfx('slam'); shake(.5); P.cineAnim='idle'; }
+  yield wait(.25);
+  fov(TPS.FOV); NP1.cam=null; Game.letterTo=0; P.cineFly=false; P.cineAnim=null; P.inv=.8; ALI_CH.force=0; }
+// the dash's speed lines (the clash's Full Counter run-up)
+function npxSpeedLines(){ const S=NPX.spd; if(!S) return; S.t+=1/60; if(S.t>.4){ NPX.spd=null; return; } const k=S.t<.16?1:Math.max(0,1-(S.t-.16)/.24), cx=UW/2, cy=UH*.5, R0=Math.hypot(UW,UH)*.55;
+  if(!S.L){ S.L=[]; for(let i=0;i<54;i++) S.L.push({a:rnd(0,6.283),r:rnd(.5,1),w:rnd(1,4),sp:rnd(.8,1.5)}); }
+  D.save(); for(const l of S.L){ const a=l.a+rnd(-.015,.015), r1=R0*l.r, r0=r1*(1-.55*Math.min(1,S.t*l.sp*9)); D.strokeStyle=`rgba(${l.w>3?'255,170,185':'255,255,255'},${.8*k})`; D.lineWidth=l.w; D.beginPath(); D.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1); D.lineTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0); D.stroke(); } D.restore(); }
 // the dense explosion: a white flash ball, a red shell and a black core swelling and collapsing, rings and debris
 function npxBoom(x,y,z,s){ s=s||1; const gy=groundY(x,z);
   FX.hitstop=Math.max(FX.hitstop,.28); FX.flash=1; grade.uniforms.flashCol.value.set(1,1,1); JC.flash=1; impactFrame([[1,2],[3,2],[2,2],[1,1]]); shake(1.8*s);
@@ -13666,7 +13697,7 @@ function npxBoom(x,y,z,s){ s=s||1; const gy=groundY(x,z);
 (function(){ const ns=np1Start; np1Start=function(){ npxRavClear(); return ns.apply(this,arguments); }; })();
 (function(){ const nr=np1Reset; np1Reset=function(){ npxRavClear(); return nr.apply(this,arguments); }; })();
 // the meter: his three levels over the screen (and Ali's own charge under it while he holds)
-(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ const E=NP1.ex; if(E&&np1On()&&Game.letter<=.5) npxUI(E); }catch(e){ console.error('npx ui',e); } }; })();
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ npxSpeedLines(); }catch(e){ console.error('npx lines',e); } try{ const E=NP1.ex; if(E&&np1On()&&Game.letter<=.5) npxUI(E); }catch(e){ console.error('npx ui',e); } }; })();
 function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/6), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
       D.fillStyle='rgba(4,10,24,.75)'; D.fillRect(x,y,w,10); D.fillStyle=lv>i?on:off; D.fillRect(x,y,w*u,10); D.strokeStyle='rgba(255,255,255,.55)'; D.lineWidth=1; D.strokeRect(x+.5,y+.5,w-1,9); } };
   E.pulseUI=Math.max(0,E.pulseUI-1/20); D.save(); seg(by,k,E.lv,'#ffffff','#3ff4ff');
@@ -16788,7 +16819,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.07 (Oct 28): Nathan's Starbreaker (a 3-level sky sword, a rainbow glint: answer with a level 3 Getsuga or Q, or dodge it and mind the ravine); Ali's Getsuga charges in 3 stages";
+const DBG_PATCH="v1.08 (Oct 28): the Starbreaker clash from Ali's point of view: he dashes in with the Full Counter, drives the Jujishou into Nathan, stops time and watches the blast from the sky";
 const DBG_NEW=['nathan:excal'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -17251,7 +17282,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.07';
+const GAME_VERSION='v1.08';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 
