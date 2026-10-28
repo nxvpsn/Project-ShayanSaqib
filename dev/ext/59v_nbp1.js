@@ -28,7 +28,7 @@ function np1Obj(o){ NP1.objs.push(o); return o; }
 function np1Hint(key,text){ if(NP1.seen[key]) return; NP1.seen[key]=1; NP1.hint={text,t:0,dur:2.6}; }
 function np1Dir(){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
 // a glint: a bright star that pops and fades (red = parry/dodge, blue = grab, white = cinematic)
-function np1Glint(x,y,z,col,s){ if(col===0xff2a3a||col===0xc0001c) NP1.redEnd=Game.time+NP1_TELL+.12; /* a red strike is on its way: presses are parries */ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:col,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g);
+function np1Glint(x,y,z,col,s){ if(col===0xff2a3a||col===0xc0001c){ NP1.redEnd=Game.time+NP1_TELL+.12; NP1.tellT=Game.time; } /* a red strike is on its way: the first press after this tell is the parry (strict) */ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:col,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g);
   const st=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); st.userData.temp=1; scene.add(st); const k={t:0}; s=s||3;
   np1Obj({upd(dt){ k.t+=dt; const u=k.t/.42, a=Math.max(0,1-u); g.position.set(x,y,z); st.position.set(x,y,z); g.scale.set(s*(1+u)*1.6,s*(1+u)*.35,1); st.scale.setScalar(s*.7*a+.01); g.material.opacity=a; st.material.opacity=a; return u<1; },
     kill(){ scene.remove(g); scene.remove(st); }}); Sound.sfx('ting'); }

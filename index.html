@@ -13227,7 +13227,7 @@ function np1Obj(o){ NP1.objs.push(o); return o; }
 function np1Hint(key,text){ if(NP1.seen[key]) return; NP1.seen[key]=1; NP1.hint={text,t:0,dur:2.6}; }
 function np1Dir(){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
 // a glint: a bright star that pops and fades (red = parry/dodge, blue = grab, white = cinematic)
-function np1Glint(x,y,z,col,s){ if(col===0xff2a3a||col===0xc0001c) NP1.redEnd=Game.time+NP1_TELL+.12; /* a red strike is on its way: presses are parries */ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:col,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g);
+function np1Glint(x,y,z,col,s){ if(col===0xff2a3a||col===0xc0001c){ NP1.redEnd=Game.time+NP1_TELL+.12; NP1.tellT=Game.time; } /* a red strike is on its way: the first press after this tell is the parry (strict) */ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:col,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g);
   const st=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); st.userData.temp=1; scene.add(st); const k={t:0}; s=s||3;
   np1Obj({upd(dt){ k.t+=dt; const u=k.t/.42, a=Math.max(0,1-u); g.position.set(x,y,z); st.position.set(x,y,z); g.scale.set(s*(1+u)*1.6,s*(1+u)*.35,1); st.scale.setScalar(s*.7*a+.01); g.material.opacity=a; st.material.opacity=a; return u<1; },
     kill(){ scene.remove(g); scene.remove(st); }}); Sound.sfx('ting'); }
@@ -14138,9 +14138,14 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
 // laser never leaves the next one unparryable, and a laser and a slash landing together are each judged on their own timing.
 // Every red attack, melee or laser, goes through twHitP with melee:true, so one rule covers both and any mix of them.
 (function(){ const hp=hurtPlayer; hurtPlayer=function(){ const r=hp.apply(this,arguments); try{ if(typeof tpsFight==='function'&&tpsFight()&&Player.inv>0&&Player.inv<=1) Player.inv=Math.min(Player.inv,NPO.inv); }catch(e){} return r; }; })();
+// Strict timing (Shayan's rule, 12_strict, applied to Ali here): the FIRST attack press after a red tell decides. Inside the
+// last NP1_WIN before the strike = parry; earlier = a whiff that no later press can save. So mashing never parries.
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const P=Player;
-    try{ if(typeof tpsFight==='function'&&tpsFight()&&opt&&opt.melee&&!opt.pierce&&P.inv>0&&P.inv<=1&&!P.cineFly&&Game.state==='play'){ const since=Game.time-twParryClock(), ok=(P.block&&!opt.noGuard)||since<(opt.win||.26);
-        if(ok){ const inv0=P.inv; P.inv=0; let r; try{ r=ph.apply(this,arguments); } finally{ P.inv=Math.max(P.inv,inv0); } return r; } } }catch(e){ console.error('np iframes',e); }
+    try{ if(typeof tpsFight==='function'&&tpsFight()&&opt&&opt.melee&&!opt.pierce&&!P.cineFly&&Game.state==='play'){ const win=opt.win||.26;
+        let strictOk=null; if(NP1.tellT!=null&&Game.time-NP1.tellT<3){ const p=twStrictFirst(NP1.tellT); strictOk=!!p&&Game.time-p.t<=win; }
+        if(strictOk===false){ const a0=P.atkPressT, s0=P.swingT; P.atkPressT=-9; P.swingT=-9; try{ return ph.apply(this,arguments); } finally{ P.atkPressT=a0; P.swingT=s0; } } /* the first press was early (or there was none): no parry */
+        if(P.inv>0&&P.inv<=1){ const since=Game.time-twParryClock(), ok=strictOk===true||(P.block&&!opt.noGuard)||since<win;
+          if(ok){ const inv0=P.inv; P.inv=0; let r; try{ r=ph.apply(this,arguments); } finally{ P.inv=Math.max(P.inv,inv0); } return r; } } } }catch(e){ console.error('np iframes',e); }
     return ph.apply(this,arguments); }; })();
 
 // ----- 59z_air.js -----
@@ -17322,7 +17327,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.23 (Oct 28): no more stutter after a back-dashing Ali: his tells fly him in at a capped speed instead of re-snapping, no random reposition boosts, a normal cruise toward you between moves, the assault boost only when you're out of range, and the last gap is a real boost-dash";
+const DBG_PATCH="v1.24 (Oct 28): no parrying by mashing: the first attack press after a red tell decides (inside the last 0.3s = parry; earlier = a whiff no later press saves); Nathan flies after you instead of stuttering";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -17785,7 +17790,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.23';
+const GAME_VERSION='v1.24';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

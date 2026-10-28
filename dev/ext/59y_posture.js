@@ -53,7 +53,12 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
 // laser never leaves the next one unparryable, and a laser and a slash landing together are each judged on their own timing.
 // Every red attack, melee or laser, goes through twHitP with melee:true, so one rule covers both and any mix of them.
 (function(){ const hp=hurtPlayer; hurtPlayer=function(){ const r=hp.apply(this,arguments); try{ if(typeof tpsFight==='function'&&tpsFight()&&Player.inv>0&&Player.inv<=1) Player.inv=Math.min(Player.inv,NPO.inv); }catch(e){} return r; }; })();
+// Strict timing (Shayan's rule, 12_strict, applied to Ali here): the FIRST attack press after a red tell decides. Inside the
+// last NP1_WIN before the strike = parry; earlier = a whiff that no later press can save. So mashing never parries.
 (function(){ const ph=playerHit; playerHit=function(dmg,sx,sz,opt){ const P=Player;
-    try{ if(typeof tpsFight==='function'&&tpsFight()&&opt&&opt.melee&&!opt.pierce&&P.inv>0&&P.inv<=1&&!P.cineFly&&Game.state==='play'){ const since=Game.time-twParryClock(), ok=(P.block&&!opt.noGuard)||since<(opt.win||.26);
-        if(ok){ const inv0=P.inv; P.inv=0; let r; try{ r=ph.apply(this,arguments); } finally{ P.inv=Math.max(P.inv,inv0); } return r; } } }catch(e){ console.error('np iframes',e); }
+    try{ if(typeof tpsFight==='function'&&tpsFight()&&opt&&opt.melee&&!opt.pierce&&!P.cineFly&&Game.state==='play'){ const win=opt.win||.26;
+        let strictOk=null; if(NP1.tellT!=null&&Game.time-NP1.tellT<3){ const p=twStrictFirst(NP1.tellT); strictOk=!!p&&Game.time-p.t<=win; }
+        if(strictOk===false){ const a0=P.atkPressT, s0=P.swingT; P.atkPressT=-9; P.swingT=-9; try{ return ph.apply(this,arguments); } finally{ P.atkPressT=a0; P.swingT=s0; } } /* the first press was early (or there was none): no parry */
+        if(P.inv>0&&P.inv<=1){ const since=Game.time-twParryClock(), ok=strictOk===true||(P.block&&!opt.noGuard)||since<win;
+          if(ok){ const inv0=P.inv; P.inv=0; let r; try{ r=ph.apply(this,arguments); } finally{ P.inv=Math.max(P.inv,inv0); } return r; } } } }catch(e){ console.error('np iframes',e); }
     return ph.apply(this,arguments); }; })();
