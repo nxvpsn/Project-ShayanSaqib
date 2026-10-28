@@ -73,5 +73,5 @@ function twPhoneBoom(x,z,quiet,onHim){ const gy=groundY(x,z); Sound.sfx('crossbo
 function twQuizDeath(){ const P=Player; if(TW.god){ Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'∞ HP',t:0,col:'#7affb0'}); return; }
   FX.burst(P.x,P.y+1,P.z,60,0xff2a5a,8,.5); twHeartBurst(P.x,P.z,40); P.inv=0; hurtPlayer(999,P.x,P.z); }
 
-// anything reflected back into Caotan (cards, pillows, goo, orbs) does half damage
-(function(){ const th=twHurt; twHurt=function(T,d,src){ if(T&&T.who==='caotan'&&src==='bolt') d*=.5; return th.call(this,T,d,src); }; })();
+// anything reflected back into Caotan (cards, pillows, orbs) does half damage; his goo a quarter (TW._bolt: the bolt landing, set in 00_core)
+(function(){ const th=twHurt; twHurt=function(T,d,src){ if(T&&T.who==='caotan'&&src==='bolt') d*=TW._bolt&&TW._bolt.kind==='goo'?.25:.5; return th.call(this,T,d,src); }; })();

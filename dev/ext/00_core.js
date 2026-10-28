@@ -176,7 +176,7 @@ function twNear(x,z,r,pad){ let best=null,bd=r; for(const T of TW.foes){ if(T.hp
       const G=TW.giant; if(G&&G.hp>0&&!b.hit.has(G)&&Math.hypot(G.x-b.x,G.z-b.z)<rad+2.4){ b.hit.add(G); hzgHurt((b.big?7:4)*(b.mul||1),'beam'); } }
     return ub(dt); };
   const ubo=updateBolts; updateBolts=function(dt){ for(const b of BOLTS){ if(b.dead||!b.friendly) continue;
-      for(const T of TW.foes){ if(T.hp<=0||T.gone||T.hide) continue; if(Math.hypot(T.x-b.x,T.z-b.z)<1.1*T.scale&&Math.abs(T.y+1.3*T.scale-b.y)<1.8*T.scale){ b.dead=1; twHurt(T,b.dmg*1.15,'bolt'); Sound.sfx('hit'); shake(.15); break; } }
+      for(const T of TW.foes){ if(T.hp<=0||T.gone||T.hide) continue; if(Math.hypot(T.x-b.x,T.z-b.z)<1.1*T.scale&&Math.abs(T.y+1.3*T.scale-b.y)<1.8*T.scale){ b.dead=1; TW._bolt=b; twHurt(T,b.dmg*1.15,'bolt'); TW._bolt=null; Sound.sfx('hit'); shake(.15); break; } }
       const G=TW.giant; if(!b.dead&&G&&G.hp>0&&Math.hypot(G.x-b.x,G.z-b.z)<2.4){ b.dead=1; hzgHurt(b.dmg,'bolt'); } }
     return ubo(dt); };
   const nf=nearestFoe; nearestFoe=function(r){ let best=nf(r); const P=Player; let bd=best?Math.hypot(best.x-P.x,best.z-P.z):r;
