@@ -8022,6 +8022,25 @@ function* impDrillBoth(DC,FC){ const P=Player, gy=P.y, pin=typeof drPin==='funct
       if(C.kind==='spaz'){ const k=Math.max(0,C.hp/IMPX.spazHp); C.hpShow=C.hpShow==null?k:lerp(C.hpShow,k,.2); const w=64, x=Math.round(q[0]-w/2), y=Math.round(q[1]);
         D.fillStyle='#0a140c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#173a20'; D.fillRect(x,y,w,8); D.fillStyle='#d8ffd8'; D.fillRect(x,y,Math.round(w*C.hpShow),8); D.fillStyle='#3ad35a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2); } } }catch(e){ console.error('goo clone ui',e); } }; })();
 
+// ----- 11g_caotan_blink.js -----
+// =====================================================================
+// CAOTAN BLINKS (his solo fight, every phase): before goo and Impregnate he blinks to a random 4-10 units from you, and while
+// idle he blinks to a new spot every few seconds (twBlink: the same white burst at both ends). The gate and duo fights are unchanged.
+// =====================================================================
+const CAO_BLINK={dist:[4,10], every:[2.4,3.8]};
+function caoSolo(T){ const F=TW.fight; return !!F&&F.kind==='solo'&&T&&T.who==='caotan'; }
+// a spot about r from you, inside the arena (tries around you, keeps the farthest if the walls get in the way)
+function caoBlinkSpot(r){ const P=Player, a0=rnd(0,6.283); let best=null, bd=-1;
+  for(let k=0;k<12;k++){ const a=a0+k*.5236, p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), d=Math.hypot(p.x-P.x,p.z-P.z); if(d>=r-.5) return p; if(d>bd){ bd=d; best=p; } } return best; }
+(function(){ for(const k of ['goo','impregnate']){ const f=TWK.caotan[k]; if(!f) continue;
+    TWK.caotan[k]=function*(T,ph){ if(caoSolo(T)){ const p=caoBlinkSpot(rnd(CAO_BLINK.dist[0],CAO_BLINK.dist[1])); twBlink(T,p.x,p.z); T.blinkT=rnd(CAO_BLINK.every[0],CAO_BLINK.every[1]); yield .25; } yield* f.apply(this,arguments); }; } })();
+// idle: a blink every few seconds (not mid-move, stunned, downed or in a limit cut)
+(function(){ const uf=twUpdateFoe; twUpdateFoe=function(T,dt,play){ const r=uf.apply(this,arguments);
+    try{ if(play&&caoSolo(T)&&!T.gen&&!(T.stun>0)&&!T.down&&T.hp>0&&T.state!=='lc'&&!T.hide&&!IMP.down&&Game.state==='play'&&!Game.script){
+        if(T.blinkT==null) T.blinkT=rnd(CAO_BLINK.every[0],CAO_BLINK.every[1]); T.blinkT-=dt;
+        if(T.blinkT<=0){ T.blinkT=rnd(CAO_BLINK.every[0],CAO_BLINK.every[1]); const p=caoBlinkSpot(rnd(CAO_BLINK.dist[0],CAO_BLINK.dist[1])); twBlink(T,p.x,p.z); } } }catch(e){ console.error('caotan blink',e); }
+    return r; }; })();
+
 // ----- 12_strict.js -----
 // =====================================================================
 // TIMED PARRIES: mashing no longer works. Each strike judges the FIRST attack press made after its tell
@@ -16097,8 +16116,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: the rush (fireball) goo clone now melts after 30s, like the spaz";
-const DBG_NEW=['caotan:impregnate'];
+const DBG_PATCH="Oct 28: solo Caotan blinks 4-10 units away before goo and Impregnate (all phases), and blinks to a new spot every 2.4-3.8s while idle";
+const DBG_NEW=['caotan:goo','caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
