@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: Impregnate fires 2 sperm in phase II and 3 in III (the rest zoom in when one lands): 2 = spaz + drill clone, 3 = those + the fireball clone. Goo II pulses white twice (no wedge), goo III no gap marker, Mega Sperm swats back from 2.6 (1s stun). Letters: only red voice mails shockwave. Pillow III = phase II with a second return through you";
-const DBG_NEW=['caotan:impregnate','caotan:goo','caotan:pillow','caotan:letters'];
+const DBG_PATCH="Oct 28: Caotan's phase I goo (and the gate fight's) now has the white-pulse tell too: he pulses white twice before shooting";
+const DBG_NEW=['caotan:goo'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

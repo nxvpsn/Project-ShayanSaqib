@@ -1,5 +1,5 @@
 // =====================================================================
-// CAOTAN, HARDER PHASES II-III (solo fight; phase I and the gate fight keep the old moves)
+// CAOTAN, HARDER PHASES II-III (solo fight; phase I and the gate fight keep the old moves, though goo now has the white-pulse tell everywhere)
 // goo     II "Overflow Hose": he pulses white twice, then a low stream of goo sweeps across in front of him (jump it, dash it, or parry
 //            pellets back), then his lobbed puddles.
 //         III "Flood Warning": lobbed goo lands in two closing rings around you plus one on you, leaving one (unmarked) gap
@@ -11,18 +11,20 @@
 //            a red VOICE MAIL with a big unjumpable circle and a shockwave: swat it back or it blows up.
 // =====================================================================
 (function(){ const goo=TWK.caotan.goo, pil=TWK.caotan.pillow, let_=TWK.caotan.letters;
-  TWK.caotan.goo=function*(T,ph){ if(ph>=3){ yield* caoGooFlood(T,ph); return; } if(ph>=2){ yield* caoGooHose(T,ph); return; } yield* goo.apply(this,arguments); };
+  TWK.caotan.goo=function*(T,ph){ if(ph>=3){ yield* caoGooFlood(T,ph); return; } if(ph>=2){ yield* caoGooHose(T,ph); return; } yield* caoPulse(T,twSp(T)); /* phase I (and the gate) get the same tell */ yield* goo.apply(this,arguments); };
   TWK.caotan.pillow=function*(T,ph){ if(ph>=2){ yield* caoPillowReturn(T,ph); return; } yield* pil.apply(this,arguments); };
   TWK.caotan.letters=function*(T,ph){ if(ph>=2){ yield* caoUnread(T,ph); return; } yield* let_.apply(this,arguments); }; })();
 
 // ---------- goo ----------
+// the goo tell: Caotan pulses white twice
+function* caoPulse(T,sp){ for(let k=0;k<2;k++){ T.flash=.16; Sound.sfx(k?'charge':'ting'); FX.burst(T.x,T.y+1.4,T.z,14,0xffffff,4,.25,false); yield .42/sp; } }
 // one lobbed goo sperm: a marked landing (unjumpable splat) that leaves a slowing white puddle
 function caoGooLob(T,x,z,sp,o){ o=o||{}; const m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5); T.fire=.2; Sound.sfx('squelch');
   return twThrow({x:T.x,y:T.y+1,z:T.z,tx:x,tz:z,dur:(o.dur||.85)/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(lx,lz,play){ Sound.sfx('squelch'); FX.burst(lx,groundY(lx,lz)+.2,lz,14,0xffffff,3,.3,false);
     twZone(lx,lz,1.15,o.life||4.5,{col:0xfaf6ff,op:.95,fx:.05,splat:1}); if(play&&twInR(lx,lz,.95,99)) twHitP(1,lx,lz,{ub:true}); }}); }
 function* caoGooHose(T,ph){ const sp=twSp(T), P=Player; twBark('caotan',"Overflow mode! Hose time! I'm DRIPPING with power!",true);
   const a0=Math.atan2(P.z-T.z,P.x-T.x), sw=.85, dir=Math.random()<.5?1:-1, from=a0-sw*dir; T.cast=.85/sp; T.lockF=1; T.f=Math.cos(a0)>=0?1:-1;
-  for(let k=0;k<2;k++){ T.flash=.16; Sound.sfx(k?'charge':'ting'); FX.burst(T.x,T.y+1.4,T.z,14,0xffffff,4,.25,false); yield .42/sp; } /* the tell: he pulses white twice (no ground marker) */
+  yield* caoPulse(T,sp); /* the tell: he pulses white twice (no ground marker) */
   const dur=1.5/sp; for(let t=0;t<dur;t+=.05){ const a=from+dir*(t/dur)*sw*2+rnd(-.04,.04), gy=groundY(T.x,T.z);
     twBolt(T,{kind:'goo',x:T.x+Math.cos(a)*.6,y:gy+.5,z:T.z+Math.sin(a)*.6,vx:Math.cos(a)*10*sp,vz:Math.sin(a)*10*sp,vy:0,col:0xffffff,dmg:2,life:2.2}); /* low: jump it */
     T.fire=.1; if(Math.random()<.4) Sound.sfx('squelch'); yield .05; }
