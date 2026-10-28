@@ -13,6 +13,7 @@ function ultList(){ const P=Player, on=o=>!!o&&Math.abs(o.x-P.x)<16&&Math.abs(o.
   if(Game.twins&&Game.twins.active) for(const T of Game.twins.list) if(T.hp>0&&on(T)) L.push(T);
   for(const m of MOBS) if(m.hp>0&&on(m)) L.push(m);
   for(const S of IMP.list) if(!S.dead&&S.st!=='burn'&&S.st!=='cut'&&on(S)) L.push(S);
+  for(const c of IMP.extra) if(c.kind==='spaz'&&!c.dead&&c.st!=='emerge'&&on(c)) L.push(c); /* the spaz goo clone (11f); the drill and fireball clones parry it */
   return L; }
 // the drill's targets (base specialAttack, patched in build.py): outside fights every mob as before; in a fight, everyone when 2+
 function ultFoes(){ const L=ultList(), fight=!!(Game.boss||TW.fight||TW.giant||(typeof NB!=='undefined'&&NB&&NB.alive)||(Game.twins&&Game.twins.active));
@@ -20,6 +21,7 @@ function ultFoes(){ const L=ultList(), fight=!!(Game.boss||TW.fight||TW.giant||(
 // one mini drill lands (base drillSplit, patched): the same damage the single drill does to that kind of enemy
 function ultHit(T,src){ const P=Player;
   if(IMP.list.includes(T)){ impKill(T,'burn'); return; }
+  if(IMP.extra.includes(T)){ impSpazKill(T,'you'); return; }
   if(TW.foes.includes(T)){ const w=T.inv; T.inv=false; twHurt(T,16,'ult'); T.inv=w; return; }
   if(T===TW.giant){ hzgHurt(16,'ult'); return; }
   if(typeof NB!=='undefined'&&T===NB){ nbDamage(50,true); return; }
@@ -29,4 +31,4 @@ function ultHit(T,src){ const P=Player;
 // Ali's ultimate: everything on screen while it runs
 (function(){ const au=aliUltimate; aliUltimate=function*(){ TW._ultAll=1; try{ yield* au.apply(this,arguments); } finally{ TW._ultAll=0; } };
   const at=aliTargets; aliTargets=function(){ if(TW._ultAll){ try{ const L=ultList(); if(L.length) return L; }catch(e){ console.error('ult targets',e); } } return at.apply(this,arguments); };
-  const ah=aliHit; aliHit=function(T,d){ if(IMP.list.includes(T)){ impKill(T,'cut'); return; } return ah.apply(this,arguments); }; })();
+  const ah=aliHit; aliHit=function(T,d){ if(IMP.list.includes(T)){ impKill(T,'cut'); return; } if(IMP.extra.includes(T)){ impSpazKill(T,'you'); return; } return ah.apply(this,arguments); }; })();

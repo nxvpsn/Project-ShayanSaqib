@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: Caotan phases II-III: goo = Overflow Hose (II, low sweeping goo stream) / Flood Warning (III, closing puddle rings with one gap + parryable Mega Sperm); pillow = Return to Sender (II, boomerangs back through you) / Waifu Harem (III, 4 pillows from the corners + giant Hikari belly-flop); letters II-III = Unread Messages (chasing phones, red VOICE MAIL every 3rd)";
-const DBG_NEW=['caotan:goo','caotan:pillow','caotan:letters'];
+const DBG_PATCH="Oct 28: Impregnate fires 2 sperm in phase II and 3 in III (the rest zoom in when one lands): 2 = spaz + drill clone, 3 = those + the fireball clone. Goo II pulses white twice (no wedge), goo III no gap marker, Mega Sperm swats back from 2.6 (1s stun). Letters: only red voice mails shockwave. Pillow III = phase II with a second return through you";
+const DBG_NEW=['caotan:impregnate','caotan:goo','caotan:pillow','caotan:letters'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }
@@ -113,7 +113,7 @@ function dbgKJLC(kind,ph){ const K=dbgKJ(); if(!K){ dbgSay('Kojima is not on the
   dbgSay('Running: '+((dbgLCs().find(q=>q[1]===kind&&q[2]===ph)||[kind])[0])); }
 
 // ---------- every frame: enforce the AI mode, loop the chosen mechanic, slow-mo ----------
-function dbgBusy(){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); return !T||!!T.gen||T.stun>0||T.state==='lc'||!!TW.fight.pend||(b==='caotan'&&(!!IMP.down||!!IMP.clone||IMP.list.length>0)); } if(b==='duo'){ const F=dbgDuo(); return !F||F.busy||!!F.C.gen||!!F.O.gen||F.lc||!!F.pend; }
+function dbgBusy(){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); return !T||!!T.gen||T.stun>0||T.state==='lc'||!!TW.fight.pend||(b==='caotan'&&(impBusy()||IMP.list.length>0)); } if(b==='duo'){ const F=dbgDuo(); return !F||F.busy||!!F.C.gen||!!F.O.gen||F.lc||!!F.pend; }
   if(b==='hamza'){ const G=TW.giant; return !G||!!G.gen||G.inv||!!G.pend; } if(b==='nathan') return !NB||!!NB.gen||NB.inv||!!NB.pend; if(b==='grimmaw'){ const K=dbgKJ(); return !K||K.state!=='idle'; } return true; }
 function dbgTick(){ if(!DBG.on) return; if(DBG.wantOpen&&Game.state==='play'&&!Game.script&&!Game.dlg){ DBG.wantOpen=0; dbgOpen(true); } const idle=DBG.mode==='idle', loop=DBG.mode==='loop'&&DBG.move; const F=TW.fight;
   if(F&&F.kind==='solo') F.noAttack=idle||loop; if(F&&F.kind==='duo'&&!F.lc&&!F.pend) F.director=(idle||loop)?0:1; if(TW.giant) TW.giant.noAttack=idle||loop;

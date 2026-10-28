@@ -8,13 +8,21 @@
 // White goo (these splotches, Caotan's goo puddles and goo pellets) gives Omar's goop slow debuff (twGoopSlow, 22_omar3.js).
 // =====================================================================
 const IMPC={dash:18, charge:1.4, fbSp:15, fbDmg:3, rushSp:17, rushDmg:0, down:3};
-IMP.down=null; IMP.clone=null;
+IMP.down=null; IMP.clone=null; IMP.extra=[]; /* clone = the fireball clone; extra = the spaz and drill clones (11f_impmulti.js) */
+function impBusy(){ return !!IMP.down||!!IMP.clone||IMP.extra.length>0; }
 NAMES.gooshayan='Goo Shayan'; NAMES.gooali='Goo Ali';
-// the sperm got you
-function impDown(){ const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); Sound.sfx('squelch');
+// the sperm got you (n of them): 1 = the fireball clone, 2 = the spaz + the drill clone, 3 = all three
+function impDown(n){ n=n||1; const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IMPREGNATED?!',t:0,big:true,col:'#ff8ac8'}); Sound.sfx('doki'); Sound.sfx('squelch');
   twHeartBurst(P.x,P.z,24); shake(.5); FX.hitstop=Math.max(FX.hitstop,.1); FX.burst(P.x,P.y+1,P.z,24,0xff8ac8,4,.3);
   twBark('caotan',"Congratulations, senpai! It's a... it's a YOU!",true);
-  IMP.down={t:0,dur:IMPC.down}; P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; P.vx=P.vz=0; impClone(P.x,P.z); }
+  const D=IMP.down={t:0,dur:IMPC.down,n}; P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; P.vx=P.vz=0;
+  const made=[]; if(n!==2) made.push(impClone(P.x,P.z,{quiet:n>1})); if(n>=2){ made.push(impSpaz(P.x,P.z)); made.push(impDrillClone(P.x,P.z)); }
+  const base=rnd(0,6.28); made.forEach((c,i)=>{ c.slot=base+i*6.283/made.length; }); /* they squeeze out around you, spaced apart */
+  // the down timer (any mix of clones): you lie there for 3s, invulnerable, then get up
+  twHz({upd(dt,play){ if(IMP.down!==D) return false; if(play) D.t+=dt;
+      if(n>=2&&D.t>1.7&&!D.said){ D.said=1; if(n>=3) twBark('caotan',"TRIPLETS?! Senpai, my bloodline is UNSTOPPABLE!",true); else twBark('caotan',"Twins?! Senpai, I'm a father of MULTIPLES!",true); }
+      if(D.t>=D.dur){ IMP.down=null; P.hurt=0; P.inv=Math.max(P.inv,.5); P.anim='idle'; return false; } return true; },
+    kill(){ if(IMP.down===D){ IMP.down=null; P.hurt=0; P.inv=Math.max(P.inv,.5); } }}); }
 // downed: no input, invulnerable, lying there (Shayan's death frames, reversed as he gets up)
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ const D=IMP.down, P=Player; if(!D) return up.apply(this,arguments);
     try{ P.hurt=Math.max(P.hurt||0,.1); P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; }catch(e){}
@@ -26,16 +34,15 @@ function impDown(){ const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'IM
     return dd.apply(this,arguments); }; })();
 // Caotan holds his attacks while you're down, and doesn't Impregnate again while a clone is out
 (function(){ const pk=twPick; twPick=function(T){ if(IMP.down&&T&&T.who==='caotan') return null; let k=pk.apply(this,arguments);
-    const busy=()=>!!IMP.clone||IMP.list.length>0; for(let i=0;i<3&&k==='impregnate'&&busy();i++) k=pk.apply(this,arguments); return k==='impregnate'&&busy()?null:k; }; })();
+    const busy=()=>impBusy()||IMP.list.length>0; for(let i=0;i<3&&k==='impregnate'&&busy();i++) k=pk.apply(this,arguments); return k==='impregnate'&&busy()?null:k; }; })();
 // the clone: a hazard (twClearHz removes it with everything else)
-function impClone(x,z){ const spr=new Sprite3D(96,96); spr.show(false);
-  const C={x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',ign:0,swU:0,swN:0,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,rushes:0,dead:false};
+function impClone(x,z,o){ o=o||{}; const spr=new Sprite3D(96,96); spr.show(false);
+  const C={x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',ign:0,swU:0,swN:0,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,rushes:0,dead:false,quiet:!!o.quiet};
   IMP.clone=C;
   twHz({upd(dt,play){ try{ if(play) impCloneUpd(C,dt); impCloneDraw(C); }catch(e){ console.error('goo clone',e); C.dead=true; } if(C.dead){ impCloneEnd(C); return false; } return true; },
     kill(){ impCloneEnd(C); }});
   return C; }
-function impCloneEnd(C){ if(C.ended) return; C.ended=1; try{ C.spr.dispose(); }catch(e){} if(C.fb) C.fb.dead=true; if(IMP.clone===C) IMP.clone=null;
-  if(IMP.down){ IMP.down=null; const P=Player; P.hurt=0; P.inv=Math.max(P.inv,.5); } }
+function impCloneEnd(C){ if(C.ended) return; C.ended=1; try{ C.spr.dispose(); }catch(e){} if(C.fb) C.fb.dead=true; if(IMP.clone===C) IMP.clone=null; }
 function impGo(C,st){ C.st=st; C.k=0; C.n=0; C.hopA=null; }
 function impCloneUpd(C,dt){ const P=Player, T=TW.foes.find(t=>t.who==='caotan'), sp=T?twSp(T):1, toP=Math.atan2(P.z-C.z,P.x-C.x), away=toP+Math.PI;
   C.t+=dt; C.k+=dt; C.gy=groundY(C.x,C.z); C.swU=Math.min(1,C.swU+dt/.18); C.sayT-=dt;
@@ -43,14 +50,14 @@ function impCloneUpd(C,dt){ const P=Player, T=TW.foes.find(t=>t.who==='caotan'),
   if(C.ign&&Math.random()<.7) FX.spawn(C.x+Math.cos(C.ang)*.6,C.y+rnd(.8,1.6),C.z+Math.sin(C.ang)*.6,rnd(-.3,.3),rnd(1,2.5),rnd(-.3,.3),.35,Math.random()<.5?0xff5a1a:0xffc03a,.25,0,true);
   if(Math.random()<.25) FX.spawn(C.x+rnd(-.4,.4),C.y+rnd(.3,1.4),C.z,0,-1.5,0,.5,0xf4f0e6,.14,6,false); /* goo drips */
   if(['dash2','charge','shot','tell','retreat'].includes(C.st)) impAutoParry(C);
-  if(C.st==='emerge'){ const D=IMP.down; if(D) D.t+=dt; C.ang=toP; C.anim='idle';
-    if(!C.emerge&&C.t>.55){ C.emerge=1; const a=rnd(0,6.28), q=twClampXZ(P.x+Math.cos(a)*1.4,P.z+Math.sin(a)*1.4,1); C.x=q.x; C.z=q.z; C.gy=groundY(C.x,C.z); C.y=C.gy;
+  if(C.st==='emerge'){ const D=IMP.down; C.ang=toP; C.anim='idle';
+    if(!C.emerge&&C.t>.55){ C.emerge=1; const a=(C.slot!=null?C.slot:rnd(0,6.28)), q=twClampXZ(P.x+Math.cos(a)*1.4,P.z+Math.sin(a)*1.4,1); C.x=q.x; C.z=q.z; C.gy=groundY(C.x,C.z); C.y=C.gy;
       Sound.sfx('squelch'); Sound.sfx('gore'); shake(.3); FX.burst(P.x,P.y+.8,P.z,36,0xffffff,5,.35,false); FX.burst(C.x,C.y+1,C.z,20,0xf4f0e6,3,.3,false);
       Game.dmgNums.push({x:C.x,y:C.y+3,z:C.z,n:"IT'S A... YOU?!",t:0,big:true,col:'#ffffff'}); }
     if(C.emerge) C.ek=Math.min(1,C.ek+dt/.45);
-    if(C.t>.8&&!C.said1){ C.said1=1; if(C.al) twBark('gooali',"Hi, Dad. I'm four seconds old and I already want you dead.",true); else twBark('gooshayan',"Hi, Dad. I'm four seconds old and I already want you dead.",true); }
-    if(C.t>2&&!C.said2){ C.said2=1; twBark('caotan',"He has your eyes, senpai! And my... everything else!",true); }
-    if(!D||D.t>=D.dur){ IMP.down=null; P.hurt=0; P.inv=Math.max(P.inv,.5); P.anim='idle'; C.emerge=1; C.ek=1;
+    if(C.t>.8&&!C.said1&&!C.quiet){ C.said1=1; if(C.al) twBark('gooali',"Hi, Dad. I'm four seconds old and I already want you dead.",true); else twBark('gooshayan',"Hi, Dad. I'm four seconds old and I already want you dead.",true); }
+    if(C.t>2&&!C.said2&&!C.quiet){ C.said2=1; twBark('caotan',"He has your eyes, senpai! And my... everything else!",true); }
+    if(!D){ C.emerge=1; C.ek=1; if(C.quiet){ impGo(C,'dash2'); return; }
       if(C.al) twBark('gooali',"There's only room for one Ali in this fight. And I'm way stickier.",true); else twBark('gooshayan',"There's only room for one Shayan in this fight. And I'm way stickier.",true);
       impGo(C,'dash2'); } return; }
   if(C.st==='dash2'){ // two quick dashes away from you
@@ -67,6 +74,7 @@ function impCloneUpd(C,dt){ const P=Player, T=TW.foes.find(t=>t.who==='caotan'),
   if(C.st==='tell'){ const R=C.R; C.anim='idle'; impRushWatch(C); if(Game.time>=R.tEnd){ Sound.sfx('dash'); impGo(C,'rush');
       if(!C.rushes++){ if(C.al) twBark('gooali',"My sword's on fire too! HAHAHA! MURDER TIME!",true); else twBark('gooshayan',"My sword's on fire too! HAHAHA! MURDER TIME!",true); } } return; }
   if(C.st==='rush'){ const R=C.R; step(R.a,IMPC.rushSp); R.trav+=IMPC.rushSp*dt; C.ang=R.a; C.anim='swing'; twRushTell(C,R.a);
+    impSpazArea(c=>Math.hypot(c.x-C.x,c.z-C.z)<TW_DASH_R);
     R.slT-=dt; if(R.slT<=0){ R.slT=.09; C.swN++; C.swU=0; Sound.sfx('swing'); try{ pxvSlash('sh_fslash',C.x,C.gy,C.z,R.a+rnd(-.6,.6),C.swN%2,2.4); }catch(e){} }
     impRushWatch(C);
     if(Math.hypot(P.x-C.x,P.z-C.z)<TW_DASH_R&&Math.abs(P.y-C.gy)<2.4){ const r=twStrictDo(R.from,()=>twHitP(IMPC.rushDmg,C.x,C.z,{melee:true,win:TW_DASH_WIN}));
@@ -107,6 +115,7 @@ function impFbUpd(F,dt){ const P=Player; F.t+=dt; F.x+=F.vx*dt; F.y+=F.vy*dt; F.
   if(Math.random()<.9) FX.spawn(F.x,F.y,F.z,-F.vx*.05,rnd(0,.6),-F.vz*.05,.25,F.defl?0x9fe0ff:(Math.random()<.5?0xff0a30:0xff5a70),.5,0,true);
   if(F.t>(F.defl?.9:2.2)||F.y<groundY(F.x,F.z)-.2||cellH(F.x,F.z)>F.y+.3){ FX.burst(F.x,F.y,F.z,20,F.defl?0x9fe0ff:0xff1a3a,5,.3); F.dead=true; return; }
   if(F.defl) return;
+  impSpazArea(c=>Math.hypot(c.x-F.x,c.z-F.z)<1.1&&Math.abs(c.y+1-F.y)<1.8); /* friendly fire on the spaz clone */
   const d=Math.hypot(P.x-F.x,P.z-F.z);
   if(d<2.4&&Math.abs(F.y-P.y-1)<1.9&&impSwinging()&&(d<.9||angDiff(Math.atan2(F.z-P.z,F.x-P.x),P.ang)<1.7)){ impDeflect(F); return; }
   if(d<.8&&F.y>P.y-.1&&F.y<P.y+2){ const r=twHitP(IMPC.fbDmg,F.x,F.z,{onParry:()=>impDeflect(F)}); if(r==='hit'||r==='block'){ twFireballHit({big:true},F.x,F.y,F.z); F.dead=true; } } }
@@ -127,7 +136,10 @@ function impPop(C){ Sound.sfx('squelch'); Sound.sfx('gore'); Sound.sfx('slam'); 
     for(let j=0;j<8;j++) FX.spawn(C.x,C.y+1,C.z,(q.x-C.x)*2+rnd(-1,1),rnd(3,5),(q.z-C.z)*2+rnd(-1,1),.5,0xffffff,.3,12,false);
     twZone(q.x,q.z,1.25,999,{splat:1,op:.95,col:0xfaf6ff}); } }
 // the Drill: he drills right back and the two cancel out
-(function(){ const sa=specialAttack; specialAttack=function*(){ const C=IMP.clone; if(C&&!C.dead&&C.st!=='emerge'&&!ALI()&&TW.fight){ yield* impDrillClash(C); return; } yield* sa.apply(this,arguments); }; })();
+// (a drill clone's drill comes first: your drill goes only for it, 11f_impmulti.js)
+(function(){ const sa=specialAttack; specialAttack=function*(){ const DC=IMP.extra.find(c=>c.kind==='drill'&&c.drill&&!c.dead);
+    if(DC&&!ALI()&&TW.fight){ yield* impDrillVsDrill(DC); return; }
+    const C=IMP.clone; if(C&&!C.dead&&C.st!=='emerge'&&!ALI()&&TW.fight){ yield* impDrillClash(C); return; } yield* sa.apply(this,arguments); }; })();
 function* impDrillClash(C){ const P=Player, pin=typeof drPin==='function'?drPin():null, gy=P.y; let d=null, e=null;
   try{ P.sp=0; P.inv=99; P.atk=null; P.charge=0; P.vx=P.vz=0; P.cineFly=true; P.cineAnim='jump'; Sound.sfx('djump'); impGo(C,'drill'); if(C.fb) C.fb.dead=true;
     twBark('gooshayan',"Oh, you're doing the drill? I'm doing the drill.",true);

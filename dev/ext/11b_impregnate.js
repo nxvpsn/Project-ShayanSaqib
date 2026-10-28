@@ -1,5 +1,5 @@
 // =====================================================================
-// CAOTAN: IMPREGNATE (solo, phases I-III). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
+// CAOTAN: IMPREGNATE (solo, phases I-III: one pink sperm, two, three (IMP_WAVES); the rest zoom in when one lands). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
 // twice as fast as his goo. Hit it (any swing) and it's smacked into the ground half a screen away, dormant, under "BURN IT!":
 // 10 hits (slashes, fireballs of any size, Getsugas; one each): a fireball finish ignites it (it writhes and burns),
 // a sword or Getsuga finish cuts it in half; the Drill or Ali's ultimate kills it in one hit. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! You go down and a goo clone of you pops out (11c_gooclone.js).
@@ -16,15 +16,20 @@ function impTex(f){ if(IMP_TEX[f]) return IMP_TEX[f]; const W=64, H=24, cv=docum
     c.strokeStyle='#2a0618'; c.lineWidth=1.4; c.beginPath(); c.arc(52,H/2+1,3.6,.25,Math.PI-.25); c.stroke(); /* the smile */ }catch(e){}
   const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; return IMP_TEX[f]=t; }
 // the move
-TWK.caotan.impregnate=function*(T,ph){ const sp=twSp(T); twBark('caotan',"Impregnate! ...Wait, that came out wrong. FIRE!",true);
+// phase I one sperm, II two, III three: staggered, each a little slower than the last, fanned out, so they arrive one after another
+const IMP_WAVES={1:[{off:0,spd:22}],2:[{off:-.35,spd:21},{off:.35,spd:16,delay:.35}],3:[{off:0,spd:22},{off:-.5,spd:17.5,delay:.3},{off:.5,spd:14,delay:.6}]};
+TWK.caotan.impregnate=function*(T,ph){ const sp=twSp(T), W=IMP_WAVES[Math.min(3,Math.max(1,ph||1))];
+  if(W.length>=3) twBark('caotan',"Triple Impregnate! ...Okay, now it's DEFINITELY coming out wrong. FIRE!",true); else if(W.length===2) twBark('caotan',"Double Impregnate! Twins run in the family! FIRE!",true); else twBark('caotan',"Impregnate! ...Wait, that came out wrong. FIRE!",true);
   T.cast=1; T.heartEyes=1; IMP.womb={t:0,dur:IMP.tell/sp}; Sound.sfx('doki'); Sound.sfx('charge'); yield IMP.tell/sp;
-  T.cast=0; T.heartEyes=0; const S=impLaunch(T); Sound.sfx('whoosh'); Sound.sfx('squelch');
-  for(let w=0;w<3&&S.st==='fly'&&!S.dead;w+=.05) yield .05; yield .4; };
+  T.cast=0; T.heartEyes=0; const Ss=[]; let el=0;
+  for(const w of W) Ss.push(impLaunch(T,w.off,w.spd*sp,(w.delay||0)/sp)); Sound.sfx('whoosh'); Sound.sfx('squelch'); /* all at once; the later ones wait at his side for their turn */
+  for(let w=0;w<3.6&&Ss.some(S=>(S.st==='fly'||S.st==='wait')&&!S.dead);w+=.05) yield .05; yield .4; };
 for(const k of [1,2,3]) if(TWPOOL.caotan[k]&&!TWPOOL.caotan[k].includes('impregnate')) TWPOOL.caotan[k].push('impregnate');
 // one sperm: fly (homing a little) -> smacked (an arc half a screen away) -> dormant (BURN IT!) -> burning -> gone; or it gets you
-function impLaunch(T){ const P=Player, gy=groundY(T.x,T.z), s=new THREE.Sprite(new THREE.SpriteMaterial({map:impTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false}));
+function impLaunch(T,off,spd,delay){ spd=spd||IMP.speed; const P=Player, gy=groundY(T.x,T.z), s=new THREE.Sprite(new THREE.SpriteMaterial({map:impTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false}));
   s.scale.set(1.9,1.9*24/64,1); s.renderOrder=6; s.userData.tw=1; scene.add(s);
-  const a=Math.atan2(P.z-T.z,P.x-T.x), S={st:'fly',s,x:T.x+Math.cos(a)*.8,y:gy+1.1,z:T.z+Math.sin(a)*.8,vx:Math.cos(a)*IMP.speed,vz:Math.sin(a)*IMP.speed,hp:IMP.hp,t:0,f:0,ft:0,rot:0,trav:0,dead:false};
+  const a=Math.atan2(P.z-T.z,P.x-T.x)+(off||0), S={st:'fly',spd,s,x:T.x+Math.cos(a)*.8,y:gy+1.1,z:T.z+Math.sin(a)*.8,vx:Math.cos(a)*spd,vz:Math.sin(a)*spd,hp:IMP.hp,t:0,f:0,ft:0,rot:0,trav:0,dead:false,off:off||0,T};
+  if(delay>0){ S.st='wait'; S.wt=delay; s.visible=false; }
   IMP.list.push(S);
   twHz({upd(dt,play){ try{ if(play&&(!Player.cineFly||S.st==='burn'||S.st==='cut')) impUpd(S,dt); /* held still while an ultimate plays */ }catch(e){ console.error('impregnate',e); S.dead=true; } if(S.dead){ impCutKill(S); scene.remove(s); const i=IMP.list.indexOf(S); if(i>=0) IMP.list.splice(i,1); return false; } return true; },
     kill(){ impCutKill(S); scene.remove(s); const i=IMP.list.indexOf(S); if(i>=0) IMP.list.splice(i,1); IMP.womb=null; }});
@@ -34,17 +39,22 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
   const face=()=>{ const a=toScreen(S.x,S.y,S.z), b=toScreen(S.x+S.vx*.05,S.y,S.z+S.vz*.05), dx=b[0]-a[0], dy=b[1]-a[1]; if(dx*dx+dy*dy>.01) S.rot=Math.atan2(-dy,dx); };
   if(S.ft>(S.st==='burn'?.03:.055)){ S.ft=0; S.f=(S.f+1)%4; s.material.map=impTex(S.f); }
   if(S.st==='fly'){ const sp=Math.hypot(S.vx,S.vz), cur=Math.atan2(S.vz,S.vx); let d=Math.atan2(P.z-S.z,P.x-S.x)-cur; while(d>Math.PI) d-=6.283; while(d<-Math.PI) d+=6.283;
-      const ad=Math.abs(d), close=Math.hypot(P.x-S.x,P.z-S.z)<3.5&&ad<2, tr=close?99:ad>Math.PI/2?5:2.8, na=cur+clamp(d,-tr*dt,tr*dt), v=IMP.speed*(ad>Math.PI/3&&!close?.45:1); /* homes in; dodge through it and it brakes, loops back round and comes again */ S.vx=Math.cos(na)*v; S.vz=Math.sin(na)*v; S.x+=S.vx*dt; S.z+=S.vz*dt; { const q=twClampXZ(S.x,S.z,.8); S.x=q.x; S.z=q.z; } S.trav+=sp*dt; S.y=lerp(S.y,P.y+1.1,Math.min(1,dt*6)); face();
+      const ad=Math.abs(d), close=Math.hypot(P.x-S.x,P.z-S.z)<3.5&&ad<2, tr=close?99:ad>Math.PI/2?5:2.8, na=cur+clamp(d,-tr*dt,tr*dt), v=S.spd*(ad>Math.PI/3&&!close?.45:1); /* homes in; dodge through it and it brakes, loops back round and comes again */ S.vx=Math.cos(na)*v; S.vz=Math.sin(na)*v; S.x+=S.vx*dt; S.z+=S.vz*dt; { const q=twClampXZ(S.x,S.z,.8); S.x=q.x; S.z=q.z; } S.trav+=sp*dt; S.y=lerp(S.y,P.y+1.1,Math.min(1,dt*6)); face();
       if(Math.random()<.6) FX.spawn(S.x,S.y,S.z,0,.2,0,.25,0xff8ac8,.22,0,true);
       const d2=Math.hypot(P.x-S.x,P.z-S.z);
       if(d2<2.1&&impSwinging()){ impSmack(S); return; }
-      if(d2<.9&&Math.abs(P.y+1-S.y)<1.6&&!(P.inv>0)&&!(P.dash>0)&&!IMP.down&&!IMP.clone){ S.dead=true; impDown(); return; }
+      if(d2<.9&&Math.abs(P.y+1-S.y)<1.6&&!(P.inv>0)&&!(P.dash>0)&&!impBusy()){ S.dead=true; /* every other sperm still flying zooms in too: the count decides the clones */
+        let n=1; for(const o of IMP.list) if(o!==S&&!o.dead&&(o.st==='fly'||o.st==='wait')){ if(o.st==='wait'){ o.s.visible=true; o.x=o.T.x; o.z=o.T.z; } o.st='zoom'; o.t=0; n++; } impDown(n); return; }
     }
+  else if(S.st==='wait'){ const T=S.T, P2=Player; S.wt-=dt; S.x=T.x; S.z=T.z; S.y=T.y+1.1;
+      if(S.wt<=0){ const a=Math.atan2(P2.z-T.z,P2.x-T.x)+S.off; S.st='fly'; s.visible=true; S.x=T.x+Math.cos(a)*.8; S.z=T.z+Math.sin(a)*.8; S.vx=Math.cos(a)*S.spd; S.vz=Math.sin(a)*S.spd; S.t=0; Sound.sfx('whoosh'); } }
+  else if(S.st==='zoom'){ const dx=P.x-S.x, dz=P.z-S.z, d=Math.hypot(dx,dz)||1, v=45; S.vx=dx/d*v; S.vz=dz/d*v; S.x+=S.vx*dt; S.z+=S.vz*dt; S.y=lerp(S.y,P.y+.6,Math.min(1,dt*8)); face();
+      FX.spawn(S.x,S.y,S.z,0,0,0,.25,0xff8ac8,.3,0,true); if(d<.7||S.t>.6){ FX.burst(P.x,P.y+.8,P.z,18,0xff8ac8,4,.3); Sound.sfx('squelch'); Game.dmgNums.push({x:P.x+rnd(-.6,.6),y:P.y+3.4,z:P.z,n:'+1',t:0,big:true,col:'#ff8ac8'}); S.dead=true; return; } }
   else if(S.st==='smack'){ S.k+=dt/.5; const u=Math.min(1,S.k); S.x=lerp(S.sx,S.tx,u); S.z=lerp(S.sz,S.tz,u); S.y=lerp(S.sy,groundY(S.tx,S.tz)+.25,u)+Math.sin(u*Math.PI)*2.6; S.rot+=dt*26;
       if(u>=1){ S.st='dormant'; S.t=0; S.rot=0; S.lastSw=Player.swingT||0; S.wasSw=impSwinging(); Sound.sfx('slam'); shake(.35); FX.burst(S.x,S.y,S.z,18,0xff8ac8,4,.3); FX.ring(S.x,S.y-.2,S.z,'#ff8ac8',1.6,.3); } }
   else if(S.st==='dormant'){ S.rot=Math.sin(S.t*9)*.12; impBurnHits(S);
       if(S.hp<=1e-6){ impKill(S,S.lastBy==='fire'?'burn':'cut'); return; }
-      if(S.t>IMP.dormant){ S.st='fly'; S.trav=0; S.hp=IMP.hp; const a=Math.atan2(P.z-S.z,P.x-S.x); S.vx=Math.cos(a)*IMP.speed; S.vz=Math.sin(a)*IMP.speed; S.y=groundY(S.x,S.z)+1.1; IMP.womb={t:0,dur:.6};
+      if(S.t>IMP.dormant){ S.st='fly'; S.trav=0; S.hp=IMP.hp; const a=Math.atan2(P.z-S.z,P.x-S.x); S.vx=Math.cos(a)*S.spd; S.vz=Math.sin(a)*S.spd; S.y=groundY(S.x,S.z)+1.1; IMP.womb={t:0,dur:.6};
         twBark('caotan',"He's ALIVE! Go, Junior! Find your father's senpai!",true); Sound.sfx('squelch'); } }
   else if(S.st==='burn'){ const k=Math.min(1,S.t/1.2); S.rot=Math.sin(S.t*38)*(.6*(1-k)+.1); s.material.color.setRGB(1-.75*k,1-.9*k,1-.9*k); s.scale.set(Math.max(.05,1.9*(1-k*.7)),Math.max(.02,1.9*24/64*(1-k*.7)),1);
       for(let i=0;i<3;i++) FX.spawn(S.x+rnd(-.6,.6),S.y+rnd(0,.3),S.z+rnd(-.2,.2),rnd(-.3,.3),rnd(1.5,3.5),0,rnd(.3,.6),[0xff7a1a,0xffc03a,0xff3a1a][i],rnd(.2,.38),-1,true);
