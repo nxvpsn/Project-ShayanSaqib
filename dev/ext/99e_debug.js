@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.26 (Oct 28): a thin yellow stun meter (the sperm timer's style) runs out over every stunned boss: Caotan, Omar, the duo, Kojima, Hamza's giant, the mech's HUD, and Nathan on Ali's road, so the punish's time is readable.";
+const DBG_PATCH="v1.27 (Oct 28): the stun meter (a thin yellow line that runs out, the sperm timer's style) over every stunned boss except in the bullet hell: Caotan, Omar, the duo, Kojima, Big Back Hamza, and Nathan on Ali's road.";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

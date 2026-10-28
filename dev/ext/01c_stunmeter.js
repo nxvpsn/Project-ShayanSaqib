@@ -1,6 +1,6 @@
 // ---------- the stun meter: a thin yellow line that runs out over a stunned boss (the sperm's own timer in 11b), on every boss ----------
 // twStunTrack(o,key) remembers the stun's full length in o._smx (reset once it ends) and returns the fraction left; twStunMeter draws it at screen coords,
-// twStunMeterAt over a world point. Foes (Caotan, Omar, the duo, Kojima) and Hamza's giant are drawn here; the Touhou HUD (73) and Nathan on Ali's road (59y) call these.
+// twStunMeterAt over a world point. Foes (Caotan, Omar, the duo, Kojima) and Hamza's giant are drawn here; Nathan on Ali's road (59y) calls these. Not the bullet hell (the owner's call).
 function twStunTrack(o,key){ const left=o[key]||0; if(!(left>0)){ o._smx=0; return 0; } o._smx=Math.max(o._smx||0,left); return Math.max(0,Math.min(1,left/o._smx)); }
 function twStunMeter(o,key,sx,sy,w,label){ const lt=twStunTrack(o,key); if(!(o[key]>0)) return; const x=Math.round(sx-w/2), y=Math.round(sy);
   D.save(); D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(x-1,y-1,w+2,5); D.fillStyle=lt<.3&&Math.floor(Game.time*10)%2?'#fff6c0':'#ffd23a'; D.fillRect(x,y,Math.round(w*lt),3); /* the last stretch blinks */
