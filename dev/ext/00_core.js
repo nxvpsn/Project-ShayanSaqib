@@ -113,8 +113,8 @@ function twBeam(o){ o=Object.assign({w:1,len:26,warn:.7,dur:.3,dmg:2,col:0xff5aa
 // expanding ground ring: jump it
 function twWave(x,z,o){ o=Object.assign({sp:7,max:11,col:0xff7ab0,dmg:2,delay:0},o); let r=o.r0||.5, hit=false, m=null; const gy=groundY(x,z);
   return twHz({upd(dt,play){ if(!play) return true; if(o.delay>0){ o.delay-=dt; return true; }
-    if(!m){ m=new THREE.Mesh(new THREE.RingGeometry(.86,1,56),new THREE.MeshBasicMaterial({color:o.col,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})); m.rotation.x=-Math.PI/2; m.position.set(x,gy+.08,z); m.userData.tw=1; scene.add(m); }
-    r+=o.sp*dt; m.scale.setScalar(r); m.material.opacity=Math.max(0,1-r/o.max);
+    if(!m){ m=new THREE.Mesh(new THREE.RingGeometry(o.dark?.8:.86,1,56),new THREE.MeshBasicMaterial({color:o.col,transparent:true,blending:o.dark?THREE.NormalBlending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})); /* dark: a solid dark band that reads on bright ground */ m.rotation.x=-Math.PI/2; m.position.set(x,gy+.08,z); m.userData.tw=1; scene.add(m); }
+    r+=o.sp*dt; m.scale.setScalar(r); m.material.opacity=o.dark?Math.max(0,.95*(1-Math.pow(r/o.max,3))):Math.max(0,1-r/o.max);
     twAllyRing(x,z,r,o.dmg); const P=twP(), d=Math.hypot(P.x-x,P.z-z); if(!hit&&Math.abs(d-r)<.45&&P.y<gy+.6){ if(twHitP(o.dmg,x,z,{ub:true})!=='none') hit=true; }
     if(Math.random()<.5){ const a=rnd(0,6.28); FX.spawn(x+Math.cos(a)*r,gy+.2,z+Math.sin(a)*r,0,rnd(1,2.5),0,.35,o.col,.25,4,true); } return r<o.max; },
     kill(){ if(m) scene.remove(m); }}); }

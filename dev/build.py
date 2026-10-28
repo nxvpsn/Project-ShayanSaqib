@@ -180,6 +180,14 @@ s = patch(s, "yield tween(d,{s:.1+(i+1)*.24,y:gy+5.2+(i+1)*.35},T*lens[i]/tot,t=
   "yield tween(d,{s:.1+(i+1)*.24,y:gy+5.2+(i+1)*.35},CL?T:T*lens[i]/tot,t=>t); }")
 s = patch(s, "let w=0; while(Voice.speaking&&w<1.2){ yield wait(.1); w+=.1; }\n  Game.chant.fin=1; yield wait(.25);",
   "let w=CL?1.2:0; while(Voice.speaking&&w<1.2){ yield wait(.1); w+=.1; }\n  Game.chant.fin=1; yield wait(CL?.1:.25);")
+# full window, no frame: no side padding, no gold outline or focus ring, no controls line under the game (in and out of full screen)
+s = patch(s, "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;", "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;box-sizing:border-box;")
+s = patch(s, "padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;", "padding:0;")
+s = patch(s, "#wrap{position:relative;flex:0 0 auto;box-shadow:0 0 0 1px rgba(216,180,106,.18),0 20px 60px rgba(0,0,0,.6);background:#000}", "#wrap{position:relative;flex:0 0 auto;background:#000}")
+s = patch(s, "#ui:focus-visible{box-shadow:0 0 0 2px var(--gold)}", "#ui:focus-visible{box-shadow:none}")
+s = patch(s, "#hint{font-size:13px;", "#hint{display:none!important;font-size:13px;")
+s = patch(s, "body{background:var(--ink);color:var(--parchment);margin:0;", "body{background:#000;color:var(--parchment);margin:0;")  # the bars on a non-16:9 screen match the game's black
+s = patch(s, "const aw=full?vw:document.body.clientWidth-32, ah=full?vh:document.body.clientHeight-(getComputedStyle(hint).display==='none'?16:hint.offsetHeight+24);", "const aw=vw, ah=vh;")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

@@ -102,7 +102,7 @@ function* twOmarCollapse(T,ph){ const sp=twSp(T), P=Player; twBark('omar',"Colla
       const Pl=Player; if(play&&BH.live&&!Pl.hidden&&Pl.dash<=0&&!(Pl.bhLaunch>Game.time)&&!(Pl.bhPause>Game.time)){ const dx=c.x-Pl.x, dz=c.z-Pl.z, d=Math.hypot(dx,dz)||1, ramp=Math.min(1,BH.t/.5);
         if(d>.3){ const k=clamp(TW_BH.pull+TW_BH.slope*(d-TW_BH.at),TW_BH.min,TW_BH.max)*ramp, s=twClampXZ(Pl.x+dx/d*k*dt,Pl.z+dz/d*k*dt,.3); Pl.x=s.x; Pl.z=s.z; }
         if(d<TW_BH.eat&&Pl.y<gy+2.2) twBHEat(BH,c); }
-      if(BH.live&&BH.t>=TW_BH.dur){ BH.live=false; BH.endT=BH.t; Sound.sfx('crossboom'); shake(.5); twWave(c.x,c.z,{col:0x8a2aff,sp:8,max:12}); }
+      if(BH.live&&BH.t>=TW_BH.dur){ BH.live=false; BH.endT=BH.t; Sound.sfx('crossboom'); shake(.5); twWave(c.x,c.z,{col:0x1e0636,dark:true,sp:8,max:12}); /* dark, so it shows on the ice */ }
       return BH.live||BH.t<BH.endT+.3; }, kill(){ scene.remove(core); scene.remove(halo); if(TW.bh===BH) TW.bh=null; }});
   T.hide=1; FX.burst(T.x,T.y+1.4,T.z,22,0x140a1a,4,.45,false);
   for(const [at,side] of [[1.2,0],[2.6,Math.PI/4],[4,-Math.PI/4]]){ while(BH.live&&BH.t<at/sp) yield .016; if(!BH.live) break; yield* twBHRush(T,BH,c,side,sp); }
