@@ -26,6 +26,7 @@ python3 build.py --write                    # writes ../index.html; then node --
 Test what you touch with its test (§7; menus also with `TOUCH=1`). One commit per finished request (`git diff --cached --stat` first), push to `main`.
 
 ## Rules
+- **Version:** every push bumps `GAME_VERSION` (`dev/ext/99z_version.js`, shown bottom right on every screen) by +0.01 (v1.05 → v1.06 → …); the final report says the version.
 - **Debug Mode NEW tags:** every push that adds or changes a boss mechanic replaces `DBG_PATCH` and `DBG_NEW` (`dev/ext/99e_debug.js`) with exactly that patch's `'boss:move'` keys (ids: caotan, omar, duo, hamza, nathan, mech; `'boss:*'` = the whole boss; moves = pool keys). List them in the report.
 - **A silver slash means parryable.** Every parryable melee attack shows Shayan's silver slash (`pxvSlash`): new melee hits pass `melee:true` to `twHitP`/`playerHit`, parryable rushes call `twRushTell(o,ang)` each frame. Nothing unparryable may use it.
 - **Readability:** telegraphs and attacks must contrast with the arena (dark arenas under white attacks, solid dark telegraphs on bright ground). Check a new arena's colours against the boss's attack colours. Hits, clashes and the basic slash stay small.
@@ -54,5 +55,5 @@ Test what you touch with its test (§7; menus also with `TOUCH=1`). One commit p
 - Requests sent while you work are queued, then finished, tested and pushed together in one build.
 - No bugs that block completion: test what you touch with the harness, plus `t_warp`.
 - A question gets an answer and a wait. A work request gets done, tested and pushed live. Never ask the owner to run a server or commands.
-- Final report: the outcome first, then a short list of what to check on the live site, and the Debug Mode NEW items.
+- Final report: the outcome first, the version it shipped as, then a short list of what to check on the live site, and the Debug Mode NEW items.
 - Keys: `Esc` menu, `P` pause, `V` voices, `M` mute, hold `F` fast-forward. Secret numpad keys (never in on-screen key lists; on touch: Esc → Options → Cheats): `0` infinite HP, `1` infinite Full Counter, `2` one-hit kill (skips limit cuts), `3` timeline unlocks, `5` Debug Mode. Name rebindable keys on screen with `K('action')`.

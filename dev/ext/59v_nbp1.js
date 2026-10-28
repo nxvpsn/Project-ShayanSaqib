@@ -116,7 +116,7 @@ const NP1M={
 // afterimages; the world drops into heavy slow motion (desaturated, blue-tinted, the lens widening) while he sails past;
 // a COUNTER prompt holds for ~1s: attack = the dodge counter, otherwise time snaps back. ux,uz = the slide direction
 function np1PdLook(on){ try{ const g=grade.uniforms; if(on){ if(NP1.sat0==null&&g.sat) NP1.sat0=g.sat.value; if(g.sat) g.sat.value=.3; if(NP1.ts0==null) NP1.ts0=Game.timeScale||1; Game.timeScale=.4; }
-    else { if(NP1.sat0!=null){ if(g.sat) g.sat.value=NP1.sat0; NP1.sat0=null; } if(NP1.ts0!=null){ Game.timeScale=NP1.ts0; NP1.ts0=null; } NP1.pdFx=null; if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=50; camera.updateProjectionMatrix(); } } }catch(e){} }
+    else { if(NP1.sat0!=null){ if(g.sat) g.sat.value=NP1.sat0; NP1.sat0=null; } if(NP1.ts0!=null){ Game.timeScale=NP1.ts0; NP1.ts0=null; } NP1.pdFx=null; if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=TPS.FOV; camera.updateProjectionMatrix(); } } }catch(e){} }
 // the perfect dodge (ZZZ-style): a long snappy dash with a blue afterimage trail and a big silhouette left behind, the lens
 // punching wide, speed lines rushing in, then the world near-frozen (0.12x, desaturated, blue vignette) while he sails past;
 // COUNTER holds ~1s: attack = the dodge counter, otherwise time snaps back with a reverse whoosh. ux,uz = the dash direction
@@ -136,7 +136,7 @@ function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's dash, the
   if(u<1) for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),(S.sx-S.ex)*rnd(1,3),rnd(-.3,.6),(S.sz-S.ez)*rnd(1,3),.4,i%2?0x3a8aff:0xffffff,.3,0,true);
   else if(Math.random()<.6) FX.spawn(P.x+rnd(-.6,.6),P.y+rnd(.2,2.2),P.z+rnd(-.6,.6),0,rnd(.3,1),0,.6,0x6ab8ff,.22,0,true);
   // the lens: punches wide on the dash, settles a little wide through the slow-mo
-  try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=S.t<.1?50+16*(S.t/.1):56+10*Math.exp(-(S.t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
+  try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=S.t<.1?TPS.FOV+16*(S.t/.1):TPS.FOV+6+10*Math.exp(-(S.t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
   if(NP1.pdFx) NP1.pdFx.t=S.t;
   // he sails on past, near-frozen
   if(S.t<1.1){ NB.x+=S.nx*26*wdt; NB.z+=S.nz*26*wdt; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.1); NBS.bdir=Math.atan2(S.nz,S.nx); }

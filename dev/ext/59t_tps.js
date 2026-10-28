@@ -9,7 +9,7 @@
 // - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
-const TPS={on:0,fov0:null,p:null,l:null,bb:0,off:null,side:0,f:1,yaw:null};
+const TPS={FOV:55,on:0,fov0:null,p:null,l:null,bb:0,off:null,side:0,f:1,yaw:null};
 function tpsFight(){ return typeof NB!=='undefined'&&NB&&NB.alive&&ALI()&&!Game.mech&&L&&L.key==='flowers'; }
 function tpsOn(){ return tpsFight()&&!NB.inv&&Game.state==='play'&&!Cam.cine&&!Game.script; }
 function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
@@ -42,11 +42,11 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const on=tpsOn();
     if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } TPS.yaw=null; for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; if(TPS.ret) TPS.ret.visible=false; } return uc.apply(this,arguments); }
     try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, ty=Math.atan2(V.z-P.z,V.x-P.x);
-      if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=50; camera.updateProjectionMatrix(); tpsBillboardTufts(); TPS.yaw=null; }
+      if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=TPS.FOV; camera.updateProjectionMatrix(); tpsBillboardTufts(); TPS.yaw=null; }
       // it follows where Nathan is drawn (a quickboost flies there; it doesn't jump) and turns at a damped rate, never snapping
       if(TPS.yaw==null) TPS.yaw=ty; TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
-      // higher and further back, aimed at Ali's chest a third of the way toward Nathan: Ali sits in the lower middle, Nathan above him
-      const back=7.2, hgt=3.4, py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=py+1.3, look=[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)];
+      // further back, aimed at Ali's chest a third of the way toward Nathan: Ali sits in the lower middle, Nathan above him
+      const back=8, hgt=3.5, /* a touch further out: Nathan clears the top bar */ py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=py+1.3, look=[lerp(P.x,V.x,.35),ly,lerp(P.z,V.z,.35)];
       if(!TPS.p){ TPS.p=[camera.position.x,camera.position.y,camera.position.z]; TPS.l=look.slice(); }
       const k=1-Math.exp(-dt*7); for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],1-Math.exp(-dt*6)); }
       const sh=FX.shake, sx=sh?rnd(-sh,sh)*.4:0, sy=sh?rnd(-sh,sh)*.4:0;
