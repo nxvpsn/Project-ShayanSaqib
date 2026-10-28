@@ -6,7 +6,7 @@
 // behind-the-back view; while boosting he faces where he flies. No cyan halo over him on this road.
 // Slashes: nbsSlash(dur,u0) plays the swing from u0 (0 = wind-up) over dur seconds; nbStrike plays its second half.
 // =====================================================================
-const NBS={img:null,ok:false,cv:null,c:null,tex:null,geo:null,nb:null,key:'',slashA:null,slashD:.36,slashU:0,boostT:0,bdir:null,CW:168,CH:168,SL:12,BO:8};
+const NBS={img:null,ok:false,cv:null,c:null,tex:null,geo:null,nb:null,key:'',slashA:null,slashD:.36,slashU:0,boostT:0,boostA:-9,lastGhost:-9,bdir:null,CW:168,CH:168,SL:12,BO:8};
 (function(){ try{ const im=new Image(); im.onload=()=>{ NBS.ok=true; }; im.src='img/nathan/nathan.png'; NBS.img=im; }catch(e){} })();
 function nbsOn(){ return NBS.ok&&typeof NB!=='undefined'&&NB&&NB.mesh&&ALI(); }
 function nbsSlash(dur,u0){ NBS.slashA=Game.time; NBS.slashD=Math.max(.05,dur); NBS.slashU=u0||0; }
@@ -14,7 +14,7 @@ function nbsSlash(dur,u0){ NBS.slashA=Game.time; NBS.slashD=Math.max(.05,dur); N
 function nbsDir(){ const P=Player, cp=camera.position, a=NBS.boostT>0&&NBS.bdir!=null?NBS.bdir:Math.atan2(P.z-NB.z,P.x-NB.x), ca=Math.atan2(cp.z-NB.z,cp.x-NB.x);
   return ((Math.round(-(a-ca)/(Math.PI/4))%8)+8)%8; }
 function nbsRow(){ if(NBS.slashA!=null){ const u=NBS.slashU+(Game.time-NBS.slashA)/NBS.slashD*(1-NBS.slashU); if(u>=0&&u<1) return 1+Math.min(NBS.SL-1,Math.floor(u*NBS.SL)); NBS.slashA=null; }
-  if(NBS.boostT>0||NB.dsh) return 15+(Math.floor(Game.time*14)%6);
+  if(NBS.boostT>0||NB.dsh) return Game.time-NBS.boostA<.07?13+Math.min(1,Math.floor((Game.time-NBS.boostA)/.035)):15+(Math.floor(Game.time*14)%6); /* lift-off, then the flight pose */
   return 0; }
 function nbsInit(){ if(!NBS.cv){ NBS.cv=document.createElement('canvas'); NBS.cv.width=NBS.CW; NBS.cv.height=NBS.CH; NBS.c=NBS.cv.getContext('2d'); NBS.c.imageSmoothingEnabled=false;
     const t=new THREE.CanvasTexture(NBS.cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; NBS.tex=t;
@@ -25,10 +25,17 @@ function nbsDraw(dt){ if(NBS.nb!==NB) nbsInit(); NBS.boostT=Math.max(0,NBS.boost
   const d=nbsDir(), r=nbsRow(), key=d+','+r; NB.mesh.scale.x=1; if(NB.glow) NB.glow.visible=false;
   if(NB.stunned){ NB.mesh.position.x+=rnd(-.06,.06); NB.mesh.position.y+=rnd(-.04,.04); } /* staggered: he shudders */
   if(key!==NBS.key){ NBS.key=key; NBS.c.clearRect(0,0,NBS.CW,NBS.CH); NBS.c.drawImage(NBS.img,d*NBS.CW,r*NBS.CH,NBS.CW,NBS.CH,0,0,NBS.CW,NBS.CH); NBS.tex.needsUpdate=true; } }
+// the flight drawn with a smooth thrust curve (the base eases out hard: a third of the way in the first frame looked like a blink)
+(function(){ const un=updateNB; updateNB=function(dt){ const r=un.apply(this,arguments); try{ const D=NB&&NB.dsh; if(D&&nbsOn()){ const u=Math.min(1,D.t/D.d), e=u*u*(3-2*u), x=lerp(D.fx,D.tx,e), z=lerp(D.fz,D.tz,e);
+      NB.mesh.position.x=x; NB.mesh.position.z=z; NB.sh.position.x=x; NB.sh.position.z=z; } }catch(e){ console.error('nb flight',e); } return r; }; })();
 (function(){ const ds=drawSprites; drawSprites=function(){ const r=ds.apply(this,arguments); try{ if(nbsOn()) nbsDraw(1/60); }catch(e){ console.error('nathan sprite',e); } return r; }; })();
 // the slash frames on every strike (the follow-through half), the flight pose on every quickboost
 (function(){ const ns=nbStrike; nbStrike=function(){ if(NBS.slashA==null) nbsSlash(.36,.5); return ns.apply(this,arguments); }; })();
-(function(){ const nb=nbBoost; nbBoost=function(){ NBS.boostT=Math.max(NBS.boostT,.3); return nb.apply(this,arguments); }; })();
+// on Ali's road a quickboost is a visible flight (about 30 units/s, 0.12-0.3s), not a blink, with a thruster roar
+TW_SFX.qbRoar=function(){ Sound.hiss(1400,.26,.3,'bandpass'); Sound.hiss(5200,.12,.12,'highpass'); Sound.tone('sawtooth',140,46,.24,.16); };
+(function(){ const nb=nbBoost; nbBoost=function(){ const r=nb.apply(this,arguments);
+    try{ if(nbsOn()){ const D=NB.dsh; let dur=.3; if(D){ D.d=clamp(Math.hypot(D.tx-D.fx,D.tz-D.fz)/30,.12,.3); dur=D.d+.12; NBS.bdir=Math.atan2(D.tz-D.fz,D.tx-D.fx); } if(NBS.boostT<=0) NBS.boostA=Game.time; NBS.boostT=Math.max(NBS.boostT,dur); Sound.sfx('qbRoar'); } else NBS.boostT=Math.max(NBS.boostT,.3); }catch(e){ console.error('nb boost',e); }
+    return r; }; })();
 // afterimages: a still of the current frame instead of the old art
-(function(){ const na=nbAfterimage; nbAfterimage=function(){ const r=na.apply(this,arguments); try{ if(nbsOn()&&NBS.cv&&NBG.length){ const g=NBG[NBG.length-1].m, cv=document.createElement('canvas'); cv.width=NBS.CW; cv.height=NBS.CH;
+(function(){ const na=nbAfterimage; nbAfterimage=function(){ if(nbsOn()){ if(Game.time-NBS.lastGhost<.035) return; NBS.lastGhost=Game.time; } /* a thinner trail over the longer flights */ const r=na.apply(this,arguments); try{ if(nbsOn()&&NBS.cv&&NBG.length){ const g=NBG[NBG.length-1].m, cv=document.createElement('canvas'); cv.width=NBS.CW; cv.height=NBS.CH;
       cv.getContext('2d').drawImage(NBS.cv,0,0); const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; g.material.map=t; g.material.needsUpdate=true; g.scale.x=1; } }catch(e){} return r; }; })();

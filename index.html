@@ -12953,7 +12953,7 @@ function* nbPhantomRush(){ const C={n:1,par:0}; twBark('nathan',"Phantom rush! Y
 //   A/D run circles around him (the radius holds); Ali's run is 3x his normal speed;
 // - every flat sprite turns to face the camera (Sprite3D planes, Nathan's mech), and the flower tufts do too (a
 //   billboard vertex shader, set the first time it's on);
-// - Nathan is a training dummy for now: he stays put, never attacks, hits flash and show numbers but take no HP.
+// - Nathan's base AI is off here: phase I (59v_nbp1.js) drives him.
 // - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
@@ -12974,7 +12974,7 @@ function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)
 // aim: the lock-on target
 (function(){ const aa=twAimAng; twAimAng=function(){ if(tpsOn()){ const P=Player; return Math.atan2(NB.z-P.z,NB.x-P.x); } return aa.apply(this,arguments); }; })();
 // Nathan, the training dummy
-(function(){ const un=updateNB; updateNB=function(dt){ if(tpsFight()){ NB.gen=null; NB.busyAtk=0; NB.cd=99; NB.dodgeCd=99; NB.leashCd=99; NB.dsh=null; } return un.apply(this,arguments); }; })();
+(function(){ const un=updateNB; updateNB=function(dt){ if(tpsFight()){ NB.gen=null; NB.busyAtk=0; NB.cd=99; NB.dodgeCd=99; NB.leashCd=99; } /* the base AI stays off; phase I (59v) drives him, and his quickboosts fly (NB.dsh is left alone) */ return un.apply(this,arguments); }; })();
 (function(){ const nd=nbDamage; nbDamage=function(d,ult){ if(!tpsFight()||NB.inv) return nd.apply(this,arguments);
     NB.flash=.07; FX.spark(NB.x+rnd(-.6,.6),NB.y+rnd(1,3),NB.z+.3); Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'-'+(Math.round(d*100)/100),t:0,big:!!ult,col:'#9ff8ff'}); addSP(ult?0:.18); }; })();
 // the flower tufts (instanced, flat planes): a billboard vertex shader
@@ -12987,12 +12987,14 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
     mat.customProgramCacheKey=()=>'tpsBB'; mat.needsUpdate=true; } }
 // the camera
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const on=tpsOn();
-    if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; } return uc.apply(this,arguments); }
-    try{ const P=Player, [fx,fz,d]=tpsFwd();
-      if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=50; camera.updateProjectionMatrix(); tpsBillboardTufts(); }
-      const back=6.2, hgt=2.7, py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=lerp(py+1.4,NB.y+2.2,.5), look=[lerp(P.x,NB.x,.45),ly,lerp(P.z,NB.z,.45)];
+    if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } TPS.yaw=null; for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; } return uc.apply(this,arguments); }
+    try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, ty=Math.atan2(V.z-P.z,V.x-P.x);
+      if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=50; camera.updateProjectionMatrix(); tpsBillboardTufts(); TPS.yaw=null; }
+      // it follows where Nathan is drawn (a quickboost flies there; it doesn't jump) and turns at a damped rate, never snapping
+      if(TPS.yaw==null) TPS.yaw=ty; TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
+      const back=6.2, hgt=2.7, py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=lerp(py+1.4,NB.y+2.2,.5), look=[lerp(P.x,V.x,.45),ly,lerp(P.z,V.z,.45)];
       if(!TPS.p){ TPS.p=[camera.position.x,camera.position.y,camera.position.z]; TPS.l=look.slice(); }
-      const k=1-Math.exp(-dt*7); for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],Math.min(1,k*1.6)); }
+      const k=1-Math.exp(-dt*7); for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],1-Math.exp(-dt*6)); }
       const sh=FX.shake, sx=sh?rnd(-sh,sh)*.4:0, sy=sh?rnd(-sh,sh)*.4:0;
       camera.position.set(TPS.p[0]+sx,TPS.p[1]+sy,TPS.p[2]); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
       // keep the normal camera's state moving underneath, so leaving TPS doesn't jump far
@@ -13020,7 +13022,7 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
 // behind-the-back view; while boosting he faces where he flies. No cyan halo over him on this road.
 // Slashes: nbsSlash(dur,u0) plays the swing from u0 (0 = wind-up) over dur seconds; nbStrike plays its second half.
 // =====================================================================
-const NBS={img:null,ok:false,cv:null,c:null,tex:null,geo:null,nb:null,key:'',slashA:null,slashD:.36,slashU:0,boostT:0,bdir:null,CW:168,CH:168,SL:12,BO:8};
+const NBS={img:null,ok:false,cv:null,c:null,tex:null,geo:null,nb:null,key:'',slashA:null,slashD:.36,slashU:0,boostT:0,boostA:-9,lastGhost:-9,bdir:null,CW:168,CH:168,SL:12,BO:8};
 (function(){ try{ const im=new Image(); im.onload=()=>{ NBS.ok=true; }; im.src='img/nathan/nathan.png'; NBS.img=im; }catch(e){} })();
 function nbsOn(){ return NBS.ok&&typeof NB!=='undefined'&&NB&&NB.mesh&&ALI(); }
 function nbsSlash(dur,u0){ NBS.slashA=Game.time; NBS.slashD=Math.max(.05,dur); NBS.slashU=u0||0; }
@@ -13028,7 +13030,7 @@ function nbsSlash(dur,u0){ NBS.slashA=Game.time; NBS.slashD=Math.max(.05,dur); N
 function nbsDir(){ const P=Player, cp=camera.position, a=NBS.boostT>0&&NBS.bdir!=null?NBS.bdir:Math.atan2(P.z-NB.z,P.x-NB.x), ca=Math.atan2(cp.z-NB.z,cp.x-NB.x);
   return ((Math.round(-(a-ca)/(Math.PI/4))%8)+8)%8; }
 function nbsRow(){ if(NBS.slashA!=null){ const u=NBS.slashU+(Game.time-NBS.slashA)/NBS.slashD*(1-NBS.slashU); if(u>=0&&u<1) return 1+Math.min(NBS.SL-1,Math.floor(u*NBS.SL)); NBS.slashA=null; }
-  if(NBS.boostT>0||NB.dsh) return 15+(Math.floor(Game.time*14)%6);
+  if(NBS.boostT>0||NB.dsh) return Game.time-NBS.boostA<.07?13+Math.min(1,Math.floor((Game.time-NBS.boostA)/.035)):15+(Math.floor(Game.time*14)%6); /* lift-off, then the flight pose */
   return 0; }
 function nbsInit(){ if(!NBS.cv){ NBS.cv=document.createElement('canvas'); NBS.cv.width=NBS.CW; NBS.cv.height=NBS.CH; NBS.c=NBS.cv.getContext('2d'); NBS.c.imageSmoothingEnabled=false;
     const t=new THREE.CanvasTexture(NBS.cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; NBS.tex=t;
@@ -13039,12 +13041,19 @@ function nbsDraw(dt){ if(NBS.nb!==NB) nbsInit(); NBS.boostT=Math.max(0,NBS.boost
   const d=nbsDir(), r=nbsRow(), key=d+','+r; NB.mesh.scale.x=1; if(NB.glow) NB.glow.visible=false;
   if(NB.stunned){ NB.mesh.position.x+=rnd(-.06,.06); NB.mesh.position.y+=rnd(-.04,.04); } /* staggered: he shudders */
   if(key!==NBS.key){ NBS.key=key; NBS.c.clearRect(0,0,NBS.CW,NBS.CH); NBS.c.drawImage(NBS.img,d*NBS.CW,r*NBS.CH,NBS.CW,NBS.CH,0,0,NBS.CW,NBS.CH); NBS.tex.needsUpdate=true; } }
+// the flight drawn with a smooth thrust curve (the base eases out hard: a third of the way in the first frame looked like a blink)
+(function(){ const un=updateNB; updateNB=function(dt){ const r=un.apply(this,arguments); try{ const D=NB&&NB.dsh; if(D&&nbsOn()){ const u=Math.min(1,D.t/D.d), e=u*u*(3-2*u), x=lerp(D.fx,D.tx,e), z=lerp(D.fz,D.tz,e);
+      NB.mesh.position.x=x; NB.mesh.position.z=z; NB.sh.position.x=x; NB.sh.position.z=z; } }catch(e){ console.error('nb flight',e); } return r; }; })();
 (function(){ const ds=drawSprites; drawSprites=function(){ const r=ds.apply(this,arguments); try{ if(nbsOn()) nbsDraw(1/60); }catch(e){ console.error('nathan sprite',e); } return r; }; })();
 // the slash frames on every strike (the follow-through half), the flight pose on every quickboost
 (function(){ const ns=nbStrike; nbStrike=function(){ if(NBS.slashA==null) nbsSlash(.36,.5); return ns.apply(this,arguments); }; })();
-(function(){ const nb=nbBoost; nbBoost=function(){ NBS.boostT=Math.max(NBS.boostT,.3); return nb.apply(this,arguments); }; })();
+// on Ali's road a quickboost is a visible flight (about 30 units/s, 0.12-0.3s), not a blink, with a thruster roar
+TW_SFX.qbRoar=function(){ Sound.hiss(1400,.26,.3,'bandpass'); Sound.hiss(5200,.12,.12,'highpass'); Sound.tone('sawtooth',140,46,.24,.16); };
+(function(){ const nb=nbBoost; nbBoost=function(){ const r=nb.apply(this,arguments);
+    try{ if(nbsOn()){ const D=NB.dsh; let dur=.3; if(D){ D.d=clamp(Math.hypot(D.tx-D.fx,D.tz-D.fz)/30,.12,.3); dur=D.d+.12; NBS.bdir=Math.atan2(D.tz-D.fz,D.tx-D.fx); } if(NBS.boostT<=0) NBS.boostA=Game.time; NBS.boostT=Math.max(NBS.boostT,dur); Sound.sfx('qbRoar'); } else NBS.boostT=Math.max(NBS.boostT,.3); }catch(e){ console.error('nb boost',e); }
+    return r; }; })();
 // afterimages: a still of the current frame instead of the old art
-(function(){ const na=nbAfterimage; nbAfterimage=function(){ const r=na.apply(this,arguments); try{ if(nbsOn()&&NBS.cv&&NBG.length){ const g=NBG[NBG.length-1].m, cv=document.createElement('canvas'); cv.width=NBS.CW; cv.height=NBS.CH;
+(function(){ const na=nbAfterimage; nbAfterimage=function(){ if(nbsOn()){ if(Game.time-NBS.lastGhost<.035) return; NBS.lastGhost=Game.time; } /* a thinner trail over the longer flights */ const r=na.apply(this,arguments); try{ if(nbsOn()&&NBS.cv&&NBG.length){ const g=NBG[NBG.length-1].m, cv=document.createElement('canvas'); cv.width=NBS.CW; cv.height=NBS.CH;
       cv.getContext('2d').drawImage(NBS.cv,0,0); const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; g.material.map=t; g.material.needsUpdate=true; g.scale.x=1; } }catch(e){} return r; }; })();
 
 // ----- 59v_nbp1.js -----
@@ -16390,8 +16399,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: Nathan phase I on Ali's road (new moves, perfect dodge + dodge counter, new mech and iaido sprites); Omar's freed Harvest souls no longer feed his Fullmoon Counter";
-const DBG_NEW=['nathan:*','omar:harvest'];
+const DBG_PATCH="Oct 28: Nathan (Ali's road) visibly flies on each quickboost (thrust curve, lift-off + flight frames, a thruster roar); the camera follows him smoothly instead of snapping";
+const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

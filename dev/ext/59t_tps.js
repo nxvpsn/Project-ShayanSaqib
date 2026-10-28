@@ -5,7 +5,7 @@
 //   A/D run circles around him (the radius holds); Ali's run is 3x his normal speed;
 // - every flat sprite turns to face the camera (Sprite3D planes, Nathan's mech), and the flower tufts do too (a
 //   billboard vertex shader, set the first time it's on);
-// - Nathan is a training dummy for now: he stays put, never attacks, hits flash and show numbers but take no HP.
+// - Nathan's base AI is off here: phase I (59v_nbp1.js) drives him.
 // - Ali's sprite facing is picked relative to this camera; his slash tears move with him.
 // It's on while Ali fights Nathan in play (no cutscene camera); everything goes back when it's off.
 // =====================================================================
@@ -26,7 +26,7 @@ function tpsFwd(){ const P=Player, dx=NB.x-P.x, dz=NB.z-P.z, d=Math.hypot(dx,dz)
 // aim: the lock-on target
 (function(){ const aa=twAimAng; twAimAng=function(){ if(tpsOn()){ const P=Player; return Math.atan2(NB.z-P.z,NB.x-P.x); } return aa.apply(this,arguments); }; })();
 // Nathan, the training dummy
-(function(){ const un=updateNB; updateNB=function(dt){ if(tpsFight()){ NB.gen=null; NB.busyAtk=0; NB.cd=99; NB.dodgeCd=99; NB.leashCd=99; NB.dsh=null; } return un.apply(this,arguments); }; })();
+(function(){ const un=updateNB; updateNB=function(dt){ if(tpsFight()){ NB.gen=null; NB.busyAtk=0; NB.cd=99; NB.dodgeCd=99; NB.leashCd=99; } /* the base AI stays off; phase I (59v) drives him, and his quickboosts fly (NB.dsh is left alone) */ return un.apply(this,arguments); }; })();
 (function(){ const nd=nbDamage; nbDamage=function(d,ult){ if(!tpsFight()||NB.inv) return nd.apply(this,arguments);
     NB.flash=.07; FX.spark(NB.x+rnd(-.6,.6),NB.y+rnd(1,3),NB.z+.3); Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'-'+(Math.round(d*100)/100),t:0,big:!!ult,col:'#9ff8ff'}); addSP(ult?0:.18); }; })();
 // the flower tufts (instanced, flat planes): a billboard vertex shader
@@ -39,12 +39,14 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
     mat.customProgramCacheKey=()=>'tpsBB'; mat.needsUpdate=true; } }
 // the camera
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const on=tpsOn();
-    if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; } return uc.apply(this,arguments); }
-    try{ const P=Player, [fx,fz,d]=tpsFwd();
-      if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=50; camera.updateProjectionMatrix(); tpsBillboardTufts(); }
-      const back=6.2, hgt=2.7, py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=lerp(py+1.4,NB.y+2.2,.5), look=[lerp(P.x,NB.x,.45),ly,lerp(P.z,NB.z,.45)];
+    if(!on){ if(TPS.on){ TPS.on=0; if(TPS.fov0!=null){ camera.fov=TPS.fov0; camera.updateProjectionMatrix(); } TPS.yaw=null; for(const s of SPRITES) if(s&&s.mesh) s.mesh.rotation.set(TILT,0,0); if(NB&&NB.mesh) NB.mesh.rotation.set(TILT,0,0); TPS.p=null; } return uc.apply(this,arguments); }
+    try{ const P=Player, V=NB.mesh?NB.mesh.position:NB, ty=Math.atan2(V.z-P.z,V.x-P.x);
+      if(!TPS.on){ TPS.on=1; TPS.fov0=camera.fov; camera.fov=50; camera.updateProjectionMatrix(); tpsBillboardTufts(); TPS.yaw=null; }
+      // it follows where Nathan is drawn (a quickboost flies there; it doesn't jump) and turns at a damped rate, never snapping
+      if(TPS.yaw==null) TPS.yaw=ty; TPS.yaw+=Math.atan2(Math.sin(ty-TPS.yaw),Math.cos(ty-TPS.yaw))*(1-Math.exp(-dt*3.2)); const fx=Math.cos(TPS.yaw), fz=Math.sin(TPS.yaw);
+      const back=6.2, hgt=2.7, py=Math.max(P.y,groundY(P.x,P.z)), want=[P.x-fx*back,py+hgt,P.z-fz*back], ly=lerp(py+1.4,NB.y+2.2,.5), look=[lerp(P.x,V.x,.45),ly,lerp(P.z,V.z,.45)];
       if(!TPS.p){ TPS.p=[camera.position.x,camera.position.y,camera.position.z]; TPS.l=look.slice(); }
-      const k=1-Math.exp(-dt*7); for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],Math.min(1,k*1.6)); }
+      const k=1-Math.exp(-dt*7); for(let i=0;i<3;i++){ TPS.p[i]=lerp(TPS.p[i],want[i],k); TPS.l[i]=lerp(TPS.l[i],look[i],1-Math.exp(-dt*6)); }
       const sh=FX.shake, sx=sh?rnd(-sh,sh)*.4:0, sy=sh?rnd(-sh,sh)*.4:0;
       camera.position.set(TPS.p[0]+sx,TPS.p[1]+sy,TPS.p[2]); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
       // keep the normal camera's state moving underneath, so leaving TPS doesn't jump far
