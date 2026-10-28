@@ -109,10 +109,11 @@ function* impDrillVsDrill(C){ const P=Player, gy=P.y; let d=null; C.held=1;
     E.dead=1; scene.remove(E.g); C.drill=null; d.dead=1; scene.remove(d.g); d=null; try{ fxLights[1].intensity=0; }catch(err){}
     if(!C.dead) impGo(C,'fizzle'); yield wait(.4);
   } finally { if(d){ d.dead=1; scene.remove(d.g); } C.held=0; P.cineFly=false; P.cineAnim=null; P.inv=.8; P.vy=-2; } }
-// ---------- over their heads: the drill clone's chant (under his drill) and how far along it is, the spaz's hits left ----------
+// ---------- over their heads: the drill clone's chant (under his drill) and how far along it is, the spaz's health bar ----------
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(Game.state!=='play') return;
-    for(const C of IMP.extra){ if(C.dead||!C.emerge) continue; const q=toScreen(C.x,C.y+(C.kind==='drill'?2.6:3),C.z); /* the drill clone's chant sits under his drill, just over his head */ if(!(q[2]<1)) continue;
+    for(const C of IMP.extra){ if(C.dead||!C.emerge) continue; const q=toScreen(C.x,C.y+(C.kind==='drill'?2.6:2.15),C.z); /* the drill clone's chant sits under his drill; the spaz's bar right on top of his head */ if(!(q[2]<1)) continue;
       if(C.kind==='drill'&&C.st==='chant'){ const k=C.chantK||0, i=Math.min(3,Math.floor(k*4)), ph=PHRASES[i], sub=(k*4-i), shown=ph.slice(0,Math.max(1,Math.ceil(ph.length*Math.min(1,sub*1.6))));
         D.save(); D.font=`900 18px ${FB}`; D.textAlign='center'; D.lineWidth=4; D.strokeStyle='#1a0408'; D.strokeText(shown,q[0],q[1]); D.fillStyle=i===3?'#ffd45a':'#ff6a4a'; D.fillText(shown,q[0],q[1]); D.restore();
         D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(q[0]-50,q[1]+8,100,7); D.fillStyle='#ff4a2a'; D.fillRect(q[0]-49,q[1]+9,Math.max(0,98*k),5); }
-      if(C.kind==='spaz'){ for(let i=0;i<IMPX.spazHp;i++){ D.fillStyle=i<C.hp?'#ffffff':'rgba(255,255,255,.2)'; D.fillRect(q[0]-IMPX.spazHp*6+i*12,q[1],10,6); } } } }catch(e){ console.error('goo clone ui',e); } }; })();
+      if(C.kind==='spaz'){ const k=Math.max(0,C.hp/IMPX.spazHp); C.hpShow=C.hpShow==null?k:lerp(C.hpShow,k,.2); const w=64, x=Math.round(q[0]-w/2), y=Math.round(q[1]);
+        D.fillStyle='#14080c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#4a1a22'; D.fillRect(x,y,w,8); D.fillStyle='#ffd0d8'; D.fillRect(x,y,Math.round(w*C.hpShow),8); D.fillStyle='#ff4a5a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2); } } }catch(e){ console.error('goo clone ui',e); } }; })();
