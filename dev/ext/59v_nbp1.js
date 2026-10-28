@@ -283,9 +283,9 @@ function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return f
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
   if(d>NP1_ROAM.far&&run>3&&NP1.dashCd<=0){ np1BigBoost(); return true; }
   let mx=0, mz=0;
-  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; } /* the opposite way round */
-  else if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; }
-  if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1; NB.x=P.x+(NB.x-P.x)*d/nd; NB.z=P.z+(NB.z-P.z)*d/nd; } /* the radius holds */
+  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
+  else { NP1.orbitR=0; if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; } }
+  if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
     if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
   return false; }
 // the closing boost: ~.2s to 5 units in front of you whatever the gap, with the engine screaming

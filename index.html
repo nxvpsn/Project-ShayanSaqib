@@ -13466,9 +13466,9 @@ function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return f
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
   if(d>NP1_ROAM.far&&run>3&&NP1.dashCd<=0){ np1BigBoost(); return true; }
   let mx=0, mz=0;
-  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; } /* the opposite way round */
-  else if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; }
-  if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1; NB.x=P.x+(NB.x-P.x)*d/nd; NB.z=P.z+(NB.z-P.z)*d/nd; } /* the radius holds */
+  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
+  else { NP1.orbitR=0; if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; } }
+  if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
     if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
   return false; }
 // the closing boost: ~.2s to 5 units in front of you whatever the gap, with the engine screaming
@@ -17206,7 +17206,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.14 (Oct 28): POSTURE (he parries your sword; kicks after 3-4; full = 5s break at 2x); the combo ends in a charged Assault Rush (3 notes, blue tears; parry = 9-unit shove; hit him mid-charge = 5s); OPEN windows; Full Counter 5s in a window, 2s outside; the Starbreaker charges slower, locks on, parry it into a MASH that cuts the blade (Full Counter charge + 5s), LV3 Getsuga clash redone from Ali's shoulder, blink = perfect dodge; middle click lock-on; flowy charge VFX + ignition; waves 3.5x tall; auto-parry shove 9";
+const DBG_PATCH="v1.15 (Oct 28): v1.14's fight design (posture, Assault Rush, Starbreaker parry + mash, lock-on toggle, circling) plus a steady circling radius";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -17669,7 +17669,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.14';
+const GAME_VERSION='v1.15';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 
