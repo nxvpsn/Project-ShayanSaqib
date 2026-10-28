@@ -51,6 +51,11 @@ function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=M
 // a smooth flight toward (tx,tz) at up to sp units/s on his thrusters (never a snap: that read as a stutter when Ali kept blinking away)
 function np1Fly(dt,tx,tz,sp){ const dx=tx-NB.x, dz=tz-NB.z, d=Math.hypot(dx,dz); if(d<.05) return; const m=Math.min(d,sp*dt); NB.x+=dx/d*m; NB.z+=dz/d*m; NB.dsh=null;
   if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.06); NBS.bdir=Math.atan2(dz,dx); } if(Math.random()<dt*22) FX.spawn(NB.x-dx/d*.6,NB.y+.3,NB.z-dz/d*.6,-dx/d*3,rnd(-1,.5),-dz/d*3,.25,0x3ff4ff,.16,0,true); }
+// cruising between moves with inertia: he eases into his keep distance and out of a turn instead of stopping dead (Ali back-dashing made him stutter: stop, go, stop)
+function np1Cruise(dt,d,dx,dz){ const V=NP1.vel||(NP1.vel={x:0,z:0}), gap=d-NP1_ROAM.keep, want=gap>0?Math.min(NP1_ROAM.fly,gap*1.8):0, wx=dx*want, wz=dz*want; /* no retreat when you're close: he holds his ground */
+  let ax=wx-V.x, az=wz-V.z; const am=Math.hypot(ax,az), acc=NP1_ROAM.acc*dt; if(am>acc){ ax*=acc/am; az*=acc/am; } V.x+=ax; V.z+=az;
+  const sp=Math.hypot(V.x,V.z); if(sp<.02){ V.x=V.z=0; return; } NB.x+=V.x*dt; NB.z+=V.z*dt; NB.dsh=null;
+  if(typeof NBS!=='undefined'&&sp>.6){ NBS.boostT=Math.max(NBS.boostT,.06); NBS.bdir=Math.atan2(V.z,V.x); } if(sp>1&&Math.random()<dt*22*Math.min(1,sp/NP1_ROAM.fly)) FX.spawn(NB.x-V.x/sp*.6,NB.y+.3,NB.z-V.z/sp*.6,-V.x*.4,rnd(-1,.5),-V.z*.4,.25,0x3ff4ff,.16,0,true); }
 function* np1Glue(t){ for(let k=0;k<t;){ k+=NP1.dt; const [dx,dz]=np1Dir(), P=Player; np1Fly(NP1.dt,P.x-dx*1.9,P.z-dz*1.9,20); yield NP1.dt; } }
 function np1Lunge(){ const [dx,dz,d]=np1Dir(); if(d>2.6){ const tx=Player.x-dx*1.6, tz=Player.z-dz*1.6; nbBoost(tx,tz); NB.x=tx; NB.z=tz; if(NB.dsh) NB.dsh.d=Math.min(NB.dsh.d,.12); Sound.sfx('quickboost'); } } /* the last gap: a real boost-dash */
 // the Judgement Cut shader, taught blue: a tear whose seed carries +4 draws in Nathan's cyan (04_vfx sets it from g.blue)
@@ -286,26 +291,29 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
   if(NP1.gen){ NP1.wait-=dt; while(NP1.gen&&NP1.wait<=0){ const r=NP1.gen.next(); if(r.done){ NP1.gen=null; NP1.cd=rnd(.7,1.2); } else NP1.wait+=r.value; } return; }
   NP1.cd-=dt; const [,,d]=np1Dir(); if(np1Roam(dt,d)) return;
   if(NP1.cd<=0){ let k=NP1.order&&NP1.order.length?NP1.order.shift():NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)]; if(k===NP1.last) k=NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)];
-    NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; return; }
+    NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; NP1.vel=null; return; }
   }
 // ---------- between moves: he circles you, follows you, or closes a long gap with one violent boost ----------
 // locked on and strafing: he runs the other way round, so you circle each other; otherwise he flies after you at a normal
 // cruising speed; far away: one insanely fast boost with an engine roar, landing a quarter inside his range
-const NP1_ROAM={orbit:8,fly:7,keep:5,far:14,land:3.75,dashCd:2.6,dashT:.2}; /* fly: his cruising speed between moves; land: 25% inside his 5-unit range, for the scare */
-function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return false; NP1.dashCd=Math.max(0,(NP1.dashCd||0)-dt);
+const NP1_ROAM={orbit:8,fly:7,keep:5,far:14,land:3.75,dashCd:2.6,dashT:.2,acc:26}; /* fly: his cruising speed between moves; land: 25% inside his 5-unit range, for the scare */
+function np1Roam(dt,d){ const P=Player; if(NB.dsh){ np1BoostHome(); return false; } if(NB.stunned||NP1.seq) return false; NP1.dashCd=Math.max(0,(NP1.dashCd||0)-dt);
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
   if(d>NP1_ROAM.far&&NP1.dashCd<=0){ np1BigBoost(); return true; } /* far: one boost in; otherwise he never creeps after you (that stuttered) */
   let mx=0, mz=0;
   if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=rx*side*sp; mz=rz*side*sp; /* rx,rz is Ali's screen-left: he goes the other way round */ if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
-  else { NP1.orbitR=0; if(d>NP1_ROAM.keep+1.5){ const [px,pz]=[P.x-dx*NP1_ROAM.keep,P.z-dz*NP1_ROAM.keep]; np1Fly(dt,px,pz,NP1_ROAM.fly); return false; } } /* flying normally after you */
+  else { NP1.orbitR=0; np1Cruise(dt,d,dx,dz); return false; } /* flying normally after you, with inertia */
   if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
     if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
   return false; }
+// the boost's landing spot tracks you while it flies, so a dash during it can't leave him far away (then boosting again, over and over)
+function np1BoostHome(){ const D=NB.dsh; if(!D||!D.home) return; const P=Player, dx=P.x-D.fx, dz=P.z-D.fz, d=Math.hypot(dx,dz)||1; let tx=P.x-dx/d*NP1_ROAM.land, tz=P.z-dz/d*NP1_ROAM.land; const A=nbArea(); tx=clamp(tx,A.x0+1,A.x1-1); tz=clamp(tz,A.z0+1,A.z1-1); [tx,tz]=nbSafe(tx,tz);
+  if(Math.hypot(tx-D.tx,tz-D.tz)<.05) return; D.tx=tx; D.tz=tz; NB.x=tx; NB.z=tz; if(typeof NBS!=='undefined') NBS.bdir=Math.atan2(tz-D.fz,tx-D.fx); }
 // the closing boost: ~.2s to 5 units in front of you whatever the gap, with the engine screaming
 function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*NP1_ROAM.land, tz=P.z-dz*NP1_ROAM.land; NP1.dashCd=NP1_ROAM.dashCd; NP1.cd=Math.min(NP1.cd,.25);
   Sound.sfx('qbRoar'); Sound.sfx('qbRoar'); Sound.tone('sawtooth',90,900,.5,.2); Sound.hiss(400,.5,.45,'lowpass'); Sound.hiss(3500,.35,.25,'bandpass'); Sound.tone('square',60,240,.3,.08);
   FX.burst(NB.x,NB.y+2,NB.z,40,0x3ff4ff,8,.35); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#3ff4ff',4,.4); if(typeof npShock==='function') npShock(NB.x,NB.y+2,NB.z,-dx,-dz,1.8); shake(.4); if(typeof NPX!=='undefined') NPX.spd={t:0};
-  nbBoost(tx,tz); if(NB.dsh){ NB.dsh.d=NP1_ROAM.dashT; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,NP1_ROAM.dashT+.15); NBS.bdir=Math.atan2(tz-NB.z,tx-NB.x); }
+  nbBoost(tx,tz); if(NB.dsh){ NB.dsh.d=NP1_ROAM.dashT; NB.dsh.home=1; } NP1.vel=null; /* home: the landing spot follows you through the boost (a back-dash during it used to leave him far away again) */ if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,NP1_ROAM.dashT+.15); NBS.bdir=Math.atan2(tz-NB.z,tx-NB.x); }
   const g={t:0,n:0}; np1Obj({upd(dt){ g.t+=dt; if(g.t<NP1_ROAM.dashT){ nbAfterimage(NB.mesh?NB.mesh.position.x:NB.x,NB.y,NB.mesh?NB.mesh.position.z:NB.z); return true; } if(!g.n){ g.n=1; FX.burst(NB.x,NB.y+2,NB.z,30,0xffffff,7,.3); Sound.sfx('slam'); shake(.5); } return false; }});
   Game.dmgNums.push({x:NB.x,y:NB.y+4.2,z:NB.z,n:'ASSAULT BOOST',t:0,col:'#9ff8ff'}); }
 function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
