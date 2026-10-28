@@ -84,8 +84,51 @@ function npAli(dt){ const P=Player, sp=Math.hypot(P.vx||0,P.vz||0), gy=groundY(P
     if(typeof TPS!=='undefined') TPS.kick=Math.min(TPS.kick||0,-.12); Sound.tone('sine',140,60,.1,.06); }
   NPP.ground=!!P.onGround; }
 (function(){ const cr=aliChargeRelease; aliChargeRelease=function(lv){ const r=cr.apply(this,arguments); try{ if(npOn()&&!Game.script){ TPS.kick=-(.15+lv*.15); TPS.fovK=2+lv*2; } }catch(e){} return r; }; })();
+// ---------- 11. hit-stop by weight: Ali's heavy hits on him (charged Getsugas, the Jujishou, ults) freeze the frame longer ----------
+(function(){ const nd=nbDamage; nbDamage=function(d,ult){ const on=npOn()&&!NP1.done, h0=NP1.hp; const r=nd.apply(this,arguments);
+    try{ if(on&&NP1.hp<h0){ const dd=h0-NP1.hp; if(dd>=10){ FX.hitstop=Math.max(FX.hitstop,.12); Game.slowT=Math.max(Game.slowT||0,.12); impactFrame([[3,1]]); } else if(dd>=4) FX.hitstop=Math.max(FX.hitstop,.07); } }catch(e){} return r; }; })();
+// ---------- 12. his slashes cut the air: a cyan tear sweeps from him toward Ali as each red slash lands, and scars the ground ----------
+(function(){ const hr=np1HitRed; np1HitRed=function(dmg,fx,fz){ const r=hr.apply(this,arguments);
+    try{ if(npOn()&&Math.hypot(fx-NB.x,fz-NB.z)<1){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, l=Math.hypot(dx,dz)||1, ux=dx/l, uz=dz/l, gy=groundY(NB.x,NB.z);
+        twGash({life:.35,rev:.05,fade:.16,w:16,op:.85,sparks:8,col:0x9ff8ff,pts:()=>twArcPts(NB.x+ux*1.2,NB.y+2.2,NB.z+uz*1.2,ux,uz,2.6,-1,1,7)});
+        FX.line(NB.x+ux*2.2,NB.z+uz*2.2,Math.atan2(uz,ux)+Math.PI/2,3.4,.18,0x3ff4ff,.5); for(let i=0;i<6;i++) FX.spawn(NB.x+ux*rnd(1,3),gy+.1,NB.z+uz*rnd(1,3),rnd(-1,1),rnd(1,3),rnd(-1,1),.4,0x9a9080,.3,0,false); } }catch(e){ console.error('np slash fx',e); }
+    return r; }; })();
+// ---------- 13. the grab's slam: a crater ring, a dust wall and a heavy camera dip when Ali hits the ground ----------
+function npGrabSlam(){ const S=NP1.seq; if(!S||S.k!=='grab'){ NPP.slamSeen=0; return; } if(!S.slam||NPP.slamSeen) return; NPP.slamSeen=1; const P=Player, gy=groundY(P.x,P.z);
+  FX.ring(P.x,gy+.1,P.z,'#d8ccb0',4.5,.5); FX.ring(P.x,gy+.12,P.z,'#4a9aff',3,.4); for(let i=0;i<30;i++){ const a=i/30*6.283; FX.spawn(P.x+Math.cos(a)*.8,gy+.2,P.z+Math.sin(a)*.8,Math.cos(a)*rnd(3,7),rnd(1,3.5),Math.sin(a)*rnd(3,7),.7,0x9a8e78,.45,0,false); }
+  for(let i=0;i<6;i++) FX.line(P.x,P.z,i/6*6.283+rnd(-.2,.2),rnd(2,4),.14,0x4a9aff,.6); if(typeof TPS!=='undefined') TPS.kick=-.5; impactFrame([[3,2],[1,1]]); }
+// ---------- 14. his sword glows: a cyan light rides the blade through every slash (and burns brighter on the tell) ----------
+function npBladeGlow(dt){ if(!NPP.blade){ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x7ff4ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g); NPP.blade=g; }
+  const g=NPP.blade, sl=typeof NBS!=='undefined'&&NBS.slashA!=null, tell=Game.time<(NP1.redEnd||0); if(!sl&&!tell){ g.visible=false; return; }
+  const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, l=Math.hypot(dx,dz)||1, u=sl?Math.min(1,(NBS.clock-NBS.slashA)/NBS.slashD):0, swing=Math.sin(u*Math.PI);
+  g.visible=true; g.position.set(NB.x+dx/l*(.6+swing*1.4),NB.y+3.2-u*1.6,NB.z+dz/l*(.6+swing*1.4)); const sc=(tell?1.6:1.1)*(1+.15*Math.sin(Game.time*40)); g.scale.set(sc,sc,1); g.material.opacity=tell?.9:.6;
+  if(sl&&Math.random()<.6) FX.spawn(g.position.x,g.position.y,g.position.z,rnd(-1,1),rnd(-1,1),rnd(-1,1),.2,0x9ff8ff,.22,0,true); }
+// ---------- 15. the funnels: a muzzle flash when one fires and a scorch where the beam hits the ground ----------
+(function(){ const nb=np1Beam; np1Beam=function(ax,ay,az,bx,by,bz,col){ const r=nb.apply(this,arguments);
+    try{ if(npOn()){ npStar(ax,ay,az,col||0xff2a3a,.7,.18); const gx=bx, gz=bz, gy=groundY(gx,gz); if(by<gy+2.5){ FX.ring(gx,gy+.08,gz,'#ff3a4a',1.2,.3); for(let i=0;i<5;i++) FX.spawn(gx,gy+.15,gz,rnd(-2,2),rnd(1,3),rnd(-2,2),.5,0x3a3030,.3,0,false); } } }catch(e){} return r; }; })();
+// ---------- 16. the cage shows its shape: a cyan ring of light threads the six funnels while they circle ----------
+function npCage(){ if(NP1.last!=='cage'||!NP1.gen||NBB.length<4) return; const L=NBB.filter(b=>!b.gone); if(L.length<4) return;
+  for(let i=0;i<L.length;i++){ const a=L[i], b=L[(i+1)%L.length], u=Math.random(); FX.spawn(lerp(a.x,b.x,u),lerp(a.y,b.y,u)-.3,lerp(a.z,b.z,u),0,0,0,.14,0x3ff4ff,.16,0,true); } }
+// ---------- 17. the meteor: his shadow grows on the ground as he comes down, and a sonic boom cracks when he arrives ----------
+function npMeteor(dt){ const on=NP1.last==='meteor'&&NP1.alt!=null&&!NP1.seq; if(!NPP.shadow){ const m=new THREE.Mesh(new THREE.CircleGeometry(1,24),new THREE.MeshBasicMaterial({color:0x08060c,transparent:true,opacity:.55,depthWrite:false})); m.rotation.x=-Math.PI/2; m.userData.temp=1; scene.add(m); m.visible=false; NPP.shadow=m; }
+  const m=NPP.shadow; if(!on){ if(NPP.metHigh&&NP1.alt==null&&!NP1.seq){ NPP.metHigh=0; npShock(NB.x,NB.y+2,NB.z,1,0,1.6); npShock(NB.x,NB.y+2,NB.z,0,1,1.6); Sound.hiss(900,.25,.3,'bandpass'); Sound.tone('sawtooth',60,30,.3,.14); shake(.5); } m.visible=false; return; }
+  const gy=groundY(NB.x,NB.z), h=Math.max(0,NP1.alt-gy); if(h>6) NPP.metHigh=1; m.visible=true; m.position.set(NB.x,gy+.05,NB.z); const sc=Math.max(.3,2.6-h*.18); m.scale.setScalar(sc); m.material.opacity=Math.max(.15,.65-h*.035); }
+// ---------- 18. the auto-parry: the clashes alternate cyan and red stars, growing, and the 5th throws a shockwave across the ground ----------
+(function(){ const mp=twMeleeParry; twMeleeParry=function(sx,sz){ const S=NP1.seq, a5=npOn()&&S&&S.k==='auto5'; const r=mp.apply(this,arguments);
+    try{ if(a5){ const P=Player, mx=lerp(P.x,sx,.45), mz=lerp(P.z,sz,.45), n=S.n||1; npStar(mx,P.y+1.5,mz,n%2?0x3ff4ff:0xff3a4a,1+n*.3,.3);
+        if(n>=5){ const gy=groundY(mx,mz); FX.ring(mx,gy+.1,mz,'#ffffff',9,.6); FX.ring(mx,gy+.12,mz,'#ff3a4a',6,.5); for(let i=0;i<40;i++){ const a=i/40*6.283; FX.spawn(mx,gy+.2,mz,Math.cos(a)*rnd(6,12),rnd(.5,3),Math.sin(a)*rnd(6,12),.6,i%2?0xffffff:0x9a8e78,.4,0,i%2===0); } } } }catch(e){} return r; }; })();
+// ---------- 19. the dodge counter's finish: judgement-cut tears rip the ground around him on the boom ----------
+function npCounterBoom(){ const S=NP1.seq; if(!S||S.k!=='counter'){ NPP.boomSeen=0; return; } if(!S.boom||NPP.boomSeen) return; NPP.boomSeen=1; const gy=groundY(NB.x,NB.z);
+  for(let i=0;i<5;i++){ const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a); twGash({life:.6,rev:.06,fade:.25,w:14,op:.8,sparks:10,pts:()=>twArcPts(NB.x,gy+.4+i*.5,NB.z,ux,uz,3.5,-1.2,1.2,7,true)}); }
+  FX.ring(NB.x,gy+.1,NB.z,'#ff3a4a',7,.6); if(typeof TPS!=='undefined'){ TPS.kick=.5; TPS.fovK=-6; } }
+// ---------- 20. the Starbreaker at level 3: cracks of light race out from under him and the ground shudders ----------
+(function(){ const nl=npxLevel; npxLevel=function(E,lv){ const r=nl.apply(this,arguments);
+    try{ if(lv===3&&npOn()){ const gy=groundY(NB.x,NB.z); for(let i=0;i<12;i++){ const a=i/12*6.283+rnd(-.15,.15); FX.line(NB.x+Math.cos(a)*1.5,NB.z+Math.sin(a)*1.5,a,rnd(5,11),.16,0x3ff4ff,2.2); }
+        FX.ring(NB.x,gy+.1,NB.z,'#ffffff',12,.9); for(let i=0;i<40;i++){ const a=rnd(0,6.283), d=rnd(2,9); FX.spawn(NB.x+Math.cos(a)*d,gy+.2,NB.z+Math.sin(a)*d,0,rnd(2,6),0,.9,i%2?0x9a9080:0x3ff4ff,.35,6,i%2===0); } if(typeof TPS!=='undefined') TPS.fovK=5; } }catch(e){} return r; }; })();
+function npPass2(dt){ npGrabSlam(); npBladeGlow(dt); npCage(); npMeteor(dt); npCounterBoom(); }
+function npGlowOff2(){ for(const k of ['blade','shadow']) if(NPP[k]){ scene.remove(NPP[k]); NPP[k]=null; } }
 // ---------- the per-frame hook, the UI hook, cleanup ----------
-function npFrame(dt){ npAmbient(dt); npStagger(dt); npSpeed(dt); npRet(dt); npAli(dt); }
+function npFrame(dt){ npAmbient(dt); npStagger(dt); npSpeed(dt); npRet(dt); npAli(dt); npPass2(dt); }
 (function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(npOn()) npFrame(dt); }catch(e){ console.error('np polish',e); } return r; }; })();
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(npOn()&&Game.letter<=.5){ npDanger(); npMarks(); } }catch(e){ console.error('np marks',e); } }; })();
-(function(){ const nr=np1Reset; np1Reset=function(){ npGlowOff(); return nr.apply(this,arguments); }; })();
+(function(){ const nr=np1Reset; np1Reset=function(){ npGlowOff(); npGlowOff2(); return nr.apply(this,arguments); }; })();
