@@ -334,10 +334,17 @@ function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stun
 const NP1_FC={dash:.16,hold:.62,dmg:16};
 (function(){ const mj=twMiniJC; twMiniJC=function(){ if(!np1On()||!NB||!NB.alive||NP1.done) return mj.apply(this,arguments);
     const P=Player; if(NP1.seq) return;
-    if(Game.time<(NP1.redEnd||0)){ if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); return; }
+    // a press inside a red strike's parry window is the parry swing; a mistimed one (too early) fires the Full Counter at once
+    if(Game.time<(NP1.redEnd||0)){ const landT=NP1.redEnd-.12; if(Game.time>=landT-NP1_WIN){ if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); return; } }
     try{ np1FullCounter(); }catch(e){ console.error('np1 full counter',e); } }; })();
+// overflow: parries past 5 keep stacking (6/5, 7/5...), each with a higher note; they add diagonal slashes to the Full Counter
+(function(){ const mp=twMeleeParry; twMeleeParry=function(){ const P=Player, on=np1On()&&(P.counter||0)>=5, c0=P.counter||0; const r=mp.apply(this,arguments);
+    try{ if(on){ P.counter=c0+1; const k=P.counter-5; for(let i=Game.dmgNums.length-1;i>=0&&i>Game.dmgNums.length-4;i--){ const d=Game.dmgNums[i]; if(d&&/^PARRY \d/.test(d.n)){ d.n='PARRY '+P.counter+'/5'; d.col='#ffd45a'; break; } }
+        const f=660*Math.pow(2,Math.min(12,k)*2/12); Sound.tone('sine',f,f*1.03,.3,.12); Sound.tone('triangle',f*2,f*2,.15,.05); Sound.sfx('ready'); FX.ring(P.x,P.y+.1,P.z,'#ffd45a',2.6+k*.3,.45); Game.dmgNums.push({x:P.x,y:P.y+3.2,z:P.z,n:'OVERFLOW +'+k,t:0,big:true,col:'#ffd45a'}); } }catch(e){ console.error('parry overflow',e); }
+    return r; }; })();
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ const P=Player, k=(P.counter||0)-5; if(!np1On()||k<=0||Game.letter>.5) return; D.save(); D.font=`900 15px ${FB}`; D.textAlign='left'; D.textBaseline='middle'; D.lineWidth=4; D.strokeStyle='#2a1800'; D.strokeText('+'+k,138,90); D.fillStyle=`hsl(${45+Math.sin(Game.time*10)*10},100%,65%)`; D.fillText('+'+k,138,90); D.restore(); }catch(e){} }; })();
 function np1FullCounter(){ const P=Player, gy=groundY(NB.x,NB.z), ny=NP1.alt!=null?NP1.alt:NB.y, air=ny>gy+1.2, [dx,dz]=np1Dir();
-  P.counter=0; P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0;
+  NP1.fcStacks=Math.max(0,(P.counter||0)-5); P.counter=0; P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0;
   NP1.fcWin=!!(NP1.charging||NP1.openT>0); /* inside an opportunity window the Full Counter is a 5s stun, outside 2s */ NP1.charging=0; NP1.gen=null; NP1.lunge=0; NP1.redEnd=0; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined'){ NBS.fixRow=null; NBS.slashA=null; NBS.boostT=0; }
   const ex=NB.x+dx*1.7, ez=NB.z+dz*1.7, L=[]; for(let i=0;i<54;i++) L.push({a:rnd(0,6.283),r:rnd(.5,1),w:rnd(1,4),sp:rnd(.8,1.5)});
   NP1.seq={k:'fc',t:0,sx:P.x,sy:P.y,sz:P.z,ex,ez,ey:air?ny:groundY(ex,ez),nx:NB.x,ny,nz:NB.z,air,gt:0,hit:0,hitT:0,swU:null,L}; NP1.alt=ny;
@@ -361,6 +368,13 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
     try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=TPS.FOV+18*Math.sin(u*Math.PI/2); camera.updateProjectionMatrix(); } }catch(e){} }
   // arrival: Shayan's Full Counter, point blank
   if(u>=1&&!S.hit){ S.hit=1; S.hitT=S.t; S.swU=0; P.cineAnim='aliS1'; if(typeof TPS!=='undefined') TPS.fast=null;
+    // overflow stacks: a diagonal slash each, and a heavier blow
+    const st=NP1.fcStacks||0; if(st>0){ try{ const [dx,dz]=np1Dir(), ax=-dz, az=dx; for(let i=0;i<Math.min(4,st);i++){ const sg=i%2?-1:1, a=Math.PI/4*sg, ux=ax*Math.cos(a), uz=az*Math.cos(a), dy=Math.sin(a);
+          twGash({life:.8,rev:.07,fade:.3,w:30+i*6,sparks:40,pts:()=>np1LinePts(NB.x-ux*3.2,S.ny+1.6-dy*2.6,NB.z-uz*3.2,NB.x+ux*3.2,S.ny+1.6+dy*2.6,NB.z+uz*3.2,8)}); }
+        const q=toScreen(NB.x,S.ny+2,NB.z); for(let i=0;i<Math.min(4,st);i++){ const a=Math.PI/4*(i%2?1:-1)+rnd(-.1,.1); JC.lines.push({x0:q[0]-Math.cos(a)*420,y0:q[1]-Math.sin(a)*420,x1:q[0]+Math.cos(a)*420,y1:q[1]+Math.sin(a)*420,t:0,ttl:.5}); } if(JC.lines.length>16) JC.lines.splice(0,JC.lines.length-16);
+        FX.hitstop=Math.max(FX.hitstop,.2+st*.04); impactFrame([[1,2],[3,2],[2,2],[1,1]]); JC.flash=1; FX.flash=1; grade.uniforms.flashCol.value.set(1,.85,.5); shake(1.6+st*.2); Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.tone('sawtooth',80,24,1,.26); Sound.hiss(300,1.2,.35,'lowpass');
+        FX.burst(NB.x,S.ny+2,NB.z,60+st*15,0xffd45a,10,.4); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#ffd45a',8+st*2,.6); if(typeof TPS!=='undefined'){ TPS.kick=.9; TPS.fovK=-9; }
+        Game.dmgNums.push({x:NB.x,y:S.ny+4.6,z:NB.z,n:'FULL COUNTER +'+st,t:0,big:true,col:'#ffd45a'}); nbDamage(4*st,'np1'); try{ if(typeof npPosture==='function') npPosture(10*st,'overflow'); }catch(e){} }catch(e){ console.error('fc overflow',e); } } NP1.fcStacks=0;
     try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=TPS.FOV+6; camera.updateProjectionMatrix(); } }catch(e){}
     shFullCounterFX(); nbDamage(F.dmg,'np1'); Sound.sfx('slam'); Sound.sfx('hit'); FX.hitstop=Math.max(FX.hitstop,.12); shake(1.1);
     FX.burst(NB.x,S.ny+2,NB.z,46,0xffffff,8,.35); FX.burst(NB.x,S.ny+2,NB.z,30,0xff2a3a,7,.4); FX.burst(NB.x,S.ny+2,NB.z,16,0x0c0814,5,.4,false); }
