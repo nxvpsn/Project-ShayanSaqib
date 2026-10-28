@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.09 (Oct 28): Nathan fight polish 1-5: hit sparks and camera punch, 3D parry stars, quickboost thrust and shock rings, off-screen tell arrows, pollen and his ground glow; the camera tilts up to keep him in frame";
+const DBG_PATCH="v1.10 (Oct 28): Nathan fight polish 6-10: phase I finisher cinematic, broken-looking stagger, flight streaks and shock rings, tell-coloured lock-on ring and screen edges, Ali's run dust, landing dip and charged recoil";
 const DBG_NEW=['nathan:excal'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
