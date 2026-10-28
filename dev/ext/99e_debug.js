@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.21 (Oct 28): Nathan holds his ground between moves, boosting in from far to a quarter inside his range; his tears are only the charge line and Meteor Rend (blue); Ali's charge: fire flares off the blade's edges, no lightning, one gauge; waves are columns of crescents (3/6/9/12), not stretched; the cursor locks in the window (Alt frees it); the kick after 6 raw strikes; 0.4s i-frames and a parry always beats them";
+const DBG_PATCH="v1.22 (Oct 28): dev tooling only (shot.js: headless screenshots, voice stubbed); the game is v1.21's";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

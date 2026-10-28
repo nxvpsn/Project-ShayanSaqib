@@ -36,6 +36,8 @@ const ROOT=path.resolve(__dirname,'..'), MIME={'.html':'text/html','.js':'text/j
   // one real frame, then the shot (the software renderer takes its time)
   const snap=async f=>{ await ev("requestAnimationFrame(loop)"); const t0=await ev('Game.time'); for(let i=0;i<200&&(await ev('Game.time'))-t0<.02;i++) await page.waitForTimeout(100); await page.screenshot({path:f,timeout:180000}); };
   await ev("try{ Sound.unlock&&Sound.unlock(); if(Sound.muted===false&&Sound.toggleMute) Sound.toggleMute(); }catch(e){}");
+  // no voice clips: a line would otherwise wait for its audio, which never ends in stepped time; no music either
+  await ev("try{ Voice.play=()=>{}; Voice.bark=()=>{}; Voice.stop=()=>{}; Voice.prewarm=()=>{}; Object.defineProperty(Voice,'speaking',{get:()=>false,configurable:true}); Sound.play=()=>{}; }catch(e){ console.error('stub',e); }");
   if(scene!=='title'){ const id=scene==='fight'?'al_nathan':scene.replace(/^warp:/,'');
     await ev("Game.state='cut'; newGame();"); await step(20); await ev("Game.script=null; Game.dlg=null; twUnlockAll(true);");
     await ev(`run(function*(){ yield* twWarp('${id}'); })`);
