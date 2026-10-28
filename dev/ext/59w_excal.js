@@ -20,7 +20,9 @@ NP1M.excal=function*(){ const E=npxStart();
   while(E.t<NPX.lvT*3){ E.beat=E.clock; const dt=NP1.dt; E.t+=dt; const lv=Math.min(3,Math.floor(E.t/NPX.lvT)); if(lv>E.lv){ E.lv=lv; npxLevel(E,lv); } yield dt; } /* slower than Ali's: his level 3 comes first */
   // level 3: the line locks onto Ali; the rainbow glint zig-zags up the blade as five impact frames
   { const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } E.phase='window'; E.lock=1; E.landT=Game.time+.4+NPX.flareT+NP1_TELL+NPX.swing;
-  for(let i=0;i<5;i++){ E.beat=E.clock; const sg=i%2?1:-1, px=-E.uz, pz=E.ux, h=NB.y+2.9+3+i*4.5; npxGlint(NB.x+px*sg*1.6,h,NB.z+pz*sg*1.6); impactFrame([[i%2?3:1,3]]); FX.flash=1; grade.uniforms.flashCol.value.set(i%2?1:.2,i%2?1:.9,1); FX.hitstop=Math.max(FX.hitstop,.03); Sound.tone('square',900+i*300,900+i*300,.05,.07); shake(.3);
+  // five rainbow glints on the blade in the owner's order (upper-left, lower-right, lower-left, upper-right, the centre), each a Nakamura smear impact frame (npxSmear)
+  for(let i=0;i<5;i++){ E.beat=E.clock; const px=-E.uz, pz=E.ux, side=NPX_GLINTS[i][0]*3, h=NB.y+2.9+NPX_GLINTS[i][1], gx=NB.x+px*side, gz=NB.z+pz*side; /* px,pz: Ali's screen-left */
+    npxGlint(gx,h,gz); impactFrame([[1,3]]); npxSmearAt(gx,h,gz,3); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); FX.hitstop=Math.max(FX.hitstop,.03); Sound.tone('square',900+i*300,900+i*300,.05,.07); Sound.sfx(i===4?'crossboom':'deflect'); shake(.3+i*.08);
     for(let w=0;w<.08;){ const dt=NP1.dt; w+=dt; E.beat=E.clock; if(E.phase!=='window') return; yield dt; } }
   // the flare: a heavy sound, the sword charging even more: blue lines fanning off the blade, the blade pulsing wider
   npxFlare(E);
@@ -53,13 +55,32 @@ function npxLevel(E,lv){ E.pulse=1; if(lv<1) return; E.len=NPX.L[lv]; E.w=NPX.W[
 function npxBladeLine(E,lv){ if(E.gash) E.gash.life=0; E.gash=twGash({life:60,rev:.05,fade:.3,w:16+lv*10,op:.95,taper:.1,sparks:6+lv*6,blue:1,alive:()=>NP1.ex===E&&E.phase!=='cut'&&E.phase!=='clash',
     pts:()=>{ const s=Math.sin(E.ang), c=Math.cos(E.ang), dx=E.ux*s, dy=c, dz=E.uz*s, hx=NB.x, hy=NB.y+2.9, hz=NB.z, L=Math.min(E.dl,70); return np1LinePts(hx,hy,hz,hx+dx*L,hy+dy*L,hz+dz*L,1); }}); }
 // the level 3 flare: six blue lines fanning out of the hilt beside the blade, the blade wider, the air shaking
+const NPX_GLINTS=[[1,13],[-1,4],[1,4],[-1,13],[0,8.5]]; /* [screen side (+1 = Ali's left), height up the blade] in flash order */
 function npxFlare(E){ const hx=NB.x, hy=NB.y+2.9, hz=NB.z, px=-E.uz, pz=E.ux; E.w=NPX.W[3]*1.45; E.pulse=1.5;
   Sound.sfx('crossboom'); Sound.sfx('choir'); Sound.tone('sawtooth',40,90,1.4,.3); Sound.hiss(250,1.6,.5,'lowpass'); Sound.hiss(4500,.5,.3,'bandpass'); shake(1.6); FX.flash=1; grade.uniforms.flashCol.value.set(.5,.95,1); impactFrame([[1,2],[3,2],[2,1]]); FX.hitstop=Math.max(FX.hitstop,.12);
-  for(let i=0;i<6;i++){ const sg=i%2?1:-1, a=(.18+Math.floor(i/2)*.16)*sg, c=Math.cos(a), sn=Math.sin(a), L=18+i*5, t0=Game.time;
-    twGash({life:1.3,rev:.08,fade:.4,w:22-i*2,op:.9,taper:.2,sparks:12,blue:1,pts:()=>{ const u=Math.min(1,(Game.time-t0)/.25); return np1LinePts(hx,hy,hz,hx+px*sn*L*u,hy+c*L*u,hz+pz*sn*L*u,1); }}); }
+  npxFlames(E);
   FX.burst(hx,hy+6,hz,80,0x3ff4ff,12,.5); FX.burst(hx,hy+6,hz,50,0xffffff,9,.4); FX.ring(hx,groundY(hx,hz)+.1,hz,'#3ff4ff',14,.9); FX.ring(hx,groundY(hx,hz)+.12,hz,'#ffffff',8,.7);
   for(let i=0;i<60;i++){ const a=rnd(0,6.283), d=rnd(2,12); FX.spawn(hx+Math.cos(a)*d,groundY(hx,hz)+.2,hz+Math.sin(a)*d,0,rnd(3,8),0,.9,i%2?0x9a9080:0x3ff4ff,.35,6,i%2===0); }
   if(typeof TPS!=='undefined'){ TPS.kick=.6; TPS.fovK=6; } twBark('nathan',"Now it's a star.",true); }
+// the flare's body: Ali's charge flames in blue (fireball_burn_blue), six pairs fanning out and up off the blade's lower stretch, huge for his sword, and a stack climbing the blade;
+// they live through the hold and the deep red and go out at the swing
+function npxFlames(E){ const F={t:0,side:[],up:[]}; E.flames=F; const ns=6; if(!pxvOk('fireball_burn_blue')) return;
+  for(let i=0;i<ns*2;i++){ const e=pxvPlay('fireball_burn_blue',{x:NB.x,y:NB.y+4,z:NB.z,size:3.2,depth:false,add:true}); if(!e) break; e.noAim=true; F.side.push(e); }
+  for(let i=0;i<4;i++){ const e=pxvPlay('fireball_burn_blue',{x:NB.x,y:NB.y+4,z:NB.z,size:4.2,depth:false,add:true}); if(!e) break; e.noAim=true; F.up.push(e); }
+  np1Obj({upd(dt){ F.t+=dt; const alive=NP1.ex===E&&E.phase==='window'; const hx=NB.x, hy=NB.y+2.9, hz=NB.z, px=-E.uz, pz=E.ux, grow=Math.min(1,F.t/.35);
+      F.side.forEach((e,i)=>{ const sg=i%2?1:-1, j=Math.floor(i/2), u=j/(ns-1), y=hy+1.5+u*16, off=(1.4+u*2.8)*grow*(1+.1*Math.sin(F.t*11+i)); e.m.position.set(hx+px*off*sg,y+.4*Math.sin(F.t*9+i),hz+pz*off*sg); e.m.material.rotation=-sg*(.6+.1*Math.sin(F.t*7+i)); const sz=(3.2+u*2.2)*grow*(.8+.2*Math.sin(F.t*15+i*1.3)); e.m.scale.set(sz*(e.A.w/e.A.h),sz,1); e.m.material.opacity=.95; });
+      F.up.forEach((e,i)=>{ const h=i*2.6, wob=Math.sin(F.t*9+i*1.7)*.25; e.m.position.set(hx+px*wob,hy+2+h*grow,hz+pz*wob); const sz=(4.2-i*.5)*grow*(1+.07*Math.sin(F.t*17+i*2)); e.m.scale.set(sz*(e.A.w/e.A.h),sz,1); e.m.material.opacity=Math.max(.4,1-i*.15); });
+      return alive; }, kill(){ for(const e of F.side.concat(F.up)) try{ pxvStop(e); }catch(x){} } }); }
+// the Nakamura smear: for a few frames, hand-drawn scribble lines streaking out from the glint over the black-and-white frame, a white core, black masses at the sides
+function npxSmearAt(x,y,z,n){ NPX.smear={x,y,z,n,seed:Math.random()*1e4}; }
+function npxSmear(){ const S=NPX.smear; if(!S||S.n<=0) return; S.n--; const q=toScreen(S.x,S.y,S.z); if(q[2]>1) return; const cx=Math.max(-UW*.2,Math.min(UW*1.2,q[0])), cy=Math.max(-UH*.2,Math.min(UH*1.2,q[1])), R=Math.hypot(UW,UH);
+  let sd=S.seed+S.n*77; const rr=()=>{ sd=(sd*9301+49297)%233280; return sd/233280; };
+  D.save(); D.lineCap='round';
+  for(let i=0;i<260;i++){ const a=rr()*6.283, r0=60+rr()*90, len=R*(.25+rr()*.9), w=.6+rr()*rr()*4; D.strokeStyle=rr()<.12?'#ffffff':'#000000'; D.lineWidth=w; D.beginPath(); let px=cx+Math.cos(a)*r0, py=cy+Math.sin(a)*r0; D.moveTo(px,py);
+    for(let k=1;k<=5;k++){ const t=k/5, jit=(rr()-.5)*8*t; px=cx+Math.cos(a)*(r0+len*t)+Math.cos(a+1.57)*jit; py=cy+Math.sin(a)*(r0+len*t)+Math.sin(a+1.57)*jit; D.lineTo(px,py); } D.stroke(); }
+  for(let i=0;i<7;i++){ const a=rr()*6.283, r0=R*(.22+rr()*.3), sp=.18+rr()*.25; D.fillStyle='#000000'; D.beginPath(); D.moveTo(cx+Math.cos(a-sp)*r0,cy+Math.sin(a-sp)*r0); /* the black masses, scribble-edged */
+    for(let k=0;k<=8;k++){ const b=a-sp+sp*2*k/8, rk=r0+(rr()-.5)*60; D.lineTo(cx+Math.cos(b)*rk,cy+Math.sin(b)*rk); } D.lineTo(cx+Math.cos(a+sp)*R,cy+Math.sin(a+sp)*R); D.lineTo(cx+Math.cos(a-sp)*R,cy+Math.sin(a-sp)*R); D.closePath(); D.fill(); }
+  const g=D.createRadialGradient(cx,cy,0,cx,cy,110); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.55,'rgba(255,255,255,.9)'); g.addColorStop(1,'rgba(255,255,255,0)'); D.fillStyle=g; D.fillRect(cx-120,cy-120,240,240); D.restore(); }
 // the deep red's sparks: steel grinding off the hilt and the ground cracking red
 function npxSparks(E){ const hx=NB.x, hy=NB.y+2.9, hz=NB.z; for(let i=0;i<4;i++){ FX.spark(hx+rnd(-.4,.4),hy+rnd(-.3,.6),hz+rnd(-.4,.4)); } FX.burst(hx,hy,hz,40,0xff2a3a,8,.35); FX.burst(hx,hy,hz,20,0x5a0008,6,.4);
   for(let i=0;i<8;i++){ const a=i/8*6.283+rnd(-.2,.2); FX.line(hx+Math.cos(a)*1.2,hz+Math.sin(a)*1.2,a,rnd(2,5),.14,0xff2a3a,.9); } Sound.sfx('deflect'); Sound.tone('sawtooth',160,40,.5,.14); shake(.5); }
@@ -284,7 +305,7 @@ function npxBoom(x,y,z,s){ s=s||1; const gy=groundY(x,z);
 (function(){ const ns=np1Start; np1Start=function(){ npxRavClear(); return ns.apply(this,arguments); }; })();
 (function(){ const nr=np1Reset; np1Reset=function(){ npxRavClear(); return nr.apply(this,arguments); }; })();
 // the meter: his three levels over the screen (and Ali's own charge under it while he holds)
-(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ npxSpeedLines(); }catch(e){ console.error('npx lines',e); } try{ const E=NP1.ex; if(E&&np1On()&&Game.letter<=.5) npxUI(E); }catch(e){ console.error('npx ui',e); } }; })();
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ npxSpeedLines(); }catch(e){ console.error('npx lines',e); } try{ npxSmear(); }catch(e){ console.error('npx smear',e); } try{ const E=NP1.ex; if(E&&np1On()&&Game.letter<=.5) npxUI(E); }catch(e){ console.error('npx ui',e); } }; })();
 function npxUI(E){ const bw=Math.min(UW*.5,420), bx=(UW-bw)/2, by=50, k=Math.min(1,E.t/(NPX.lvT*3)), seg=(y,f,lv,on,off)=>{ for(let i=0;i<3;i++){ const x=bx+i*(bw/3)+2, w=bw/3-4, u=Math.max(0,Math.min(1,f*3-i));
       D.fillStyle='rgba(4,10,24,.75)'; D.fillRect(x,y,w,10); D.fillStyle=lv>i?on:off; D.fillRect(x,y,w*u,10); D.strokeStyle='rgba(255,255,255,.55)'; D.lineWidth=1; D.strokeRect(x+.5,y+.5,w-1,9); } };
   E.pulseUI=Math.max(0,E.pulseUI-1/20); D.save(); seg(by,k,E.lv,'#ffffff','#3ff4ff');
