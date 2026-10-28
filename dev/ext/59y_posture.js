@@ -31,11 +31,11 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
 // ---------- hooks ----------
 // the damage model: his parry of the sword, Getsugas at half (+posture), 2x while he's down
 (function(){ const nd=nbDamage; nbDamage=function(d,ult){ if(npoOn()&&NP1.melee&&NP1.charging&&!NB.stunned){ try{ np1Interrupt(); }catch(e){ console.error('np interrupt',e); } return nd.apply(this,arguments); }
-    if(npoOn()&&NP1.melee&&!NB.stunned&&!(NP1.openT>0)&&!NP1.seq&&!Game.script&&!NPO.kick){ try{ npNathanParry(); }catch(e){ console.error('np parry',e); } return; }
+    if(npoOn()&&NP1.melee&&!NB.stunned&&!(NP1.openT>0)&&!NP1.seq&&!Game.script&&!NPO.kick){ if(Game.time<(NP1.redEnd||0)||Game.time-(NPO.lastParryT||-9)<.4) return; /* the parry swing (a red strike on its way, or just parried): not a raw attack, no count */ try{ npNathanParry(); }catch(e){ console.error('np parry',e); } return; }
     if(npoOn()&&TW._beamHit&&!NB.stunned&&!(NP1.openT>0)){ d*=.5; npPosture(8,'getsuga'); } else if(npoOn()&&NP1.openT>0&&!NB.stunned) npPosture(NP1.melee?6:8,'open'); if(npoOn()&&NB.stunned) d*=4/3; /* 1.5x in 59v: 2x in all */
     return nd.apply(this,arguments); }; })();
 (function(){ const ub=updateBeams; updateBeams=function(){ TW._beamHit=1; try{ return ub.apply(this,arguments); } finally{ TW._beamHit=0; } }; })();
-(function(){ const mp=twMeleeParry; twMeleeParry=function(){ const r=mp.apply(this,arguments); try{ if(npoOn()) npPosture(14,'parry'); }catch(e){} return r; }; })();
+(function(){ const mp=twMeleeParry; twMeleeParry=function(){ const r=mp.apply(this,arguments); try{ if(npoOn()){ NPO.lastParryT=Game.time; npPosture(14,'parry'); } }catch(e){} return r; }; })();
 (function(){ const fc=np1FullCounter; np1FullCounter=function(){ const r=fc.apply(this,arguments); try{ npPosture(35,'fullcounter'); }catch(e){} return r; }; })();
 (function(){ const st=np1Stun; np1Stun=function(t,why){ try{ const g={'PARRIED ×5':40,'COUNTERED':25,'FULL PARRY':20,'CAGE BROKEN':15,'FULL COUNTER':0,'BLADE CUT':0}[why]; if(g) npPosture(g,why); }catch(e){} return st.apply(this,arguments); }; })();
 // the bar: decay, the break's end

@@ -2,7 +2,8 @@
 // THE AIR (Nathan phase I on Ali's road, v1.16):
 // - Nathan deflects Getsugas: a standing Nathan parries every Getsuga Tenshou (not the LEVEL 3 Jujishou) and sends it off
 //   at an angle behind him (no posture). Down, OPEN, or in a sequence he takes them.
-// - He flies: between moves his hover height drifts (NP1.hovT, 1.4 to 5.5 units), so he's often out of a ground swing's reach.
+// - He flies: between moves his hover height drifts (NP1.hovT, 1.4 to 4.2 units), so he's often out of a ground swing's reach;
+//   his melee moves (combo, grab, the meteor's end) bring him down to Ali's level, or up to Ali if Ali is in the air.
 // - Ali's forward blink: with lock-on, a blink toward Nathan goes to him, up to his height (so a floating or air-staggered
 //   Nathan can be hit). It stops 1.6 in front of him, never past; already on him, a second forward blink passes through to
 //   his far side.
@@ -17,7 +18,10 @@ function npDeflect(b){ const P=Player, [dx,dz]=np1Dir(), back=Math.atan2(-dz,-dx
 (function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(npoOn()&&!NB.stunned&&!(NP1.openT>0)&&!NP1.seq&&!Game.script&&!(NP1.ex&&NP1.ex.phase!=='charge')&&!NPO.kick) for(const b of BEAMS){ if(!b.ali||b.hit.has(NB)||b.life<=0||(b.chLv||0)>=3||b.deflected) continue;
         const rad=(b.big?1.6:1.15)+1.8; if(Math.hypot(NB.x-b.x,NB.z-b.z)<rad&&Math.abs(b.y-(NB.y+1.5))<3.2) npDeflect(b); } }catch(e){ console.error('np deflect',e); } return ub.apply(this,arguments); }; })();
 // ---------- he flies ----------
-function npAir(dt){ if(NB.stunned||NP1.seq||NP1.alt!=null||NP1.ex||NP1.charging||Game.script) return; NP1.hovC=(NP1.hovC||0)-dt;
+const NP_MELEE={combo:1,grab:1,meteor:1};
+function npAir(dt){ if(NB.stunned||NP1.seq||NP1.alt!=null||NP1.ex||Game.script) return;
+  if(NP1.gen){ if(NP_MELEE[NP1.cur]||NP1.charging){ const P=Player, ah=P.y-groundY(P.x,P.z), gy=groundY(NB.x,NB.z); NP1.hovT=ah>1?ah+1.4:1.4; NB.hov=lerp(NB.hov,NP1.hovT,1-Math.exp(-dt*8)); NB.y=lerp(NB.y,gy+NB.hov,1-Math.exp(-dt*10)); if(NB.mesh) NB.mesh.position.y=NB.y; } return; } /* melee: down to Ali's level (up only if he's in the air) */
+  NP1.hovC=(NP1.hovC||0)-dt;
   if(NP1.hovC<=0){ NP1.hovC=rnd(2,4); NP1.hovT=Math.random()<.4?1.4:rnd(2.4,4.2); } if(NP1.hovT!=null) NB.hov=lerp(NB.hov,NP1.hovT,1-Math.exp(-dt*1.5)); }
 (function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(npoOn()) npAir(dt); }catch(e){ console.error('np air',e); } return r; }; })();
 (function(){ const ns=np1Start; np1Start=function(){ const r=ns.apply(this,arguments); NP1.hovT=1.4; NP1.hovC=1.5; return r; }; })();
