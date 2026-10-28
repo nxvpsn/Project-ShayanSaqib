@@ -69,7 +69,8 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
 // When it sets, anyone outside a pocket is hit (no jumping it: find a pocket); it lingers 2s (stepping in it slows you), then fades. Two waves.
 TWK.omar.monologue=function*(T,ph){ const sp=twSp(T); const lines=["When I was seven... I stared into the darkness.","And the darkness... looked away. Because it was scared. Of me.","Since that day, I have worn only black. Even my socks.","Especially my socks."];
   T.hy=2.6; T.cast=4; twBig('*EDGE INTENSIFIES*',{size:44,col:'#c08aff',y:UH*.24,dur:1.6});
-  for(let w=0;w<2;w++){ twBark('omar',lines[w*2],true); const S=twSludge(T,ph,sp); while(!S.done) yield .05; if(w===0){ twBark('omar',lines[1],true); yield .4; } }
+  const once={}; /* both waves share one hit: the first touch hurts, the rest only slow */
+  for(let w=0;w<2;w++){ twBark('omar',lines[w*2],true); const S=twSludge(T,ph,sp,once); while(!S.done) yield .05; if(w===0){ twBark('omar',lines[1],true); yield .4; } }
   twBark('omar',lines[2],true); yield .8; twBark('omar',lines[3],true); T.hy=1.3; yield .4; };
 // the sludge: a round sheet of goo centred on Omar (radius ~11: most of the screen), drawn into a canvas each frame: purple goo oozing out (round blobs,
 // a lobed wobbling front with droplets ahead of it), then it erupts into black sludge with water-wave ripples for 2s, then sinks back
@@ -80,7 +81,7 @@ function twSludgePat(black){ const k=black?'b':'p'; twSludgePat.c=twSludgePat.c|
   for(let i=0;i<90;i++){ const x=hash(i,5)*w, y=hash(5,i)*h; blob(x,y,2,pal[3]); c.fillStyle=black?'#8a6ab0':'#c08aff'; c.fillRect(Math.round(x-1),Math.round(y-1),1,1); } /* glossy bubbles */
   if(!black) for(let i=0;i<9;i++){ const x=Math.floor(12+hash(i,9)*(w-28)), y=Math.floor(10+hash(9,i)*(h-24)); c.fillStyle='#120418'; c.fillRect(x,y,2,3); c.fillRect(x+6,y,2,3); c.fillRect(x+1,y+6,6,1); c.fillRect(x,y+7,1,1); c.fillRect(x+7,y+7,1,1); c.fillStyle='#9ad8ff'; c.fillRect(x,y+3,1,2); } /* sad faces */
   return twSludgePat.c[k]=cv; }
-function twSludge(T,ph,sp){ const P=Player, RG=12, W=2*RG+5, /* radius 12: 20% more area than 11 */ D=W, cx=T.x, cz=T.z, x0=cx-W/2, z0=cz-D/2, PX=10, gy=groundY(cx,cz);
+function twSludge(T,ph,sp,once){ once=once||{}; const P=Player, RG=12, W=2*RG+5, /* radius 12: 20% more area than 11 */ D=W, cx=T.x, cz=T.z, x0=cx-W/2, z0=cz-D/2, PX=10, gy=groundY(cx,cz);
   const [cv,c]=mkCanvas(W*PX,D*PX), tx=tex(cv), m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,opacity:.6}));
   m.rotation.x=-Math.PI/2; m.position.set(cx,gy+.035,cz); m.renderOrder=1; m.userData.tw=1; scene.add(m);
   // pockets: 3 (2 in phase III), 4+ apart, inside the goo (2+ from Omar), one within reach of you
@@ -109,9 +110,10 @@ function twSludge(T,ph,sp){ const P=Player, RG=12, W=2*RG+5, /* radius 12: 20% m
       if(t<spread+hold){ const k=Math.min(1,t/spread); draw(Rmax*(1-Math.pow(1-k,2)),false,t); m.material.opacity=.5+.15*Math.sin(t*14); return true; }
       if(!S.set){ S.set=true; m.material.opacity=1; Sound.sfx('squelch'); Sound.sfx('crash'); Sound.sfx('void'); shake(.4); for(const g of rings) g.visible=false;
         for(let i=0;i<6;i++){ const a=rnd(0,6.28), r=rnd(1,6); FX.burst(ox+Math.cos(a)*r,gy+.3,oz+Math.sin(a)*r,12,0x0a0510,4,.4,false); }
-        const P2=twP(); if(play&&inSludge(P2.x,P2.z)) twHitP(2,ox,oz,{ub:true}); }
+      }
       const te=t-spread-hold;
-      if(te<ERUPT){ draw(Rmax,true,te); const P2=twP(); if(play&&P2.y<groundY(P2.x,P2.z)+.35&&inSludge(P2.x,P2.z)&&typeof twGoopSlow==='function') twGoopSlow(); return true; }
+      if(te<ERUPT){ draw(Rmax,true,te); const P2=twP(); if(play&&P2.y<groundY(P2.x,P2.z)+.35&&inSludge(P2.x,P2.z)){ /* jumpable: only touching it hurts, once per monologue, then it just slows you */
+          if(!once.hurt&&twHitP(2,ox,oz,{ub:true})!=='none') once.hurt=true; if(typeof twGoopSlow==='function') twGoopSlow(); } return true; }
       const f=(te-ERUPT)/SINK; if(f>=1){ S.done=true; return false; } draw(Rmax*(1-f*f),true,te); m.material.opacity=1-f*.6; return true; }, /* it sinks back toward him */
     kill(){ scene.remove(m); rings.forEach(g=>scene.remove(g)); S.done=true; }});
   return S; }
