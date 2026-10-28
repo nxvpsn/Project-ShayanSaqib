@@ -1,8 +1,8 @@
 // =====================================================================
 // IMPREGNATE, TWO OR THREE SPERM (phases II-III, 11b): each sperm that gets you = one clone, picked at random (no repeats) from the
 // FIREBALL clone (11c), the SPAZ and the DRILL clone; three = all of them. Phase I is always the fireball clone.
-// SPAZ: dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). 2 hits kill him, but a
-//   swing or a fireball that lands while he is mid-swing gets parried by accident. Getsugas always hit (one kills him).
+// SPAZ: dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). One hit kills him (green bar), but a
+//   swing or a fireball that lands while he is mid-swing gets parried by accident. Getsugas always hit.
 //   Anything of Caotan's or the other clones' (blasts, lasers, waves, bolts, goo lobs, the fireball clone's fireball and rush,
 //   the drill clone's AoE) kills him outright. Ultimates kill him too (11d).
 // DRILL: two jump dashes away, then chants the Heavenly Drill for 10s (the words over his head, a half-size drill growing above
@@ -10,7 +10,7 @@
 //   out of; he explodes after. Your own Drill, while his is out, goes only for his drill and destroys it (he fizzles).
 //   No time freeze, no slow-mo, no screen chant: it all happens while you keep fighting.
 // =====================================================================
-const IMPX={leash:9, spazHp:2, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
+const IMPX={leash:9, spazHp:1, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
 function impMkClone(kind,x,z){ const spr=new Sprite3D(96,96); spr.show(false);
   const C={kind,x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',swU:1,swN:0,sw:.2,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,dead:false,flash:0};
   IMP.extra.push(C);
@@ -116,4 +116,4 @@ function* impDrillVsDrill(C){ const P=Player, gy=P.y; let d=null; C.held=1;
         D.save(); D.font=`900 18px ${FB}`; D.textAlign='center'; D.lineWidth=4; D.strokeStyle='#1a0408'; D.strokeText(shown,q[0],q[1]); D.fillStyle=i===3?'#ffd45a':'#ff6a4a'; D.fillText(shown,q[0],q[1]); D.restore();
         D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(q[0]-50,q[1]+8,100,7); D.fillStyle='#ff4a2a'; D.fillRect(q[0]-49,q[1]+9,Math.max(0,98*k),5); }
       if(C.kind==='spaz'){ const k=Math.max(0,C.hp/IMPX.spazHp); C.hpShow=C.hpShow==null?k:lerp(C.hpShow,k,.2); const w=64, x=Math.round(q[0]-w/2), y=Math.round(q[1]);
-        D.fillStyle='#14080c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#4a1a22'; D.fillRect(x,y,w,8); D.fillStyle='#ffd0d8'; D.fillRect(x,y,Math.round(w*C.hpShow),8); D.fillStyle='#ff4a5a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2); } } }catch(e){ console.error('goo clone ui',e); } }; })();
+        D.fillStyle='#0a140c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#173a20'; D.fillRect(x,y,w,8); D.fillStyle='#d8ffd8'; D.fillRect(x,y,Math.round(w*C.hpShow),8); D.fillStyle='#3ad35a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2); } } }catch(e){ console.error('goo clone ui',e); } }; })();

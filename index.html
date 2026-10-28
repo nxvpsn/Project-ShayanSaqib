@@ -7392,10 +7392,10 @@ function twQuizDeath(){ const P=Player; if(TW.god){ Game.dmgNums.push({x:P.x,y:P
 // =====================================================================
 // CAOTAN: IMPREGNATE (solo, phases I-III: one pink sperm, two, three (IMP_WAVES); the rest zoom in when one lands). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
 // twice as fast as his goo. Hit it (any swing) and it's smacked into the ground half a screen away, dormant, under "BURN IT!":
-// 10 hits (slashes, fireballs of any size, Getsugas; one each): a fireball finish ignites it (it writhes and burns),
+// 5 hits (slashes, fireballs of any size, Getsugas; one each): a fireball finish ignites it (it writhes and burns),
 // a sword or Getsuga finish cuts it in half; the Drill or Ali's ultimate kills it in one hit. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! You go down and a goo clone of you pops out (11c_gooclone.js).
 // =====================================================================
-const IMP={hp:10, speed:22, tell:.9, dormant:12, list:[], womb:null};
+const IMP={hp:5, speed:22, tell:.9, dormant:12, list:[], womb:null};
 // the pink sperm: the goo sperm's shape, pink, bigger head with a smiley face; 4 tail frames
 const IMP_TEX=[];
 function impTex(f){ if(IMP_TEX[f]) return IMP_TEX[f]; const W=64, H=24, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
@@ -7496,7 +7496,9 @@ function impDrawWomb(cx,cy,s,al){ D.save(); D.globalAlpha=al; D.lineJoin='round'
     if(W){ W.t+=1/60; if(W.t>W.dur+.15) IMP.womb=null; else { const q=toScreen(P.x,P.y+3.4,P.z); if(q[2]<1){ const al=.55+.45*Math.abs(Math.sin(W.t*Math.PI*3.4)); impDrawWomb(q[0],q[1]-20,46,al); } } }
     for(const S of IMP.list){ if(S.st!=='dormant') continue; const q=toScreen(S.x,S.y+1.5,S.z); if(!(q[2]<1)) continue; const pu=1+.08*Math.sin(Game.time*10);
       D.save(); D.translate(q[0],q[1]); D.scale(pu,pu); uText('BURN IT!',0,0,`900 22px ${FB}`,'#ff7a1a','center'); D.restore();
-      const n=10, k=Math.max(0,S.hp/IMP.hp); for(let i=0;i<n;i++){ D.fillStyle=i<Math.ceil(k*n)?'#ff8ac8':'rgba(255,255,255,.18)'; D.fillRect(q[0]-n*5+i*10,q[1]+8,8,6); } } }catch(e){ console.error('impregnate ui',e); } }; })();
+      const n=IMP.hp, k=Math.max(0,S.hp/IMP.hp), w=70, x=Math.round(q[0]-w/2), y=Math.round(q[1]+8); S.hpShow=S.hpShow==null?k:lerp(S.hpShow,k,.2); /* a green health bar, one tick per hit */
+      D.fillStyle='#0a140c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#173a20'; D.fillRect(x,y,w,8); D.fillStyle='#d8ffd8'; D.fillRect(x,y,Math.round(w*S.hpShow),8); D.fillStyle='#3ad35a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2);
+      D.fillStyle='#0a140c'; for(let t=1;t<n;t++) D.fillRect(x+Math.round(w*t/n)-1,y,2,8); } }catch(e){ console.error('impregnate ui',e); } }; })();
 
 // ----- 11c_gooclone.js -----
 // =====================================================================
@@ -7830,8 +7832,8 @@ function* caoUnread(T,ph){ const sp=twSp(T); twBark('caotan',"You have... TWELVE
 // =====================================================================
 // IMPREGNATE, TWO OR THREE SPERM (phases II-III, 11b): each sperm that gets you = one clone, picked at random (no repeats) from the
 // FIREBALL clone (11c), the SPAZ and the DRILL clone; three = all of them. Phase I is always the fireball clone.
-// SPAZ: dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). 2 hits kill him, but a
-//   swing or a fireball that lands while he is mid-swing gets parried by accident. Getsugas always hit (one kills him).
+// SPAZ: dash-jumps at random within half a screen of you (IMPX.leash; farther and he hops back at you), spamming swings (they can hurt you, and you can parry them). One hit kills him (green bar), but a
+//   swing or a fireball that lands while he is mid-swing gets parried by accident. Getsugas always hit.
 //   Anything of Caotan's or the other clones' (blasts, lasers, waves, bolts, goo lobs, the fireball clone's fireball and rush,
 //   the drill clone's AoE) kills him outright. Ultimates kill him too (11d).
 // DRILL: two jump dashes away, then chants the Heavenly Drill for 10s (the words over his head, a half-size drill growing above
@@ -7839,7 +7841,7 @@ function* caoUnread(T,ph){ const sp=twSp(T); twBark('caotan',"You have... TWELVE
 //   out of; he explodes after. Your own Drill, while his is out, goes only for his drill and destroys it (he fizzles).
 //   No time freeze, no slow-mo, no screen chant: it all happens while you keep fighting.
 // =====================================================================
-const IMPX={leash:9, spazHp:2, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
+const IMPX={leash:9, spazHp:1, chant:10, drillR:4.6, drillFly:1.3, drillDmg:4};
 function impMkClone(kind,x,z){ const spr=new Sprite3D(96,96); spr.show(false);
   const C={kind,x,z,y:groundY(x,z),gy:groundY(x,z),ang:0,st:'emerge',t:0,k:0,n:0,spr,al:ALI(),anim:'idle',swU:1,swN:0,sw:.2,lastSw:Player.swingT||0,wasSw:false,sayT:0,emerge:0,ek:0,dead:false,flash:0};
   IMP.extra.push(C);
@@ -7945,7 +7947,7 @@ function* impDrillVsDrill(C){ const P=Player, gy=P.y; let d=null; C.held=1;
         D.save(); D.font=`900 18px ${FB}`; D.textAlign='center'; D.lineWidth=4; D.strokeStyle='#1a0408'; D.strokeText(shown,q[0],q[1]); D.fillStyle=i===3?'#ffd45a':'#ff6a4a'; D.fillText(shown,q[0],q[1]); D.restore();
         D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(q[0]-50,q[1]+8,100,7); D.fillStyle='#ff4a2a'; D.fillRect(q[0]-49,q[1]+9,Math.max(0,98*k),5); }
       if(C.kind==='spaz'){ const k=Math.max(0,C.hp/IMPX.spazHp); C.hpShow=C.hpShow==null?k:lerp(C.hpShow,k,.2); const w=64, x=Math.round(q[0]-w/2), y=Math.round(q[1]);
-        D.fillStyle='#14080c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#4a1a22'; D.fillRect(x,y,w,8); D.fillStyle='#ffd0d8'; D.fillRect(x,y,Math.round(w*C.hpShow),8); D.fillStyle='#ff4a5a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2); } } }catch(e){ console.error('goo clone ui',e); } }; })();
+        D.fillStyle='#0a140c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#173a20'; D.fillRect(x,y,w,8); D.fillStyle='#d8ffd8'; D.fillRect(x,y,Math.round(w*C.hpShow),8); D.fillStyle='#3ad35a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2); } } }catch(e){ console.error('goo clone ui',e); } }; })();
 
 // ----- 12_strict.js -----
 // =====================================================================
@@ -16012,7 +16014,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: the spaz goo clone has a regular health bar sitting right on top of his head";
+const DBG_PATCH="Oct 28: the spaz clone dies in one hit (green bar); grounded pink sperm take 5 hits and show a green bar with a tick per hit";
 const DBG_NEW=['caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

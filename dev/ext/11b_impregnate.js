@@ -1,10 +1,10 @@
 // =====================================================================
 // CAOTAN: IMPREGNATE (solo, phases I-III: one pink sperm, two, three (IMP_WAVES); the rest zoom in when one lands). A womb (pink line drawing) flashes over your head, then he fires a pink smiley sperm at you,
 // twice as fast as his goo. Hit it (any swing) and it's smacked into the ground half a screen away, dormant, under "BURN IT!":
-// 10 hits (slashes, fireballs of any size, Getsugas; one each): a fireball finish ignites it (it writhes and burns),
+// 5 hits (slashes, fireballs of any size, Getsugas; one each): a fireball finish ignites it (it writhes and burns),
 // a sword or Getsuga finish cuts it in half; the Drill or Ali's ultimate kills it in one hit. Left alone for 12s it wriggles back up and comes at you again. If it reaches you: IMPREGNATED?! You go down and a goo clone of you pops out (11c_gooclone.js).
 // =====================================================================
-const IMP={hp:10, speed:22, tell:.9, dormant:12, list:[], womb:null};
+const IMP={hp:5, speed:22, tell:.9, dormant:12, list:[], womb:null};
 // the pink sperm: the goo sperm's shape, pink, bigger head with a smiley face; 4 tail frames
 const IMP_TEX=[];
 function impTex(f){ if(IMP_TEX[f]) return IMP_TEX[f]; const W=64, H=24, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
@@ -105,4 +105,6 @@ function impDrawWomb(cx,cy,s,al){ D.save(); D.globalAlpha=al; D.lineJoin='round'
     if(W){ W.t+=1/60; if(W.t>W.dur+.15) IMP.womb=null; else { const q=toScreen(P.x,P.y+3.4,P.z); if(q[2]<1){ const al=.55+.45*Math.abs(Math.sin(W.t*Math.PI*3.4)); impDrawWomb(q[0],q[1]-20,46,al); } } }
     for(const S of IMP.list){ if(S.st!=='dormant') continue; const q=toScreen(S.x,S.y+1.5,S.z); if(!(q[2]<1)) continue; const pu=1+.08*Math.sin(Game.time*10);
       D.save(); D.translate(q[0],q[1]); D.scale(pu,pu); uText('BURN IT!',0,0,`900 22px ${FB}`,'#ff7a1a','center'); D.restore();
-      const n=10, k=Math.max(0,S.hp/IMP.hp); for(let i=0;i<n;i++){ D.fillStyle=i<Math.ceil(k*n)?'#ff8ac8':'rgba(255,255,255,.18)'; D.fillRect(q[0]-n*5+i*10,q[1]+8,8,6); } } }catch(e){ console.error('impregnate ui',e); } }; })();
+      const n=IMP.hp, k=Math.max(0,S.hp/IMP.hp), w=70, x=Math.round(q[0]-w/2), y=Math.round(q[1]+8); S.hpShow=S.hpShow==null?k:lerp(S.hpShow,k,.2); /* a green health bar, one tick per hit */
+      D.fillStyle='#0a140c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#173a20'; D.fillRect(x,y,w,8); D.fillStyle='#d8ffd8'; D.fillRect(x,y,Math.round(w*S.hpShow),8); D.fillStyle='#3ad35a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2);
+      D.fillStyle='#0a140c'; for(let t=1;t<n;t++) D.fillRect(x+Math.round(w*t/n)-1,y,2,8); } }catch(e){ console.error('impregnate ui',e); } }; })();
