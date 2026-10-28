@@ -16,7 +16,7 @@
 // Getsugas fly until they reach him (infinite range), aimed by the lock-on; Ali's sword hurts him here.
 // =====================================================================
 const NP1={live:0,done:0,hp:350,max:350,lunge:0,pdPending:0,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,objs:[],seq:null,cam:null,
-  blinkT:-9,pdT:-9,pdFrom:-9,pdDone:0,sat0:null,hint:null,seen:{},dt:1/60,bar:0};
+  blinkT:-9,pdT:-9,pdFrom:-9,pdDone:0,sat0:null,ts0:null,pdFx:null,hint:null,seen:{},dt:1/60,bar:0};
 const NP1_POOL=['combo','combo','bits','cage','glint3','grab','grab','clash','curtain','grid'];
 const NP1_FIRST=['combo','bits','grab','glint3','curtain','cage','grid','clash'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
@@ -146,23 +146,33 @@ const NP1M={
 // the perfect dodge (ZZZ-style): a blink while his lunge is about to land becomes a short visible dodge slide with blue
 // afterimages; the world drops into heavy slow motion (desaturated, blue-tinted, the lens widening) while he sails past;
 // a COUNTER prompt holds for ~1s: attack = the dodge counter, otherwise time snaps back. ux,uz = the slide direction
-function np1PdLook(on){ try{ const g=grade.uniforms; if(on){ if(NP1.sat0==null&&g.sat) NP1.sat0=g.sat.value; if(g.sat) g.sat.value=.3; }
-    else if(NP1.sat0!=null){ if(g.sat) g.sat.value=NP1.sat0; NP1.sat0=null; } if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=on?57:50; camera.updateProjectionMatrix(); } }catch(e){} }
+function np1PdLook(on){ try{ const g=grade.uniforms; if(on){ if(NP1.sat0==null&&g.sat) NP1.sat0=g.sat.value; if(g.sat) g.sat.value=.3; if(NP1.ts0==null) NP1.ts0=Game.timeScale||1; Game.timeScale=.4; }
+    else { if(NP1.sat0!=null){ if(g.sat) g.sat.value=NP1.sat0; NP1.sat0=null; } if(NP1.ts0!=null){ Game.timeScale=NP1.ts0; NP1.ts0=null; } NP1.pdFx=null; if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=50; camera.updateProjectionMatrix(); } } }catch(e){} }
+// the perfect dodge (ZZZ-style): a long snappy dash with a blue afterimage trail and a big silhouette left behind, the lens
+// punching wide, speed lines rushing in, then the world near-frozen (0.12x, desaturated, blue vignette) while he sails past;
+// COUNTER holds ~1s: attack = the dodge counter, otherwise time snaps back with a reverse whoosh. ux,uz = the dash direction
 function np1PerfectDodge(ux,uz){ const P=Player, l=Math.hypot(ux,uz)||1; ux/=l; uz/=l; NP1.pdDone=1; NP1.lunge=0; NP1.pdPending=0;
-  const [nx,nz]=np1Dir(), D=3.6; let ex=P.x+ux*D, ez=P.z+uz*D; if(Math.abs(groundY(ex,ez)-P.y)>2){ ex=P.x; ez=P.z; }
+  const [nx,nz]=np1Dir(); let D=5.5, ex=P.x+ux*D, ez=P.z+uz*D; for(;D>1&&Math.abs(groundY(ex,ez)-P.y)>2;D-=.5){ ex=P.x+ux*D; ez=P.z+uz*D; }
   NP1.seq={k:'pdodge',t:0,sx:P.x,sz:P.z,ex,ez,gt:0,nx:-nx,nz:-nz}; P.cineFly=true; P.cineAnim='dash'; P.aliAtk=null; P.vx=P.vz=0; P.inv=99; P.ang=Math.atan2(uz,ux);
-  Game.slowT=1.05; Sound.sfx('whoosh'); Sound.sfx('dash'); Sound.tone('sine',520,90,.5,.18); /* the world at 0.3x; the dodge itself runs on real time */ Sound.hiss(2600,.35,.12,'bandpass'); FX.flash=.3; grade.uniforms.flashCol.value.set(.35,.6,1); np1PdLook(true);
-  FX.burst(P.x,P.y+1,P.z,30,0x3a8aff,5,.4); FX.burst(P.x,P.y+1,P.z,16,0xbfe0ff,3,.45);
+  Game.slowT=1.1; np1PdLook(true); shake(.35); FX.flash=.45; grade.uniforms.flashCol.value.set(.45,.7,1);
+  Sound.tone('sine',2400,3800,.25,.14); Sound.tone('triangle',1200,1900,.22,.1); Sound.sfx('whoosh'); Sound.sfx('dash'); Sound.tone('sine',120,38,.4,.28); Sound.hiss(2600,.4,.14,'bandpass'); /* shing, whoosh, thump */
+  try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh){ g.mesh.material.color.setHex(0x6ab8ff); g.mesh.scale.multiplyScalar(1.25); } }catch(e){} /* the silhouette left where you stood */
+  FX.burst(P.x,P.y+1,P.z,46,0x3a8aff,7,.45); FX.burst(P.x,P.y+1,P.z,22,0xffffff,5,.3); FX.ring(P.x,P.y+.1,P.z,'#6ab8ff',3,.35);
+  const L=[]; for(let i=0;i<46;i++) L.push({a:rnd(0,6.283),r:rnd(.55,1),w:rnd(1,3.5),sp:rnd(.8,1.4)}); NP1.pdFx={t:0,L};
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); }
-function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's slide, the window), wdt: world time (slowed) */
-  const u=Math.min(1,S.t/.2), e=1-Math.pow(1-u,3); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.35;
-  P.cineAnim=u<1?'dash':'idle'; S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.028; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x3a8aff); }catch(e){} }
-  if(Math.random()<.7) FX.spawn(P.x+rnd(-.5,.5),P.y+rnd(.2,2),P.z+rnd(-.5,.5),rnd(-.5,.5),rnd(.2,1),rnd(-.5,.5),.5,Math.random()<.5?0x3a8aff:0xbfe0ff,.25,0,true);
-  // he sails on past, in slow motion
-  if(S.t<1.05){ NB.x+=S.nx*26*wdt; NB.z+=S.nz*26*wdt; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.1); NBS.bdir=Math.atan2(S.nz,S.nx); }
+function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's dash, the window), wdt: world time (near-frozen) */
+  const u=Math.min(1,S.t/.26), e=u>=1?1:1-Math.pow(2,-10*u); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3;
+  P.cineAnim=u<1?'dash':'idle'; S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.016; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
+  if(u<1) for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),(S.sx-S.ex)*rnd(1,3),rnd(-.3,.6),(S.sz-S.ez)*rnd(1,3),.4,i%2?0x3a8aff:0xffffff,.3,0,true);
+  else if(Math.random()<.6) FX.spawn(P.x+rnd(-.6,.6),P.y+rnd(.2,2.2),P.z+rnd(-.6,.6),0,rnd(.3,1),0,.6,0x6ab8ff,.22,0,true);
+  // the lens: punches wide on the dash, settles a little wide through the slow-mo
+  try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=S.t<.1?50+16*(S.t/.1):56+10*Math.exp(-(S.t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
+  if(NP1.pdFx) NP1.pdFx.t=S.t;
+  // he sails on past, near-frozen
+  if(S.t<1.1){ NB.x+=S.nx*26*wdt; NB.z+=S.nz*26*wdt; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.1); NBS.bdir=Math.atan2(S.nz,S.nx); }
   // the counter window
-  if(S.t>.08&&S.t<1.05&&consume('attack')){ np1PdLook(false); np1Counter(); return; }
-  if(S.t>=1.05){ NP1.seq=null; np1PdLook(false); Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; Sound.tone('sine',90,420,.25,.12); } }
+  if(S.t>.1&&S.t<1.1&&consume('attack')){ np1PdLook(false); np1Counter(); return; }
+  if(S.t>=1.1){ NP1.seq=null; np1PdLook(false); Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; Sound.hiss(1800,.3,.12,'bandpass'); Sound.tone('sine',90,420,.25,.12); /* time snaps back */ } }
 // the counter: Ali zips past him, the camera snaps round to face Ali (Nathan behind him), judgement cuts rain on Nathan; 1.6s
 function np1Counter(){ const P=Player, [dx,dz]=np1Dir(), fx=-dx, fz=-dz; /* from Ali through Nathan */
   P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=0; Game.slowT=0; NP1.pdT=-9; NP1.gen=null; NB.dsh=null;
@@ -230,13 +240,19 @@ function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stun
       for(const s of SPRITES) if(s&&s.mesh) s.mesh.quaternion.copy(camera.quaternion); if(NB&&NB.mesh){ NB.mesh.quaternion.copy(camera.quaternion); NB.mesh.scale.x=1; } }catch(e){ console.error('np1 camera',e); return uc.apply(this,arguments); } }; })();
 // his phase I bar and the hints
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(!tpsFight()||!NP1.live||Game.letter>.5) return;
-      const TT=IS_TOUCH(), bw=TT?520:620, bx=(UW-bw)/2, by=UH-46, k=Math.max(0,NP1.hp/NP1.max), a=NP1.bar;
+      const TT=IS_TOUCH(), bw=TT?520:620, bx=(UW-bw)/2, by=40, /* his bar along the top */ k=Math.max(0,NP1.hp/NP1.max), a=NP1.bar;
       D.save(); D.globalAlpha=a; D.fillStyle='rgba(6,10,20,.75)'; D.fillRect(bx-4,by-24,bw+8,40); D.font=`800 16px ${FB}`; D.fillStyle='#bfefff'; D.textAlign='left'; D.fillText('NATHAN',bx,by-8);
       D.textAlign='right'; D.fillStyle=NP1.done?'#ffd45a':'#7fdcff'; D.fillText(NP1.done?'PHASE I CLEARED':'PHASE I',bx+bw,by-8); D.fillStyle='#14202c'; D.fillRect(bx,by,bw,10);
       D.fillStyle=NB&&NB.stunned?'#ffffff':'#3ff4ff'; D.fillRect(bx,by,bw*k,10); D.strokeStyle='#bfefff'; D.lineWidth=1; D.strokeRect(bx+.5,by+.5,bw-1,9); D.restore();
-      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.08&&Q.t<1.05){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,(1.05-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
+      const F=NP1.pdFx; if(F&&NP1.seq&&NP1.seq.k==='pdodge'){ const cx=UW/2, cy=UH/2, R0=Math.hypot(UW,UH)*.55, k=Math.max(0,1-F.t/.45); D.save();
+        // the blue vignette through the slow-mo
+        const vg=D.createRadialGradient(cx,cy,R0*.35,cx,cy,R0); vg.addColorStop(0,'rgba(40,90,200,0)'); vg.addColorStop(1,`rgba(30,80,200,${.38*Math.min(1,F.t*8)*Math.min(1,(1.1-F.t)*5)})`); D.fillStyle=vg; D.fillRect(0,0,UW,UH);
+        // speed lines rushing in from the edges on the dash
+        if(k>0) for(const l of F.L){ const r1=R0*l.r, r0=r1*(1-.45*Math.min(1,F.t*l.sp*6)); D.strokeStyle=`rgba(${l.w>2.5?'200,230,255':'255,255,255'},${.75*k})`; D.lineWidth=l.w; D.beginPath(); D.moveTo(cx+Math.cos(l.a)*r1,cy+Math.sin(l.a)*r1); D.lineTo(cx+Math.cos(l.a)*r0,cy+Math.sin(l.a)*r0); D.stroke(); }
+        D.restore(); }
+      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.1&&Q.t<1.1){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,(1.1-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
         D.font=`800 ${TT?18:18}px ${FB}`; D.lineWidth=4; D.strokeText(K('attack'),0,30); D.fillStyle='#ffffff'; D.fillText(K('attack'),0,30); D.restore(); }
-      const H=NP1.hint; if(H){ H.t+=1/60; if(H.t>H.dur) NP1.hint=null; else { const al=Math.min(1,H.t*4,(H.dur-H.t)*3); D.save(); D.globalAlpha=al; D.font=`800 ${TT?20:22}px ${FB}`; D.textAlign='center'; D.lineWidth=5; D.strokeStyle='#06101c'; D.strokeText(H.text,UW/2,UH*.2); D.fillStyle='#e8f6ff'; D.fillText(H.text,UW/2,UH*.2); D.restore(); } }
+      const H=NP1.hint; if(H){ H.t+=1/60; if(H.t>H.dur) NP1.hint=null; else { const al=Math.min(1,H.t*4,(H.dur-H.t)*3); D.save(); D.globalAlpha=al; D.font=`800 ${TT?20:22}px ${FB}`; D.textAlign='center'; D.lineWidth=5; D.strokeStyle='#06101c'; D.strokeText(H.text,UW/2,UH*.22); D.fillStyle='#e8f6ff'; D.fillText(H.text,UW/2,UH*.22); D.restore(); } }
     }catch(e){ console.error('np1 ui',e); } }; })();
 // Ali's iaido for the dodge counter (img/ali/ali_iai.png: 96px cells, columns = facings S..SW, 18 rows = the sword draw,
 // cut and re-sheathe): he faces the camera, draws and cuts as he lands, holds while the cuts rain, sheathes on the boom
