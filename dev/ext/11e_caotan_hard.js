@@ -17,7 +17,7 @@
 
 // ---------- goo ----------
 // the goo tell: Caotan pulses white twice
-function* caoPulse(T,sp){ for(let k=0;k<2;k++){ T.flash=.16; twBark('caotan',"UGH!",true); /* he grunts on each pulse (no glint sound) */ FX.burst(T.x,T.y+1.4,T.z,14,0xffffff,4,.25,false); yield .42/sp; } }
+function* caoPulse(T,sp){ for(let k=0;k<2;k++){ T.flash=.16; if(!k) twBark('caotan',"Ah!",true); /* one "Ah!" for the two pulses (no glint sound) */ FX.burst(T.x,T.y+1.4,T.z,14,0xffffff,4,.25,false); yield .42/sp; } }
 // one lobbed goo sperm: a marked landing (unjumpable splat) that leaves a slowing white puddle
 function caoGooLob(T,x,z,sp,o){ o=o||{}; const m=new THREE.Group(); m.userData.tw=1; scene.add(m); twSperm(m,1.5); T.fire=.2; Sound.sfx('squelch');
   return twThrow({x:T.x,y:T.y+1,z:T.z,tx:x,tz:z,dur:(o.dur||.85)/sp,h:3.5,mesh:m,r:1.1,col:0xffffff,trail:0xffffff,fence:true,onLand(lx,lz,play){ Sound.sfx('squelch'); FX.burst(lx,groundY(lx,lz)+.2,lz,14,0xffffff,3,.3,false);

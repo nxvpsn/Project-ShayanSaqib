@@ -23,7 +23,8 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'hamzadeep': ('am_onyx', .72, .58, 'aecho=0.8:0.75:140:0.45,aecho=0.6:0.5:400:0.3'),
   'nathan': ('am_fenrir', .97, .88, 'bass=g=4:f=110,acompressor=threshold=-20dB:ratio=3:attack=5:release=90,aecho=0.8:0.45:55:0.22'), 'nathanraw': ('am_fenrir', .94, .88, 'bass=g=4:f=110,acompressor=threshold=-20dB:ratio=2.5:attack=5:release=90'),  # a heroic, dramatic anime lead
   'grimmaw': ('bm_fable', 1.04, 1.22, None), 'hound': ('am_fenrir', .98, .8, 'highpass=f=300,lowpass=f=3400'),  # He's Day Old Kojima (a posh baby) and his soldiers (over the codec)
-  'caotan': ('am_liam', 1.06, 1.0, None), 'omar': ('bm_lewis', .9, .86, 'aecho=0.8:0.4:60:0.25'),
+  'caotan': ('am_liam', 1.06, 1.0, None), 'sperm': ('af_heart', 1.15, 1.8, None),  # Caotan's impregnate sperm: a chipmunk giggle
+  'omar': ('bm_lewis', .9, .86, 'aecho=0.8:0.4:60:0.25'),
   'caomar': ('bm_lewis', 1.0, .92, 'aecho=0.8:0.5:25:0.35,aecho=0.7:0.4:60:0.2'),
   'elder': ('bm_george', .9, .96, None), 'baker': ('bf_isabella', 1.0, 1.0, None), 'kid': ('am_puck', 1.05, 1.28, None),
   'kid14': ('am_puck', 1.05, 1.3, None), 'kids': ('am_puck', 1.08, 1.34, 'aecho=0.8:0.7:23:0.6,aecho=0.8:0.6:47:0.5'),
@@ -31,7 +32,7 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'villagerm': ('am_eric', 1.0, 1.0, None), 'trainer': ('am_puck', 1.08, 1.08, None), 'villagerf': ('af_sarah', 1.0, 1.0, None), 'paul': ('am_liam', .95, .9, 'lowpass=f=6000'),
   'operator': ('af_nicole', .95, 1.0, 'highpass=f=200,lowpass=f=7500,chorus=0.6:0.9:50|60:0.4|0.32:0.25|0.4:2|1.3,aecho=0.8:0.6:45:0.25'),  # Aire, Nathan's operator (calm, synthetic)
   '': ('bf_emma', .95, 1.0, None)}
-FIXES = [('Itadakimasu.', 'Ee-tah-dah-kee-mahss.'), ('GG fucking EZ.', 'G. G. Fucking. E. Z.'), ('Getsuga Tenshou', 'Get-sue-gah. Ten-show'),
+FIXES = [('HEHE!', 'Hee hee!'), ('Itadakimasu.', 'Ee-tah-dah-kee-mahss.'), ('GG fucking EZ.', 'G. G. Fucking. E. Z.'), ('Getsuga Tenshou', 'Get-sue-gah. Ten-show'),
   ('Getsuga... Jujishou', 'Get-sue-gah. Joo-jee-show'), ('Getsuga... TENSHOU', 'Get-sue-gah. TEN-SHOW'), ('GETSUGA', 'GET-SUE-GAH'), ('TENSHOU', 'TEN-SHOW'), ('Jujishou', 'Joo-jee-show'), ('...', ', '),
   ('Za Warudo', 'Zah Wah-roo-doh'), ('Judgement Cut', 'Judgement. Cut'), ('GG', 'G. G.'), ('Shayan Saqib', 'Shayaan Saakib'), ('Shayan', 'Shayaan'),
   ('Yoshi-P', 'Yoshi P'), ('HTML', 'H T M L'), ('AFK', 'A F K'), ('DPS', 'D P S'), ('Uwu', 'Oo-woo'), ('uwu', 'oo-woo'), ('Ara ara', 'Ah-rah ah-rah'),

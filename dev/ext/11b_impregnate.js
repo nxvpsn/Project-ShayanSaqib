@@ -26,10 +26,13 @@ TWK.caotan.impregnate=function*(T,ph){ const sp=twSp(T), W=IMP_WAVES[Math.min(3,
   for(let w=0;w<3.6&&Ss.some(S=>(S.st==='fly'||S.st==='wait')&&!S.dead);w+=.05) yield .05; yield .4; };
 for(const k of [1,2,3]) if(TWPOOL.caotan[k]&&!TWPOOL.caotan[k].includes('impregnate')) TWPOOL.caotan[k].push('impregnate');
 // one sperm: fly (homing a little) -> smacked (an arc half a screen away) -> dormant (green bar) -> burning -> gone; or it gets you
+// each sperm giggles as it flies out (a chipmunk 'sperm' voice, layered over Caotan's line with Voice.overlay)
+const IMP_HEHE=['sperm',"HEHE!"];
+function impHehe(S){ try{ Voice.overlay(IMP_HEHE[0],IMP_HEHE[1],.9); Game.dmgNums.push({x:S.x,y:S.y+.7,z:S.z,n:'HEHE!',t:0,col:'#ff9ad8'}); }catch(e){} }
 function impLaunch(T,off,spd,delay){ spd=spd||IMP.speed; const P=Player, gy=groundY(T.x,T.z), s=new THREE.Sprite(new THREE.SpriteMaterial({map:impTex(0),transparent:true,alphaTest:.1,depthWrite:false,fog:false}));
   s.scale.set(1.9,1.9*24/64,1); s.renderOrder=6; s.userData.tw=1; scene.add(s);
   const a=Math.atan2(P.z-T.z,P.x-T.x)+(off||0), S={st:'fly',spd,s,x:T.x+Math.cos(a)*.8,y:gy+1.1,z:T.z+Math.sin(a)*.8,vx:Math.cos(a)*spd,vz:Math.sin(a)*spd,hp:IMP.hp,t:0,f:0,ft:0,rot:0,trav:0,dead:false,off:off||0,T};
-  if(delay>0){ S.st='wait'; S.wt=delay; s.visible=false; }
+  if(delay>0){ S.st='wait'; S.wt=delay; s.visible=false; } else impHehe(S);
   IMP.list.push(S);
   twHz({upd(dt,play){ try{ if(play&&(!Player.cineFly||S.st==='burn'||S.st==='cut')) impUpd(S,dt); /* held still while an ultimate plays */ }catch(e){ console.error('impregnate',e); S.dead=true; } if(S.dead){ impCutKill(S); scene.remove(s); const i=IMP.list.indexOf(S); if(i>=0) IMP.list.splice(i,1); return false; } return true; },
     kill(){ impCutKill(S); scene.remove(s); const i=IMP.list.indexOf(S); if(i>=0) IMP.list.splice(i,1); IMP.womb=null; }});
@@ -47,7 +50,7 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
         let n=1; for(const o of IMP.list) if(o!==S&&!o.dead&&(o.st==='fly'||o.st==='wait')){ if(o.st==='wait'){ o.s.visible=true; o.x=o.T.x; o.z=o.T.z; } o.st='zoom'; o.t=0; n++; } impDown(n,S.T&&S.T.phase); return; }
     }
   else if(S.st==='wait'){ const T=S.T, P2=Player; S.wt-=dt; S.x=T.x; S.z=T.z; S.y=T.y+1.1;
-      if(S.wt<=0){ const a=Math.atan2(P2.z-T.z,P2.x-T.x)+S.off; S.st='fly'; s.visible=true; S.x=T.x+Math.cos(a)*.8; S.z=T.z+Math.sin(a)*.8; S.vx=Math.cos(a)*S.spd; S.vz=Math.sin(a)*S.spd; S.t=0; Sound.sfx('whoosh'); } }
+      if(S.wt<=0){ const a=Math.atan2(P2.z-T.z,P2.x-T.x)+S.off; S.st='fly'; s.visible=true; S.x=T.x+Math.cos(a)*.8; S.z=T.z+Math.sin(a)*.8; S.vx=Math.cos(a)*S.spd; S.vz=Math.sin(a)*S.spd; S.t=0; Sound.sfx('whoosh'); impHehe(S); } }
   else if(S.st==='zoom'){ const dx=P.x-S.x, dz=P.z-S.z, d=Math.hypot(dx,dz)||1, v=45; S.vx=dx/d*v; S.vz=dz/d*v; S.x+=S.vx*dt; S.z+=S.vz*dt; S.y=lerp(S.y,P.y+.6,Math.min(1,dt*8)); face();
       FX.spawn(S.x,S.y,S.z,0,0,0,.25,0xff8ac8,.3,0,true); if(d<.7||S.t>.6){ FX.burst(P.x,P.y+.8,P.z,18,0xff8ac8,4,.3); Sound.sfx('squelch'); Game.dmgNums.push({x:P.x+rnd(-.6,.6),y:P.y+3.4,z:P.z,n:'+1',t:0,big:true,col:'#ff8ac8'}); S.dead=true; return; } }
   else if(S.st==='smack'){ S.k+=dt/.5; const u=Math.min(1,S.k); S.x=lerp(S.sx,S.tx,u); S.z=lerp(S.sz,S.tz,u); S.y=lerp(S.sy,groundY(S.tx,S.tz)+.25,u)+Math.sin(u*Math.PI)*2.6; S.rot+=dt*26;
