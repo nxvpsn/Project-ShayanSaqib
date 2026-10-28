@@ -61,7 +61,14 @@ function impUpd(S,dt){ const P=Player, s=S.s; S.t+=dt; S.ft+=dt;
       if(k>=1){ FX.burst(S.x,S.y+.3,S.z,22,0x2a2a2a,4,.4,false); FX.burst(S.x,S.y+.3,S.z,12,0xff7a1a,3,.3); Sound.sfx('crash'); S.dead=true; return; } }
   else if(S.st==='cut'){ impCutUpd(S,dt); if(S.dead) return; }
   s.position.set(S.x,S.y,S.z); s.material.rotation=S.rot; }
-function impSmack(S){ const P=Player, a=P.ang||Math.atan2(S.z-P.z,S.x-P.x), q=twClampXZ(P.x+Math.cos(a)*12,P.z+Math.sin(a)*12,1.2);
+// where a smacked sperm lands: a random direction 9-12 away that stays inside the arena (off the edge it turns inward),
+// away from where the other grounded sperm already lie
+function impLandSpot(S){ const P=Player, B=twBounds(), m=1.5, inside=(x,z)=>x>B.x0+m&&x<B.x1-m&&z>B.z0+m&&z<B.z1-m; let best=null, bs=-1;
+  for(let i=0;i<16;i++){ const a=rnd(0,6.283), r=rnd(9,12), x=P.x+Math.cos(a)*r, z=P.z+Math.sin(a)*r; if(!inside(x,z)) continue;
+    let sep=99; for(const o of IMP.list) if(o!==S&&!o.dead&&(o.st==='dormant'||o.st==='smack')) sep=Math.min(sep,Math.hypot((o.st==='smack'?o.tx:o.x)-x,(o.st==='smack'?o.tz:o.z)-z));
+    if(sep>4) return {x,z}; if(sep>bs){ bs=sep; best={x,z}; } }
+  if(best) return best; const cx=(B.x0+B.x1)/2, cz=(B.z0+B.z1)/2, a=Math.atan2(cz-P.z,cx-P.x)+rnd(-.6,.6); return twClampXZ(P.x+Math.cos(a)*10,P.z+Math.sin(a)*10,1.2); }
+function impSmack(S){ const P=Player, q=impLandSpot(S);
   S.st='smack'; S.k=0; S.sx=S.x; S.sy=S.y; S.sz=S.z; S.tx=q.x; S.tz=q.z; Sound.sfx('punch'); Sound.sfx('parry'); FX.hitstop=Math.max(FX.hitstop,.08); FX.spark(S.x,S.y,S.z); shake(.3);
   Game.dmgNums.push({x:S.x,y:S.y+1,z:S.z,n:'SMACKED',t:0,big:true,col:'#ffd0ec'}); twBark('caotan',"My son! You hit my SON!",true); }
 // every hit is one pip of ten: a slash, a fireball (any size) or a Getsuga
@@ -106,4 +113,5 @@ function impDrawWomb(cx,cy,s,al){ D.save(); D.globalAlpha=al; D.lineJoin='round'
     for(const S of IMP.list){ if(S.st!=='dormant') continue; const q=toScreen(S.x,S.y+1.1,S.z); if(!(q[2]<1)) continue;
       const n=IMP.hp, k=Math.max(0,S.hp/IMP.hp), w=70, x=Math.round(q[0]-w/2), y=Math.round(q[1]); S.hpShow=S.hpShow==null?k:lerp(S.hpShow,k,.2); /* a green health bar, one tick per hit */
       D.fillStyle='#0a140c'; D.fillRect(x-2,y-2,w+4,12); D.fillStyle='#173a20'; D.fillRect(x,y,w,8); D.fillStyle='#d8ffd8'; D.fillRect(x,y,Math.round(w*S.hpShow),8); D.fillStyle='#3ad35a'; D.fillRect(x,y,Math.round(w*k),8); D.fillStyle='rgba(255,255,255,.35)'; D.fillRect(x,y,Math.round(w*k),2);
-      D.fillStyle='#0a140c'; for(let t=1;t<n;t++) D.fillRect(x+Math.round(w*t/n)-1,y,2,8); } }catch(e){ console.error('impregnate ui',e); } }; })();
+      D.fillStyle='#0a140c'; for(let t=1;t<n;t++) D.fillRect(x+Math.round(w*t/n)-1,y,2,8);
+      const lt=Math.max(0,1-S.t/IMP.dormant); D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(x-1,y+11,w+2,4); D.fillStyle='#ffd23a'; D.fillRect(x,y+12,Math.round(w*lt),2); /* its own 12s: a thin yellow line that runs out, then it gets back up */ } }catch(e){ console.error('impregnate ui',e); } }; })();

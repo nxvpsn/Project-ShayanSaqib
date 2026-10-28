@@ -168,6 +168,18 @@ s = patch(s, "const foes=B?[]:MOBS.filter(m=>m.hp>0&&Math.abs(m.x-P.x)<15&&Math.
   "const foes=(typeof ultFoes==='function')?ultFoes():(B?[]:MOBS.filter(m=>m.hp>0&&Math.abs(m.x-P.x)<15&&Math.abs(m.z-P.z)<11));")
 s = patch(s, "if(!q.extra&&q.tg.hp>0){ damageMob(q.tg,10,Math.atan2(q.tg.z-P.z,q.tg.x-P.x)); Sound.sfx('gore'); }",
   "if(!q.extra&&q.tg.hp>0){ if(typeof ultHit==='function') ultHit(q.tg,'drill'); else damageMob(q.tg,10,Math.atan2(q.tg.z-P.z,q.tg.x-P.x)); Sound.sfx('gore'); }")
+# the chantless Heavenly Drill (after He's Day Old Kojima on Shayan's road, the wrong-turn Nathan fight, Debug Mode: twChantless in ext/06f_chantless.js):
+# same rise, freeze and spin-up, but 1s, and Shayan only shouts the last line
+s = patch(s, "Voice.stop(); if(Voice.on) Voice.play('shayan',CHANT); Game.chant={",
+  "const CL=typeof twChantless==='function'&&twChantless(); Voice.stop(); if(Voice.on) Voice.play('shayan',CL?SH_DRILL_LINE[1]:CHANT); Game.chant={")
+s = patch(s, "yield wait(.18); const T=Math.max(3,(Voice.cur&&Voice.cur.buffer)?Voice.cur.buffer.duration-.15:4.2);",
+  "yield wait(CL?.05:.18); const T=CL?1:Math.max(3,(Voice.cur&&Voice.cur.buffer)?Voice.cur.buffer.duration-.15:4.2);")
+s = patch(s, "for(let i=0;i<4;i++){ Game.chant.idx=i; Game.chant.pt=0;\n    if(i===1&&H){ hz.on=1;",
+  "for(let i=CL?3:0;i<4;i++){ Game.chant.idx=i; Game.chant.pt=0; if(CL) d.gold=1.02;\n    if(i===1&&H){ hz.on=1;")
+s = patch(s, "yield tween(d,{s:.1+(i+1)*.24,y:gy+5.2+(i+1)*.35},T*lens[i]/tot,t=>t); }",
+  "yield tween(d,{s:.1+(i+1)*.24,y:gy+5.2+(i+1)*.35},CL?T:T*lens[i]/tot,t=>t); }")
+s = patch(s, "let w=0; while(Voice.speaking&&w<1.2){ yield wait(.1); w+=.1; }\n  Game.chant.fin=1; yield wait(.25);",
+  "let w=CL?1.2:0; while(Voice.speaking&&w<1.2){ yield wait(.1); w+=.1; }\n  Game.chant.fin=1; yield wait(CL?.1:.25);")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

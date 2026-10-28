@@ -26,6 +26,11 @@ function impDown(n,ph){ n=n||1; const P=Player; Game.dmgNums.push({x:P.x,y:P.y+3
       if(n>=2&&D.t>1.7&&!D.said){ D.said=1; if(n>=3) twBark('caotan',"TRIPLETS?! Senpai, my bloodline is UNSTOPPABLE!",true); else twBark('caotan',"Twins?! Senpai, I'm a father of MULTIPLES!",true); }
       if(D.t>=D.dur){ IMP.down=null; P.hurt=0; P.inv=Math.max(P.inv,.5); P.anim='idle'; return false; } return true; },
     kill(){ if(IMP.down===D){ IMP.down=null; P.hurt=0; P.inv=Math.max(P.inv,.5); } }}); }
+// the triple parry: you can't dash or walk out of it, and nothing can hit you until it's over
+(function(){ const up=updatePlayer; updatePlayer=function(dt){ const P=Player; if(!(IMP.tripleLock>Game.time)) return up.apply(this,arguments);
+    const H0={l:held.left,r:held.right,u:held.up,d:held.down,sx:Stick.x,sz:Stick.z}; try{ hit.dash=false; P.dash=0; P.dashCd=Math.max(P.dashCd||0,.15); held.left=held.right=held.up=held.down=false; Stick.x=Stick.z=0; /* no movement input */ }catch(e){}
+    let r; try{ r=up.apply(this,arguments); } finally{ held.left=H0.l; held.right=H0.r; held.up=H0.u; held.down=H0.d; Stick.x=H0.sx; Stick.z=H0.sz; }
+    try{ P.vx=P.vz=0; P.dash=0; P.inv=Math.max(P.inv,.25); P.noBlink=Game.time+.25; }catch(e){ console.error('triple lock',e); } return r; }; })();
 // downed: no input, invulnerable, lying there (Shayan's death frames, reversed as he gets up)
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ const D=IMP.down, P=Player; if(!D) return up.apply(this,arguments);
     try{ P.hurt=Math.max(P.hurt||0,.1); P.atk=null; P.charge=0; P.fbHolding=false; P.dash=0; }catch(e){}
@@ -86,8 +91,8 @@ function impCloneUpd(C,dt){ const P=Player, T=TW.foes.find(t=>t.who==='caotan'),
           if(C.al) twBark('gooali',"Too early! Rookie mistake. Trust me, I'd know. I'm you.",true); else twBark('gooshayan',"Too early! Rookie mistake. Trust me, I'd know. I'm you.",true); }
         impGo(C,'retreat'); C.ign=0; return; } }
     if(R.trav>=R.d){ impGo(C,'retreat'); C.ign=0; } return; }
-  if(C.st==='triple'){ // he swings like you do, three times: every swing is parried for you
-    C.ang=toP; C.anim='swing';
+  if(C.st==='triple'){ // he swings like you do, three times: every swing is parried for you (you're locked in and untouchable meanwhile)
+    C.ang=toP; C.anim='swing'; IMP.tripleLock=Game.time+.12;
     if(C.n<2&&C.k>=.26*(C.n+1)){ C.n++; C.swU=0; C.swN++; Sound.sfx('swing'); try{ pxvSlash('sh_fslash',C.x,C.gy,C.z,toP,C.swN%2,2.4); }catch(e){} twMeleeParry(C.x,C.z,{});
       if(C.n===2){ if(C.al) twBark('gooali',"Wait, you can't parry yourself three ti- BLEGH!",true); else twBark('gooshayan',"Wait, you can't parry yourself three ti- BLEGH!",true); } }
     if(C.k>=.95){ impPop(C); C.dead=true; } return; }
@@ -141,6 +146,8 @@ function impPop(C){ Sound.sfx('squelch'); Sound.sfx('gore'); Sound.sfx('slam'); 
 // the Drill: he drills right back and the two cancel out
 // (a drill clone's drill comes first: your drill goes only for it, 11f_impmulti.js)
 (function(){ const sa=specialAttack; specialAttack=function*(){ const DC=IMP.extra.find(c=>c.kind==='drill'&&c.drill&&!c.dead);
+    const FC=IMP.clone&&!IMP.clone.dead&&IMP.clone.st!=='emerge'?IMP.clone:null;
+    if(DC&&FC&&!ALI()&&TW.fight){ yield* impDrillBoth(DC,FC); return; } /* both out: your drill splits in two (11f) */
     if(DC&&!ALI()&&TW.fight){ yield* impDrillVsDrill(DC); return; }
     const C=IMP.clone; if(C&&!C.dead&&C.st!=='emerge'&&!ALI()&&TW.fight){ yield* impDrillClash(C); return; } yield* sa.apply(this,arguments); }; })();
 function* impDrillClash(C){ const P=Player, pin=typeof drPin==='function'?drPin():null, gy=P.y; let d=null, e=null;

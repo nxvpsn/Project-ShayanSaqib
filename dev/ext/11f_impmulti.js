@@ -6,7 +6,7 @@
 //   Anything of Caotan's or the other clones' (blasts, lasers, waves, bolts, goo lobs, the fireball clone's fireball and rush,
 //   the drill clone's AoE) kills him outright. Ultimates kill him too (11d).
 // DRILL: two jump dashes away, then chants the Heavenly Drill for 10s (the words over his head, a half-size drill growing above
-//   him; he parries anything you throw at him). Then the drill flies at where you stand: a huge unjumpable circle you can run
+//   him; he parries anything you throw at him; with the rush clone also out, your drill splits in two, impDrillBoth). Then the drill flies at where you stand: a huge unjumpable circle you can run
 //   out of; he explodes after. Your own Drill, while his is out, goes only for his drill and destroys it (he fizzles).
 //   No time freeze, no slow-mo, no screen chant: it all happens while you keep fighting.
 // =====================================================================
@@ -111,6 +111,31 @@ function* impDrillVsDrill(C){ const P=Player, gy=P.y; let d=null; C.held=1;
     E.dead=1; scene.remove(E.g); C.drill=null; d.dead=1; scene.remove(d.g); d=null; try{ fxLights[1].intensity=0; }catch(err){}
     if(!C.dead) impGo(C,'fizzle'); yield wait(.4);
   } finally { if(d){ d.dead=1; scene.remove(d.g); } C.held=0; P.cineFly=false; P.cineAnim=null; P.inv=.8; P.vy=-2; } }
+// both clones out: your drill splits in two; one breaks the drill clone's drill, the other meets the rush clone's own drill (he drills back)
+function* impDrillBoth(DC,FC){ const P=Player, gy=P.y, pin=typeof drPin==='function'?drPin():null; let d=null, a=null, b=null, e=null; DC.held=1;
+  try{ P.sp=0; P.inv=99; P.atk=null; P.charge=0; P.vx=P.vz=0; P.cineFly=true; P.cineAnim='jump'; Sound.sfx('djump'); impGo(FC,'drill'); if(FC.fb) FC.fb.dead=true;
+    if(FC.al) twBark('gooali',"Oh, you're doing the drill? I'm doing the drill.",true); else twBark('gooshayan',"Oh, you're doing the drill? I'm doing the drill.",true);
+    yield tween(P,{y:gy+2},.3,t=>1-Math.pow(1-t,3)); P.cineAnim='charge';
+    d=makeDrill(); d.x=P.x; d.y=gy+5.2; d.z=P.z; d.s=.1; d.spin=20; d.fire=.6; d.dir.set(0,-1,0);
+    e=makeDrill(); e.x=FC.x; e.y=FC.gy+5.2; e.z=FC.z; e.s=.1; e.spin=10; e.fire=.4; e.dir.set(0,-1,0); Sound.sfx('charge');
+    for(let w=0;w<1;w+=.08){ d.s=.1+w*.8; d.spin=20+w*50; d.fire=.6+w*1.6; e.s=.1+w*.55; e.spin=10+w*40; FC.y=lerp(FC.y,FC.gy+2,.25); yield wait(.04); }
+    // the split
+    const sx=d.x, sy=d.y, sz=d.z; d.dead=1; scene.remove(d.g); d=null; Sound.sfx('crossboom'); shake(.6); FX.burst(sx,sy,sz,50,0xff4a1a,8,.35); FX.burst(sx,sy,sz,30,0xffd060,8,.25);
+    Game.dmgNums.push({x:sx,y:sy+.6,z:sz,n:'DRILL SPLIT!',t:0,big:true,col:'#ffd45a'});
+    a=makeDrill(); b=makeDrill(); for(const [q,o] of [[a,-1],[b,1]]){ q.x=sx+o*.9; q.y=sy; q.z=sz; q.s=.6; q.spin=60; q.fire=2; q.gold=1.02; }
+    const E=DC.drill&&!DC.drill.dead?DC.drill:null, mx=(sx+e.x)/2, my=Math.max(sy,e.y)+.4, mz=(sz+e.z)/2; e.dir.set(mx-e.x,my-e.y,mz-e.z); e.spin=55; e.fire=2.2;
+    Sound.sfx('beam'); yield wait(.15);
+    const a0=[a.x,a.y,a.z], b0=[b.x,b.y,b.z], e0=[e.x,e.y,e.z];
+    for(let u=0;u<=1.001;u+=.125){ const k=u*u;
+      if(E){ a.x=lerp(a0[0],E.x,k); a.y=lerp(a0[1],E.y,k); a.z=lerp(a0[2],E.z,k); a.dir.set(E.x-a0[0],E.y-a0[1],E.z-a0[2]); }
+      b.x=lerp(b0[0],mx,k*.92); b.y=lerp(b0[1],my,k*.92); b.z=lerp(b0[2],mz,k*.92); b.dir.set(mx-b0[0],my-b0[1],mz-b0[2]); e.x=lerp(e0[0],mx,k*.92); e.y=lerp(e0[1],my,k*.92); e.z=lerp(e0[2],mz,k*.92); yield wait(.03); }
+    impactFrame([[1,3],[2,3],[3,2]]); shake(1.3); FX.hitstop=.14; Sound.sfx('slam'); Sound.sfx('crossboom');
+    if(E){ const x=E.x, y=E.y, z=E.z; FX.burst(x,y,z,70,0xffffff,10,.4,false); FX.burst(x,y,z,50,0xff3a1a,9,.35); FX.ring(x,groundY(x,z)+.1,z,'#ff3a2a',3,.4); Game.dmgNums.push({x,y,z,n:'DRILL DESTROYED',t:0,big:true,col:'#ffd45a'});
+      E.dead=1; scene.remove(E.g); DC.drill=null; if(!DC.dead) impGo(DC,'fizzle'); }
+    FX.burst(mx,my,mz,70,0xffffff,10,.4,false); FX.burst(mx,my,mz,50,0xff3a1a,9,.35); FX.ring(mx,groundY(mx,mz)+.1,mz,'#ffffff',3.5,.45); Game.dmgNums.push({x:mx,y:my,z:mz,n:'DRILL CANCELLED',t:0,big:true,col:'#ffffff'});
+    for(const q of [a,b,e]){ q.dead=1; scene.remove(q.g); } a=b=e=null; try{ fxLights[1].intensity=0; }catch(err){}
+    yield wait(.45);
+  } finally { for(const q of [d,a,b,e]) if(q){ q.dead=1; scene.remove(q.g); } DC.held=0; P.cineFly=false; P.cineAnim=null; P.inv=.8; P.vy=-2; if(pin) pin.dead=1; if(!FC.dead&&FC.st==='drill'){ FC.y=FC.gy; impGo(FC,'charge'); } } }
 // ---------- over their heads: the drill clone's chant (under his drill) and how far along it is, the spaz's health bar ----------
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(Game.state!=='play') return;
     for(const C of IMP.extra){ if(C.dead||!C.emerge) continue; const q=toScreen(C.x,C.y+(C.kind==='drill'?2.6:2.15),C.z); /* the drill clone's chant sits under his drill; the spaz's bar right on top of his head */ if(!(q[2]<1)) continue;

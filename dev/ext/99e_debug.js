@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 28: no more BURN IT! sign over a grounded pink sperm, just its green bar";
+const DBG_PATCH="Oct 28: chantless Heavenly Drill after Kojima (and in Debug Mode): 1s charge, last line only. Rush clone triple parry locks you in (no dash), invulnerable. Drill with the drill + rush clones out splits in two. Smacked sperm land in random directions (inward near walls); a thin yellow line under each grounded sperm's bar counts down its 12s";
 const DBG_NEW=['caotan:impregnate'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
