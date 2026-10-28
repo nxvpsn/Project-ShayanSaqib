@@ -48,6 +48,8 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
       D.save(); D.globalAlpha=a; D.fillStyle='rgba(20,14,4,.7)'; D.fillRect(bx,by,bw,3); const w=bw*k*.5; D.fillStyle=NB.stunned?'#ffffff':hot&&Math.floor(Game.time*12)%2?'#fff0a0':'#ffb020'; D.fillRect(UW/2-w,by-(pu-1)*2,w*2,3+(pu-1)*4);
       D.font=`800 10px ${FB}`; D.textAlign='left'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText('POSTURE',bx+bw+6,by+1); D.fillStyle='#ffd45a'; D.fillText('POSTURE',bx+bw+6,by+1); D.restore();
       if(NP1.openT>0&&!NB.stunned&&!NP1.seq){ const q=toScreen(NB.x,NB.y+5.2,NB.z); if(q[0]>-50&&q[0]<UW+50&&q[1]>-50){ const pu=1+.08*Math.sin(Game.time*16); D.save(); D.translate(q[0],q[1]); D.scale(pu,pu); D.font=`900 ${IS_TOUCH()?22:26}px ${FB}`; D.textAlign='center'; D.textBaseline='bottom'; D.lineWidth=5; D.strokeStyle='#08121c'; D.strokeText('OPEN',0,0); D.fillStyle='#ffffff'; D.fillText('OPEN',0,0); D.restore(); } } }catch(e){ console.error('np posture ui',e); } }; })();
+// ---------- the stun meter over his head (01c_stunmeter.js), so the punish's time is readable ----------
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(!npoOn()||!NP1.live||Game.letter>.5) return; twStunMeterAt(NP1,'stunT',NB.x,NB.y+5,NB.z); }catch(e){ console.error('np stun ui',e); } }; })();
 // ---------- Ali's i-frames in this fight (the top-down game keeps its own) ----------
 // After a hit, 0.4s of invulnerability instead of the base 1s, and a well-timed press always parries, i-frames or not: a missed
 // laser never leaves the next one unparryable, and a laser and a slash landing together are each judged on their own timing.
