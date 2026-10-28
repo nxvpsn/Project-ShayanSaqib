@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.12 (Oct 28): Nathan fight polish 21-30: lock-on engage snap, damage chip on his bar, cyan afterimages, speed-widened lens, low-HP heartbeat, Getsuga embers, funnel shards, PUNISH prompt on stagger, contrast vignette, idle thruster flicker";
-const DBG_NEW=['nathan:excal'];
+const DBG_PATCH="v1.13 (Oct 28): red slashes and the grab home onto Ali and lunge the gap (moving never escapes them; the dodge button does); Meteor Drive from twice as far with wide zig-zags; a landed meteor is Meteor Rend, five unavoidable Judgement Cut slashes";
+const DBG_NEW=['nathan:combo','nathan:meteor','nathan:grab'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
