@@ -17,9 +17,10 @@ function* kjToLake(){ const B=Game.boss; if(!B){ enterArena('lake',2); return; }
   const glow={k:0}; Game.fxUpd.push(dt=>{ try{ if(glow.done){ gl.forEach(s=>scene.remove(s)); return false; } glow.k=Math.min(1,glow.k+dt*1.6); const p=.8+.2*Math.sin(performance.now()/90);
       for(const s of gl){ s.material.opacity=glow.k*p; s.scale.setScalar(Math.max(.01,1.4*glow.k*p)); } return true; }catch(e){ return false; } });
   const e=eyes[0]; cineSet(B.x+.8,e.y-.2,B.z+5.5,e.x,e.y,e.z); yield wait(.7); Sound.sfx('howl');
-  // the camera dives into his eye
-  yield cineTo([e.x,e.y,e.z+.9],[e.x,e.y,e.z],1.0,t=>t*t*t);
-  KJT={mode:'iris',t:0}; Sound.sfx('drone'); shake(.3); yield wait(1.0);
+  // the camera dives into his eye; the red iris opens from it halfway in and covers the screen before the camera gets close
+  // (any closer and his sprite's pupil pixels blew up into a black block from the centre to the bottom right)
+  KJT={mode:'iris',t:-.45}; yield cineTo([e.x,e.y,e.z+.9],[e.x,e.y,e.z],1.0,t=>t*t*t);
+  Sound.sfx('drone'); shake(.3); yield wait(.5);
   // the pupil opens on the blood lake
   glow.done=1; B.redEye=0; grade.uniforms.red.value=0; enterArena('lake',2); cineSet(60,1.2,70,60,10,20); Game.fade=0;
   const m=L.moon?L.moon.position:{x:60,y:14,z:-110}; KJT={mode:'reveal',t:0,wx:m.x,wy:m.y,wz:m.z}; Sound.sfx('crossboom'); yield wait(1.1); KJT=null; }
@@ -52,6 +53,6 @@ function kjDrawSplash(){ const T=KJT, k=Math.min(1,T.t/1.25), R=Math.hypot(UW,UH
       if(T.mode==='snap'){ /* the 3D frame of this very moment (still in the drawing buffer right after composer.render) */ const c=document.createElement('canvas'); c.width=renderer.domElement.width; c.height=renderer.domElement.height;
         c.getContext('2d').drawImage(renderer.domElement,0,0); T.snap=c; T.mode='hold'; D.drawImage(c,0,0,UW,UH); return; }
       if(T.mode==='hold'){ if(T.snap) D.drawImage(T.snap,0,0,UW,UH); return; }
-      T.t+=dt; if(T.mode==='iris') kjDrawIris(Math.min(1,T.t/.9)); else if(T.mode==='reveal') kjDrawReveal(Math.min(1,T.t/1.0)); else if(T.mode==='splash') kjDrawSplash(); }catch(e){ console.error('kojima transition',e); KJT=null; } }; })();
+      T.t+=dt; if(T.mode==='iris'){ if(T.t>0) kjDrawIris(Math.min(1,T.t/.9)); } else if(T.mode==='reveal') kjDrawReveal(Math.min(1,T.t/1.0)); else if(T.mode==='splash') kjDrawSplash(); }catch(e){ console.error('kojima transition',e); KJT=null; } }; })();
 // the transitions cut the camera: a sword tear still on screen (re-projected every frame) would stretch into a long black line
 (function(){ for(const S of [SCR,SCR_BASE,SCRA]) for(const k of ['toPhase2','execution']){ const f=S[k]; if(typeof f==='function') S[k]=function*(){ try{ twClearCutFX(); }catch(e){} yield* f.apply(this,arguments); }; } })();
