@@ -357,7 +357,7 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
 // the blink: its time, for the perfect dodge
 (function(){ const at=aliTeleport; aliTeleport=function(mx,mz){ NP1.blinkT=Game.time;
     try{ const left=NP1.grabLand-Game.time; if(NP1.lunge&&NB&&!NP1.seq&&left<=NP1_WIN&&left>=-.05){ /* inside the grab's parry-timed window */ const P=Player, [dx,dz]=np1Dir(); let ux=mx||0, uz=mz||0;
-        if(Math.hypot(ux,uz)<.1||(ux*dx+uz*dz)<-.6*Math.hypot(ux,uz)){ ux=-dz; uz=dx; } /* no input (or straight into him): sidestep */ np1PerfectDodge(ux,uz); return; } }catch(e){ console.error('np1 dodge',e); }
+        const l=Math.hypot(ux,uz); if(l>.1&&(ux*dx+uz*dz)<-.6*l&&typeof npFlipDodge==='function'){ npFlipDodge(); return; } /* into him: the flip over his head (59z) */ if(l<.1){ ux=-dz; uz=dx; } /* no input: sidestep */ np1PerfectDodge(ux,uz); return; } }catch(e){ console.error('np1 dodge',e); }
     return at.apply(this,arguments); }; })(); /* a blink in the grab's window = the perfect dodge, not a teleport; earlier is a plain blink (he still grabs you if you stay in reach) */
 // retries and leaving the fight start phase I over
 (function(){ const nr=nbRespawn; nbRespawn=function(){ np1Reset(); return nr.apply(this,arguments); }; })();

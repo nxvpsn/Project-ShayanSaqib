@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.15 (Oct 28): v1.14's fight design (posture, Assault Rush, Starbreaker parry + mash, lock-on toggle, circling) plus a steady circling radius";
+const DBG_PATCH="v1.16 (Oct 28): Nathan deflects Getsugas (not the Jujishou) off behind him; he flies (his height drifts between moves); Ali's forward blink goes to him, up to his height, never past (a second one passes through); blinking into the grab = a front flip over his head, and its counter is three Jujishous back over the shoulder with the camera swung round";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
