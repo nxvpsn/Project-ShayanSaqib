@@ -3,7 +3,7 @@
 // - Left click (attack): his own 3-hit combo, every cut drawn with the Judgement Cut tear (twGash):
 //   1) one slash, twice Shayan's reach; 2) a double cut (two hits, a vertical and a horizontal tear);
 //   3) a spin that hits all around him with the same reach. 5 banked parries: the next attack is a Judgement Cut.
-// - Right click (block): Getsuga Tenshou (the same black-and-red crescent as Shayan's charged one); hold, release: Black Getsuga.
+// - Right click (block): Getsuga Tenshou (the same black-and-red crescent as Shayan's charged one); hold: the 3-stage charge (08d_alicharge.js), released at LV 1 / 2 / 3.
 //   Alternating cut, Getsuga, cut, Getsuga... keeps his place in the combo and powers the Getsugas up: the 2nd is 1.5x with a gold
 //   lining, the 3rd is 1.7x, a small Getsuga Jujishou, then it starts over. Mashing Getsuga (no cut between) is slower and 0.75x.
 // - No guard / blade storm (no auto-parry): he parries like Shayan, by attacking right before a hit lands.
@@ -35,9 +35,8 @@ function aliAtkUpdate(dt){ const P=Player, a=P.aliAtk; if(!a) return; const C=AL
 function aliInput(dt){ const P=Player;
   if(consume('attack')){ if((P.counter||0)>=5&&!Game.paulLock){ P.swingT=Game.time; twMiniJC(); } else if(!P.aliAtk) aliCombo(P.comboT>0?((P.combo||0)+1)%3:0); else if(P.aliAtk.t>.1) P.aliAtk.q=true; }
   if(consume('block')) aliChainGetsuga();
-  if(held.block&&!P.aliAtk&&P.dash<=0){ const before=P.charge; P.charge+=dt; if(before<.25&&P.charge>=.25) Sound.sfx('charge'); if(before<.75&&P.charge>=.75){ Sound.sfx('ready'); FX.burst(P.x,P.y+1,P.z,16,0xff4a6a,3,.25); }
-    if(P.charge>.25&&Math.random()<.7){ const a=rnd(0,6.28); FX.spawn(P.x+Math.cos(a)*1.2,P.y+rnd(.2,1.8),P.z+Math.sin(a)*1.2,-Math.cos(a)*3,rnd(-.5,1),-Math.sin(a)*3,.35,P.charge>.75?0xff3a5a:0xbfe8ff,.2,0,true); } }
-  if(!held.block){ if(P.charge>=.75) aliGetsuga(true); P.charge=0; } }
+  if(held.block&&!P.aliAtk&&P.dash<=0){ const before=P.charge; P.charge+=dt; aliChargeTick(before,P.charge); } /* the 3-stage charge: 08d_alicharge.js */
+  if(!held.block){ const lv=aliChargeLv(P.charge); if(lv>0) aliChargeRelease(lv); P.charge=0; } }
 // the alternating chain: tier 0 = mashed (0.75x, slower), 1 = normal, 2 = 1.5x gold lining, 3 = 1.7x mini Jujishou, then back to 1
 const ALI_GT={mul:[.75,1,1.5,1.7],size:[1,1,1.2,1.4],sheet:['getsuga','getsuga','getsuga_gold','getsuga_jj']};
 function aliChainGetsuga(){ const P=Player, now=Game.time, since=now-(P.gT!=null?P.gT:-9), mashed=P.gAct==='g'&&since<1.6;
@@ -79,7 +78,7 @@ function* aliFinalCut(){ const P=Player; P.cineAnim='beam'; Sound.sfx('swing'); 
 // ---------- the words: controls, tips, labels ----------
 (function(){ try{ const g=document.getElementById('tbGuard'); if(!g) return; let was=null;
   const du=drawUI; drawUI=function(){ du(); try{ const ali=ALI()&&!document.body.classList.contains('mech'); if(ali===was) return; was=ali;
-      if(ali){ if(!g.dataset.sh) g.dataset.sh=g.innerHTML; g.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 4c8 2 12 8 10 16M6 4c4 4 5 10 3 16"/></svg>'; g.setAttribute('aria-label','Getsuga Tenshou, hold to charge a Black Getsuga'); }
+      if(ali){ if(!g.dataset.sh) g.dataset.sh=g.innerHTML; g.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 4c8 2 12 8 10 16M6 4c4 4 5 10 3 16"/></svg>'; g.setAttribute('aria-label','Getsuga Tenshou, hold to charge (3 levels)'); }
       else if(g.dataset.sh){ g.innerHTML=g.dataset.sh; g.setAttribute('aria-label','Fireball, hold to charge'); } }catch(e){} }; }catch(e){} })();
 
 // ---------- the co-op friend's Ali gets the same kit ----------

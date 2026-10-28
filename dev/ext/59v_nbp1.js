@@ -16,8 +16,8 @@ const NP1={live:0,done:0,hp:350,max:350,lunge:0,pdPending:0,gen:null,wait:0,cd:2
 // one beat for every red slash and blue grab: the flash, then it lands NP1_TELL later; a parry (red) or a blink (blue) counts
 // inside the last NP1_WIN of that (the melee parry window)
 const NP1_TELL=.45, NP1_WIN=.3;
-const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab'];
-const NP1_FIRST=['combo','bits','grab','meteor','cage'];
+const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab','excal']; /* excal: 59w_excal.js */
+const NP1_FIRST=['combo','bits','grab','meteor','cage','excal'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
 function np1Reset(){ np1Clear(); Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,seq:null,cam:null,pdT:-9,pdFrom:-9,hint:null,bar:0}); }
 function np1Start(){ np1Clear(); Object.assign(NP1,{live:1,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:NP1_FIRST.slice(),stunT:0,seq:null,cam:null,pdT:-9,hint:null});

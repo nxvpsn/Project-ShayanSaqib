@@ -16,7 +16,7 @@ const MOB={k:2,cheats:false,dbgBtn:null,sx:[0,0,0],sy:[0,0],ct:0,drag:null,fade:
 function mobRects(list,k){ for(const r of list){ r.x*=k; r.y*=k; r.w*=k; r.h*=k; } }
 function mobTouchRows(){ const ali=ALI();
   return [['◎','Left thumb','Drag anywhere on the left half to move'],['⚔','Sword',ali?'Tap: 3-cut combo (slash, double cut, spin)':'Tap: 3-hit combo · hold, release: Getsuga'],
-    ['↑','Jump',ali?'Jumps high · hold: ride a Getsuga':'Again in the air: double jump · hold: glide'],['☾',ali?'Getsuga':'Fireball',ali?'Tap: Getsuga Tenshou · hold, release: Black Getsuga':'Tap: fireball · hold until full: huge fireball + flaming sword'],
+    ['↑','Jump',ali?'Jumps high · hold: ride a Getsuga':'Again in the air: double jump · hold: glide'],['☾',ali?'Getsuga':'Fireball',ali?'Tap: Getsuga Tenshou · hold: charge 3 levels (2s each), release to fire; level 3 = Getsuga Jujishou':'Tap: fireball · hold until full: huge fireball + flaming sword'],
     ...(ali?[['⚔☾','Rhythm','Sword, Getsuga, Sword, Getsuga: each Getsuga after a cut hits harder']]:[]),
     ['»',ali?'Teleport':'Dash','Dodge through attacks'],['✦','Special','When the blue gauge is full'],['!','Parry','Attack right before a hit lands (5 = '+(ali?'Judgement Cut':'Full Counter')+'). A silver slash can always be parried'],
     ['…','Talk / Next','Talk to people, advance dialogue'],['☰','Menu','Top right: timeline, controls, options, cheats']]; }
