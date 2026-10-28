@@ -84,7 +84,7 @@ const GS=2.3;
 function pxvAttach(n,g,size){ const e=pxvPlay(n,{x:0,y:0,z:0,size}); if(!e) return null; g.add(e.m); e.m.position.set(0,0,0); e.g=g; e.sz=size; return e; }
 function pxvFollow(e){ const g=e.g, A=e.A; g.updateMatrixWorld(); const p0=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld), p1=e.dir?p0.clone().add(new THREE.Vector3(e.dir.dx,0,e.dir.dz)):g.localToWorld(new THREE.Vector3(1,0,0)); /* e.dir: the travel direction, for groups that don't turn (Shayan's Getsuga resets its group's rotation) */
   const a=toScreen(p0.x,p0.y,p0.z), b=toScreen(p1.x,p1.y,p1.z), dx=b[0]-a[0], dy=b[1]-a[1], fl=dx<0, jt=1+rnd(-.06,.06);
-  e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); e.m.scale.set(e.sz*jt*(A.w/A.h),e.sz*jt,1); }
+  e.m.material.rotation=(fl?Math.atan2(dy,-dx):Math.atan2(-dy,dx))+rnd(-.05,.05); pxvFlip(e,fl); const T=e.tall||1, rot=e.m.material.rotation, cs=Math.abs(Math.cos(rot)), sn=Math.abs(Math.sin(rot)); /* e.tall: taller on screen whichever way it flies (Ali's waves) */ e.m.scale.set(e.sz*jt*(A.w/A.h)*(1+(T-1)*sn),e.sz*jt*(1+(T-1)*cs),1); }
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ const n0=BEAMS.length, r=fb.apply(this,arguments); const b=BEAMS[BEAMS.length-1];
     if(BEAMS.length>n0&&b){ const jj=b.jj, k=jj?'getsuga_jj':'getsuga';
       if(pxvOk(k)){ if(jj) b.g.visible=true; b.g.children.forEach(c=>c.visible=false); if(b.bolt&&!jj) b.bolt.visible=false; b.pxv=pxvAttach(k,b.g,jj?GS:big?GS*1.25:GS); if(b.pxv) b.pxv.dir=b; /* the group grows over its flight (and Jujishou's is x1.25); Ali's plain Getsuga looks like Shayan's charged one */ } }

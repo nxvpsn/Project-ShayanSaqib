@@ -40,7 +40,7 @@ function np1Stun(t,why){ NP1.gen=null; NP1.stunT=Math.max(NP1.stunT,t); NB.stunn
   Game.dmgNums.push({x:NB.x,y:NB.y+4.4,z:NB.z,n:why||'STAGGERED',t:0,big:true,col:'#9ff8ff'}); for(const o of NP1.objs) if(o.bit&&!o.dead){ try{ o.kill(); }catch(e){} o.dead=1; } NB.mesh.visible=true; Game.letterTo=0; }
 // the player's hit test: red attacks are parryable (melee rules, the silver slash shows at the contact point near you)
 // the tell: a big glint on him, a light edge flash in its colour, its own sound (red: a sharp falling ping; blue: a rising chime)
-function np1Tell(red){ if(red==='deep'){ /* the meteor's: Shayan's charged-fireball crimson, heavier and lower */ np1Glint(NB.x,NB.y+2.9,NB.z,0xc0001c,5.2); np1Glint(NB.x,NB.y+2.9,NB.z,0x5a0008,3.4);
+function np1Tell(red){ if(red==='rush'){ np1Glint(NB.x,NB.y+2.9,NB.z,0xff2a3a,6.5); np1Glint(NB.x,NB.y+2.9,NB.z,0xffffff,3); FX.flash=Math.max(FX.flash,.45); grade.uniforms.flashCol.value.set(1,.15,.2); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#ff2a3a',4,NP1_TELL); FX.burst(NB.x,NB.y+2.6,NB.z,40,0xff2a3a,6,.4); Sound.tone('square',1500,600,.14,.09); Sound.tone('sawtooth',200,900,.3,.1); shake(.3); return; } if(red==='deep'){ /* the meteor's: Shayan's charged-fireball crimson, heavier and lower */ np1Glint(NB.x,NB.y+2.9,NB.z,0xc0001c,5.2); np1Glint(NB.x,NB.y+2.9,NB.z,0x5a0008,3.4);
     FX.flash=Math.max(FX.flash,.28); grade.uniforms.flashCol.value.set(.6,0,.08); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#8a0014',3,NP1_TELL); FX.burst(NB.x,NB.y+2.6,NB.z,26,0x8a0014,5,.4);
     Sound.tone('sawtooth',320,80,.35,.12); Sound.tone('square',1100,500,.15,.06); shake(.2); return; }
   const col=red?0xff2a3a:0x3a8aff; np1Glint(NB.x,NB.y+2.9,NB.z,col,red?4:4.8); FX.flash=Math.max(FX.flash,.16); grade.uniforms.flashCol.value.set(red?1:.3,red?.25:.55,red?.3:1);
@@ -50,6 +50,24 @@ function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=M
 // (moving never escapes a red slash or the grab: only the dodge button does, inside the window)
 function* np1Glue(t){ for(let k=0;k<t;){ k+=NP1.dt; const [dx,dz]=np1Dir(), P=Player; NB.x=lerp(NB.x,P.x-dx*1.9,Math.min(1,NP1.dt*14)); NB.z=lerp(NB.z,P.z-dz*1.9,Math.min(1,NP1.dt*14)); NB.dsh=null; yield NP1.dt; } }
 function np1Lunge(){ const [dx,dz,d]=np1Dir(); if(d>2.6){ nbAfterimage(NB.x,NB.y,NB.z); NB.x=Player.x-dx*1.6; NB.z=Player.z-dz*1.6; NB.dsh=null; Sound.sfx('quickboost'); } }
+// the Assault Rush's charge: note k of three (rising, 1-2-3) and a bigger blue Judgement Cut spread fanning off the blade
+function np1ChargeBeat(k){ const f=440*Math.pow(2,(k-1)*4/12); Sound.tone('sine',f,f*1.02,.4,.12); Sound.tone('square',f*2,f*2,.18,.04); Sound.hiss(1500+k*600,.3,.1+k*.04,'bandpass');
+  const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, bx=NB.x+px*.9, by=NB.y+2.4, bz=NB.z+pz*.9, t0=Game.time;
+  np1Glint(bx,by,bz,0x3a8aff,2+k*1.2); FX.burst(bx,by,bz,10+k*10,0x3a8aff,3+k*2,.3); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#3a8aff',1.5+k,.5); shake(.1*k);
+  for(let i=0;i<=k;i++){ const a0=Math.atan2(pz,px)+(i-k/2)*(.9/(k||1)), R=1.2+k*.9, dir=i%2?1:-1;
+    twGash({life:.6,rev:.06,fade:.25,w:10+k*7,op:.85,sparks:4+k*3,col:0x3a8aff,pts:()=>{ const t=Game.time-t0, a=a0+t*2.2*dir, s=1+t*1.4; return twArcPts(bx,by+t*.6,bz,Math.cos(a),Math.sin(a),R*s,-.9,.9,6); }}); } }
+// interrupted mid-charge: the charge collapses and he's down 5s
+function np1Interrupt(){ NP1.charging=0; NP1.gen=null; if(typeof NBS!=='undefined') NBS.fixRow=null; FX.burst(NB.x,NB.y+2.4,NB.z,50,0x3a8aff,8,.4); FX.burst(NB.x,NB.y+2.4,NB.z,30,0xffffff,6,.3); FX.flash=Math.max(FX.flash,.5); grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[3,2],[1,1]]); FX.hitstop=Math.max(FX.hitstop,.15); Sound.sfx('glass'); Sound.sfx('crossboom');
+  twBark('nathan',"You... interrupted my-",true); np1Stun(5,'INTERRUPTED'); }
+// OPEN: his guard is down for t seconds (the punish window: the sword lands, nothing is parried)
+function np1Open(t){ NP1.openT=Math.max(NP1.openT||0,t); Game.dmgNums.push({x:NB.x,y:NB.y+4.4,z:NB.z,n:'OPEN',t:0,big:true,col:'#ffffff'}); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#ffffff',3,.5); Sound.sfx('ting'); }
+// the shove: Ali thrown dist units away from Nathan over dur seconds, in a pose ('aliDrag': blade dragging, sparks and a scorch; 'hurt')
+function np1Shove(dist,dur,anim){ const P=Player, [dx,dz]=np1Dir(); NP1.seq={k:'shove',t:0,dx,dz,dist,dur,anim,kb:{t:0,sx:P.x,sz:P.z,sy:P.y}}; P.cineFly=true; P.cineAnim=anim; P.aliAtk=null; P.charge=0; P.vx=P.vz=P.vy=0; P.inv=99; }
+function np1ShoveUpd(S,dt){ const P=Player, ux=S.dx, uz=S.dz, K=S.kb; K.t+=dt; const u=Math.min(1,K.t/S.dur), e=1-Math.pow(1-u,3); P.x=K.sx+ux*S.dist*e; P.z=K.sz+uz*S.dist*e; P.y=groundY(P.x,P.z); P.ang=Math.atan2(-uz,-ux);
+  if(u<1&&S.anim==='aliDrag'){ const yaw=typeof TPS!=='undefined'&&TPS.yaw!=null?TPS.yaw:Math.atan2(-uz,-ux), rx=-Math.sin(yaw), rz=Math.cos(yaw), tx=P.x+rx*.75, tz=P.z+rz*.75, ty=groundY(tx,tz)+.05;
+    for(let i=0;i<3;i++) FX.spawn(tx,ty+.1,tz,rnd(-1,1)+ux*3,rnd(1,3),rnd(-1,1)+uz*3,rnd(.2,.4),i%2?0xffd27a:0xffffff,.14,6,true); if(Math.random()<.5) FX.spawn(tx,ty+.2,tz,ux*2,rnd(.3,1),uz*2,.7,0x8a8070,.4,0,false);
+    if(!K.last||Math.hypot(tx-K.last[0],tz-K.last[1])>.25){ const q=new THREE.Mesh(new THREE.PlaneGeometry(.12,.32),new THREE.MeshBasicMaterial({color:0x14100c,transparent:true,opacity:.75,depthWrite:false})); q.userData.temp=1; q.rotation.set(-Math.PI/2,0,Math.atan2(ux,uz)); q.position.set(tx,ty,tz); scene.add(q); K.last=[tx,tz]; const g={t:0}; np1Obj({upd(dt){ g.t+=dt; q.material.opacity=.75*Math.max(0,1-g.t/2.5); return g.t<2.5; }, kill(){ scene.remove(q); }}); } }
+  if(u>=1&&K.t>S.dur+.05){ NP1.seq=null; P.cineFly=false; P.cineAnim=null; P.inv=.5; P.vy=0; } }
 // ---------- Meteor Rend: the landed meteor becomes five unavoidable slashes (Judgement Cut tears), the 5th sends Ali flying ----------
 const NP1_REND=[.22,.46,.68,.88,1.24];
 function* np1Rend(){ const P=Player; if(Game.state!=='play') return; NP1.seq={k:'rend',t:0}; P.cineFly=true; P.cineAnim='hurt'; P.aliAtk=null; P.charge=0; P.vx=P.vz=P.vy=0; P.inv=99; Game.letterTo=.5;
@@ -72,8 +90,11 @@ function* np1Rend(){ const P=Player; if(Game.state!=='play') return; NP1.seq={k:
   if(NP1.seq&&NP1.seq.k==='rend') NP1.seq=null; NP1.cam=null; Game.letterTo=0; P.cineFly=false; P.cineAnim=null; P.inv=.9; P.vy=0; }
 // ---------- moves ----------
 const NP1M={
-  // Assault Boost combo: around you, around you, in, SLASH; parry every slash and he staggers
-  *combo(){ const n=Math.random()<.5?3:4; let par=0; if(Math.random()<.5) twBark('nathan',"Assault boost. Try to keep up.",true);
+  // Assault Boost combo: around you, around you, in, SLASH, three times (a full parry doesn't stun him), then he boosts two
+  // dodge distances away and charges for 2s (blade held out to the side, three rising notes, 1-2-3, each one a bigger blue
+  // Judgement Cut spread off the blade), a bright red flash, and the Assault Rush: a homing charge with real speed. Parry it
+  // and the clash still shoves Ali ~9 units back, blade dragging; a blink dodges it. Either way he's OPEN after it (the punish)
+  *combo(){ const n=3; let par=0; if(Math.random()<.5) twBark('nathan',"Assault boost. Try to keep up.",true);
     np1Hint('red','RED flash: parry ('+K('attack')+') just before it lands, or blink ('+K('dash')+')');
     for(let i=0;i<n;i++){ const hops=1+(Math.random()<.5?1:0);
       for(let h=0;h<hops;h++){ const P=Player, a=Math.atan2(NB.z-P.z,NB.x-P.x)+(h%2?1:-1)*rnd(.9,1.6)*(i%2?1:-1), r=rnd(4.5,6.5); nbBoost(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r); yield .16; }
@@ -82,7 +103,25 @@ const NP1M={
       Sound.sfx('swing'); np1Lunge(); const [dx,dz]=np1Dir();
       { const r=np1HitRed(2,NB.x,NB.z,()=>{ par++; FX.burst(NB.x,NB.y+2,NB.z,12,0xffffff,4,.2); }); if(r==='parry'){ nbBoost(NB.x-dx*2.2,NB.z-dz*2.2); } }
       yield .22; }
-    if(par>=n){ np1Stun(2.6,'FULL PARRY'); return; } yield .3; },
+    if(par>=n){ Game.dmgNums.push({x:NB.x,y:NB.y+4.4,z:NB.z,n:'FULL PARRY',t:0,big:true,col:'#ffd45a'}); try{ if(typeof npPosture==='function') npPosture(20,'FULL PARRY'); }catch(e){} }
+    // two dodge distances away, and the charge
+    { const P=Player, [dx,dz]=np1Dir(), tx=P.x-dx*11, tz=P.z-dz*11; nbBoost(tx,tz); yield .32; NB.x=tx; NB.z=tz; NB.dsh=null; } twBark('nathan',"Assault... RUSH.",true);
+    if(typeof NBS!=='undefined') NBS.fixRow=2; /* the blade held out to the side */ NP1.charging=1; /* a sword hit now interrupts him: 5s down (np1Interrupt) */
+    for(let k=1;k<=3;k++){ np1ChargeBeat(k); yield .66; }
+    NP1.charging=0; if(typeof NBS!=='undefined') NBS.fixRow=null; np1Tell('rush'); yield .23;
+    // the rush: ~11 units in .22s, homing, afterimages, speed lines, the air cracking
+    { const sx=NB.x, sz=NB.z; Sound.sfx('qbRoar'); Sound.sfx('whoosh'); Sound.hiss(3000,.25,.3,'bandpass'); if(typeof NPX!=='undefined') NPX.spd={t:0}; if(typeof NBS!=='undefined'){ NBS.boostT=.3; } if(typeof nbsSlash==='function') nbsSlash(.3,0);
+      for(let t=0;t<.22;){ t+=NP1.dt; const u=Math.min(1,t/.22), e=u*u, P=Player, [dx,dz]=np1Dir(); const tx=P.x-dx*1.6, tz=P.z-dz*1.6; NB.x=lerp(sx,tx,e); NB.z=lerp(sz,tz,e); NB.dsh=null; if(typeof NBS!=='undefined') NBS.bdir=Math.atan2(tz-sz,tx-sx);
+        nbAfterimage(NB.x,NB.y,NB.z); for(let i=0;i<4;i++) FX.spawn(NB.x+rnd(-.5,.5),NB.y+rnd(.5,3),NB.z+rnd(-.5,.5),-dx*rnd(6,14),rnd(-.5,.5),-dz*rnd(6,14),.3,i%2?0xff2a3a:0xffffff,.3,0,true); yield NP1.dt; } }
+    Sound.sfx('swing'); np1Lunge(); const P=Player, [dx,dz]=np1Dir(), r=np1HitRed(3,NB.x,NB.z);
+    // the blue Judgement Cut across him
+    { const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a), big=r==='parry'; twGash({life:.7,rev:.05,fade:.25,w:big?30:22,op:.9,sparks:big?30:14,col:0x3a8aff,pts:()=>twArcPts(P.x,P.y+1.3,P.z,ux,uz,big?3:2.4,-1.1,1.1,7)});
+      try{ const q=toScreen(P.x,P.y+1.3,P.z), sa=rnd(0,Math.PI), L0=big?520:380; JC.lines.push({x0:q[0]-Math.cos(sa)*L0/2,y0:q[1]-Math.sin(sa)*L0/2,x1:q[0]+Math.cos(sa)*L0/2,y1:q[1]+Math.sin(sa)*L0/2,t:0,ttl:.4}); if(JC.lines.length>16) JC.lines.shift(); }catch(e){} }
+    if(r==='parry'){ FX.flash=.7; grade.uniforms.flashCol.value.set(.5,.75,1); impactFrame([[1,2],[3,2],[2,1]]); FX.hitstop=Math.max(FX.hitstop,.2); shake(1.1); Sound.sfx('crossboom'); Sound.sfx('slam'); FX.burst(P.x,P.y+1.2,P.z,50,0xffffff,8,.35); FX.burst(P.x,P.y+1.2,P.z,30,0x3a8aff,7,.4);
+      Game.dmgNums.push({x:P.x,y:P.y+3.4,z:P.z,n:'PARRIED THE RUSH',t:0,big:true,col:'#8fc4ff'}); np1Shove(9,.55,'aliDrag'); }
+    else if(r==='hit'){ np1Shove(6,.45,'hurt'); }
+    else Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'WHIFF',t:0,col:'#9fd0ff'});
+    np1Open(1.6); yield .4; },
   // Funnel Snipe: bits in the sky; each shines red, then fires at once
   *bits(){ const P=Player, n=5, bs=[]; twBark('nathan',"Funnels. Look up, wanderer.",true); Sound.sfx('charge'); np1Hint('red','RED flash: parry ('+K('attack')+' as it lands) or blink ('+K('dash')+')');
     for(let i=0;i<n;i++){ const a=rnd(0,6.28), r=rnd(5,9), b=nbBit(NB.x,NB.y+2,NB.z); b.tx=P.x+Math.cos(a)*r; b.tz=P.z+Math.sin(a)*r; b.ty=groundY(b.tx,b.tz)+rnd(4,7); b.ph=rnd(0,6.28); bs.push(b);
@@ -174,7 +213,7 @@ function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's dash, the
 function np1Counter(){ const P=Player, [dx,dz]=np1Dir(), fx=-dx, fz=-dz; /* from Ali through Nathan */
   P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=0; Game.slowT=0; NP1.pdT=-9; NP1.gen=null; NB.dsh=null;
   NP1.seq={k:'counter',t:0,sx:P.x,sz:P.z,ex:NB.x+fx*3.4,ez:NB.z+fz*3.4,fx,fz,cuts:0}; Sound.sfx('dash'); Sound.sfx('whoosh'); FX.flash=.3; grade.uniforms.flashCol.value.set(1,.2,.3); }
-function np1SeqUpd(dt){ const S=NP1.seq, P=Player; if(S.k==='rend') return; if(S.k==='fc'){ S.t+=dt; np1FcUpd(S,dt); return; } if(S.k==='auto5'){ S.t+=dt; np1Auto5Upd(S,dt); return; } if(S.k==='pdodge'){ const rdt=Math.min(.05,dt/((Game.slowT>0?.3:1)*(Game.timeScale||1))); S.t+=rdt; np1PdUpd(S,rdt,dt); return; } S.t+=dt;
+function np1SeqUpd(dt){ const S=NP1.seq, P=Player; if(S.k==='rend') return; if(S.k==='shove'){ S.t+=dt; np1ShoveUpd(S,dt); return; } if(S.k==='xmash'){ S.t+=dt; npxMashUpd(S,dt); return; } if(S.k==='xdodge'){ const rdt=Math.min(.05,dt/((Game.slowT>0?.3:1)*(Game.timeScale||1))); S.t+=rdt; npxDodgeUpd(S,rdt); return; } if(S.k==='fc'){ S.t+=dt; np1FcUpd(S,dt); return; } if(S.k==='auto5'){ S.t+=dt; np1Auto5Upd(S,dt); return; } if(S.k==='pdodge'){ const rdt=Math.min(.05,dt/((Game.slowT>0?.3:1)*(Game.timeScale||1))); S.t+=rdt; np1PdUpd(S,rdt,dt); return; } S.t+=dt;
   if(S.k==='counter'){ const u=Math.min(1,S.t/.14); P.x=lerp(S.sx,S.ex,u); P.z=lerp(S.sz,S.ez,u); P.y=groundY(P.x,P.z); P.ang=Math.atan2(S.fz,S.fx);
     if(u<1){ if(Math.random()<.9) FX.spawn(P.x,P.y+rnd(.3,1.6),P.z,0,0,0,.25,Math.random()<.5?0xff2a3a:0x3a8aff,.4,0,true); return; }
     if(!S.snap){ S.snap=1; P.cineAnim='aliIai'; NB.stunned=1; NP1.cam={x:P.x+S.fx*4.6,y:P.y+1.7,z:P.z+S.fz*4.6,lx:P.x,ly:P.y+1.4,lz:P.z}; Sound.sfx('secret'); }
@@ -189,7 +228,7 @@ function np1SeqUpd(dt){ const S=NP1.seq, P=Player; if(S.k==='rend') return; if(S
     else if(!S.slam){ S.slam=1; P.y=groundY(P.x,P.z); Sound.sfx('slam'); shake(.8); FX.burst(P.x,P.y+.3,P.z,30,0x3a8aff,6,.35); FX.ring(P.x,P.y+.1,P.z,'#3a8aff',3,.4); }
     if(u>.75){ NP1.seq=null; P.cineFly=false; P.cineAnim=null; P.inv=0; P.dash=0; hurtPlayer(4,NB.x,NB.z); } } }
 // the auto-parry: Ali is locked in place (no move, no dash) and parries five swings in ~2s, swinging his sword-draw cut on
-// each; the 5th is a heavy blow: a long hit-stop, then he's shoved back ~5 units with his blade dragging on the ground
+// each; the 5th is a heavy blow: a long hit-stop, then he's shoved back ~9 units with his blade dragging on the ground
 // (sparks, dust, a scorch line), or, in the air, thrown back and up in a backflip. Then Nathan is staggered.
 const NP1_A5=[0,.3,.56,.8,1.32]; /* clash times (the 1st is the parry that started it) */
 function np1Auto5(){ const P=Player, [dx,dz]=np1Dir(), gy=groundY(P.x,P.z); NP1.gen=null;
@@ -210,8 +249,8 @@ function np1Auto5Upd(S,dt){ const P=Player, [ux,uz]=[S.dx,S.dz], T=NP1_A5;
         Game.dmgNums.push({x:P.x,y:P.y+3.4,z:P.z,n:'PARRY ×5',t:0,big:true,col:'#ffffff'}); S.kb={t:0,sx:P.x,sz:P.z,sy:P.y}; P.cineAnim=S.air?'aliBackflip':'aliDrag'; S.swU=null; } }
     return; }
   // the shove: ~5 units straight back (in the air: back and up), easing out
-  const K=S.kb; K.t+=dt; const u=Math.min(1,K.t/.55), e=1-Math.pow(1-u,3); P.x=K.sx+ux*5*e; P.z=K.sz+uz*5*e; P.ang=Math.atan2(-uz,-ux);
-  if(S.air) P.y=K.sy+2.5*e; else { P.y=groundY(P.x,P.z);
+  const K=S.kb; K.t+=dt; const u=Math.min(1,K.t/.55), e=1-Math.pow(1-u,3); P.x=K.sx+ux*9*e; P.z=K.sz+uz*9*e; P.ang=Math.atan2(-uz,-ux);
+  if(S.air) P.y=K.sy+4*e; else { P.y=groundY(P.x,P.z);
     // the blade drags on the ground at his side: sparks, dust and a scorch line
     if(u<1){ const yaw=typeof TPS!=='undefined'&&TPS.yaw!=null?TPS.yaw:Math.atan2(-uz,-ux), rx=-Math.sin(yaw), rz=Math.cos(yaw), tx=P.x+rx*.75, tz=P.z+rz*.75, ty=groundY(tx,tz)+.05;
       for(let i=0;i<3;i++) FX.spawn(tx,ty+.1,tz,rnd(-1,1)+ux*3,rnd(1,3),rnd(-1,1)+uz*3,rnd(.2,.4),i%2?0xffd27a:0xffffff,.14,6,true);
@@ -223,7 +262,7 @@ function np1Grabbed(){ const P=Player, [dx,dz]=np1Dir(); NP1.seq={k:'grab',t:0,f
   Sound.sfx('punch'); Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'GRABBED',t:0,big:true,col:'#8fc4ff'}); twBark('nathan',"Down you go.",true); }
 // ---------- the per-frame brain ----------
 function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
-  NB.barShow=0; NP1.bar=Math.min(1,NP1.bar+dt*1.5);
+  NB.barShow=0; NP1.bar=Math.min(1,NP1.bar+dt*1.5); if(NP1.openT>0) NP1.openT-=dt; if(NP1.charging&&!NP1.gen) NP1.charging=0;
   for(let i=NP1.objs.length-1;i>=0;i--){ const o=NP1.objs[i]; let keep=false; if(!o.dead){ try{ keep=o.upd(dt)!==false; }catch(e){ console.error('np1 obj',e); } } if(!keep){ try{ o.kill&&o.kill(); }catch(e){} NP1.objs.splice(i,1); } }
   if(NP1.seq) np1SeqUpd(dt);
   if(NP1.alt!=null&&NB){ NB.y=NP1.alt; NB.mesh.position.y=NB.y; } /* the meteor's altitude */
@@ -232,11 +271,30 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
   // a perfect dodge: an attack inside its window is a dodge counter
   if(NP1.stunT>0){ NP1.stunT-=dt; if(NP1.stunT<=0){ NB.stunned=0; NP1.cd=.6; } return; }
   if(NP1.gen){ NP1.wait-=dt; while(NP1.gen&&NP1.wait<=0){ const r=NP1.gen.next(); if(r.done){ NP1.gen=null; NP1.cd=rnd(.7,1.2); } else NP1.wait+=r.value; } return; }
-  NP1.cd-=dt; const [,,d]=np1Dir();
-  if(d>15&&!NB.dsh){ const a=Math.atan2(NB.z-P.z,NB.x-P.x); nbBoost(P.x+Math.cos(a)*rnd(6,8),P.z+Math.sin(a)*rnd(6,8)); NP1.cd=Math.max(NP1.cd,.3); return; }
+  NP1.cd-=dt; const [,,d]=np1Dir(); if(np1Roam(dt,d)) return;
   if(NP1.cd<=0){ let k=NP1.order&&NP1.order.length?NP1.order.shift():NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)]; if(k===NP1.last) k=NP1_POOL[Math.floor(Math.random()*NP1_POOL.length)];
     NP1.last=k; NP1.gen=NP1M[k](); NP1.wait=0; return; }
-  if(!NB.dsh&&Math.random()<dt*.9){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
+  if(!NB.dsh&&d<12&&Math.random()<dt*.35){ const a=rnd(0,6.28); nbBoost(P.x+Math.cos(a)*rnd(5,8),P.z+Math.sin(a)*rnd(5,8)); } }
+// ---------- between moves: he circles you, follows you, or closes a long gap with one violent boost ----------
+// locked on and strafing: he runs the other way round, so you circle each other; unlocked (or standing): he follows on his
+// thrusters (never dash-spamming a runner); far away and running: one insanely fast boost with an engine roar to get in range
+const NP1_ROAM={orbit:8,follow:10,near:4.5,far:18,dashCd:2.6,dashT:.2};
+function np1Roam(dt,d){ const P=Player; if(NB.dsh||NB.stunned||NP1.seq) return false; NP1.dashCd=Math.max(0,(NP1.dashCd||0)-dt);
+  const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
+  if(d>NP1_ROAM.far&&run>3&&NP1.dashCd<=0){ np1BigBoost(); return true; }
+  let mx=0, mz=0;
+  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=-rx*side*sp; mz=-rz*side*sp; } /* the opposite way round */
+  else if(d>NP1_ROAM.follow){ mx=dx*9; mz=dz*9; } else if(d<NP1_ROAM.near&&!away){ mx=-dx*4; mz=-dz*4; }
+  if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1; NB.x=P.x+(NB.x-P.x)*d/nd; NB.z=P.z+(NB.z-P.z)*d/nd; } /* the radius holds */
+    if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
+  return false; }
+// the closing boost: ~.2s to 5 units in front of you whatever the gap, with the engine screaming
+function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*5, tz=P.z-dz*5; NP1.dashCd=NP1_ROAM.dashCd; NP1.cd=Math.min(NP1.cd,.25);
+  Sound.sfx('qbRoar'); Sound.sfx('qbRoar'); Sound.tone('sawtooth',90,900,.5,.2); Sound.hiss(400,.5,.45,'lowpass'); Sound.hiss(3500,.35,.25,'bandpass'); Sound.tone('square',60,240,.3,.08);
+  FX.burst(NB.x,NB.y+2,NB.z,40,0x3ff4ff,8,.35); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#3ff4ff',4,.4); if(typeof npShock==='function') npShock(NB.x,NB.y+2,NB.z,-dx,-dz,1.8); shake(.4); if(typeof NPX!=='undefined') NPX.spd={t:0};
+  nbBoost(tx,tz); if(NB.dsh){ NB.dsh.d=NP1_ROAM.dashT; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,NP1_ROAM.dashT+.15); NBS.bdir=Math.atan2(tz-NB.z,tx-NB.x); }
+  const g={t:0,n:0}; np1Obj({upd(dt){ g.t+=dt; if(g.t<NP1_ROAM.dashT){ nbAfterimage(NB.mesh?NB.mesh.position.x:NB.x,NB.y,NB.mesh?NB.mesh.position.z:NB.z); return true; } if(!g.n){ g.n=1; FX.burst(NB.x,NB.y+2,NB.z,30,0xffffff,7,.3); Sound.sfx('slam'); shake(.5); } return false; }});
+  Game.dmgNums.push({x:NB.x,y:NB.y+4.2,z:NB.z,n:'ASSAULT BOOST',t:0,col:'#9ff8ff'}); }
 function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
   NB.stunned=1; NB.dsh=null; NB.hov=.7; Game.letterTo=0; Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[3,2]]);
   twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'Phase II is not built yet: the fight stops here',t:0}; }
@@ -267,7 +325,7 @@ const NP1_FC={dash:.16,hold:.62,dmg:16};
     try{ np1FullCounter(); }catch(e){ console.error('np1 full counter',e); } }; })();
 function np1FullCounter(){ const P=Player, gy=groundY(NB.x,NB.z), ny=NP1.alt!=null?NP1.alt:NB.y, air=ny>gy+1.2, [dx,dz]=np1Dir();
   P.counter=0; P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0;
-  NP1.gen=null; NP1.lunge=0; NP1.redEnd=0; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined'){ NBS.fixRow=null; NBS.slashA=null; NBS.boostT=0; }
+  NP1.fcWin=!!(NP1.charging||NP1.openT>0); /* inside an opportunity window the Full Counter is a 5s stun, outside 2s */ NP1.charging=0; NP1.gen=null; NP1.lunge=0; NP1.redEnd=0; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined'){ NBS.fixRow=null; NBS.slashA=null; NBS.boostT=0; }
   const ex=NB.x+dx*1.7, ez=NB.z+dz*1.7, L=[]; for(let i=0;i<54;i++) L.push({a:rnd(0,6.283),r:rnd(.5,1),w:rnd(1,4),sp:rnd(.8,1.5)});
   NP1.seq={k:'fc',t:0,sx:P.x,sy:P.y,sz:P.z,ex,ez,ey:air?ny:groundY(ex,ez),nx:NB.x,ny,nz:NB.z,air,gt:0,hit:0,hitT:0,swU:null,L}; NP1.alt=ny;
   // every bit on the field, cut down in one stroke
@@ -295,7 +353,7 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
     FX.burst(NB.x,S.ny+2,NB.z,46,0xffffff,8,.35); FX.burst(NB.x,S.ny+2,NB.z,30,0xff2a3a,7,.4); FX.burst(NB.x,S.ny+2,NB.z,16,0x0c0814,5,.4,false); }
   if(S.hit){ S.swU=Math.min(1,(S.t-S.hitT)/.24); try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=lerp(camera.fov,TPS.FOV,Math.min(1,dt*6)); camera.updateProjectionMatrix(); } }catch(e){} }
   if(S.t>F.dash+F.hold){ NP1.seq=null; NP1.alt=null; P.cineFly=false; P.cineAnim=null; P.inv=.5; P.vy=0; if(typeof TPS!=='undefined'){ TPS.fast=null; if(TPS.on){ camera.fov=TPS.FOV; camera.updateProjectionMatrix(); } }
-    if(!NP1.done) np1Stun(1.2,'FULL COUNTER'); } }
+    if(!NP1.done) np1Stun(NP1.fcWin?5:2,'FULL COUNTER'); } }
 // the blink: its time, for the perfect dodge
 (function(){ const at=aliTeleport; aliTeleport=function(mx,mz){ NP1.blinkT=Game.time;
     try{ const left=NP1.grabLand-Game.time; if(NP1.lunge&&NB&&!NP1.seq&&left<=NP1_WIN&&left>=-.05){ /* inside the grab's parry-timed window */ const P=Player, [dx,dz]=np1Dir(); let ux=mx||0, uz=mz||0;
@@ -345,7 +403,7 @@ function aliIaiSwing(s){ const P=Player; if(!ALI_IAI.ok||!ALI()||s.t!==P.t||s.an
 // backflip (the Front Flip rows played in reverse), both in his camera-relative facing
 function aliPoseDir(){ const P=Player; let a=P.ang||0; if(typeof tpsOn==='function'&&tpsOn()&&TPS.p) a=a-Math.atan2(TPS.l[2]-TPS.p[2],TPS.l[0]-TPS.p[0])-Math.PI/2; return shDirIdx(a); }
 (function(){ const da=drawAliHD; drawAliHD=function(c,cx,by,f,s){ const P=Player;
-    if(s&&(s.anim==='aliDrag'||s.anim==='aliBackflip')&&s.anim===P.anim&&ALS.ok){ try{ const Q=NP1.seq, u=Q&&Q.kb?Math.min(1,Q.kb.t/.55):1, d=aliPoseDir(); /* he keeps facing Nathan as he's shoved back */
+    if(s&&(s.anim==='aliDrag'||s.anim==='aliBackflip')&&s.anim===P.anim&&ALS.ok){ try{ const Q=NP1.seq, u=Q&&Q.kb?Math.min(1,Q.kb.t/(Q.dur||.55)):1, d=aliPoseDir(); /* he keeps facing Nathan as he's shoved back */
         if(s.anim==='aliDrag'){ const g=ALS.guard[d]||[48,44], fx=AL_FX[d]||1; alPaint(c,cx,by,18,d,{blade:(oc)=>alBlade(oc,g[0],g[1],1.12,fx>=0?1:-1,40,null,u<1?.35:0)}); }
         else alPaint(c,cx,by,1+d,5-Math.min(5,Math.floor(u*6)));
         return; }catch(e){ console.error('ali pose',e); } }

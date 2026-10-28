@@ -16,9 +16,9 @@ function aliChargeTick(b,a){ const T=ALI_CH.T;
 function aliChargeUp(lv){ const P=Player, x=P.x, y=P.y, z=P.z;
   Game.dmgNums.push({x,y:y+3.2,z,n:lv>=3?'LV 3: MAX':'LV '+lv,t:0,big:lv>=3,col:lv>=3?'#ff3a4a':'#ff8a9a'});
   FX.burst(x,y+2.3,z,16+lv*14,0xff1a2a,4+lv*2,.35); FX.burst(x,y+2.3,z,10+lv*10,0x0a0006,3+lv*2,.4,false); FX.ring(x,y+.1,z,'#ff2a3a',1.5+lv,.4); shake(.15+lv*.15);
-  if(lv===1){ Sound.hiss(1200,.6,.25,'bandpass'); Sound.tone('sawtooth',90,520,.5,.1); }
-  else if(lv===2){ Sound.sfx('ready'); Sound.hiss(6000,.35,.22,'highpass'); Sound.tone('square',140,60,.3,.08); }
-  else { Sound.sfx('crossboom'); Sound.hiss(400,1,.3,'lowpass'); Sound.tone('sawtooth',55,220,1,.14); FX.flash=Math.max(FX.flash,.35); grade.uniforms.flashCol.value.set(1,.15,.2); } }
+  // the ignition: a whoomp of air, a rising surge and a crackle, bigger each tier
+  Sound.hiss(280+lv*110,.45+lv*.15,.3+lv*.12,'lowpass'); Sound.tone('sawtooth',55+lv*10,380+lv*220,.4+lv*.1,.1+lv*.035); Sound.hiss(1800+lv*600,.2+lv*.08,.12+lv*.05,'bandpass'); Sound.tone('square',90,30,.18+lv*.06,.05+lv*.02);
+  if(lv===2) Sound.sfx('ready'); if(lv>=3){ Sound.sfx('crossboom'); FX.flash=Math.max(FX.flash,.35); grade.uniforms.flashCol.value.set(1,.15,.2); } }
 // the release: the stage decides the shot
 function aliChargeRelease(lv){ const P=Player, n0=BEAMS.length;
   if(lv>=3) aliGetsuga(true); else { TW._aliRC=1; try{ aliGetsuga(false); } finally{ TW._aliRC=0; } }
@@ -55,11 +55,16 @@ function aliChargeFx(dt){ const P=Player, on=ALI()&&(ALI_CH.force>0||(P.charge||
   const T=ALI_CH.T, ch=ALI_CH.force?T[2]+.5:P.charge, lv=ALI_CH.force||aliChargeLv(ch), a0=lv?T[lv-1]:.25, k=lv>=3?1:Math.max(0,Math.min(1,(ch-a0)/(T[lv]-a0)));
   const F=ALI_CH.fx||(ALI_CH.fx=aliChargeMake()); F.t+=dt; const tx=P.x, ty=P.y+2.3, tz=P.z;
   // the column: thin and short while charging, the sky at LV 3
-  const len=lv>=3?Math.min(140,8+F.t*60):[4*k,7+5*k,18+6*k][lv], w=[.1+.06*k,.2,.36,.85][lv]*(1+.18*Math.sin(F.t*31)+.08*Math.sin(F.t*53));
+  const len=lv>=3?Math.min(140,8+F.t*60):[4*k,7+5*k,18+6*k][lv], w=[.06+.04*k,.13,.24,.6][lv]*(1+.18*Math.sin(F.t*31)+.08*Math.sin(F.t*53));
   for(const m of [F.red,F.dark]){ m.position.set(tx,ty,tz); m.lookAt(tx,ty+10,tz+1e-4); m.scale.set(Math.max(.01,w),Math.max(.01,w),Math.max(.01,len)); }
   F.red.material.opacity=lv?.9:.5+.4*k; F.dark.material.opacity=lv?.85:.5;
-  // wisps pouring off the blade and shooting up (black ones drawn solid, red ones glowing)
-  const n=[1,2,4,7][lv]; for(let i=0;i<n;i++){ const r=rnd(.1,.35)*(1+lv*.4), a=rnd(0,6.283); FX.spawn(tx+Math.cos(a)*r,ty+rnd(-.9,.2),tz+Math.sin(a)*r,rnd(-.4,.4),rnd(6,11)*(1+lv*.35),rnd(-.4,.4),.45+lv*.1,i%2?0x0a0006:0xff1a2a,.22+lv*.07,0,!(i%2)); }
+  // the energy flows: streams spiral in from the air around him and up into the blade (Shayan's charge pulls its fire in
+  // straight; Ali's curls), ribbons of black and red wind up his body, and wisps shoot on up off the tip
+  const NS=6+lv*2, R=2.4+lv*.5, spin=7+lv*2; for(let i=0;i<NS;i++){ const fr=(F.t*1.5+i/NS)%1, a=i/NS*6.283+F.t*spin+fr*2.5, r=R*(1-fr*fr), y=P.y+.2+fr*2.1, x=P.x+Math.cos(a)*r, z=P.z+Math.sin(a)*r;
+    FX.spawn(x,y,z,0,0,0,.1,i%2?0xff1a2a:0x0a0006,.14+fr*.16,0,!(i%2)); if(fr>.9) FX.spawn(tx,ty,tz,rnd(-.3,.3),rnd(5,9)*(1+lv*.3),rnd(-.3,.3),.4+lv*.1,i%2?0xff1a2a:0x0a0006,.2+lv*.05,0,!(i%2)); }
+  F.rib=(F.rib||0)-dt; if(F.rib<=0){ F.rib=.42-lv*.07; const a0=rnd(0,6.283), t0=F.t, dir=Math.random()<.5?1:-1, red=Math.random()<.5, rr=1+lv*.22;
+    twGash({life:.55,rev:.08,fade:.25,w:8+lv*2,op:.75,sparks:0,col:red?0xff1a2a:0x140008,pts:()=>{ const t=F.t-t0; return twArcPts(P.x,P.y+.5+t*2.6,P.z,Math.cos(a0+t*6*dir),Math.sin(a0+t*6*dir),rr,-1,1,6,true); }}); }
+  const n=[0,1,2,4][lv]; for(let i=0;i<n;i++){ const r=rnd(.1,.3)*(1+lv*.4), a=rnd(0,6.283); FX.spawn(tx+Math.cos(a)*r,ty+rnd(-.9,.2),tz+Math.sin(a)*r,rnd(-.4,.4),rnd(6,11)*(1+lv*.35),rnd(-.4,.4),.45+lv*.1,i%2?0x0a0006:0xff1a2a,.22+lv*.07,0,!(i%2)); }
   if(lv>=3){ const a=rnd(0,6.283), r=rnd(3,5); FX.spawn(P.x+Math.cos(a)*r,P.y+rnd(.2,2.5),P.z+Math.sin(a)*r,-Math.cos(a)*r*2.2,rnd(1,3),-Math.sin(a)*r*2.2,.45,Math.random()<.5?0xff1a2a:0x0a0006,.25,0,true); /* the air pulled in */
     F.ring-=dt; if(F.ring<=0){ F.ring=.45; FX.ring(P.x,P.y+.1,P.z,'#ff2a3a',3,.45); } FX.shake=Math.max(FX.shake||0,.05); }
   // black and red lightning from LV 2: round the blade, at LV 3 round his body too
@@ -69,3 +74,6 @@ function aliChargeFx(dt){ const P=Player, on=ALI()&&(ALI_CH.force>0||(P.charge||
   // the hum, crackle and roar
   ALI_CH.snd-=dt; if(ALI_CH.snd<=0){ ALI_CH.snd=.28; Sound.hiss(250+lv*350,.32,.03+lv*.025,'bandpass'); if(lv>=2&&Math.random()<.7) Sound.hiss(5200,.06,.05+lv*.02,'highpass'); if(lv>=3) Sound.tone('sawtooth',48,54,.3,.05); } }
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments); try{ aliChargeFx(dt); }catch(e){ console.error('ali charge fx',e); } return r; }; })();
+// his waves stand tall: every Getsuga and Jujishou is 3.5x as tall on screen (the hit stays the same)
+const ALI_WAVE_TALL=3.5;
+(function(){ const ub=updateBeams; updateBeams=function(dt){ try{ for(const b of BEAMS) if(b.ali&&b.pxv&&!b.pxv.tall) b.pxv.tall=ALI_WAVE_TALL; }catch(e){} return ub.apply(this,arguments); }; })();

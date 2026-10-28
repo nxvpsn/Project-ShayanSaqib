@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.13 (Oct 28): red slashes and the grab home onto Ali and lunge the gap (moving never escapes them; the dodge button does); Meteor Drive from twice as far with wide zig-zags; a landed meteor is Meteor Rend, five unavoidable Judgement Cut slashes";
-const DBG_NEW=['nathan:combo','nathan:meteor','nathan:grab'];
+const DBG_PATCH="v1.14 (Oct 28): POSTURE (he parries your sword; kicks after 3-4; full = 5s break at 2x); the combo ends in a charged Assault Rush (3 notes, blue tears; parry = 9-unit shove; hit him mid-charge = 5s); OPEN windows; Full Counter 5s in a window, 2s outside; the Starbreaker charges slower, locks on, parry it into a MASH that cuts the blade (Full Counter charge + 5s), LV3 Getsuga clash redone from Ali's shoulder, blink = perfect dodge; middle click lock-on; flowy charge VFX + ignition; waves 3.5x tall; auto-parry shove 9";
+const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
