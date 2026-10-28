@@ -13258,7 +13258,7 @@ function np1PdLook(on){ try{ const g=grade.uniforms; if(on){ if(NP1.sat0==null&&
 // COUNTER holds ~1s: attack = the dodge counter, otherwise time snaps back with a reverse whoosh. ux,uz = the dash direction
 function np1PerfectDodge(ux,uz){ const P=Player, l=Math.hypot(ux,uz)||1; ux/=l; uz/=l; NP1.pdDone=1; NP1.lunge=0; NP1.pdPending=0;
   const [nx,nz]=np1Dir(); let D=5.5, ex=P.x+ux*D, ez=P.z+uz*D; for(;D>1&&Math.abs(groundY(ex,ez)-P.y)>2;D-=.5){ ex=P.x+ux*D; ez=P.z+uz*D; }
-  NP1.seq={k:'pdodge',t:0,sx:P.x,sz:P.z,ex,ez,gt:0,nx,nz}; /* he carries on through where you were */ P.cineFly=true; P.cineAnim='dash'; P.aliAtk=null; P.vx=P.vz=0; P.inv=99; P.ang=Math.atan2(uz,ux);
+  NP1.seq={k:'pdodge',t:0,sx:P.x,sz:P.z,ex,ez,gt:0,nx,nz}; /* he carries on through where you were */ P.cineFly=true; P.cineAnim='run'; P.aliAtk=null; P.vx=P.vz=0; P.inv=99; P.ang=Math.atan2(uz,ux);
   Game.slowT=1.1; np1PdLook(true); shake(.35); FX.flash=.45; grade.uniforms.flashCol.value.set(.45,.7,1);
   Sound.tone('sine',2400,3800,.25,.14); Sound.tone('triangle',1200,1900,.22,.1); Sound.sfx('whoosh'); Sound.sfx('dash'); Sound.tone('sine',120,38,.4,.28); Sound.hiss(2600,.4,.14,'bandpass'); /* shing, whoosh, thump */
   try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh){ g.mesh.material.color.setHex(0x6ab8ff); g.mesh.scale.multiplyScalar(1.25); } }catch(e){} /* the silhouette left where you stood */
@@ -13267,7 +13267,8 @@ function np1PerfectDodge(ux,uz){ const P=Player, l=Math.hypot(ux,uz)||1; ux/=l; 
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); }
 function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's dash, the window), wdt: world time (near-frozen) */
   const u=Math.min(1,S.t/.26), e=u>=1?1:1-Math.pow(2,-10*u); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3;
-  P.cineAnim=u<1?'dash':'idle'; S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.016; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
+  P.cineAnim=u<1?'run':'idle'; /* a dash on his run cycle (side-on in the third-person view), not a teleport pose */ if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f; /* the afterimages face the same way he runs */ S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.016; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
+  if(u<1){ for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.2,.2),P.y+rnd(.3,1.3),P.z+rnd(-.2,.2),0,0,0,.25,0x8fd3ff,.3,0,true); } /* Shayan's dash streak */
   if(u<1) for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),(S.sx-S.ex)*rnd(1,3),rnd(-.3,.6),(S.sz-S.ez)*rnd(1,3),.4,i%2?0x3a8aff:0xffffff,.3,0,true);
   else if(Math.random()<.6) FX.spawn(P.x+rnd(-.6,.6),P.y+rnd(.2,2.2),P.z+rnd(-.6,.6),0,rnd(.3,1),0,.6,0x6ab8ff,.22,0,true);
   // the lens: punches wide on the dash, settles a little wide through the slow-mo
