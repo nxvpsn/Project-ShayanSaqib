@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="Oct 27: space Hamza (bullet hell): triple the mobs: Piglet Parade has three lanes of piglets, the shield ward has 12 eyes (they fire less often each), and every kamikaze piglet comes in threes";
-const DBG_NEW=['mech:parade','mech:ward','mech:final'];
+const DBG_PATCH="Oct 28: Caotan phases II-III: goo = Overflow Hose (II, low sweeping goo stream) / Flood Warning (III, closing puddle rings with one gap + parryable Mega Sperm); pillow = Return to Sender (II, boomerangs back through you) / Waifu Harem (III, 4 pillows from the corners + giant Hikari belly-flop); letters II-III = Unread Messages (chasing phones, red VOICE MAIL every 3rd)";
+const DBG_NEW=['caotan:goo','caotan:pillow','caotan:letters'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,hide:false,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

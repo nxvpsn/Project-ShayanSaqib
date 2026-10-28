@@ -40,17 +40,20 @@ TWK.caotan.letters=function*(T,ph){ const sp=twSp(T); twBark('caotan',ph>=2?"Cal
   for(let i=0;i<n;i++){ const P=Player, a=rnd(0,6.28), r=i===0?0:rnd(1,3.6), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,.6);
     T.fire=.15; Sound.sfx('swing'); twPhone(T,p.x,p.z,.95/sp,st,ph); yield .16/sp; }
   yield 1.1; let w=0; while(st.busy&&w<40){ w++; yield .1; } yield .3; };
-function twPhone(T,tx,tz,dur,st,ph){ const sx=T.x, sy=T.y+1.5, sz=T.z, gy=groundY(tx,tz), mk=FX.marker(tx,tz,.95,0xff3a7a,dur+.05), m=twBB(texLetter(),1.1,.75), q={t:0,mode:'arc',x:sx,y:sy,z:sz};
+function twPhone(T,tx,tz,dur,st,ph,o){ const vm=!!(o&&o.vm), R0=vm?2:.95, sx=T.x, sy=T.y+1.5, sz=T.z, gy=groundY(tx,tz), mk=FX.marker(tx,tz,R0,vm?0xff1a1a:0xff3a7a,dur+.05), fz=vm?twFence(tx,tz,R0,0xff3a3a,dur+.05):null, m=twBB(texLetter(),vm?1.4:1.1,vm?.95:.75), q={t:0,mode:'arc',x:sx,y:sy,z:sz};
+  if(vm){ try{ m.material.color.setHex(0xff5050); }catch(e){} } /* VOICE MAIL (o.vm): red, a big unjumpable circle, swat it or it blows up */
   return twHz({upd(dt,play){ if(play) q.t+=dt; const P=Player;
     if(q.mode==='arc'){ const u=Math.min(1,q.t/dur); q.x=lerp(sx,tx,u); q.z=lerp(sz,tz,u); q.y=lerp(sy,gy+.4,u)+Math.sin(u*Math.PI)*3;
       const swat=Game.time-twParryClock()<.3||(ALI()&&P.block);
-      if(play&&u>.3&&swat&&Math.hypot(P.x-q.x,P.z-q.z)<2.1&&Math.abs(q.y-(P.y+1))<2.4){ q.mode='back'; q.t=0; q.sx=q.x; q.sy=q.y; q.sz=q.z; if(mk){ scene.remove(mk.m); }
+      if(play&&u>.3&&swat&&Math.hypot(P.x-q.x,P.z-q.z)<2.1&&Math.abs(q.y-(P.y+1))<2.4){ q.mode='back'; q.t=0; q.sx=q.x; q.sy=q.y; q.sz=q.z; if(mk){ scene.remove(mk.m); } if(fz) fz.kill();
         Sound.sfx('deflect'); FX.spark(q.x,q.y,q.z); Game.dmgNums.push({x:q.x,y:q.y+.8,z:q.z,n:'DECLINED',t:0,col:'#ff9ad8'}); }
-      else if(u>=1){ Sound.sfx('kyun'); twHeartBurst(tx,tz,12); FX.ring(tx,gy,tz,'#ff6ab0',1.6,.35); if(play&&twInR(tx,tz,.95,TW_JUMP_H)) twHitP(2,tx,tz,{ub:true}); if(ph>=2) twWave(tx,tz,{sp:6,max:4.2,col:0xff6ab0}); return false; } }
+      else if(u>=1){ if(fz) fz.kill();
+        if(vm){ Sound.sfx('slam'); Sound.sfx('kyun'); shake(.45); twHeartBurst(tx,tz,22); FX.ring(tx,gy,tz,'#ff3a3a',R0*1.5,.4); FX.burst(tx,gy+.4,tz,30,0xff3a3a,6,.35); Game.dmgNums.push({x:tx,y:gy+2.4,z:tz,n:'VOICE MAIL',t:0,big:true,col:'#ff5050'}); if(play&&twInR(tx,tz,R0,99)) twHitP(3,tx,tz,{ub:true}); twWave(tx,tz,{sp:7,max:6,col:0xff3a3a}); return false; }
+        Sound.sfx('kyun'); twHeartBurst(tx,tz,12); FX.ring(tx,gy,tz,'#ff6ab0',1.6,.35); if(play&&twInR(tx,tz,.95,TW_JUMP_H)) twHitP(2,tx,tz,{ub:true}); if(ph>=2) twWave(tx,tz,{sp:6,max:4.2,col:0xff6ab0}); return false; } }
     else { const u=Math.min(1,q.t/.35); q.x=lerp(q.sx,T.x,u); q.z=lerp(q.sz,T.z,u); q.y=lerp(q.sy,T.y+1.4,u);
       if(u>=1){ if(!st.caught&&!T.down&&T.hp>0&&T.state!=='lc'){ st.caught=true; st.busy=true; twPhoneCatch(T,st); } else { twHurt(T,2,'bolt'); T.flash=.2; FX.burst(T.x,T.y+1.4,T.z,10,0xff6ab0,3,.25); Sound.sfx('hit'); } return false; } }
     m.position.set(q.x,q.y,q.z); m.rotation.z+=dt*(q.mode==='arc'?10:22); if(Math.random()<.6) FX.spawn(q.x,q.y,q.z,0,0,0,.3,0xff8ac8,.22,0,true); return true; },
-    kill(){ scene.remove(m); if(mk) scene.remove(mk.m); }}); }
+    kill(){ scene.remove(m); if(mk) scene.remove(mk.m); if(fz) fz.kill(); }}); }
 function twPhoneCatch(T,st){ const c={t:0,stage:0}, m=twBB(texLetter(),1.2,.8); m.visible=false; T.lockF=1; T.cast=.6; Sound.sfx('ting'); T.push=.4; T.glintT=.4;
   twBark('caotan',["Oh? You want my number? HERE'S MY NUMBER!","You hung up on me?! Nobody hangs up on me!","Return to sender? Return to SENDER?!"][Math.floor(Math.random()*3)],true);
   twHz({upd(dt,play){ if(!play) return true; c.t+=dt; const P=Player;
