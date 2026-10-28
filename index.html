@@ -6789,12 +6789,16 @@ const DRX={};
 function drxScreenLen(a,b){ const p=toScreen(a.x,a.y,a.z), q=toScreen(b.x,b.y,b.z); return [q[0]-p[0],q[1]-p[1]]; }
 function drxPxPerUnit(v){ const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion), p=toScreen(v.x,v.y,v.z), q=toScreen(v.x+up.x,v.y+up.y,v.z+up.z); return Math.max(1,Math.hypot(q[0]-p[0],q[1]-p[1])); }
 (function(){ const md=makeDrill; makeDrill=function(){ const d=md.apply(this,arguments); try{ drxAttach(d); }catch(e){ console.error('drill fx',e); } return d; }; })();
+// a retry, warp or reset wipes Game.fxUpd, and with it the updater that stops this drill's pixel sheets: they would stay on screen.
+// Each updater checks in every frame (DRX_F counts FX.update calls); one that stops checking in has its sheets stopped.
+const DRX_RECS=[]; let DRX_F=0;
+(function(){ const fu=FX.update; FX.update=function(){ const r=fu.apply(this,arguments); try{ DRX_F++; for(let i=DRX_RECS.length-1;i>=0;i--){ const q=DRX_RECS[i]; if(!q.done&&DRX_F-q.seen>3) q.kill(); if(q.done) DRX_RECS.splice(i,1); } }catch(e){ console.error('drill fx sweep',e); } return r; }; })();
 function drxAttach(d){ if(!d||!pxvRdy('drill_aura')) return; const o={any:true,x:d.x,y:d.y,z:d.z,size:1}, base=new THREE.Vector3(), tip=new THREE.Vector3(), mid=new THREE.Vector3(),
     e1=new THREE.Vector3(), e2=new THREE.Vector3(), last=new THREE.Vector3(d.x,d.y,d.z), H=()=>Game.hamza;
   const au=pxvPlay('drill_aura',Object.assign({op:.8,ro:9},o)), b1=pxvPlay('drill_bolt',Object.assign({ro:10},o)), b2=pxvPlay('drill_bolt',Object.assign({ro:10,speed:.8},o));
   let ph=0, boomed=0, pee=null, spl=null, smear=0;
-  const kill=()=>{ for(const x of [au,b1,b2,pee,spl]) if(x) pxvStop(x); };
-  Game.fxUpd.push(dt=>{ try{
+  const kill=()=>{ rec.done=1; for(const x of [au,b1,b2,pee,spl]) if(x) pxvStop(x); }, rec={seen:DRX_F,done:0,kill:()=>kill()}; DRX_RECS.push(rec);
+  Game.fxUpd.push(dt=>{ try{ rec.seen=DRX_F;
     base.set(d.x,d.y,d.z); const dn=d.dir.clone().normalize(), L=4.4*d.s; tip.copy(dn).multiplyScalar(L).add(base); mid.copy(dn).multiplyScalar(L*.5).add(base);
     // impact
     if(!boomed&&(d.spin>=90||d.dead)){ boomed=1; const big=d.spin>=90, gy=groundY(tip.x,tip.z), sz=big?9:d.s<.5?2.8:5.5;
