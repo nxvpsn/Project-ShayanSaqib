@@ -127,8 +127,39 @@ function npCounterBoom(){ const S=NP1.seq; if(!S||S.k!=='counter'){ NPP.boomSeen
         FX.ring(NB.x,gy+.1,NB.z,'#ffffff',12,.9); for(let i=0;i<40;i++){ const a=rnd(0,6.283), d=rnd(2,9); FX.spawn(NB.x+Math.cos(a)*d,gy+.2,NB.z+Math.sin(a)*d,0,rnd(2,6),0,.9,i%2?0x9a9080:0x3ff4ff,.35,6,i%2===0); } if(typeof TPS!=='undefined') TPS.fovK=5; } }catch(e){} return r; }; })();
 function npPass2(dt){ npGrabSlam(); npBladeGlow(dt); npCage(); npMeteor(dt); npCounterBoom(); }
 function npGlowOff2(){ for(const k of ['blade','shadow']) if(NPP[k]){ scene.remove(NPP[k]); NPP[k]=null; } }
+// ---------- 21. engage: when phase I starts the lock-on ring snaps down onto him from wide, with a tick ----------
+(function(){ const ns=np1Start; np1Start=function(){ const r=ns.apply(this,arguments); try{ NPP.engage={t:0}; Sound.tone('square',1800,900,.12,.05); Sound.tone('sine',2600,2600,.08,.04); }catch(e){} return r; }; })();
+function npEngage(dt){ const E=NPP.engage, T=typeof TPS!=='undefined'?TPS.ret:null; if(!E||!T) return; E.t+=dt; const u=Math.min(1,E.t/.45), e=1-Math.pow(1-u,3); T.scale.setScalar(1+3*(1-e)); if(u>=1){ NPP.engage=null; T.scale.setScalar(1); Sound.sfx('ting'); npStar(NB.x,groundY(NB.x,NB.z)+.3,NB.z,0x7fe8ff,1.2,.25); } }
+// ---------- 22. his bar remembers: a white chip trails behind each hit and drains away, so the damage reads ----------
+function npChip(){ if(!NP1.live||NP1.done||Game.letter>.5) return; const k=Math.max(0,NP1.hp/NP1.max); if(NPP.chip==null||NPP.chip<k) NPP.chip=k; NPP.chipT=(NPP.chipT||0);
+  if(NPP.chip>k){ NPP.chipHold=(NPP.chipHold||0)+1/60; if(NPP.chipHold>.35) NPP.chip=Math.max(k,NPP.chip-1/60*.25); } else NPP.chipHold=0;
+  if(NPP.chip<=k+1e-4) return; const bw=Math.min(UW*.6,560), bx=(UW-bw)/2, by=6; D.save(); D.globalAlpha=NP1.bar; D.fillStyle='#ffffff'; D.fillRect(bx+bw*k,by,bw*(NPP.chip-k),4); D.restore(); }
+// ---------- 23. cleaner trails: his afterimages are tinted cyan and thinner, so the flight reads as speed, not clutter ----------
+(function(){ const na=nbAfterimage; nbAfterimage=function(){ const r=na.apply(this,arguments); try{ if(npOn()&&NBG.length){ const m=NBG[NBG.length-1].m; m.material.color.setHex(0x8ff4ff); m.material.opacity=.38; } }catch(e){} return r; }; })();
+// ---------- 24. the lens opens with Ali's speed: a run or a blink widens the view a touch, standing still tightens it ----------
+function npRunFov(dt){ const P=Player, sp=P.cineFly?0:Math.hypot(P.vx||0,P.vz||0), want=Math.min(4,sp*.22); TPS.fovRun=lerp(TPS.fovRun||0,want,1-Math.exp(-dt*5)); }
+// ---------- 25. low health: the screen's edges pulse red with a slow heartbeat ----------
+function npLowHp(){ const P=Player; if(!NP1.live||NP1.done||P.hp>3||P.hp<=0||Game.state!=='play') return; const b=Math.pow(Math.max(0,Math.sin(Game.time*4.2)),6), R0=Math.hypot(UW,UH)*.55;
+  const vg=D.createRadialGradient(UW/2,UH/2,R0*.5,UW/2,UH/2,R0); vg.addColorStop(0,'rgba(200,0,20,0)'); vg.addColorStop(1,`rgba(200,0,20,${.22+.25*b})`); D.save(); D.fillStyle=vg; D.fillRect(0,0,UW,UH); D.restore();
+  NPP.beat=(NPP.beat||0)-1/60; if(NPP.beat<=0){ NPP.beat=1.5; Sound.tone('sine',62,40,.22,.14); setTimeout(()=>{ try{ Sound.tone('sine',56,36,.18,.1); }catch(e){} },160); } }
+// ---------- 26. Ali's Getsugas burn the field: embers and a scorched line trail under each crescent ----------
+function npEmbers(){ for(const b of BEAMS){ if(!b.ali||b.life<=0) continue; const gy=groundY(b.x,b.z); if(b.y-gy>3) continue; const gold=b.tier===2, n=b.big||b.chLv?3:1;
+    for(let i=0;i<n;i++) FX.spawn(b.x+rnd(-.5,.5),gy+.15,b.z+rnd(-.5,.5),rnd(-.6,.6),rnd(.8,2.4),rnd(-.6,.6),rnd(.4,.8),gold?0xffd45a:i%2?0xff2a3a:0x1a0608,.2,-2,i%2===0);
+    if(Math.random()<.5) FX.spawn(b.x,gy+.1,b.z,0,0,0,.9,0x1a1216,.35,0,false); } }
+// ---------- 27. funnels die properly: shards tumble out with a crack and a flash ----------
+(function(){ const kb=nbKillBit; nbKillBit=function(b){ try{ if(npOn()&&b){ npStar(b.x,b.y,b.z,0x9ff8ff,.9,.22); for(let i=0;i<9;i++) FX.spawn(b.x,b.y,b.z,rnd(-5,5),rnd(2,7),rnd(-5,5),rnd(.5,.9),i%3?0xbfefff:0x3ff4ff,.22,14,false); Sound.tone('square',1400,400,.1,.05); } }catch(e){} return kb.apply(this,arguments); }; })();
+// ---------- 28. an opening you can read: PUNISH pulses over him while he's staggered ----------
+function npPunish(){ if(!NB.stunned||NP1.done||!NP1.live||Game.letter>.5||NP1.seq) return; const q=toScreen(NB.x,NB.y+5.2,NB.z); if(q[0]<-50||q[0]>UW+50||q[1]<-50) return; const pu=1+.08*Math.sin(Game.time*14);
+  D.save(); D.translate(q[0],q[1]); D.scale(pu,pu); D.font=`900 ${IS_TOUCH()?22:26}px ${FB}`; D.textAlign='center'; D.textBaseline='bottom'; D.lineWidth=5; D.strokeStyle='#2a1800'; D.strokeText('PUNISH',0,0); D.fillStyle='#ffd45a'; D.fillText('PUNISH',0,0); D.restore(); }
+// ---------- 29. contrast: a soft dark vignette frames this fight, so the bright field doesn't wash out the tells ----------
+function npVignette(){ if(!NP1.live||Game.letter>.5) return; const R0=Math.hypot(UW,UH)*.55; if(!NPP.vg||NPP.vgW!==UW||NPP.vgH!==UH){ NPP.vg=D.createRadialGradient(UW/2,UH/2,R0*.45,UW/2,UH/2,R0); NPP.vg.addColorStop(0,'rgba(4,8,20,0)'); NPP.vg.addColorStop(1,'rgba(4,8,20,.42)'); NPP.vgW=UW; NPP.vgH=UH; }
+  D.save(); D.fillStyle=NPP.vg; D.fillRect(0,0,UW,UH); D.restore(); }
+// ---------- 30. he's alive while he hovers: thruster flicker under his feet and a lazy drift of light when he's still ----------
+function npIdle(dt){ if(NB.dsh||NB.stunned||(typeof NBS!=='undefined'&&NBS.boostT>0)||NP1.seq) return; if(Math.random()<dt*16){ const a=rnd(0,6.283); FX.spawn(NB.x+Math.cos(a)*.35,NB.y+.15,NB.z+Math.sin(a)*.35,rnd(-.4,.4),rnd(-2.5,-1),rnd(-.4,.4),.22,Math.random()<.7?0x3ff4ff:0xffffff,.16,0,true); }
+  if(Math.random()<dt*3){ const a=rnd(0,6.283), r=rnd(.8,1.6); FX.spawn(NB.x+Math.cos(a)*r,NB.y+rnd(1,3.5),NB.z+Math.sin(a)*r,0,rnd(.2,.5),0,1.2,0x9ff8ff,.1,0,true); } }
+function npPass3(dt){ npEngage(dt); npRunFov(dt); npEmbers(); npIdle(dt); }
 // ---------- the per-frame hook, the UI hook, cleanup ----------
-function npFrame(dt){ npAmbient(dt); npStagger(dt); npSpeed(dt); npRet(dt); npAli(dt); npPass2(dt); }
+function npFrame(dt){ npAmbient(dt); npStagger(dt); npSpeed(dt); npRet(dt); npAli(dt); npPass2(dt); npPass3(dt); }
 (function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(npOn()) npFrame(dt); }catch(e){ console.error('np polish',e); } return r; }; })();
-(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(npOn()&&Game.letter<=.5){ npDanger(); npMarks(); } }catch(e){ console.error('np marks',e); } }; })();
-(function(){ const nr=np1Reset; np1Reset=function(){ npGlowOff(); npGlowOff2(); return nr.apply(this,arguments); }; })();
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(npOn()&&Game.letter<=.5){ npVignette(); npDanger(); npMarks(); npChip(); npPunish(); npLowHp(); } }catch(e){ console.error('np marks',e); } }; })();
+(function(){ const nr=np1Reset; np1Reset=function(){ npGlowOff(); npGlowOff2(); NPP.chip=null; NPP.engage=null; if(typeof TPS!=='undefined') TPS.fovRun=0; return nr.apply(this,arguments); }; })();

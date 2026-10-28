@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.11 (Oct 28): Nathan fight polish 11-20: weighted hit-stop, his slashes tear the air and scar the ground, grab crater, blade glow, funnel muzzle flashes and scorches, the cage's light ring, the meteor's shadow and sonic boom, auto-parry stars and shockwave, counter ground tears, level 3 ground cracks";
+const DBG_PATCH="v1.12 (Oct 28): Nathan fight polish 21-30: lock-on engage snap, damage chip on his bar, cyan afterimages, speed-widened lens, low-HP heartbeat, Getsuga embers, funnel shards, PUNISH prompt on stagger, contrast vignette, idle thruster flicker";
 const DBG_NEW=['nathan:excal'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

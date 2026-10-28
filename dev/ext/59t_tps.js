@@ -55,7 +55,7 @@ function tpsBillboardTufts(){ if(!L||!L.root) return; for(const m of L.root.chil
       // TPS.kick: a punch toward the look point (hits, parries; negative = recoil), TPS.fovK: a lens punch; both spring back
       const kk=TPS.kick||0, kd=Math.hypot(TPS.l[0]-TPS.p[0],TPS.l[1]-TPS.p[1],TPS.l[2]-TPS.p[2])||1, kx=(TPS.l[0]-TPS.p[0])/kd*kk, ky=(TPS.l[1]-TPS.p[1])/kd*kk, kz=(TPS.l[2]-TPS.p[2])/kd*kk; TPS.kick=Math.abs(kk)<.01?0:kk*Math.exp(-dt*9);
       camera.position.set(TPS.p[0]+sx+kx,TPS.p[1]+sy+ky,TPS.p[2]+kz); camera.lookAt(TPS.l[0],TPS.l[1],TPS.l[2]);
-      if(TPS.fovK){ TPS.fovK=Math.abs(TPS.fovK)<.05?0:TPS.fovK*Math.exp(-dt*7); if(!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovK; camera.updateProjectionMatrix(); } }
+      if(TPS.fovK){ TPS.fovK=Math.abs(TPS.fovK)<.05?0:TPS.fovK*Math.exp(-dt*7); if(!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovK+(TPS.fovRun||0); camera.updateProjectionMatrix(); } } else if(TPS.fovRun&&!TPS.fast&&!(typeof NP1!=='undefined'&&NP1.seq)){ camera.fov=TPS.FOV+TPS.fovRun; camera.updateProjectionMatrix(); } /* TPS.fovRun: the lens opens a little with Ali's speed */
       // the lock-on marker: a slow cyan ring on the ground under Nathan (and a diamond over him, drawn in the UI)
       if(!TPS.ret){ const g=new THREE.Group(); for(const [r0,r1,op] of [[1.55,1.7,.85],[1.85,1.9,.45]]){ const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48,1,0,Math.PI*1.7),new THREE.MeshBasicMaterial({color:0x7fe8ff,transparent:true,opacity:op,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; g.add(m); } scene.add(g); TPS.ret=g; }
       TPS.ret.visible=true; TPS.ret.position.set(V.x,groundY(V.x,V.z)+.06,V.z); TPS.ret.rotation.y+=dt*.8;
