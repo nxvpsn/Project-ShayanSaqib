@@ -181,7 +181,7 @@ function* pfExaflares(n,stepT){ const a0=rnd(0,6.28); for(let i=0;i<n;i++){ cons
   pfLog('Paul casts Infinite Loop. Exaflares.'); pfPrompt('EXAFLARES','#ffb04a',1.8,'Walk into the spots that just exploded'); yield 1.4+9*stepT; }
 
 // ---------- phases ----------
-function* pfQ1(){ const Pa=PF.paul; Pa.x=PF_C.x; Pa.z=PF_C.z; pfLog('Duty Commenced. (The Navel: Paul Extreme)'); PF.raises=PF.raises||0;
+function* pfQ1(){ const Pa=PF.paul; Pa.x=PF_C.x; Pa.z=PF_C.z; pfLog('Duty Commenced. (The Crunch: Paul Extreme)'); PF.raises=PF.raises||0;
   twBark('paul',"Welcome to my raid. I wrote every mechanic myself. In one night. None of it is tested.",true); yield 2.5;
   PF.phase=1; pfRate(.36,70);
   yield* pfRaidwide('Patch Notes (raidwide)',.35); yield .6;

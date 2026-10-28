@@ -16,7 +16,7 @@
 // Getsugas fly until they reach him (infinite range), aimed by the lock-on; Ali's sword hurts him here.
 // =====================================================================
 const NP1={live:0,done:0,hp:350,max:350,lunge:0,pdPending:0,gen:null,wait:0,cd:2.2,last:null,order:null,stunT:0,objs:[],seq:null,cam:null,
-  blinkT:-9,pdT:-9,pdFrom:-9,hint:null,seen:{},dt:1/60,bar:0};
+  blinkT:-9,pdT:-9,pdFrom:-9,pdDone:0,sat0:null,hint:null,seen:{},dt:1/60,bar:0};
 const NP1_POOL=['combo','combo','bits','cage','glint3','grab','grab','clash','curtain','grid'];
 const NP1_FIRST=['combo','bits','grab','glint3','curtain','cage','grid','clash'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
@@ -24,7 +24,7 @@ function np1Reset(){ np1Clear(); Object.assign(NP1,{live:0,done:0,hp:NP1.max,gen
 function np1Start(){ np1Clear(); Object.assign(NP1,{live:1,done:0,hp:NP1.max,gen:null,wait:0,cd:2.2,last:null,order:NP1_FIRST.slice(),stunT:0,seq:null,cam:null,pdT:-9,hint:null});
   if(NB){ NB.barShow=0; NB.hov=1.4; NB.stunned=0; } }
 function np1Clear(){ for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(typeof NBC!=='undefined'&&NBC) endNBClash(); }catch(e){}
-  const P=Player; if(P&&NP1.seq){ P.cineFly=false; P.cineAnim=null; P.inv=Math.min(P.inv,1); } NP1.seq=null; NP1.cam=null; NP1.lunge=0; NP1.pdPending=0; if(NB){ NB.stunned=0; NB.hov=1.4; if(NB.mesh) NB.mesh.visible=true; } Game.letterTo=0; }
+  const P=Player; if(P&&NP1.seq){ P.cineFly=false; P.cineAnim=null; P.inv=Math.min(P.inv,1); } NP1.seq=null; NP1.cam=null; NP1.lunge=0; NP1.pdPending=0; NP1.pdDone=0; np1PdLook(false); if(typeof NBS!=='undefined') NBS.fixRow=null; if(NB){ NB.stunned=0; NB.hov=1.4; if(NB.mesh) NB.mesh.visible=true; } Game.letterTo=0; }
 function np1Obj(o){ NP1.objs.push(o); return o; }
 function np1Hint(key,text){ if(NP1.seen[key]) return; NP1.seen[key]=1; NP1.hint={text,t:0,dur:2.6}; }
 function np1Dir(){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
@@ -89,15 +89,15 @@ const NP1M={
     Game.letterTo=0; NB.mesh.visible=true; if(par>=3){ np1Stun(3,'TRINITY BROKEN'); return; } yield .4; },
   // Grapple Lock: BLUE. He locks on hard and boosts in; a blink at the last moment is a perfect dodge
   *grab(){ twBark('nathan',"Got you.",true); np1Hint('blue','BLUE flash: blink ('+K('dash')+') at the LAST moment');
-    np1Glint(NB.x,NB.y+2.6,NB.z,0x3a8aff,4.2); FX.flash=.35; grade.uniforms.flashCol.value.set(.3,.55,1); Sound.sfx('charge'); yield .7;
+    np1Glint(NB.x,NB.y+2.6,NB.z,0x3a8aff,4.2); FX.flash=.35; grade.uniforms.flashCol.value.set(.3,.55,1); Sound.sfx('charge'); if(typeof nbsSlash==='function') nbsSlash(1.6,0); /* the slash's wind-up through the tell */ yield .7;
     const g={t:0,v:26}; NB.dsh=null; Sound.sfx('quickboost');
     NP1.lunge=1; NP1.pdPending=0;
-    while(g.t<1.3){ const dt=NP1.dt; g.t+=dt; const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.1); NBS.bdir=Math.atan2(dz,dx); } const st=Math.min(d,g.v*dt); NB.x+=dx/d*st; NB.z+=dz/d*st;
+    while(g.t<1.3){ const dt=NP1.dt; g.t+=dt; const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; if(typeof NBS!=='undefined'){ NBS.fixRow=5; NBS.bdir=Math.atan2(dz,dx); } /* the sword cocked back as he lunges */ const st=Math.min(d,g.v*dt); NB.x+=dx/d*st; NB.z+=dz/d*st;
       if(Math.random()<.8) FX.spawn(NB.x+rnd(-.5,.5),NB.y+rnd(.5,3),NB.z,-dx/d*4,0,-dz/d*4,.3,0x3a8aff,.35,0,true); if(g.t%.05<dt) nbAfterimage(NB.x,NB.y,NB.z);
-      if(NP1.pdPending||(d<1.5&&Game.time-NP1.blinkT<.3)){ NP1.lunge=0; NP1.pdPending=0; np1PerfectDodge(dx/d,dz/d); for(let k=0;k<14;k++){ NB.x+=dx/d*.35; NB.z+=dz/d*.35; yield NP1.dt; } yield .9; return; }
-      if(d<1.5&&P.inv<=0&&!P.cineFly){ NP1.lunge=0; np1Grabbed(); yield 1.2; return; }
+      if(NP1.pdDone){ NP1.lunge=0; NP1.pdDone=0; if(typeof NBS!=='undefined') NBS.fixRow=null; yield .5; return; } /* the dodge (np1PerfectDodge) slides you clear and carries him past */
+      if(d<1.5&&P.inv<=0&&!P.cineFly){ NP1.lunge=0; if(typeof NBS!=='undefined'){ NBS.fixRow=null; nbsSlash(.45,.45); } np1Grabbed(); yield 1.2; return; }
       yield dt; }
-    NP1.lunge=0; yield .4; },
+    NP1.lunge=0; if(typeof NBS!=='undefined') NBS.fixRow=null; yield .4; },
   // Hyper Beam: he charges from range; a Getsuga in the air when he fires meets it; otherwise it tracks you
   *clash(){ const P=Player, a=Math.atan2(NB.z-P.z,NB.x-P.x); nbBoost(P.x+Math.cos(a)*11,P.z+Math.sin(a)*11); yield .2; NB.hov=3.2;
     twBark('nathan',"Hyper beam. Full output.",true); np1Hint('clash','Fire a GETSUGA ('+K('block')+') as he fires: meet his beam');
@@ -143,15 +143,31 @@ const NP1M={
     yield 2.6; { const live=bs.filter(b=>!b.gone); if(live.length){ const b=live[0], P2=Player; b.m.children.forEach(c=>c.material.color.setHex(0xff2a3a)); np1Glint(b.x,b.y+1,b.z,0xff2a3a,2.4); yield .45; np1Beam(b.x,b.y,b.z,P2.x,P2.y+1,P2.z,0xff2a3a,.12,.2); Sound.sfx('mechshot'); np1HitRed(1,b.x,b.z); } }
     yield 1.6; for(const b of bs) if(!b.gone){ b.gone=1; nbKillBit(b); } yield .3; } };
 // ---------- the perfect dodge and the dodge counter ----------
-function np1PerfectDodge(dx,dz){ const P=Player; NP1.pdT=Game.time+.8; NP1.pdFrom=Game.time; Game.slowT=Math.max(Game.slowT,.55); Sound.sfx('whoosh'); Sound.sfx('dash'); P.inv=Math.max(P.inv,.9);
-  FX.flash=.25; grade.uniforms.flashCol.value.set(.35,.6,1); for(let i=0;i<3;i++){ try{ const g=aliGhost(P.x-dx*i*.7,P.y,P.z-dz*i*.7); if(g&&g.mesh) g.mesh.material.color.setHex(0x3a8aff); }catch(e){} }
-  FX.burst(P.x,P.y+1,P.z,40,0x3a8aff,5,.45); FX.burst(P.x,P.y+1,P.z,20,0xbfe0ff,3,.5); for(let i=0;i<24;i++){ const a=rnd(0,6.28); FX.spawn(P.x+Math.cos(a)*.8,P.y+rnd(.2,2),P.z+Math.sin(a)*.8,Math.cos(a)*2,rnd(0,2),Math.sin(a)*2,.6,i%2?0x3a8aff:0x9fd0ff,.3,0,true); }
-  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); np1Hint('counter','Attack ('+K('attack')+') now: DODGE COUNTER'); }
+// the perfect dodge (ZZZ-style): a blink while his lunge is about to land becomes a short visible dodge slide with blue
+// afterimages; the world drops into heavy slow motion (desaturated, blue-tinted, the lens widening) while he sails past;
+// a COUNTER prompt holds for ~1s: attack = the dodge counter, otherwise time snaps back. ux,uz = the slide direction
+function np1PdLook(on){ try{ const g=grade.uniforms; if(on){ if(NP1.sat0==null&&g.sat) NP1.sat0=g.sat.value; if(g.sat) g.sat.value=.3; }
+    else if(NP1.sat0!=null){ if(g.sat) g.sat.value=NP1.sat0; NP1.sat0=null; } if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=on?57:50; camera.updateProjectionMatrix(); } }catch(e){} }
+function np1PerfectDodge(ux,uz){ const P=Player, l=Math.hypot(ux,uz)||1; ux/=l; uz/=l; NP1.pdDone=1; NP1.lunge=0; NP1.pdPending=0;
+  const [nx,nz]=np1Dir(), D=3.6; let ex=P.x+ux*D, ez=P.z+uz*D; if(Math.abs(groundY(ex,ez)-P.y)>2){ ex=P.x; ez=P.z; }
+  NP1.seq={k:'pdodge',t:0,sx:P.x,sz:P.z,ex,ez,gt:0,nx:-nx,nz:-nz}; P.cineFly=true; P.cineAnim='dash'; P.aliAtk=null; P.vx=P.vz=0; P.inv=99; P.ang=Math.atan2(uz,ux);
+  Game.slowT=1.05; Sound.sfx('whoosh'); Sound.sfx('dash'); Sound.tone('sine',520,90,.5,.18); /* the world at 0.3x; the dodge itself runs on real time */ Sound.hiss(2600,.35,.12,'bandpass'); FX.flash=.3; grade.uniforms.flashCol.value.set(.35,.6,1); np1PdLook(true);
+  FX.burst(P.x,P.y+1,P.z,30,0x3a8aff,5,.4); FX.burst(P.x,P.y+1,P.z,16,0xbfe0ff,3,.45);
+  Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); }
+function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's slide, the window), wdt: world time (slowed) */
+  const u=Math.min(1,S.t/.2), e=1-Math.pow(1-u,3); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.35;
+  P.cineAnim=u<1?'dash':'idle'; S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.028; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x3a8aff); }catch(e){} }
+  if(Math.random()<.7) FX.spawn(P.x+rnd(-.5,.5),P.y+rnd(.2,2),P.z+rnd(-.5,.5),rnd(-.5,.5),rnd(.2,1),rnd(-.5,.5),.5,Math.random()<.5?0x3a8aff:0xbfe0ff,.25,0,true);
+  // he sails on past, in slow motion
+  if(S.t<1.05){ NB.x+=S.nx*26*wdt; NB.z+=S.nz*26*wdt; } if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.1); NBS.bdir=Math.atan2(S.nz,S.nx); }
+  // the counter window
+  if(S.t>.08&&S.t<1.05&&consume('attack')){ np1PdLook(false); np1Counter(); return; }
+  if(S.t>=1.05){ NP1.seq=null; np1PdLook(false); Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; Sound.tone('sine',90,420,.25,.12); } }
 // the counter: Ali zips past him, the camera snaps round to face Ali (Nathan behind him), judgement cuts rain on Nathan; 1.6s
 function np1Counter(){ const P=Player, [dx,dz]=np1Dir(), fx=-dx, fz=-dz; /* from Ali through Nathan */
   P.aliAtk=null; P.cineFly=true; P.cineAnim='dash'; P.inv=99; P.vx=P.vz=0; Game.slowT=0; NP1.pdT=-9; NP1.gen=null; NB.dsh=null;
   NP1.seq={k:'counter',t:0,sx:P.x,sz:P.z,ex:NB.x+fx*3.4,ez:NB.z+fz*3.4,fx,fz,cuts:0}; Sound.sfx('dash'); Sound.sfx('whoosh'); FX.flash=.3; grade.uniforms.flashCol.value.set(1,.2,.3); }
-function np1SeqUpd(dt){ const S=NP1.seq, P=Player; S.t+=dt;
+function np1SeqUpd(dt){ const S=NP1.seq, P=Player; if(S.k==='pdodge'){ const rdt=Math.min(.05,dt/((Game.slowT>0?.3:1)*(Game.timeScale||1))); S.t+=rdt; np1PdUpd(S,rdt,dt); return; } S.t+=dt;
   if(S.k==='counter'){ const u=Math.min(1,S.t/.14); P.x=lerp(S.sx,S.ex,u); P.z=lerp(S.sz,S.ez,u); P.y=groundY(P.x,P.z); P.ang=Math.atan2(S.fz,S.fx);
     if(u<1){ if(Math.random()<.9) FX.spawn(P.x,P.y+rnd(.3,1.6),P.z,0,0,0,.25,Math.random()<.5?0xff2a3a:0x3a8aff,.4,0,true); return; }
     if(!S.snap){ S.snap=1; P.cineAnim='aliIai'; NB.stunned=1; NP1.cam={x:P.x+S.fx*4.6,y:P.y+1.7,z:P.z+S.fz*4.6,lx:P.x,ly:P.y+1.4,lz:P.z}; Sound.sfx('secret'); }
@@ -174,7 +190,6 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
   if(NP1.seq){ np1SeqUpd(dt); return; }
   if(NP1.done||!tpsOn()) return; /* no moves in cutscenes */
   // a perfect dodge: an attack inside its window is a dodge counter
-  if(NP1.pdT>Game.time&&twParryClock()>NP1.pdFrom){ np1Counter(); return; }
   if(NP1.stunT>0){ NP1.stunT-=dt; if(NP1.stunT<=0){ NB.stunned=0; NP1.cd=.6; } return; }
   if(NP1.gen){ NP1.wait-=dt; while(NP1.gen&&NP1.wait<=0){ const r=NP1.gen.next(); if(r.done){ NP1.gen=null; NP1.cd=rnd(.7,1.2); } else NP1.wait+=r.value; } return; }
   NP1.cd-=dt; const [,,d]=np1Dir();
@@ -200,9 +215,12 @@ function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stun
 (function(){ const fb=fireBeam; fireBeam=function(big,quiet,o){ if(tpsFight()&&o&&o.ali&&NB){ const P=Player; P.ang=Math.atan2(NB.z-P.z,NB.x-P.x); } return fb.apply(this,arguments); }; })();
 (function(){ const ub=updateBeams; updateBeams=function(dt){ try{ if(tpsFight()&&NB) for(const b of BEAMS){ if(!b.ali||b.hit.has(NB)) continue; b.trav=(b.trav||0)+b.sp*dt; const ahead=(NB.x-b.x)*b.dx+(NB.z-b.z)*b.dz; if(ahead>-1&&b.trav<90) b.life=Math.max(b.life,.5); } }catch(e){ console.error('np1 getsuga',e); } return ub.apply(this,arguments); }; })();
 // during a perfect dodge the attack is always the dodge counter, never the mini Judgement Cut (the banked parries stay)
-(function(){ const mj=twMiniJC; twMiniJC=function(){ if(tpsFight()&&NP1.pdT>Game.time){ Player.swingT=Game.time; return; } return mj.apply(this,arguments); }; })();
+(function(){ const mj=twMiniJC; twMiniJC=function(){ if(tpsFight()&&NP1.seq&&NP1.seq.k==='pdodge'){ return; } return mj.apply(this,arguments); }; })();
 // the blink: its time, for the perfect dodge
-(function(){ const at=aliTeleport; aliTeleport=function(){ NP1.blinkT=Game.time; try{ if(NP1.lunge&&NB&&Math.hypot(NB.x-Player.x,NB.z-Player.z)<3.8) NP1.pdPending=1; }catch(e){} return at.apply(this,arguments); }; })(); /* a blink while his lunge is about to land = perfect */
+(function(){ const at=aliTeleport; aliTeleport=function(mx,mz){ NP1.blinkT=Game.time;
+    try{ if(NP1.lunge&&NB&&!NP1.seq&&Math.hypot(NB.x-Player.x,NB.z-Player.z)<3.8){ const P=Player, [dx,dz]=np1Dir(); let ux=mx||0, uz=mz||0;
+        if(Math.hypot(ux,uz)<.1||(ux*dx+uz*dz)<-.6*Math.hypot(ux,uz)){ ux=-dz; uz=dx; } /* no input (or straight into him): sidestep */ np1PerfectDodge(ux,uz); return; } }catch(e){ console.error('np1 dodge',e); }
+    return at.apply(this,arguments); }; })(); /* a blink while his lunge is about to land = the perfect dodge, not a teleport */
 // retries and leaving the fight start phase I over
 (function(){ const nr=nbRespawn; nbRespawn=function(){ np1Reset(); return nr.apply(this,arguments); }; })();
 (function(){ const rm=nbRemove; nbRemove=function(){ np1Reset(); return rm.apply(this,arguments); }; })();
@@ -216,12 +234,14 @@ function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stun
       D.save(); D.globalAlpha=a; D.fillStyle='rgba(6,10,20,.75)'; D.fillRect(bx-4,by-24,bw+8,40); D.font=`800 16px ${FB}`; D.fillStyle='#bfefff'; D.textAlign='left'; D.fillText('NATHAN',bx,by-8);
       D.textAlign='right'; D.fillStyle=NP1.done?'#ffd45a':'#7fdcff'; D.fillText(NP1.done?'PHASE I CLEARED':'PHASE I',bx+bw,by-8); D.fillStyle='#14202c'; D.fillRect(bx,by,bw,10);
       D.fillStyle=NB&&NB.stunned?'#ffffff':'#3ff4ff'; D.fillRect(bx,by,bw*k,10); D.strokeStyle='#bfefff'; D.lineWidth=1; D.strokeRect(bx+.5,by+.5,bw-1,9); D.restore();
+      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.08&&Q.t<1.05){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,(1.05-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
+        D.font=`800 ${TT?18:18}px ${FB}`; D.lineWidth=4; D.strokeText(K('attack'),0,30); D.fillStyle='#ffffff'; D.fillText(K('attack'),0,30); D.restore(); }
       const H=NP1.hint; if(H){ H.t+=1/60; if(H.t>H.dur) NP1.hint=null; else { const al=Math.min(1,H.t*4,(H.dur-H.t)*3); D.save(); D.globalAlpha=al; D.font=`800 ${TT?20:22}px ${FB}`; D.textAlign='center'; D.lineWidth=5; D.strokeStyle='#06101c'; D.strokeText(H.text,UW/2,UH*.2); D.fillStyle='#e8f6ff'; D.fillText(H.text,UW/2,UH*.2); D.restore(); } }
     }catch(e){ console.error('np1 ui',e); } }; })();
 // Ali's iaido for the dodge counter (img/ali/ali_iai.png: 96px cells, columns = facings S..SW, 18 rows = the sword draw,
 // cut and re-sheathe): he faces the camera, draws and cuts as he lands, holds while the cuts rain, sheathes on the boom
 const ALI_IAI={img:null,ok:false,off:null,N:18,feet:77};
-(function(){ try{ const im=new Image(); im.onload=()=>{ ALI_IAI.ok=im.width>0; }; im.src='img/ali/ali_iai.png'; ALI_IAI.img=im; }catch(e){} })();
+(function(){ try{ const im=new Image(); im.onload=()=>{ ALI_IAI.ok=im.width>0; }; im.src='img/ali/ali_iai.png?v=2'; ALI_IAI.img=im; }catch(e){} })();
 function aliIaiFrame(t){ const k=t<.14?.1:t<.45?.1+(t-.14)/.31*.25:t<.95?.35+(t-.45)/.5*.25:t<1.15?.6+(t-.95)/.2*.3:Math.min(1,.9+(t-1.15)*.4); return Math.min(ALI_IAI.N-1,Math.floor(k*ALI_IAI.N)); }
 (function(){ const da=drawAliHD; drawAliHD=function(c,cx,by,f,s){ if(!s||s.anim!=='aliIai') return da.apply(this,arguments);
     if(!ALI_IAI.ok){ return da.call(this,c,cx,by,f,Object.assign({},s,{anim:'charge'})); }

@@ -1,5 +1,5 @@
 // =====================================================================
-// THE NAVEL (PAUL EXTREME): a Titan Extreme recreation with Paul as the boss.
+// THE CRUNCH (PAUL EXTREME; was the Navel): a Titan Extreme recreation with Paul as the boss.
 // Seven AI party members do every mechanic perfectly; the player only has to
 // survive. One mistake is death, and death restarts the whole fight.
 // =====================================================================
@@ -73,7 +73,7 @@ function pfStart(){ twEndFight(); twClearAllies(); TW.giant=null; Game.boss=null
   const ring=ids.length; PF.members.forEach((m,i)=>{ const a=Math.PI/2+(i-ring/2)*.38; m.x=PF_C.x+Math.cos(a)*7; m.z=PF_C.z+Math.sin(a)*7; m.tx=m.x; m.tz=m.z; });
   const me=pfP(); resetPlayer({x:me.x,z:me.z},true); Player.maxHp=12; Player.hp=12; Player.sp=0; Player.counter=0; Game.paulLock=true; Game.arena=null; Cam.zoom=1.25; Cam.focus=null; TW.paulFight=PF; }
 function pfRestart(){ Game.fxUpd=[]; twSweep(false); pfStart(); Game.state='play'; Game.fade=1; Game.fadeTo=0; Game.letterTo=0; Cam.cine=null; Sound.play('seraph'); PF.started=1; PF.gen=pfTimeline(); PF.wait=2.5;
-  Game.banner={name:'The Navel (Paul Extreme)',sub:'Restarted from the top. No checkpoints. Paul is laughing.',t:0,small:1}; }
+  Game.banner={name:'The Crunch (Paul Extreme)',sub:'Restarted from the top. No checkpoints. Paul is laughing.',t:0,small:1}; }
 (function(){ const rs=respawn; respawn=function(){ if(TW.paulFight&&L&&L.key==='paul'&&!TW.paulWon){ Game.state='play'; pfRestart(); return; } return rs(); };
   const us=unstuck; unstuck=function(){ if(TW.paulFight&&L&&L.key==='paul'&&!TW.paulWon){ Voice.stop(); Object.assign(Game,{script:null,wait:null,dlg:null,timeScale:1,slowT:0,evaCard:null,card:null,banner:null}); pfRestart(); return; } return us(); }; })();
 
@@ -233,7 +233,7 @@ function pfRoleIcon(x,y,role){ D.save(); D.translate(x,y); D.fillStyle=role==='t
   else if(role==='healer'){ D.fillRect(-2,-7,4,14); D.fillRect(-7,-2,14,4); } else { D.save(); D.rotate(-Math.PI/4); D.fillRect(-1.5,-8,3,12); D.fillRect(-4,3,8,2); D.restore(); } D.restore(); }
 function pfDrawUI(){ if(!PF||L.key!=='paul') return; const t=performance.now()/1000;
   // party list
-  const x0=16, y0=96; D.fillStyle='rgba(10,10,18,.55)'; D.fillRect(x0-6,y0-26,246,8*46+34); D.font=`700 12px ${FB}`; D.fillStyle='#d8d0b8'; D.fillText('PARTY  ·  The Navel (Paul Extreme)',x0,y0-10);
+  const x0=16, y0=96; D.fillStyle='rgba(10,10,18,.55)'; D.fillRect(x0-6,y0-26,246,8*46+34); D.font=`700 12px ${FB}`; D.fillStyle='#d8d0b8'; D.fillText('PARTY  ·  The Crunch (Paul Extreme)',x0,y0-10);
   PF.members.forEach((m,i)=>{ const y=y0+i*46; if(m.isPlayer){ D.strokeStyle='#ffd45a'; D.lineWidth=2; D.strokeRect(x0-4,y-4,240,42); }
     pfRoleIcon(x0+12,y+14,m.role); D.font=`700 14px ${FB}`; D.fillStyle='#f0ece0'; D.fillText((i+1)+'  '+m.name,x0+30,y+10); D.font=`600 10px ${FB}`; D.fillStyle='#a8a090'; D.fillText('Lv90 '+PF_JOB[m.id],x0+168,y+10);
     D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(x0+30,y+16,180,8); const k=m.shown; D.fillStyle=k<.3?'#e04a4a':k<.6?'#e0c04a':'#7ad06a'; D.fillRect(x0+30,y+16,180*k,8);

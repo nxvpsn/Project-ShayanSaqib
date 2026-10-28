@@ -14,7 +14,7 @@ function pfRemoveFx(m,col){ const y=(m.y||0)+1.4; FX.burst(m.x,y,m.z,40,col||0x5
 function* twPaulIntro(){ const P=Player; yield fadeOut(); pfStart(); TWS.paulTries=(TWS.paulTries||0)+1; twSave(); PF.uiK=0; PF.fly={caotan:1,omar:1,hamza:1}; PF.mechOn=true; Game.state='cut'; Game.letterTo=1; Sound.stop();
   const Pa=PF.paul; Pa.x=PF_C.x; Pa.z=PF_C.z-1; P.hidden=false; Game.fade=1; cineSet(PF_C.x,14,PF_C.z+28,PF_C.x,0,PF_C.z); yield fadeIn(); Sound.sfx('drone'); Sound.play('requiem');
   const orb=twOrbit({x:PF_C.x,y:0,z:PF_C.z},24,9,-.6,.6,6,1); yield wait(1.4);
-  yield say('paul',"Welcome to the Navel. Population: everyone I ever wrote."); orb.dead=1;
+  yield say('paul',"Welcome to the Crunch. Population: everyone I ever wrote."); orb.dead=1;
   const shot=(id,d)=>{ const m=pfMem(id); cineSet(m.x+.8,(m.y||0)+2.4,m.z+(d||7),m.x,(m.y||0)+1.4,m.z); };
   shot('grimmaw',9); yield say('grimmaw',"Where... is this? Why is the floor made of numbers?");
   shot('nathan',10); yield say('nathan',"My sensors can't read this place. It's like the whole universe was made in a single HTML file.");
@@ -45,7 +45,7 @@ function* twPaulIntro(){ const P=Player; yield fadeOut(); pfStart(); TWS.paulTri
   yield say('paul',"Oh, and I gave everyone a role. Two tanks, two healers, four DPS. You're welcome. It's called game design.");
   const ui={k:0}; PF.uiK=0; Game.fxUpd.push(dt=>{ ui.k=Math.min(1,ui.k+dt*1.5); if(PF) PF.uiK=ui.k; return ui.k<1; }); Sound.sfx('secret');
   yield say(HERO(),ALI()?"Two tanks. Two healers. Four DPS. ...Fine. I'll punch him.":"Wait, what's a DPS? Am I a DPS? I'm a BLACKSMITH!");
-  evaCard(['THE NAVEL','PAUL EXTREME'],2.4,1); Sound.sfx('slam'); yield wait(2.4); card('Paul','The Game Developer (Extreme)'); yield wait(1);
+  evaCard(['THE CRUNCH','PAUL EXTREME'],2.4,1); Sound.sfx('slam'); yield wait(2.4); card('Paul','The Game Developer (Extreme)'); yield wait(1);
   yield cineTo([P.x,P.y+9,P.z+16],[P.x,P.y,P.z],.8); Cam.cine=null; Game.letterTo=0; PF.uiK=1; PF.started=1; PF.gen=pfTimeline(); PF.wait=1; Sound.play('seraph');
   Game.banner={name:'Duty Commenced',sub:'One hit from a mechanic is death. Your party will carry the damage. Just survive.',t:0}; }
 
