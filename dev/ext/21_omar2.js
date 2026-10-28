@@ -119,19 +119,24 @@ function twMoonTex(col){ TW._mt=TW._mt||{}; if(TW._mt[col]) return TW._mt[col]; 
 function twMoonShadow(col){ const g=new THREE.Group(), sh=new THREE.Mesh(new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false,fog:false})),
     rg=new THREE.Mesh(new THREE.RingGeometry(.54,.65,28),new THREE.MeshBasicMaterial({color:OM_MOON_HEX[col],transparent:true,opacity:.7,depthWrite:false,fog:false,side:THREE.DoubleSide}));
   sh.rotation.x=rg.rotation.x=-Math.PI/2; g.add(sh,rg); g.userData.tw=1; scene.add(g); return g; }
-// moon scythes fly 25% slower than they did (curve and swirl), and keep apart: centres at least OM_MOON_GAP apart
-// (their touch radius is 1, so 4 leaves a whole hitbox (2) of room between any two; they never overlap)
-const OM_MOON_SLOW=.75, OM_MOON_GAP=4;
-function twMoonSep(s,x,z){ let ax=0, az=0; for(const o of (TW._moonS||[])){ if(o===s||o.done||o.px==null) continue; const dx=x-o.px, dz=z-o.pz, d=Math.hypot(dx,dz);
-    if(d<OM_MOON_GAP){ const a=d>1e-3?Math.atan2(dz,dx):s.turn*9, k=(OM_MOON_GAP-d)/2; ax+=Math.cos(a)*k; az+=Math.sin(a)*k; } } /* each moves half, so both together make the full gap */
+// moon scythes of opposite colours never run into each other: their centres stay OM_MOON_GAP apart (touch radius 1 each,
+// so their hitboxes never overlap); same-colour ones pass through each other as before
+const OM_MOON_GAP=2.2; /* a little over 2: they settle a hair inside it, still clear of touching */
+function twMoonSep(s,x,z){ let ax=0, az=0; for(const o of (TW._moonS||[])){ if(o===s||o.done||o.px==null||o.col===s.col) continue; const dx=x-o.px, dz=z-o.pz, d=Math.hypot(dx,dz);
+    if(d<OM_MOON_GAP){ const a=d>1e-3?Math.atan2(dz,dx):s.turn*9, k=(OM_MOON_GAP-d)/2; ax+=Math.cos(a)*k; az+=Math.sin(a)*k; twMoonClink(s,o,x,z,Math.cos(a),Math.sin(a)); } } /* each moves half, so both together make the full gap */
   return [ax,az]; }
-function twMoonScythe(T,col,side,dur){ dur/=OM_MOON_SLOW; const m=twBB(twMoonTex(col),1.5,1.5,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
+// when they meet they clink off each other like a deflect: a spark and a ping, and they bounce apart (at most every .5s per moon)
+function twMoonClink(s,o,x,z,nx,nz){ const t=Game.time; if((s.clinkT||0)>t||(o.clinkT||0)>t) return; s.clinkT=o.clinkT=t+.5;
+  const mx=(x+o.px)/2, mz=(z+o.pz)/2, my=groundY(mx,mz)+1.2; Sound.sfx('deflect'); FX.spark(mx,my,mz); FX.burst(mx,my,mz,8,OM_MOON_HEX[s.col],4,.2); FX.burst(mx,my,mz,8,OM_MOON_HEX[o.col],4,.2);
+  for(const [q,k] of [[s,1],[o,-1]]){ const dot=q.vx*nx*k+q.vz*nz*k; if(dot<0){ q.vx-=2*dot*nx*k; q.vz-=2*dot*nz*k; } /* swirling: its heading bounces off */
+    q.ox=(q.ox||0)+nx*k*.6; q.oz=(q.oz||0)+nz*k*.6; } } /* curving: a little knock off its path, which fades */
+function twMoonScythe(T,col,side,dur){ const m=twBB(twMoonTex(col),1.5,1.5,{ro:6}), g=twMoonShadow(col); m.userData.tw=1; const P=Player, V=twViewBox(), cl=(x,z)=>[clamp(x,V.x0,V.x1),clamp(z,V.z0,V.z1)];
   const a=Math.atan2(P.z-T.z,P.x-T.x), px=-Math.sin(a)*side, pz=Math.cos(a)*side, [x0,z0]=cl(T.x+px*1.2,T.z+pz*1.2), d=Math.hypot(P.x-T.x,P.z-T.z), [cx,cz]=cl((T.x+P.x)/2+px*Math.max(5,d*.7),(T.z+P.z)/2+pz*Math.max(5,d*.7));
   const s={col,t:0,done:false,ex:P.x,ez:P.z,px:x0,pz:z0,vx:0,vz:0,ox:0,oz:0,turn:(Math.random()<.5?1:-1)*rnd(.6,1.2)}; Sound.sfx('swing'); (TW._moonS=(TW._moonS||[]).filter(o=>!o.done&&o.t<4)).push(s);
   return twHz({upd(dt,play){ if(play) s.t+=dt; const P2=Player, u=Math.min(1,s.t/dur); if(u<.75){ s.ex=P2.x; s.ez=P2.z; }
       let x, z; if(u<1){ x=(1-u)*(1-u)*x0+2*(1-u)*u*cx+u*u*s.ex+s.ox; z=(1-u)*(1-u)*z0+2*(1-u)*u*cz+u*u*s.ez+s.oz; }
       else { // after its curve it keeps flying around inside the view: a slow swirl, bouncing off the edges of the screen
-        const V2=twViewBox(), sp=9*OM_MOON_SLOW, k=play?dt:0; let a2=Math.atan2(s.vz,s.vx)+s.turn*k; s.vx=Math.cos(a2)*sp; s.vz=Math.sin(a2)*sp; x=s.px+s.vx*k; z=s.pz+s.vz*k;
+        const V2=twViewBox(), sp=9, k=play?dt:0; let a2=Math.atan2(s.vz,s.vx)+s.turn*k; s.vx=Math.cos(a2)*sp; s.vz=Math.sin(a2)*sp; x=s.px+s.vx*k; z=s.pz+s.vz*k;
         if(x<V2.x0){ x=V2.x0; s.vx=Math.abs(s.vx); } if(x>V2.x1){ x=V2.x1; s.vx=-Math.abs(s.vx); } if(z<V2.z0){ z=V2.z0; s.vz=Math.abs(s.vz); } if(z>V2.z1){ z=V2.z1; s.vz=-Math.abs(s.vz); } }
       if(play) try{ const [ax,az]=twMoonSep(s,x,z), V3=twViewBox(); s.ox=(s.ox+ax)*Math.max(0,1-dt*.6); s.oz=(s.oz+az)*Math.max(0,1-dt*.6); /* the push fades once they are clear */
         x=clamp(x+ax,V3.x0,V3.x1); z=clamp(z+az,V3.z0,V3.z1); }catch(e){ console.error('moon gap',e); }
