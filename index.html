@@ -13969,6 +13969,15 @@ function thCockpitOn(D,x,y,w,h,T,N){ const now=performance.now(), t=now/1000, hi
 
 // the Hamza song keeps going through this section's cutscenes (they used to switch to the requiem)
 (function(){ const pl=Sound.play; Sound.play=function(name){ if(name==='requiem'&&Game.mech&&MP3.want&&MP3.want.name==='hamza') return; return pl.apply(this,arguments); }; })();
+// ---------- subtitles in the bullet hell: off the playfield (your ship sits low; the usual bottom-centre box could cover your hitbox) ----------
+// in the empty left panel when it's wide enough, otherwise along the top edge of the field
+(function(){ const ds=drawSubtitle; drawSubtitle=function(){ const s=Game.subtitle, T=Game.mech&&Game.mech.th; if(!s||Game.dlg||!T||!(T.panel>.01)) return ds.apply(this,arguments);
+    try{ s.t+=1/60; if(s.t>2.6){ Game.subtitle=null; return; } const F=thField(), nm=NAMES[s.who]||'', side=F.x-32>=170;
+      const x=side?16:F.x+10, w=side?F.x-32:F.w-20; D.save(); D.globalAlpha=Math.min(1,(2.6-s.t)*3)*Math.min(1,T.panel);
+      D.font=`600 17px ${FB}`; const lines=wrap(s.text,w-20), lh=22, h=(nm?26:8)+lines.length*lh+10, y=side?Math.round(UH*.42-h/2):F.y+8;
+      D.fillStyle='rgba(8,4,14,.82)'; D.fillRect(x,y,w,h); D.fillStyle='#e3b65a'; D.fillRect(x,y,w,2);
+      let ty=y+8; if(nm){ uText(nm,x+10,ty+14,`800 15px ${FB}`,'#f3dfae'); ty+=22; } D.font=`600 17px ${FB}`; D.fillStyle='#f6f0ff'; D.textAlign='left'; lines.forEach((l,i)=>D.fillText(l,x+10,ty+16+i*lh)); D.restore(); }
+    catch(e){ console.error('th subtitle',e); return ds.apply(this,arguments); } }; })();
 
 // ----- 80_misc.js -----
 // ---------- small glue ----------
