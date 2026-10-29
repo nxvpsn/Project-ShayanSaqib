@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.37 (Oct 29): Kojima's crew redrawn: Boxheads (a cardboard box over the head, a bandana, a boom-mic pole) and Silverbobs (a silver bob, a white coat, a shoulder camera or a clipboard), and the Hydra of Boxes (cardboard-box heads on cable necks). Inspired by, no longer copies of.";
-const DBG_NEW=['grimmaw:*'];
+const DBG_PATCH="v1.38 (Oct 29): Kojima's laser dome is gone: at half of phase III he hides in one of twenty cardboard boxes (the real one shakes; wrong ones blow up; find him and he is staggered 3.2s); he shows the stun meter; the eye dive into phase II no longer leaves a block of his pupil on screen. Big Back Hamza: Pork Roll and Stampede are one parryable rolling rush (he spins), Quake is gone, Bounce and Flop landings are parried by attacking as he comes down, their lock-on is looser, and Babies sends ten.";
+const DBG_NEW=['grimmaw:*','hamza:stampede','hamza:bounce','hamza:flop','hamza:babies'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -49,7 +49,7 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
 function dbgLCs(){ if(dbgNP1()) return []; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
   duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
   hamza:[['Buffet (limit cut)','buffet',2],['Frenzy (finale)','frenzy',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
-  grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Armor dome (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
+  grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
 // ---------- actions ----------
 function dbgToggle(){ if(TLM.open) twTimelineClose(null); if(DBG.on){ dbgOpen(false); DBG.on=false; dbgSay(''); return false; } DBG.on=true; DBG.tab=DBG.boss?'moves':'setup'; DBG.wantOpen=1; DBG.ali=ALI(); if(TW.god==null) TW.god=true; TW.god=true; dbgArena(null); return true; }
@@ -100,7 +100,7 @@ function dbgKill(){ const b=DBG.boss, ot=TW.otk; TW.otk=false;
     else if(b==='nathan'&&NB&&dbgNP1()){ np1Clear(); nbDamage(NP1.hp+1,'np1'); }
     else if(b==='nathan'&&NB){ NB.lcA=NB.lcB=1; NB.inv=false; const p=NB.phase, bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; nbDamage(NB.bars-bot+.01); }
     else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss, T=Game.mech.th; if(T){ T.tick=thTicks(T.ph).length; T.finDone=1; } B.vuln=true; mechDamage(B.hp+1,0,0,0,true); }
-    else if(b==='grimmaw'&&dbgKJ()){ const K=Game.boss; if(K.state==='dome'){ K.armor=0; damageBoss(1); } else { K.inv=false; if(['kj','twcombo'].includes(K.state)){ K.state='idle'; K.kjg=K.twg=null; } damageBoss(K.hp+1); } } } finally{ TW.otk=ot; } }
+    else if(b==='grimmaw'&&dbgKJ()){ const K=Game.boss; if(K.state==='dome'){ K.armor=0; damageBoss(1); } else if(K.state==='boxes'){ kjBoxesEnd(K,true); } else { K.inv=false; if(['kj','twcombo'].includes(K.state)){ K.state='idle'; K.kjg=K.twg=null; } damageBoss(K.hp+1); } } } finally{ TW.otk=ot; } }
 function dbgLC(kind,ph){ const b=DBG.boss; DBG.last={a:'lc',k:kind,ph}; if(kind==='kill'){ if(dbgPhase()!==ph) dbgSetPhase(ph); dbgKill(); dbgSay('Phase change'); return; }
   if(b==='grimmaw'){ dbgKJLC(kind,ph); return; }
   if(dbgPhase()!==ph&&kind!=='frenzy'&&kind!=='over') dbgSetPhase(ph); twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
@@ -115,7 +115,7 @@ function dbgLC(kind,ph){ const b=DBG.boss; DBG.last={a:'lc',k:kind,ph}; if(kind=
   dbgSay('Running: '+((dbgLCs().find(q=>q[1]===kind&&q[2]===ph)||[kind])[0])); }
 // Kojima's phase changes run his real scripts (they also move him to the next arena)
 function dbgKJLC(kind,ph){ const K=dbgKJ(); if(!K){ dbgSay('Kojima is not on the field yet'); return; } twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; }); K.kjg=K.twg=null;
-  if(kind==='kjdome'){ if(K.phase!==3){ dbgSay('The dome is phase III (Garden of Stars): use the II → III change first'); return; } if(K.domeDone){ dbgSay('The dome already broke this fight'); return; } K.state='idle'; K.hp=Math.min(K.hp,K.maxHp/2); startDome(K); }
+  if(kind==='kjdome'){ if(K.phase!==3){ dbgSay('The box hunt is phase III (Garden of Stars): use the II → III change first'); return; } if(K.domeDone){ dbgSay('The box hunt already ran this fight'); return; } K.state='idle'; K.hp=Math.min(K.hp,K.maxHp/2); startDome(K); }
   else { if((K.phase||1)!==ph){ dbgSay('That change starts from phase '+['','I','II','III'][ph]+'; he is in phase '+['','I','II','III'][K.phase||1]); return; } K.state='idle'; startSpecial(K); }
   dbgSay('Running: '+((dbgLCs().find(q=>q[1]===kind&&q[2]===ph)||[kind])[0])); }
 

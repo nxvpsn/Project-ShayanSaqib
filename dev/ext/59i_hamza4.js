@@ -35,3 +35,35 @@ function hzgPigletNear(A,r){ let best=null, bd=r; for(const m of MOBS){ if(m.typ
           if(A.who==='caotan'){ A.cd=rnd(2.4,3); A.push=.4; A.glintT=.4; Sound.sfx('beam'); A.anim='beam'; for(let i=0;i<3;i++) twAllyShot(A,o,tg,0xff8ab0,.9,'ball',i*.16); twBark('caotan',["Goo volley! For senpai!","Triple shot! I never miss! ...twice."][Math.floor(Math.random()*2)]); }
           else { A.cd=rnd(2.8,3.4); A.cast=.4; Sound.sfx('swing'); A.anim='beam'; twAllyShot(A,o,tg,0x9a4aff,2.2,'crescent',0); twBark('omar',["A crescent. Catch.","I throw these at my problems. You are a problem, pig."][Math.floor(Math.random()*2)]); }
           return ua.apply(this,arguments); } } } }catch(e){ console.error('hamza allies',e); } return ua.apply(this,arguments); }; })();
+
+// ---------- round 4b: Pork Roll Stampede (one parryable rolling rush), no Quake, parryable Bounce/Flop landings, ten babies ----------
+HZG_POOL[1]=['bounce','flop','stampede','babies','stampede']; HZG_POOL[2]=['bounce','flop','stampede','babies','meteor','babyRain','belly','stampede']; /* roll and quake are gone */
+// the stampede is the roll now: he spins along the line (the sprite rolls), parryable with the silver slash, dropping babies on the way
+HZG.stampede=function*(G,ph){ const sp=hzgSp2(G), n=ph>=2?4:3; twBark('hamza',["PORK ROLL! I'm a sushi now! A FAST sushi!","Bismillah... ROLL! Children, hold on to Daddy!"][Math.floor(Math.random()*2)],true);
+  for(let k=0;k<n;k++){ const P=Player, a=Math.atan2(P.z-G.z,P.x-G.x), d=Math.min(18,Math.hypot(P.x-G.x,P.z-G.z)+4); FX.line(G.x,G.z,a,d,3.4,0xff3a5a,.6/sp); G.mouth=0; Sound.sfx('pigrumble'); const from=Game.time+TW_STRICT.grace; yield .6/sp;
+    Sound.sfx('dash'); Sound.sfx('pigroar'); G.roll=1; const s={t:0,hit:false,dur:d/(20*sp),drop:ph>=2||k===1};
+    twHz({upd(dt,play){ if(!play) return true; s.t+=dt; G.x+=Math.cos(a)*20*sp*dt; G.z+=Math.sin(a)*20*sp*dt; const c=twClampXZ(G.x,G.z,2); G.x=c.x; G.z=c.z; G.rollA=(G.rollA||0)-dt*14*(Math.cos(a)>=0?1:-1); if(!s.hit) twRushTell(G,a,1.6); FX.spawn(G.x+rnd(-1,1),groundY(G.x,G.z)+.3,G.z+rnd(-1,1),rnd(-2,2),rnd(1,3),rnd(-2,2),.5,0xd8c0c8,.4,8,false);
+      const P2=Player; if(!s.hit&&Math.hypot(P2.x-G.x,P2.z-G.z)<2.3&&P2.y<G.y+2){ if(twStrictDo(from,()=>twHitP(3,G.x,G.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ G.stun=Math.max(G.stun,1.4); Game.dmgNums.push({x:G.x,y:G.y+4,z:G.z,n:'STAGGERED',t:0,col:'#ffd45a'}); }}))!=='none') s.hit=true; }
+      if(s.drop&&s.t>s.dur*.5){ s.drop=false; hzgBaby(G.x,G.z,{vx:-Math.cos(a)*3+rnd(-2,2),vz:-Math.sin(a)*3+rnd(-2,2),vy:6}); Sound.sfx('oink'); } const on=s.t<s.dur; if(!on) G.roll=0; return on; }, kill(){ G.roll=0; }});
+    yield d/(20*sp)+.25; G.roll=0; G.mouth=0; shake(.4); }
+  G.rollA=0; yield .5; };
+HZG.roll=HZG.stampede; HZG.quake=function*(G,ph){ yield* HZG.stampede(G,ph); }; /* the old keys run the roll stampede (Debug Mode lists, old bags) */
+// the sprite spins while he rolls (after the draw places it)
+(function(){ const ds=drawSprites; drawSprites=function(){ const r=ds.apply(this,arguments); try{ const G=TW.giant; if(gpSprite&&gpSprite.mesh){ const want=G&&G.roll?(G.rollA||0):0; gpSprite.mesh.rotation.z=G&&G.roll?want:gpSprite.mesh.rotation.z*(G?.8:0); if(!G||!G.roll){ if(Math.abs(gpSprite.mesh.rotation.z)<.02) gpSprite.mesh.rotation.z=0; } } }catch(e){} return r; }; })();
+// Bounce and Flop: attack as he comes down and the landing is parried (he staggers); the silver slash shows on the way down
+HZG.bounce=function*(G,ph){ const sp=hzgSp2(G); twBark('hamza',"Bismillah... BOUNCE! Bismillah... BOUNCE!",true); G.landParry=1;
+  try{ for(let k=0;k<(ph>=2?4:3);k++){ const P=Player, last=k===(ph>=2?3:2); yield* hzgLeap(G,P.x+P.vx*.4,P.z+P.vz*.4,(k?.75:.95)/sp,last?7:4.5,2.6,3,last?2:0,true); yield .18; } } finally{ G.landParry=0; }
+  yield .6; };
+HZG.flop=function*(G,ph){ twBark('hamza',ph>=2?"DOUBLE FLOP. Bismillah.":"Belly flop! Oink!",true); G.landParry=1;
+  try{ for(let k=0;k<(ph>=2?2:1);k++){ const P=Player; yield* hzgLeap(G,P.x+P.vx*.4,P.z+P.vz*.4,1,7,3,3,ph>=2?2:1,true); yield .55; } } finally{ G.landParry=0; } };
+(function(){ const hl=hzgLand; hzgLand=function(G,r,dmg,rings){ if(!G.landParry||!dmg) return hl.apply(this,arguments); const P=Player, from=G.landFrom||Game.time;
+    const gy=groundY(G.x,G.z); Sound.sfx('slam'); Sound.sfx('crash'); shake(r>3?1.1:.7); FX.burst(G.x,gy+.4,G.z,50,0xd8c0c8,8,.45,false); FX.ring(G.x,gy,G.z,'#ffb0c8',r*1.6,.5);
+    for(let i=0;i<16;i++){ const a=i/16*6.283; FX.spawn(G.x+Math.cos(a)*r,gy+.3,G.z+Math.sin(a)*r,Math.cos(a)*5,rnd(2,5),Math.sin(a)*5,.6,i%2?0xffb0c8:0x8a6a44,.35,12,false); }
+    if(twInR(G.x,G.z,r,99)) twStrictDo(from,()=>twHitP(dmg,G.x,G.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ G.stun=Math.max(G.stun,1.4); Game.dmgNums.push({x:G.x,y:G.y+4,z:G.z,n:'PARRIED',t:0,col:'#ffd45a'}); Sound.sfx('parry'); }}));
+    for(let k=0;k<(rings||0);k++) twWave(G.x,G.z,{col:0xffb0c8,sp:8+k,max:13,delay:k*.45,r0:r}); }; })();
+(function(){ const hl=hzgLeap; hzgLeap=function*(G,tx,tz,up,h,r,dmg,rings,track){ G.landFrom=Game.time+TW_STRICT.grace; const it=hl.apply(this,arguments); let rr; while(!(rr=it.next()).done){ try{ if(G.landParry&&G.air>0&&G.air<h*.7&&typeof twRushTell==='function'){ const P=Player; twRushTell(G,Math.atan2(P.z-G.z,P.x-G.x),1.6); } }catch(e){} yield rr.value; } }; })();
+// ten babies
+HZG.babies=function*(G,ph){ const n=10; twBark('hamza',"Go, my children! My beautiful piglet children! ALL TEN OF YOU! Bite the blacksmith!",true); G.mouth=1; Sound.sfx('oink');
+  for(let i=0;i<n;i++){ const P=Player, a=rnd(0,6.28), r=rnd(2.5,4.5), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), T=.8;
+    hzgBaby(G.x,G.z,{vx:(p.x-G.x)/T,vz:(p.z-G.z)/T,vy:G_ACC*T/2}); FX.burst(G.x,G.y+3,G.z,10,0xffb0c8,3,.3); yield .14; }
+  G.mouth=0; twBig('10 BABIES',{size:48,col:'#ffb0c8',y:UH*.26,dur:1.1,sub:'Take them out before they get back to Daddy'}); yield 1; };

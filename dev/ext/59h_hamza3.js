@@ -56,7 +56,7 @@ function hzgLand(G,r,dmg,rings){ const gy=groundY(G.x,G.z); Sound.sfx('slam'); S
 function hzgDecalFade(d){ const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; d.material.opacity=Math.max(0,.8-k.t); if(k.t>.8){ scene.remove(d); d.geometry.dispose(); d.material.dispose(); return false; } return true; }); }
 // a leap with a crater shadow; with track, the target follows Shayan until 65% of the way, then locks
 function* hzgLeap(G,tx,tz,up,h,r,dmg,rings,track){ const sx=G.x, sz=G.z; let p=twClampXZ(tx,tz,2.2); const d=twDecal(p.x,p.z,r,'crater'), fe=twFence(p.x,p.z,r,0xffb050,up+.1); G.mouth=.6; Sound.sfx('pigroar');
-  for(let t=0;t<up;t+=1/60){ const u=t/up; if(track&&u<.65){ const P=Player; p=twClampXZ(lerp(p.x,P.x+P.vx*.2,.12),lerp(p.z,P.z+P.vz*.2,.12),2.2); }
+  for(let t=0;t<up;t+=1/60){ const u=t/up; if(track&&u<.45){ const P=Player; p=twClampXZ(lerp(p.x,P.x+P.vx*.1,.07),lerp(p.z,P.z+P.vz*.1,.07),2.2); } /* a loose lock: it drifts after you for under half the leap, then it's committed */
     G.x=lerp(sx,p.x,twEIO(u)); G.z=lerp(sz,p.z,twEIO(u)); G.air=Math.sin(u*Math.PI)*h; d.position.set(p.x,groundY(p.x,p.z)+.05,p.z); d.scale.setScalar(Math.max(.01,r*(.4+.6*u))); d.material.opacity=.5+.4*u; fe.move(p.x,p.z); yield 1/60; }
   fe.kill(); G.x=p.x; G.z=p.z; G.air=0; hzgLand(G,r,dmg,rings); hzgDecalFade(d); G.mouth=0; }
 const hzgSp2=G=>G.phase>=2?1.15:1;
