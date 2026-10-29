@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.36 (Oct 29): Kojima's borrowed moves look like his own now: the blue laser is RED TAPE snapping taut, the pink beam is a PAYWALL of file boxes, the black hole is a paper shredder (the attacks are unchanged). Shayan can strike Ali from the crown of his tree again (his hit box climbs with you).";
-const DBG_NEW=['grimmaw:tape','grimmaw:wall','grimmaw:shredder'];
+const DBG_PATCH="v1.37 (Oct 29): Kojima's crew redrawn: Boxheads (a cardboard box over the head, a bandana, a boom-mic pole) and Silverbobs (a silver bob, a white coat, a shoulder camera or a clipboard), and the Hydra of Boxes (cardboard-box heads on cable necks). Inspired by, no longer copies of.";
+const DBG_NEW=['grimmaw:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
