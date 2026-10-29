@@ -13287,7 +13287,7 @@ TW_SFX.qbRoar=function(){ Sound.hiss(1400,.26,.3,'bandpass'); Sound.hiss(5200,.1
 // ----- 59v_nbp1.js -----
 // =====================================================================
 // NATHAN, PHASE I (Ali's road, the third-person fight of 59t_tps): a real fight on top of the training dummy.
-// Three phases are planned; only phase I exists: at 0 HP he stops dead and the fight goes no further (NP1.done).
+// Only phase I exists: at 0 HP (NP1.done, np1Down) the road ends in the base finale (nbFinale: the mended moon, the memories, the ending).
 // Colour language: a RED flash = parry it (attack just before it lands) or dodge it (blink); a BLUE flash = a grab,
 // only a blink timed at the last moment beats it (a perfect dodge, and attacking during it is a dodge counter).
 //   combo    Assault Boost combo: 3-4 slashes, each after 1-2 quickboosts around you; parry them all = stagger
@@ -13605,7 +13605,10 @@ function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*NP1_ROAM.l
   Game.dmgNums.push({x:NB.x,y:NB.y+4.2,z:NB.z,n:'ASSAULT BOOST',t:0,col:'#9ff8ff'}); }
 function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
   NB.stunned=1; NB.dsh=null; NB.hov=.7; Game.letterTo=0; Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[3,2]]);
-  twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'Phase II is not built yet: the fight stops here',t:0}; }
+  twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'His blade is spent',t:0};
+  // Ali's road ends here: a beat on the broken Nathan, then the finale (nbFinale: the last cut, the mended moon, his memories, the ending)
+  NB.over=1; /* 59n's Overdrive is Shayan's phase IV, not this road's */ try{ tpsCursorFree(); }catch(e){}
+  NB.pend=function*(){ yield wait(1.8); NB.alive=false; NB.inv=true; nbClear(); np1Clear(); NB.stunned=0; NB.hov=1.2; yield* nbFinale(); }; nbPend(); }
 // ---------- hooks ----------
 (function(){ const un=updateNB; updateNB=function(dt){ const r=un.apply(this,arguments); try{ if(tpsFight()) np1Update(dt); }catch(e){ console.error('nathan phase 1',e); } return r; }; })();
 // damage: phase I's own HP; staggered he takes 1.5x; the ultimate is scaled down for this phase
@@ -17472,8 +17475,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.31 (Oct 29): Big Back Hamza fights in a real arena (Pork Roll and Belly Slide no longer run off across the field), the silent contact hit is now a telegraphed, parryable SNOUT SHOVE, he hops back when far instead of trudging, Debug Mode spawns him with the pig and the twins, the twins fight harder (goo volley, thrown crescent, they shoot the babies) and talk more. Every unvoiced line is voiced.";
-const DBG_NEW=['hamza:*'];
+const DBG_PATCH="v1.32 (Oct 29): Ali's road ends after Nathan's phase I: the finale (the last cut, the mended moon, his memories) and the ending play.";
+const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -17935,7 +17938,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.31';
+const GAME_VERSION='v1.32';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

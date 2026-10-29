@@ -1,6 +1,6 @@
 // =====================================================================
 // NATHAN, PHASE I (Ali's road, the third-person fight of 59t_tps): a real fight on top of the training dummy.
-// Three phases are planned; only phase I exists: at 0 HP he stops dead and the fight goes no further (NP1.done).
+// Only phase I exists: at 0 HP (NP1.done, np1Down) the road ends in the base finale (nbFinale: the mended moon, the memories, the ending).
 // Colour language: a RED flash = parry it (attack just before it lands) or dodge it (blink); a BLUE flash = a grab,
 // only a blink timed at the last moment beats it (a perfect dodge, and attacking during it is a dodge counter).
 //   combo    Assault Boost combo: 3-4 slashes, each after 1-2 quickboosts around you; parry them all = stagger
@@ -318,7 +318,10 @@ function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*NP1_ROAM.l
   Game.dmgNums.push({x:NB.x,y:NB.y+4.2,z:NB.z,n:'ASSAULT BOOST',t:0,col:'#9ff8ff'}); }
 function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
   NB.stunned=1; NB.dsh=null; NB.hov=.7; Game.letterTo=0; Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[3,2]]);
-  twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'Phase II is not built yet: the fight stops here',t:0}; }
+  twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'His blade is spent',t:0};
+  // Ali's road ends here: a beat on the broken Nathan, then the finale (nbFinale: the last cut, the mended moon, his memories, the ending)
+  NB.over=1; /* 59n's Overdrive is Shayan's phase IV, not this road's */ try{ tpsCursorFree(); }catch(e){}
+  NB.pend=function*(){ yield wait(1.8); NB.alive=false; NB.inv=true; nbClear(); np1Clear(); NB.stunned=0; NB.hov=1.2; yield* nbFinale(); }; nbPend(); }
 // ---------- hooks ----------
 (function(){ const un=updateNB; updateNB=function(dt){ const r=un.apply(this,arguments); try{ if(tpsFight()) np1Update(dt); }catch(e){ console.error('nathan phase 1',e); } return r; }; })();
 // damage: phase I's own HP; staggered he takes 1.5x; the ultimate is scaled down for this phase
