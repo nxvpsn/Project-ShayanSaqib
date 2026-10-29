@@ -46,7 +46,7 @@ function aliTreeBuild(G){ const X=ALT_TREE.x, Z=ALT_TREE.z, y0=groundY(X,Z), H=A
   G.B[Math.floor(Z)][Math.floor(X)]=false; G.H[Math.floor(Z)][Math.floor(X)]=top+.42; /* the trunk is a climb: push into it from his platform and you mantle up to the crown, where he stands (97_mantle) */
   const T=G.aliTree={x:X,z:Z,y0,top:top+.42,tal,shake:0};
   G.anim.push(dt=>{ try{ const t=performance.now()/1000; T.shake=Math.max(0,T.shake-dt*1.5);
-      for(const n of NPCS) if(n.who==='ali'){ if(n.perch===undefined) n.perch=1; if(n.perch) n.y=y0; } /* his hit box stays on the platform, at the foot of the (solid) trunk */ for(const q of tal) q.m.rotation.z=q.a0+Math.sin(t*1.6+q.ph)*(.05+T.shake*.35);
+      for(const n of NPCS) if(n.who==='ali'){ if(n.perch===undefined) n.perch=1; if(n.perch) n.y=Player.y>y0+3?T.top:y0; } /* his hit box: at the foot while you're down there (talking), up on the crown once you've climbed (the swing's height check) */ for(const q of tal) q.m.rotation.z=q.a0+Math.sin(t*1.6+q.ph)*(.05+T.shake*.35);
       // keep Ali in frame while he is up there: the camera eases up and out near the tree
       const n=NPCS.find(o=>o.who==='ali'&&o.perch), d=Math.hypot(Player.x-X,Player.z-Z), want=n&&Game.state!=='title'?clamp((10-d)/5,0,1):0;
       ALT_TREE.k+=(want-ALT_TREE.k)*Math.min(1,dt*2); if(G.cam){ if(G.cam.up0==null) G.cam.up0=G.cam.up; G.cam.up=G.cam.up0+3*ALT_TREE.k; }
