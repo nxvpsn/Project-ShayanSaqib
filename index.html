@@ -6382,7 +6382,7 @@ function aliTreeBuild(G){ const X=ALT_TREE.x, Z=ALT_TREE.z, y0=groundY(X,Z), H=A
       m.geometry.translate(0,-.275,0); const g=new THREE.Group(); g.position.set(px,ry-.02,pz); g.lookAt(X+lean(ry)+Math.cos(a)*5,ry-.02,Z+Math.sin(a)*5); g.add(m); m.rotation.x=-.12; G.root.add(g); tal.push({m,ph:hash(i,7)*6,a0:(hash(7,i)-.5)*.2}); } }
   // black katanas driven into the trunk
   for(let i=0;i<9;i++){ const a=i*2.1+.5, yy=y0+.9+hash(i,21)*(H-1.6), r=rAt(yy); atKatana(G,X+lean(yy)+Math.cos(a)*(r-.12),yy,Z+Math.sin(a)*(r-.12),a,(hash(21,i)-.5)*.9); }
-  G.B[Math.floor(Z)][Math.floor(X)]=true; /* the trunk is solid */
+  G.B[Math.floor(Z)][Math.floor(X)]=false; G.H[Math.floor(Z)][Math.floor(X)]=top+.42; /* the trunk is a climb: push into it from his platform and you mantle up to the crown, where he stands (97_mantle) */
   const T=G.aliTree={x:X,z:Z,y0,top:top+.42,tal,shake:0};
   G.anim.push(dt=>{ try{ const t=performance.now()/1000; T.shake=Math.max(0,T.shake-dt*1.5);
       for(const n of NPCS) if(n.who==='ali'){ if(n.perch===undefined) n.perch=1; if(n.perch) n.y=y0; } /* his hit box stays on the platform, at the foot of the (solid) trunk */ for(const q of tal) q.m.rotation.z=q.a0+Math.sin(t*1.6+q.ph)*(.05+T.shake*.35);
@@ -6395,6 +6395,8 @@ function aliTreeBuild(G){ const X=ALT_TREE.x, Z=ALT_TREE.z, y0=groundY(X,Z), H=A
     try{ aliTreeBuild(G); const e=G.ents.find(o=>o.type==='npc'&&o.who==='ali'); if(e){ e.x=ALT_TREE.x; e.z=ALT_TREE.z; e.perch=1; }
       const h=G.pick.find(p=>p.kind==='heart'&&Math.abs(p.x-34.8)<.3&&Math.abs(p.z-16.4)<.3); if(h){ h.x=33.9; h.z=17.9; } }catch(e){ console.error('ali tree',e); }
     return G; }; })();
+// up there he can only be struck from up there: a swing or a shot from the foot of the tree does nothing but tell you where he is
+(function(){ const hn=hitNPC; hitNPC=function(n,dmg,ang){ try{ if(n&&n.who==='ali'&&n.perch&&L&&L.aliTree&&Math.abs(Player.y-L.aliTree.top)>1.6){ Sound.sfx('block'); FX.spark(n.x,L.aliTree.top+1.2,n.z); if(!(n.upHintT>Game.time-2)){ n.upHintT=Game.time; Game.dmgNums.push({x:n.x,y:L.aliTree.top+2.4,z:n.z,n:"HE'S UP THERE",t:0,col:'#9a9aa8'}); } return; } }catch(e){ console.error('ali up there',e); } return hn.apply(this,arguments); }; })();
 // the NPC entry carries `perch` over to the spawned NPC
 (function(){ const ds=drawSprites; drawSprites=function(){ ds.apply(this,arguments); try{ for(const n of NPCS){ if(n.who!=='ali') continue;
       
@@ -16416,7 +16418,7 @@ function twVillageClimb(G){ if(!G||!G.destr) return; const edge=(ix,iz)=>iz<=4||
       return r; }
     const [mx,mz]=inputVec(), m=Math.hypot(mx,mz); if(m<.3||P.hurt>0||P.dash>0) return r; const dx=mx/m, dz=mz/m;
     const h=supportH(P.x+dx*.75,P.z+dz*.75,.2); if(h>500) return r; const rise=h-P.y;
-    if(rise>.5&&rise<6.5){ P.mantle={t:0,dur:.16+rise*.07,y0:P.y,y1:h,dx,dz}; P.vx=P.vz=0; Sound.sfx('jump'); FX.burst(P.x,P.y+.2,P.z,8,0xcfc0a0,2,.25,false); }
+    if(rise>.5&&rise<7){ /* 7: Ali's tree (6.6) is the tallest climb */ P.mantle={t:0,dur:.16+rise*.07,y0:P.y,y1:h,dx,dz}; P.vx=P.vz=0; Sound.sfx('jump'); FX.burst(P.x,P.y+.2,P.z,8,0xcfc0a0,2,.25,false); }
     return r; }; })();
 
 // ----- 97b_continuity.js -----
@@ -17430,7 +17432,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.29 (Oct 28): the Starbreaker's level 3: five rainbow glints on the blade flash in order (upper-left, lower-right, lower-left, upper-right, centre), each a Nakamura smear impact frame (scribble streaks over the black-and-white frame); the flare is Ali's charge flames in blue fanning off the blade. The top-down game cages the cursor inside the canvas (a drawn crosshair; Alt frees it).";
+const DBG_PATCH="v1.30 (Oct 29): Ali's tree in Lanternbrook is a climb: push into the trunk from his platform to mantle up to the crown and strike him there (from the foot a strike only says HE'S UP THERE).";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -17893,7 +17895,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.29';
+const GAME_VERSION='v1.30';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

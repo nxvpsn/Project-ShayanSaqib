@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.29 (Oct 28): the Starbreaker's level 3: five rainbow glints on the blade flash in order (upper-left, lower-right, lower-left, upper-right, centre), each a Nakamura smear impact frame (scribble streaks over the black-and-white frame); the flare is Ali's charge flames in blue fanning off the blade. The top-down game cages the cursor inside the canvas (a drawn crosshair; Alt frees it).";
+const DBG_PATCH="v1.30 (Oct 29): Ali's tree in Lanternbrook is a climb: push into the trunk from his platform to mantle up to the crown and strike him there (from the foot a strike only says HE'S UP THERE).";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

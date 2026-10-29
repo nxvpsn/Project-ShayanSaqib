@@ -25,5 +25,5 @@ function twVillageClimb(G){ if(!G||!G.destr) return; const edge=(ix,iz)=>iz<=4||
       return r; }
     const [mx,mz]=inputVec(), m=Math.hypot(mx,mz); if(m<.3||P.hurt>0||P.dash>0) return r; const dx=mx/m, dz=mz/m;
     const h=supportH(P.x+dx*.75,P.z+dz*.75,.2); if(h>500) return r; const rise=h-P.y;
-    if(rise>.5&&rise<6.5){ P.mantle={t:0,dur:.16+rise*.07,y0:P.y,y1:h,dx,dz}; P.vx=P.vz=0; Sound.sfx('jump'); FX.burst(P.x,P.y+.2,P.z,8,0xcfc0a0,2,.25,false); }
+    if(rise>.5&&rise<7){ /* 7: Ali's tree (6.6) is the tallest climb */ P.mantle={t:0,dur:.16+rise*.07,y0:P.y,y1:h,dx,dz}; P.vx=P.vz=0; Sound.sfx('jump'); FX.burst(P.x,P.y+.2,P.z,8,0xcfc0a0,2,.25,false); }
     return r; }; })();

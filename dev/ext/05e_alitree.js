@@ -43,7 +43,7 @@ function aliTreeBuild(G){ const X=ALT_TREE.x, Z=ALT_TREE.z, y0=groundY(X,Z), H=A
       m.geometry.translate(0,-.275,0); const g=new THREE.Group(); g.position.set(px,ry-.02,pz); g.lookAt(X+lean(ry)+Math.cos(a)*5,ry-.02,Z+Math.sin(a)*5); g.add(m); m.rotation.x=-.12; G.root.add(g); tal.push({m,ph:hash(i,7)*6,a0:(hash(7,i)-.5)*.2}); } }
   // black katanas driven into the trunk
   for(let i=0;i<9;i++){ const a=i*2.1+.5, yy=y0+.9+hash(i,21)*(H-1.6), r=rAt(yy); atKatana(G,X+lean(yy)+Math.cos(a)*(r-.12),yy,Z+Math.sin(a)*(r-.12),a,(hash(21,i)-.5)*.9); }
-  G.B[Math.floor(Z)][Math.floor(X)]=true; /* the trunk is solid */
+  G.B[Math.floor(Z)][Math.floor(X)]=false; G.H[Math.floor(Z)][Math.floor(X)]=top+.42; /* the trunk is a climb: push into it from his platform and you mantle up to the crown, where he stands (97_mantle) */
   const T=G.aliTree={x:X,z:Z,y0,top:top+.42,tal,shake:0};
   G.anim.push(dt=>{ try{ const t=performance.now()/1000; T.shake=Math.max(0,T.shake-dt*1.5);
       for(const n of NPCS) if(n.who==='ali'){ if(n.perch===undefined) n.perch=1; if(n.perch) n.y=y0; } /* his hit box stays on the platform, at the foot of the (solid) trunk */ for(const q of tal) q.m.rotation.z=q.a0+Math.sin(t*1.6+q.ph)*(.05+T.shake*.35);
@@ -56,6 +56,8 @@ function aliTreeBuild(G){ const X=ALT_TREE.x, Z=ALT_TREE.z, y0=groundY(X,Z), H=A
     try{ aliTreeBuild(G); const e=G.ents.find(o=>o.type==='npc'&&o.who==='ali'); if(e){ e.x=ALT_TREE.x; e.z=ALT_TREE.z; e.perch=1; }
       const h=G.pick.find(p=>p.kind==='heart'&&Math.abs(p.x-34.8)<.3&&Math.abs(p.z-16.4)<.3); if(h){ h.x=33.9; h.z=17.9; } }catch(e){ console.error('ali tree',e); }
     return G; }; })();
+// up there he can only be struck from up there: a swing or a shot from the foot of the tree does nothing but tell you where he is
+(function(){ const hn=hitNPC; hitNPC=function(n,dmg,ang){ try{ if(n&&n.who==='ali'&&n.perch&&L&&L.aliTree&&Math.abs(Player.y-L.aliTree.top)>1.6){ Sound.sfx('block'); FX.spark(n.x,L.aliTree.top+1.2,n.z); if(!(n.upHintT>Game.time-2)){ n.upHintT=Game.time; Game.dmgNums.push({x:n.x,y:L.aliTree.top+2.4,z:n.z,n:"HE'S UP THERE",t:0,col:'#9a9aa8'}); } return; } }catch(e){ console.error('ali up there',e); } return hn.apply(this,arguments); }; })();
 // the NPC entry carries `perch` over to the spawned NPC
 (function(){ const ds=drawSprites; drawSprites=function(){ ds.apply(this,arguments); try{ for(const n of NPCS){ if(n.who!=='ali') continue;
       
