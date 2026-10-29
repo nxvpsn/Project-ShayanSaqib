@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.38 (Oct 29): Kojima's laser dome is gone: at half of phase III he hides in one of twenty cardboard boxes (the real one shakes; wrong ones blow up; find him and he is staggered 3.2s); he shows the stun meter; the eye dive into phase II no longer leaves a block of his pupil on screen. Big Back Hamza: Pork Roll and Stampede are one parryable rolling rush (he spins), Quake is gone, Bounce and Flop landings are parried by attacking as he comes down, their lock-on is looser, and Babies sends ten.";
-const DBG_NEW=['grimmaw:*','hamza:stampede','hamza:bounce','hamza:flop','hamza:babies'];
+const DBG_PATCH="v1.39 (Oct 29): Big Back Hamza: Belly Slide is gone, the roll spins above the ground, Baby Rain rains piglets everywhere (pink rings), a new limit cut ALL-YOU-CAN-EAT (parry four lane rolls, a baby shower under parryable bounces, the Big Bite: get out of the circle) and a new frenzy LAST CALL (roll, bounce, baby ring, faster each round).";
+const DBG_NEW=['hamza:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -48,7 +48,7 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
 // limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
 function dbgLCs(){ if(dbgNP1()) return []; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
   duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
-  hamza:[['Buffet (limit cut)','buffet',2],['Frenzy (finale)','frenzy',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
+  hamza:[['All-You-Can-Eat (limit cut)','buffet',2],['Last Call (finale)','frenzy',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
   grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
 // ---------- actions ----------

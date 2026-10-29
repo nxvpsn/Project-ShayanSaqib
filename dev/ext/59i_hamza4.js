@@ -48,8 +48,10 @@ HZG.stampede=function*(G,ph){ const sp=hzgSp2(G), n=ph>=2?4:3; twBark('hamza',["
     yield d/(20*sp)+.25; G.roll=0; G.mouth=0; shake(.4); }
   G.rollA=0; yield .5; };
 HZG.roll=HZG.stampede; HZG.quake=function*(G,ph){ yield* HZG.stampede(G,ph); }; /* the old keys run the roll stampede (Debug Mode lists, old bags) */
-// the sprite spins while he rolls (after the draw places it)
-(function(){ const ds=drawSprites; drawSprites=function(){ const r=ds.apply(this,arguments); try{ const G=TW.giant; if(gpSprite&&gpSprite.mesh){ const want=G&&G.roll?(G.rollA||0):0; gpSprite.mesh.rotation.z=G&&G.roll?want:gpSprite.mesh.rotation.z*(G?.8:0); if(!G||!G.roll){ if(Math.abs(gpSprite.mesh.rotation.z)<.02) gpSprite.mesh.rotation.z=0; } } }catch(e){} return r; }; })();
+// the sprite spins while he rolls, about its centre (the plane's origin is at his feet: spinning there dug him into the ground)
+(function(){ const ds=drawSprites; drawSprites=function(){ const r=ds.apply(this,arguments); try{ const G=TW.giant, m=gpSprite&&gpSprite.mesh; if(!m) return r;
+      if(G&&G.roll){ const hh=((m.geometry&&m.geometry.parameters&&m.geometry.parameters.height)||3)/2, th=G.rollA||0; m.rotation.z=th; m.position.x+=hh*Math.sin(th); m.position.y+=hh-hh*Math.cos(th); }
+      else if(m.rotation.z) m.rotation.z=0; }catch(e){} return r; }; })();
 // Bounce and Flop: attack as he comes down and the landing is parried (he staggers); the silver slash shows on the way down
 HZG.bounce=function*(G,ph){ const sp=hzgSp2(G); twBark('hamza',"Bismillah... BOUNCE! Bismillah... BOUNCE!",true); G.landParry=1;
   try{ for(let k=0;k<(ph>=2?4:3);k++){ const P=Player, last=k===(ph>=2?3:2); yield* hzgLeap(G,P.x+P.vx*.4,P.z+P.vz*.4,(k?.75:.95)/sp,last?7:4.5,2.6,3,last?2:0,true); yield .18; } } finally{ G.landParry=0; }
@@ -67,3 +69,66 @@ HZG.babies=function*(G,ph){ const n=10; twBark('hamza',"Go, my children! My beau
   for(let i=0;i<n;i++){ const P=Player, a=rnd(0,6.28), r=rnd(2.5,4.5), p=twClampXZ(P.x+Math.cos(a)*r,P.z+Math.sin(a)*r,1), T=.8;
     hzgBaby(G.x,G.z,{vx:(p.x-G.x)/T,vz:(p.z-G.z)/T,vy:G_ACC*T/2}); FX.burst(G.x,G.y+3,G.z,10,0xffb0c8,3,.3); yield .14; }
   G.mouth=0; twBig('10 BABIES',{size:48,col:'#ffb0c8',y:UH*.26,dur:1.1,sub:'Take them out before they get back to Daddy'}); yield 1; };
+
+// ---------- round 4c: no Belly Slide; Baby Rain rains everywhere; a new limit cut (ALL-YOU-CAN-EAT) and a new frenzy (LAST CALL) ----------
+HZG_POOL[1]=['bounce','flop','stampede','babies','stampede']; HZG_POOL[2]=['bounce','flop','stampede','babies','meteor','babyRain','stampede','babyRain'];
+HZG.belly=function*(G,ph){ yield* HZG.stampede(G,ph); }; /* the old key runs the roll */
+// babies from the sky at random spots across the box, each with a pink ring a beat before it lands
+function hzgRain(n,span){ const A=twBounds(); for(let i=0;i<n;i++){ const x=rnd(A.x0+1.5,A.x1-1.5), z=rnd(A.z0+1.5,A.z1-1.5), gy=groundY(x,z), at=i/n*span;
+    twHz({t:0,w:0,upd(dt,play){ if(play) this.t+=dt; if(this.t>=at&&!this.w){ this.w=1; FX.ring(x,gy+.08,z,'#ffb0c8',1.3,.55); } if(this.t>=at+.55){ hzgBaby(x,z,{drop:1,h:9}); FX.burst(x,gy+8,z,6,0xffb0c8,3,.3); if(Math.random()<.4) Sound.sfx('oink'); return false; } return true; }}); } }
+HZG.babyRain=function*(G,ph){ const n=ph>=2?22:16; twBark('hamza',"BABY RAIN! My children! From the SKY! Everywhere! They bite!",true); G.mouth=1; Sound.sfx('oink'); twBig('BABY RAIN',{size:48,col:'#ffb0c8',y:UH*.26,dur:1.1,sub:'Pink rings: a piglet lands there'});
+  hzgRain(n,3.4); for(let i=0;i<6;i++){ FX.burst(G.x,G.y+3,G.z,10,0xffb0c8,3,.3); yield .55; } G.mouth=0; yield 1; };
+// ONE PORK ROLL down a lane through you: a line, then the spinning rush (parryable); onPar is called on a parry
+function* hzgLaneRoll(G,onPar){ const sp=hzgSp2(G), P=Player, a=rnd(0,6.283), L0=22, B=twBounds(); let sx=P.x-Math.cos(a)*11, sz=P.z-Math.sin(a)*11; const c=twClampXZ(sx,sz,2); sx=c.x; sz=c.z;
+  FX.burst(G.x,G.y+2,G.z,24,0xffb0c8,5,.4); G.x=sx; G.z=sz; G.mv=null; FX.burst(G.x,G.y+2,G.z,24,0xffb0c8,5,.4); Sound.sfx('dash'); const aa=Math.atan2(P.z-sz,P.x-sx); FX.line(sx,sz,aa,L0,3.6,0xff3a5a,.75/sp); Sound.sfx('pigrumble'); const from=Game.time+TW_STRICT.grace; yield .75/sp;
+  Sound.sfx('pigroar'); G.roll=1; const s={t:0,hit:false,dur:L0/(21*sp)};
+  twHz({upd(dt,play){ if(!play) return true; s.t+=dt; G.x+=Math.cos(aa)*21*sp*dt; G.z+=Math.sin(aa)*21*sp*dt; const q=twClampXZ(G.x,G.z,2); G.x=q.x; G.z=q.z; G.rollA=(G.rollA||0)-dt*14*(Math.cos(aa)>=0?1:-1); if(!s.hit) twRushTell(G,aa,1.6); FX.spawn(G.x+rnd(-1,1),groundY(G.x,G.z)+.3,G.z+rnd(-1,1),rnd(-2,2),rnd(1,3),rnd(-2,2),.5,0xd8c0c8,.4,8,false);
+      const P2=Player; if(!s.hit&&Math.hypot(P2.x-G.x,P2.z-G.z)<2.3&&P2.y<G.y+2){ if(twStrictDo(from,()=>twHitP(3,G.x,G.z,{heavy:true,melee:true,win:TW_DASH_WIN,onParry:()=>{ G.stun=Math.max(G.stun,.6); Game.dmgNums.push({x:G.x,y:G.y+4,z:G.z,n:'PARRIED',t:0,col:'#ffd45a'}); if(onPar) onPar(); }}))!=='none') s.hit=true; }
+      const on=s.t<s.dur; if(!on) G.roll=0; return on; }, kill(){ G.roll=0; }});
+  yield s.dur+.3; G.roll=0; G.rollA=0; }
+// THE BIG BITE: he inhales you for 2.2s, then a red circle: get out of it or be eaten (hzgSwallow)
+function* hzgBigBite(G,R){ const P=Player, gy=groundY(G.x,G.z); G.mouth=1; Sound.sfx('suck'); twBig('DASH AWAY!',{size:58,col:'#ffb0c8',y:UH*.26,dur:1.3,sub:'He inhales, then he bites: be outside the red circle'});
+  const st={t:0}; twHz({upd(dt,play){ if(!play) return true; st.t+=dt; const P2=Player; if(!P2.hidden&&P2.dash<=0&&!P2.cineFly){ const dx=G.x-P2.x, dz=G.z-P2.z, d=Math.hypot(dx,dz)||1, k=5.2*Math.min(1,st.t*2); if(d>2.2){ const q=twClampXZ(P2.x+dx/d*k*dt,P2.z+dz/d*k*dt,.3); P2.x=q.x; P2.z=q.z; } }
+      for(let i=0;i<4;i++){ const a=rnd(0,6.28), r=rnd(3,9); FX.spawn(G.x+Math.cos(a)*r,G.y+rnd(.3,2),G.z+Math.sin(a)*r,-Math.cos(a)*r*1.4,0,-Math.sin(a)*r*1.4,.5,i%2?0xffb0c8:0xffffff,.3,0,true); } return st.t<2.2; }});
+  yield 2.2; FX.ring(G.x,gy+.1,G.z,'#ff2a3a',R,.95); const fe=twFence(G.x,G.z,R,0xff3a5a,1); Sound.sfx('pigrumble'); G.mouth=.3; yield .95; try{ fe.kill(); }catch(e){}
+  Sound.sfx('chomp'); shake(1.2); impactFrame([[3,2],[1,2]]); FX.burst(G.x,gy+1.5,G.z,60,0xffb0c8,9,.45); FX.ring(G.x,gy+.1,G.z,'#ffffff',R,.4); G.mouth=1;
+  const d=Math.hypot(P.x-G.x,P.z-G.z); if(d<R&&!P.hidden&&!P.cineFly&&Game.state==='play'){ run(function*(){ yield* hzgSwallow(G); }); for(let w=0;w<12&&Game.script;w+=.1) yield .1; } else { /* the swallow is a script (it yields waits); this runs as his move (numbers) */ twBig('MISSED',{size:50,col:'#ffd45a',y:UH*.26,dur:1,sub:'He bit the air'}); twBark('hamza',"...I bit a flower. Bismillah. It was a good flower.",true); }
+  G.mouth=0; yield .6; }
+// ---------- LIMIT CUT: ALL-YOU-CAN-EAT (phase II, 50%): three courses, each with its counter ----------
+hzgBuffet=function*(G){ const c=G.center||twCenter(), P=Player, gy=groundY(c.x,c.z); G.inv=true; G.mouth=0; G.mv=null; G.roll=0; /* this generator IS G.gen: never null it here */
+  const C=hzgAlly('caotan'), O=hzgAlly('omar'), cleanup=()=>{ Game.letterTo=0; G.mouth=0; G.air=0; G.roll=0; G.landParry=0; TW.hg=null; P.inv=Math.min(P.inv,1); twCamFree(1.32); for(const A of [C,O]) if(A){ A.hold=0; A.air=0; } };
+  TW.lcCleanup=cleanup;
+  try{
+    Game.letterTo=.4; P.inv=Math.max(P.inv,5); for(const A of [C,O]) if(A){ A.hold=1; A.air=1.3; }
+    yield* twGenCam([G.x+3,gy+2.4,G.z+15],[G.x,gy+3,G.z],.7); Sound.sfx('pigroar'); shake(.6); twBark('hamza',"Waiter! The buffet. ALL of it. Three courses. You are every course.",true); yield 1.4;
+    if(C) twBark('caotan',"...I'll be the waiter. For senpai.",true);
+    yield* twGenCam([c.x,gy+13,c.z+20],[c.x,gy+1,c.z],1.2); twCutin('hamza','ALL-YOU-CAN-EAT','Limit Break  ·  three courses  ·  you are on the menu','#ff6a9a',1.8); yield 1.1;
+    Game.letterTo=0; twCamFree(1.55); P.inv=1.2; for(const A of [C,O]) if(A){ A.hold=0; A.air=0; }
+    // course one: four pork rolls down lanes through you. Parry them.
+    twBark('hamza',"Course one: PORK ROLLS. Four. Parry them or be the filling.",true); G.inv=false; let par=0; const H=TW.hg={left:4,total:4,label:'COURSE ONE · PARRY THE ROLLS'};
+    for(let k=0;k<4;k++){ yield* hzgLaneRoll(G,()=>{ par++; H.left=Math.max(0,H.left-1); }); yield .25; }
+    TW.hg=null; twBig(par>=3?"CHEF'S KISS":par+' / 4 PARRIED',{size:54,col:par>=3?'#ffd45a':'#ffb0c8',y:UH*.26,dur:1.2,sub:par>=3?'Every roll sent back to the kitchen':'The kitchen is disappointed'}); if(par>=3) G.stun=Math.max(G.stun,1.6); yield 1.4;
+    // course two: baby shower: babies rain everywhere while he bounces on you (parry the landings)
+    twBark('hamza',"Course two: BABY SHOWER. Children! From the SKY!",true); TW.hg={left:18,total:18,label:'COURSE TWO · BABY SHOWER'}; hzgRain(18,5); G.landParry=1;
+    try{ for(let k=0;k<3;k++){ const Pp=Player; yield* hzgLeap(G,Pp.x+Pp.vx*.4,Pp.z+Pp.vz*.4,k?.8:1,k===2?7:4.5,2.6,3,k===2?2:0,true); TW.hg.left=Math.max(0,18-Math.round((k+1)*6)); yield .3; } } finally{ G.landParry=0; }
+    TW.hg=null; yield .8;
+    // course three: dessert. The Big Bite: he inhales, then a red circle; be outside it
+    twBark('hamza',"Course three: DESSERT. ...You. ITADAKIMASU!",true); yield* hzgBigBite(G,5.2);
+    yield .6;
+  } finally { TW.lcCleanup=null; cleanup(); }
+  twBig('FOOD COMA',{size:60,col:'#ffd45a',sub:'Hamza is stunned. Go!'}); G.inv=false; G.stun=5; yield 5; };
+// a move generator (seconds) driven from a script (wait objects)
+function* hzgScript(g){ let r; while(!(r=g.next()).done){ yield wait(typeof r.value==='number'?r.value:1/60); } }
+// ---------- the Frenzy at zero: LAST CALL, 15 seconds of roll, bounce, baby ring, faster and faster ----------
+hzgFrenzy=function*(G){ const P=Player, gy=groundY(G.x,G.z); G.inv=true; G.mouth=1; Game.letterTo=1; G.roll=0; G.gen=null;
+  cineSet(G.x+3,gy+2.4,G.z+13,G.x,gy+3,G.z); for(let i=0;i<5;i++){ G.flash=i%2?.3:0; Sound.sfx('chomp'); yield wait(.12); }
+  yield say('hamza',"Hamza is... still... HUNGRY!",'angry'); yield say('shayan',"He's at ZERO! How is he still eating?!",'surprised');
+  yield say('omar',"Fifteen seconds. Even a stomach has limits."); evaCard(['LAST CALL','SURVIVE 15 SECONDS'],1.6,1); Sound.sfx('slam'); shake(1); yield wait(1.6);
+  Cam.cine=null; Game.letterTo=0; Game.state='play'; Sound.play('diva'); P.inv=1; const H=TW.hg={left:15,total:15,label:'LAST CALL · SURVIVE'};
+  const steps=['roll','bounce','ring'], tick={t:0}; const timer=twHz({upd(dt,play){ if(play){ tick.t+=dt; H.left=Math.max(0,15-tick.t); } return H.left>0; }}); let k=0;
+  while(H.left>0&&TW.giant===G){ const kind=steps[k%3]; k++;
+    if(kind==='roll'){ yield* hzgScript(hzgLaneRoll(G,null)); }
+    else if(kind==='bounce'){ G.landParry=1; try{ const Pp=Player; yield* hzgScript(hzgLeap(G,Pp.x+Pp.vx*.4,Pp.z+Pp.vz*.4,.8,5,2.6,3,0,true)); } finally{ G.landParry=0; } }
+    else { const Pp=Player, n=8; for(let i=0;i<n;i++){ const a=i/n*6.283+rnd(-.2,.2), x=Pp.x+Math.cos(a)*3.6, z=Pp.z+Math.sin(a)*3.6, q=twClampXZ(x,z,1); const gz=groundY(q.x,q.z); FX.ring(q.x,gz+.08,q.z,'#ffb0c8',1.2,.5); } yield wait(.5); for(let i=0;i<n;i++){ const a=i/n*6.283, q=twClampXZ(Pp.x+Math.cos(a)*3.6,Pp.z+Math.sin(a)*3.6,1); hzgBaby(q.x,q.z,{drop:1,h:7}); } Sound.sfx('oink'); yield wait(.6); }
+    yield wait(Math.max(.15,.5-k*.05)); }
+  TW.hg=null; timer.kill&&timer.kill(); twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); hzgClearBabies(); G.air=0; G.roll=0; G.mouth=.4; Game.state='cut'; twBig('ZZZ',{size:80,col:'#ffd0ec',y:UH*.3,dur:1.4,sub:'He fell asleep mid-chew.'}); Sound.sfx('pigrumble'); yield wait(1.2); };
