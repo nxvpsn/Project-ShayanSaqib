@@ -324,9 +324,10 @@ function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stun
   NB.pend=function*(){ yield wait(1.8); NB.alive=false; NB.inv=true; nbClear(); np1Clear(); NB.stunned=0; NB.hov=1.2; yield* nbFinale(); }; nbPend(); }
 // ---------- hooks ----------
 (function(){ const un=updateNB; updateNB=function(dt){ const r=un.apply(this,arguments); try{ if(tpsFight()) np1Update(dt); }catch(e){ console.error('nathan phase 1',e); } return r; }; })();
+const NP1_DMG={melee:.7,shot:1.6}; /* Ali's slashes (x.7 of a swing's .75) and his Getsugas (x1.6) against phase I's 350 HP */
 // damage: phase I's own HP; staggered he takes 1.5x; the ultimate is scaled down for this phase
 (function(){ const nd=nbDamage; nbDamage=function(d,ult){ if(!tpsFight()||!NP1.live) return nd.apply(this,arguments); if(!NB||!NB.alive) return;
-    if(NP1.done){ FX.spark(NB.x,NB.y+2,NB.z); return; } if(ult&&ult!=='np1') d*=d>=25?.3:.5; if(NP1.melee) d*=.4; /* ultimates and the mini Judgement Cut are scaled for this phase */ /* his sword is fast at 3x run speed */ if(NP1.stunT>0||NB.stunned) d*=1.5;
+    if(NP1.done){ FX.spark(NB.x,NB.y+2,NB.z); return; } if(ult&&ult!=='np1') d*=d>=25?.3:.5; else if(NP1.melee) d*=NP1_DMG.melee; else if(ult!=='np1') d*=NP1_DMG.shot; /* ultimates and the mini Judgement Cut are scaled for this phase; his sword and his waves are scaled up (the counters, 'np1', are tuned on their own) */ /* his sword is fast at 3x run speed */ if(NP1.stunT>0||NB.stunned) d*=1.5;
     NP1.hp=Math.max(0,NP1.hp-d); NB.flash=.07; FX.spark(NB.x+rnd(-.6,.6),NB.y+rnd(1,3),NB.z+.3); Game.dmgNums.push({x:NB.x,y:NB.y+4,z:NB.z,n:'-'+(Math.round(d*100)/100),t:0,big:!!ult,col:'#9ff8ff'}); addSP(ult?0:.18);
     if(NP1.hp<=0) np1Down(); }; })();
 // Ali's sword reaches him here (the base game only lets Shayan's)
