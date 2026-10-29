@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.32 (Oct 29): Ali's road ends after Nathan's phase I: the finale (the last cut, the mended moon, his memories) and the ending play.";
-const DBG_NEW=['nathan:*'];
+const DBG_PATCH="v1.33 (Oct 29): no invisible walls in the Big Back Hamza fight: the box his moves stay in follows you instead.";
+const DBG_NEW=['hamza:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
