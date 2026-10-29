@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.39 (Oct 29): Big Back Hamza: Belly Slide is gone, the roll spins above the ground, Baby Rain rains piglets everywhere (pink rings), a new limit cut ALL-YOU-CAN-EAT (parry four lane rolls, a baby shower under parryable bounces, the Big Bite: get out of the circle) and a new frenzy LAST CALL (roll, bounce, baby ring, faster each round).";
-const DBG_NEW=['hamza:*'];
+const DBG_PATCH="v1.40 (Oct 29): notes for the next session (CLAUDE.md); no gameplay change.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
