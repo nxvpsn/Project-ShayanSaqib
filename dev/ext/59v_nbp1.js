@@ -52,8 +52,8 @@ function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=M
 function np1Fly(dt,tx,tz,sp){ const dx=tx-NB.x, dz=tz-NB.z, d=Math.hypot(dx,dz); if(d<.05) return; const m=Math.min(d,sp*dt); NB.x+=dx/d*m; NB.z+=dz/d*m; NB.dsh=null;
   if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.06); NBS.bdir=Math.atan2(dz,dx); } if(Math.random()<dt*22) FX.spawn(NB.x-dx/d*.6,NB.y+.3,NB.z-dz/d*.6,-dx/d*3,rnd(-1,.5),-dz/d*3,.25,0x3ff4ff,.16,0,true); }
 // cruising between moves with inertia: he eases into his keep distance and out of a turn instead of stopping dead (Ali back-dashing made him stutter: stop, go, stop)
-function np1Cruise(dt,d,dx,dz){ const V=NP1.vel||(NP1.vel={x:0,z:0}), gap=d-NP1_ROAM.keep, want=gap>0?Math.min(NP1_ROAM.fly,gap*1.8):0, wx=dx*want, wz=dz*want; /* no retreat when you're close: he holds his ground */
-  let ax=wx-V.x, az=wz-V.z; const am=Math.hypot(ax,az), acc=NP1_ROAM.acc*dt; if(am>acc){ ax*=acc/am; az*=acc/am; } V.x+=ax; V.z+=az;
+function np1Cruise(dt,d,dx,dz,hold,tx,tz){ const V=NP1.vel||(NP1.vel={x:0,z:0}), R=hold||NP1_ROAM.keep, gap=d-R; let want=hold?Math.max(-NP1_ROAM.fly,Math.min(NP1_ROAM.fly,gap*4)):gap>0?Math.min(NP1_ROAM.fly,gap*1.8):0; /* cruising: no retreat when you're close, he holds his ground; circling: he keeps the radius both ways (gently, no snapping) */
+  let wx=dx*want+(tx||0), wz=dz*want+(tz||0), ax=wx-V.x, az=wz-V.z; const am=Math.hypot(ax,az), acc=(hold?NP1_ROAM.accOrbit:NP1_ROAM.acc)*dt; /* the circle needs the centripetal pull (v^2/R) */ if(am>acc){ ax*=acc/am; az*=acc/am; } V.x+=ax; V.z+=az;
   const sp=Math.hypot(V.x,V.z); if(sp<.02){ V.x=V.z=0; return; } NB.x+=V.x*dt; NB.z+=V.z*dt; NB.dsh=null;
   if(typeof NBS!=='undefined'&&sp>.6){ NBS.boostT=Math.max(NBS.boostT,.06); NBS.bdir=Math.atan2(V.z,V.x); } if(sp>1&&Math.random()<dt*22*Math.min(1,sp/NP1_ROAM.fly)) FX.spawn(NB.x-V.x/sp*.6,NB.y+.3,NB.z-V.z/sp*.6,-V.x*.4,rnd(-1,.5),-V.z*.4,.25,0x3ff4ff,.16,0,true); }
 function* np1Glue(t){ for(let k=0;k<t;){ k+=NP1.dt; const [dx,dz]=np1Dir(), P=Player; np1Fly(NP1.dt,P.x-dx*1.9,P.z-dz*1.9,20); yield NP1.dt; } }
@@ -296,15 +296,14 @@ function np1Update(dt){ const P=Player; NP1.dt=dt; if(!NP1.live) np1Start();
 // ---------- between moves: he circles you, follows you, or closes a long gap with one violent boost ----------
 // locked on and strafing: he runs the other way round, so you circle each other; otherwise he flies after you at a normal
 // cruising speed; far away: one insanely fast boost with an engine roar, landing a quarter inside his range
-const NP1_ROAM={orbit:8,fly:7,keep:5,far:14,land:3.75,dashCd:2.6,dashT:.2,acc:26}; /* fly: his cruising speed between moves; land: 25% inside his 5-unit range, for the scare */
+const NP1_ROAM={orbit:8,fly:7,keep:5,far:14,land:3.75,dashCd:2.6,dashT:.2,acc:26,accOrbit:80}; /* fly: his cruising speed between moves; land: 25% inside his 5-unit range, for the scare */
 function np1Roam(dt,d){ const P=Player; if(NB.dsh){ np1BoostHome(); return false; } if(NB.stunned||NP1.seq) return false; NP1.dashCd=Math.max(0,(NP1.dashCd||0)-dt);
   const [dx,dz]=np1Dir(), lock=typeof TPS!=='undefined'&&TPS.lock, side=lock?(TPS.side||0):0, run=Math.hypot(P.vx||0,P.vz||0), away=((P.vx||0)*dx+(P.vz||0)*dz)>2;
   if(d>NP1_ROAM.far&&NP1.dashCd<=0){ np1BigBoost(); return true; } /* far: one boost in; otherwise he never creeps after you (that stuttered) */
-  let mx=0, mz=0;
-  if(side&&run>3&&d>2.5){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; mx=rx*side*sp; mz=rz*side*sp; /* rx,rz is Ali's screen-left: he goes the other way round */ if(!NP1.orbitR) NP1.orbitR=d; } /* the opposite way round, on the radius the strafe started at */
-  else { NP1.orbitR=0; np1Cruise(dt,d,dx,dz); return false; } /* flying normally after you, with inertia */
-  if(mx||mz){ NB.x+=mx*dt; NB.z+=mz*dt; if(side&&NP1.orbitR){ const nd=Math.hypot(P.x-NB.x,P.z-NB.z)||1, R=NP1.orbitR; NB.x=P.x+(NB.x-P.x)*R/nd; NB.z=P.z+(NB.z-P.z)*R/nd; } /* the radius holds */
-    if(typeof NBS!=='undefined'){ NBS.boostT=Math.max(NBS.boostT,.05); NBS.bdir=Math.atan2(mz,mx); } if(Math.random()<dt*20) FX.spawn(NB.x+rnd(-.3,.3),NB.y+.2,NB.z+rnd(-.3,.3),-mx*.3,rnd(-1.5,-.5),-mz*.3,.25,0x3ff4ff,.16,0,true); }
+  // one inertial controller for both: circling (lock + strafe, not a dash: the opposite way round on the radius the strafe started at) adds a tangential
+  // velocity and holds the radius gently; otherwise he cruises to his keep distance. Switching between the two is a blend, never a snap (diagonal back-dashes stuttered)
+  if(side&&run>3&&d>2.5&&!(P.dash>0)){ const rx=-dz, rz=dx, sp=NP1_ROAM.orbit; if(!NP1.orbitR) NP1.orbitR=d; np1Cruise(dt,d,dx,dz,NP1.orbitR,rx*side*sp,rz*side*sp); } /* rx,rz is Ali's screen-left: he goes the other way round */
+  else { NP1.orbitR=0; np1Cruise(dt,d,dx,dz); }
   return false; }
 // the boost's landing spot tracks you while it flies, so a dash during it can't leave him far away (then boosting again, over and over)
 function np1BoostHome(){ const D=NB.dsh; if(!D||!D.home) return; const P=Player, dx=P.x-D.fx, dz=P.z-D.fz, d=Math.hypot(dx,dz)||1; let tx=P.x-dx/d*NP1_ROAM.land, tz=P.z-dz/d*NP1_ROAM.land; const A=nbArea(); tx=clamp(tx,A.x0+1,A.x1-1); tz=clamp(tz,A.z0+1,A.z1-1); [tx,tz]=nbSafe(tx,tz);

@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.34 (Oct 29): Ali hits harder in the Nathan fight: his slashes do 1.75x (x.7 of a swing instead of x.4) and his Getsugas 1.6x; the counters are unchanged.";
+const DBG_PATCH="v1.35 (Oct 29): Nathan's circling runs through the same inertia as his cruising and holds its radius gently instead of snapping, so diagonal back-dashes no longer make him stutter.";
 const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
