@@ -39,23 +39,35 @@ function npFwdBlink(ux,uz,d){ const P=Player, D=5, on=d<2.6; let tx,tz,ty;
 // ---------- the flip dodge (the grab, blinking into him) ----------
 function npFlipDodge(){ const P=Player, [dx,dz]=np1Dir(); np1PerfectDodge(-dx,-dz); const S=NP1.seq; if(!S||S.k!=='pdodge') return; const gy=groundY(NB.x-dx*3.2,NB.z-dz*3.2), high=NB.y-groundY(NB.x,NB.z)>2.5;
   Object.assign(S,{flip:1,ex:NB.x-dx*3.2,ez:NB.z-dz*3.2,sy:P.y,ey:high?Math.max(gy,NB.y-1.1):gy,top:NB.y+3.6,nx:0,nz:0}); P.alFlipT=Game.time; P.cineAnim='jump'; Sound.sfx('djump'); }
-function npFlipUpd(S,rdt,wdt){ const P=Player, u=Math.min(1,S.t/.5), e=u<1?1-Math.pow(1-u,2):1; P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); const base=lerp(S.sy,S.ey,e); P.y=base+Math.sin(u*Math.PI)*Math.max(.5,S.top-Math.max(S.sy,S.ey));
-  P.cineAnim='jump'; if(u<1&&S.t>.1&&P.alFlipT==null) P.alFlipT=Game.time; P.ang=Math.atan2(S.ez-S.sz,S.ex-S.sx); if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f;
-  S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.02; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x6ab8ff); }catch(e){} }
-  if(u<1) for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.3,.3),P.y+rnd(.2,1.6),P.z+rnd(-.3,.3),0,0,0,.3,i%2?0x3a8aff:0xffffff,.3,0,true);
-  try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=S.t<.1?TPS.FOV+16*(S.t/.1):TPS.FOV+6+10*Math.exp(-(S.t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
-  if(NP1.pdFx) NP1.pdFx.t=S.t; if(typeof NBS!=='undefined') NBS.fixRow=4; /* his hand still out, grabbing air */
-  if(S.t>.1&&S.t<1.1&&consume('attack')){ np1PdLook(false); npFlipCounter(); return; }
-  if(S.t>=1.1){ NP1.seq=null; np1PdLook(false); Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; if(typeof NBS!=='undefined') NBS.fixRow=null; } }
+// the flip, in real time through the slow-mo: he vaults up to the top of the arc over his head (NPF_RISE), hangs there upside
+// down while time crawls (to NPF_HOLD); attack = the flip counter from the top (pressed on the way up, it fires at the top).
+// No press: time snaps back and he finishes the vault to the far side (NPF_FIN)
+const NPF_RISE=.4, NPF_HOLD=1.35, NPF_FIN=.3;
+function npFlipUpd(S,rdt,wdt){ const P=Player, t=S.t; let u, fk, bob=0; S.end=NPF_HOLD;
+  if(S.fin==null){ if(t<NPF_RISE){ const k=t/NPF_RISE; u=.5*(1-(1-k)*(1-k)); fk=.5*k; } else { u=.5+.02*Math.min(1,(t-NPF_RISE)/(NPF_HOLD-NPF_RISE)); fk=.5; bob=Math.sin((t-NPF_RISE)*5)*.07; Game.slowT=Math.max(Game.slowT,.2); } }
+  else { const k=Math.min(1,(t-S.fin)/NPF_FIN); u=.52+.48*k*k; fk=.5+.5*k; }
+  P.x=lerp(S.sx,S.ex,u); P.z=lerp(S.sz,S.ez,u); const base=lerp(S.sy,S.ey,u); P.y=base+Math.sin(u*Math.PI)*Math.max(.5,S.top-Math.max(S.sy,S.ey))+bob;
+  P.cineAnim='jump'; P.alFlipT=fk<1?Game.time-.55*Math.min(.99,fk):null; /* the front flip, frozen upside down at the top */ P.ang=Math.atan2(S.ez-S.sz,S.ex-S.sx); if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f;
+  const moving=t<NPF_RISE||S.fin!=null; S.gt-=rdt; if(moving&&S.gt<=0){ S.gt=.035; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x6ab8ff); }catch(e){} }
+  if(moving) for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.3,.3),P.y+rnd(.2,1.6),P.z+rnd(-.3,.3),0,0,0,.3,i%2?0x3a8aff:0xffffff,.3,0,true);
+  else if(Math.random()<.5) FX.spawn(P.x+rnd(-.5,.5),P.y+rnd(.2,1.8),P.z+rnd(-.5,.5),0,rnd(.2,.6),0,.5,0x6ab8ff,.22,0,true);
+  try{ if(typeof TPS!=='undefined'&&TPS.on&&S.fin==null){ camera.fov=t<.1?TPS.FOV+16*(t/.1):TPS.FOV+6+10*Math.exp(-(t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
+  if(NP1.pdFx) NP1.pdFx.t=t; if(typeof NBS!=='undefined') NBS.fixRow=4; /* his hand still out, grabbing air */
+  if(S.fin==null&&t>.1&&consume('attack')) S.q=1;
+  if(S.q&&t>=NPF_RISE){ np1PdLook(false); npFlipCounter(S.ex-S.sx,S.ez-S.sz); return; }
+  if(S.fin==null&&t>=NPF_HOLD){ S.fin=t; np1PdLook(false); Game.slowT=0; Sound.hiss(1800,.3,.12,'bandpass'); Sound.tone('sine',90,420,.25,.12); /* time snaps back */ }
+  if(S.fin!=null&&t-S.fin>=NPF_FIN){ NP1.seq=null; Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; P.vy=0; if(typeof NBS!=='undefined') NBS.fixRow=null; } }
 (function(){ const pu=np1PdUpd; np1PdUpd=function(S,rdt,wdt){ if(S&&S.flip) return npFlipUpd(S,rdt,wdt); return pu.apply(this,arguments); }; })();
-// the flip counter: away from him, somersaulting, three Jujishous back over the shoulder, the camera swung round in front
-function npFlipCounter(){ const P=Player, [dx,dz]=np1Dir(), ux=dx, uz=dz, px=-uz, pz=ux; /* ux,uz: away from Nathan (np1Dir points from him to Ali) */ NP1.pdT=-9; NP1.gen=null; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined') NBS.fixRow=null;
-  P.aliAtk=null; P.cineFly=true; P.cineAnim='jump'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0; P.alFlipT=Game.time; const gy=groundY(P.x+ux*8,P.z+uz*8);
-  NP1.seq={k:'flipctr',t:0,sx:P.x,sz:P.z,sy:P.y,ex:P.x+ux*8,ez:P.z+uz*8,ey:gy,ux,uz,px,pz,n:0,fired:[]}; Game.letterTo=.5;
+// the flip counter: from the top of the vault on over and away from him, somersaulting, three Jujishous down into him as he
+// passes over, the camera swung round in front. vx,vz: the vault's direction (default: away from Nathan)
+function npFlipCounter(vx,vz){ const P=Player, [dx,dz]=np1Dir(), vl=Math.hypot(vx||0,vz||0), ux=vl>.1?vx/vl:dx, uz=vl>.1?vz/vl:dz, px=-uz, pz=ux; NP1.pdT=-9; NP1.gen=null; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined') NBS.fixRow=null;
+  P.aliAtk=null; P.cineFly=true; P.cineAnim='jump'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0; P.alFlipT=Game.time-.55*.5; /* on from the upside-down top of the flip */ const gy=groundY(P.x+ux*8,P.z+uz*8);
+  NP1.seq={k:'flipctr',t:0,sx:P.x,sz:P.z,sy:P.y,ex:P.x+ux*8,ez:P.z+uz*8,ey:gy,ux,uz,px,pz,n:0,fired:[],bump:P.y-gy>2?.9:2.2}; Game.letterTo=.5;
   NP1.cam={x:P.x+ux*5.5+px*1.2,y:P.y+1.6,z:P.z+uz*5.5+pz*1.2,lx:P.x,ly:P.y+1.2,lz:P.z}; Sound.sfx('whoosh'); Sound.sfx('secret'); FX.flash=.3; grade.uniforms.flashCol.value.set(1,.2,.3);
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'FLIP COUNTER',t:0,big:true,col:'#ff6a7a'}); }
-const NP_FLIP_T=[.18,.42,.66];
-function npFlipCtrUpd(S,dt){ const P=Player, k=Math.min(1,S.t/1.25), e=k*(2-k); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=Math.max(groundY(P.x,P.z),lerp(S.sy,S.ey,k*k)+Math.sin(Math.min(1,S.t/1.25)*Math.PI)*2.2);
+const NP_FLIP_T=[.04,.26,.48]; /* the first on the press, over his head */
+function npFlipCtrUpd(S,dt){ const P=Player, k=Math.min(1,S.t/1.25), e=k*(2-k); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=Math.max(groundY(P.x,P.z),lerp(S.sy,S.ey,k*k)+Math.sin(Math.min(1,S.t/1.25)*Math.PI)*(S.bump||2.2));
+  for(const b of S.fired) if(b.life>0&&!b.deflected){ b.y=lerp(b.y,NB.y+1.6,Math.min(1,dt*9)); b.g.position.y=b.y; } /* the shots dive down into him */
   if(S.t>.62&&!S.flip2){ S.flip2=1; P.alFlipT=Game.time; } P.cineAnim='jump'; P.ang=Math.atan2(S.uz,S.ux); P.f=S.ux>=0?1:-1; /* he faces the camera (his flight), the shots go back over his shoulder */
   const C=NP1.cam; if(C&&S.t<1.3){ C.x=lerp(C.x,P.x+S.ux*5.5+S.px*1.2,Math.min(1,dt*6)); C.z=lerp(C.z,P.z+S.uz*5.5+S.pz*1.2,Math.min(1,dt*6)); C.y=lerp(C.y,P.y+1.4,Math.min(1,dt*6)); C.lx=P.x; C.ly=P.y+1.2; C.lz=P.z; }
   while(S.n<3&&S.t>=NP_FLIP_T[S.n]){ S.n++; const a0=P.ang, f0=P.f, n0=BEAMS.length; try{ aliGetsuga(true); }catch(e){ console.error('flip shot',e); } P.ang=a0; P.f=f0; const b=BEAMS.length>n0?BEAMS[BEAMS.length-1]:null;

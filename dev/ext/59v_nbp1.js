@@ -15,7 +15,7 @@ const NP1={live:0,done:0,hp:350,max:350,lunge:0,pdPending:0,gen:null,wait:0,cd:2
   blinkT:-9,grabLand:0,alt:null,pdT:-9,pdFrom:-9,pdDone:0,sat0:null,ts0:null,pdFx:null,hint:null,seen:{},dt:1/60,bar:0};
 // one beat for every red slash and blue grab: the flash, then it lands NP1_TELL later; a parry (red) or a blink (blue) counts
 // inside the last NP1_WIN of that (the melee parry window)
-const NP1_TELL=.45, NP1_WIN=.3;
+const NP1_TELL=.45, NP1_WIN=.3, NP1_DASH=.55; /* NP1_DASH: the perfect dodge's dash, slow enough to watch through the slow-mo */
 const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab','excal']; /* excal: 59w_excal.js */
 const NP1_FIRST=['combo','bits','grab','meteor','cage','excal'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
@@ -45,6 +45,19 @@ function np1Tell(red){ if(red==='rush'){ np1Glint(NB.x,NB.y+2.9,NB.z,0xff2a3a,6.
     Sound.tone('sawtooth',320,80,.35,.12); Sound.tone('square',1100,500,.15,.06); shake(.2); return; }
   const col=red?0xff2a3a:0x3a8aff; np1Glint(NB.x,NB.y+2.9,NB.z,col,red?4:4.8); FX.flash=Math.max(FX.flash,.16); grade.uniforms.flashCol.value.set(red?1:.3,red?.25:.55,red?.3:1);
   FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,red?'#ff2a3a':'#3a8aff',2.4,NP1_TELL); if(red) Sound.tone('square',1500,600,.14,.07); else { Sound.tone('sine',420,1500,.32,.12); Sound.tone('triangle',840,2400,.28,.06); } }
+// the grab's tell, louder: a blue glow held on his raised hand over a dark backing (it reads on the bright sky), a strong blue
+// edge flash, and a ring on the ground round Ali that closes to his feet as the grab lands; it turns white for the blink's window
+function np1GrabTell(){ FX.flash=Math.max(FX.flash,.4); grade.uniforms.flashCol.value.set(.2,.5,1); shake(.25);
+  const spr=(c,add)=>{ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:c,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g); return g; };
+  const ring=(r0,r1,c,add)=>{ const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48),new THREE.MeshBasicMaterial({color:c,transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:add?THREE.AdditiveBlending:THREE.NormalBlending})); m.rotation.x=-Math.PI/2; m.userData.temp=1; scene.add(m); return m; };
+  const back=spr(0x020a24,false), glow=spr(0x3a8aff,true), core=spr(0xffffff,true), rd=ring(.8,1,0x061430,false), rb=ring(.88,.97,0x5ab0ff,true), k={t:0,win:0}, all=[back,glow,core,rd,rb];
+  np1Obj({upd(dt){ k.t+=dt; const left=NP1.grabLand-Game.time; if(!NP1.lunge||NP1.pdDone||NP1.cur!=='grab'||left<-.08) return false;
+      const P=Player, hy=NB.y+2.9, pu=1+.25*Math.sin(k.t*40), r=1+3.6*Math.max(0,left/NP1_TELL), win=left<=NP1_WIN, gy=groundY(P.x,P.z)+.08;
+      back.position.set(NB.x,hy,NB.z); glow.position.set(NB.x,hy,NB.z); core.position.set(NB.x,hy,NB.z); back.scale.setScalar(4.2); back.material.opacity=.65; glow.scale.setScalar(3.4*pu); core.scale.setScalar(1.3*pu);
+      for(const m of [rd,rb]){ m.position.set(P.x,gy,P.z); m.scale.setScalar(Math.max(.05,r)); } rd.material.opacity=.8; rb.material.opacity=1; rb.material.color.setHex(win?0xffffff:0x5ab0ff);
+      if(win&&!k.win){ k.win=1; Sound.tone('sine',1800,2600,.08,.08); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'BLINK!',t:0,big:true,col:'#9fd0ff'}); }
+      return true; },
+    kill(){ for(const m of all){ scene.remove(m); try{ if(m.geometry) m.geometry.dispose(); }catch(e){} } }}); }
 function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=Math.hypot(dx,dz)||1; return twHitP(dmg,P.x+dx/d*1.2,P.z+dz/d*1.2,{melee:true,win:NP1_WIN,onParry}); }
 // ---------- homing: through a tell he stays glued in front of you; at the strike he lunges whatever the gap ----------
 // (moving never escapes a red slash or the grab: only the dodge button does, inside the window)
@@ -186,7 +199,7 @@ const NP1M={
     const hops=2+(Math.random()<.5?1:0), side=Math.random()<.5?1:-1;
     for(let i=0;i<hops;i++){ const P=Player, [dx,dz,d]=np1Dir(), last=i===hops-1, dd=last?2:Math.max(3.4,d*(1-(i+1)/(hops+.5))), off=last?0:side*(i%2?-1:1)*rnd(2,3);
       nbBoost(P.x-dx*dd-dz*off,P.z-dz*dd+dx*off);
-      if(last){ np1Tell(false); if(typeof NBS!=='undefined') NBS.fixRow=4; /* the hand raised */ NP1.grabLand=Game.time+NP1_TELL; NP1.lunge=1; NP1.pdDone=0; }
+      if(last){ np1Tell(false); if(typeof NBS!=='undefined') NBS.fixRow=4; /* the hand raised */ NP1.grabLand=Game.time+NP1_TELL; NP1.lunge=1; NP1.pdDone=0; try{ np1GrabTell(); }catch(e){ console.error('grab tell',e); } }
       else yield .22; }
     while(Game.time<NP1.grabLand&&!NP1.pdDone){ const [gx,gz]=np1Dir(), P4=Player; np1Fly(NP1.dt,P4.x-gx*1.9,P4.z-gz*1.9,20); yield NP1.dt; }
     if(NP1.pdDone){ NP1.lunge=0; NP1.pdDone=0; if(typeof NBS!=='undefined') NBS.fixRow=null; yield .5; return; } /* the perfect dodge carries him on past you */
@@ -214,8 +227,8 @@ function np1PerfectDodge(ux,uz){ const P=Player, l=Math.hypot(ux,uz)||1; ux/=l; 
   const L=[]; for(let i=0;i<46;i++) L.push({a:rnd(0,6.283),r:rnd(.55,1),w:rnd(1,3.5),sp:rnd(.8,1.4)}); NP1.pdFx={t:0,L};
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); }
 function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's dash, the window), wdt: world time (near-frozen) */
-  const u=Math.min(1,S.t/.26), e=u>=1?1:1-Math.pow(2,-10*u); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3;
-  P.cineAnim=u<1?'run':'idle'; /* a dash on his run cycle (side-on in the third-person view), not a teleport pose */ if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f; /* the afterimages face the same way he runs */ S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.016; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
+  const u=Math.min(1,S.t/NP1_DASH), e=1-Math.pow(1-u,3); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3;
+  P.cineAnim=u<1?'run':'idle'; /* a dash on his run cycle (side-on in the third-person view), not a teleport pose */ if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f; /* the afterimages face the same way he runs */ S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.035; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
   if(u<1){ for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.2,.2),P.y+rnd(.3,1.3),P.z+rnd(-.2,.2),0,0,0,.25,0x8fd3ff,.3,0,true); } /* Shayan's dash streak */
   if(u<1) for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),(S.sx-S.ex)*rnd(1,3),rnd(-.3,.6),(S.sz-S.ez)*rnd(1,3),.4,i%2?0x3a8aff:0xffffff,.3,0,true);
   else if(Math.random()<.6) FX.spawn(P.x+rnd(-.6,.6),P.y+rnd(.2,2.2),P.z+rnd(-.6,.6),0,rnd(.3,1),0,.6,0x6ab8ff,.22,0,true);
@@ -418,7 +431,7 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
         // speed lines rushing in from the edges on the dash
         if(k>0) for(const l of F.L){ const r1=R0*l.r, r0=r1*(1-.45*Math.min(1,F.t*l.sp*6)); D.strokeStyle=`rgba(${l.w>2.5?'200,230,255':'255,255,255'},${.75*k})`; D.lineWidth=l.w; D.beginPath(); D.moveTo(cx+Math.cos(l.a)*r1,cy+Math.sin(l.a)*r1); D.lineTo(cx+Math.cos(l.a)*r0,cy+Math.sin(l.a)*r0); D.stroke(); }
         D.restore(); }
-      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.1&&Q.t<1.1){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,(1.1-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
+      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.1&&Q.t<(Q.end||1.1)&&Q.fin==null){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,((Q.end||1.1)-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
         D.font=`800 ${TT?18:18}px ${FB}`; D.lineWidth=4; D.strokeText(K('attack'),0,30); D.fillStyle='#ffffff'; D.fillText(K('attack'),0,30); D.restore(); }
       const H=NP1.hint; if(H){ H.t+=1/60; if(H.t>H.dur) NP1.hint=null; else { const al=Math.min(1,H.t*4,(H.dur-H.t)*3); D.save(); D.globalAlpha=al; D.font=`800 ${TT?20:22}px ${FB}`; D.textAlign='center'; D.lineWidth=5; D.strokeStyle='#06101c'; D.strokeText(H.text,UW/2,UH*.22); D.fillStyle='#e8f6ff'; D.fillText(H.text,UW/2,UH*.22); D.restore(); } }
     }catch(e){ console.error('np1 ui',e); } }; })();

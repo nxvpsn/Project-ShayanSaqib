@@ -13495,7 +13495,7 @@ const NP1={live:0,done:0,hp:350,max:350,lunge:0,pdPending:0,gen:null,wait:0,cd:2
   blinkT:-9,grabLand:0,alt:null,pdT:-9,pdFrom:-9,pdDone:0,sat0:null,ts0:null,pdFx:null,hint:null,seen:{},dt:1/60,bar:0};
 // one beat for every red slash and blue grab: the flash, then it lands NP1_TELL later; a parry (red) or a blink (blue) counts
 // inside the last NP1_WIN of that (the melee parry window)
-const NP1_TELL=.45, NP1_WIN=.3;
+const NP1_TELL=.45, NP1_WIN=.3, NP1_DASH=.55; /* NP1_DASH: the perfect dodge's dash, slow enough to watch through the slow-mo */
 const NP1_POOL=['combo','combo','meteor','bits','cage','grab','grab','excal']; /* excal: 59w_excal.js */
 const NP1_FIRST=['combo','bits','grab','meteor','cage','excal'];
 function np1On(){ return typeof tpsFight==='function'&&tpsFight()&&NP1.live; }
@@ -13525,6 +13525,19 @@ function np1Tell(red){ if(red==='rush'){ np1Glint(NB.x,NB.y+2.9,NB.z,0xff2a3a,6.
     Sound.tone('sawtooth',320,80,.35,.12); Sound.tone('square',1100,500,.15,.06); shake(.2); return; }
   const col=red?0xff2a3a:0x3a8aff; np1Glint(NB.x,NB.y+2.9,NB.z,col,red?4:4.8); FX.flash=Math.max(FX.flash,.16); grade.uniforms.flashCol.value.set(red?1:.3,red?.25:.55,red?.3:1);
   FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,red?'#ff2a3a':'#3a8aff',2.4,NP1_TELL); if(red) Sound.tone('square',1500,600,.14,.07); else { Sound.tone('sine',420,1500,.32,.12); Sound.tone('triangle',840,2400,.28,.06); } }
+// the grab's tell, louder: a blue glow held on his raised hand over a dark backing (it reads on the bright sky), a strong blue
+// edge flash, and a ring on the ground round Ali that closes to his feet as the grab lands; it turns white for the blink's window
+function np1GrabTell(){ FX.flash=Math.max(FX.flash,.4); grade.uniforms.flashCol.value.set(.2,.5,1); shake(.25);
+  const spr=(c,add)=>{ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:c,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g); return g; };
+  const ring=(r0,r1,c,add)=>{ const m=new THREE.Mesh(new THREE.RingGeometry(r0,r1,48),new THREE.MeshBasicMaterial({color:c,transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:add?THREE.AdditiveBlending:THREE.NormalBlending})); m.rotation.x=-Math.PI/2; m.userData.temp=1; scene.add(m); return m; };
+  const back=spr(0x020a24,false), glow=spr(0x3a8aff,true), core=spr(0xffffff,true), rd=ring(.8,1,0x061430,false), rb=ring(.88,.97,0x5ab0ff,true), k={t:0,win:0}, all=[back,glow,core,rd,rb];
+  np1Obj({upd(dt){ k.t+=dt; const left=NP1.grabLand-Game.time; if(!NP1.lunge||NP1.pdDone||NP1.cur!=='grab'||left<-.08) return false;
+      const P=Player, hy=NB.y+2.9, pu=1+.25*Math.sin(k.t*40), r=1+3.6*Math.max(0,left/NP1_TELL), win=left<=NP1_WIN, gy=groundY(P.x,P.z)+.08;
+      back.position.set(NB.x,hy,NB.z); glow.position.set(NB.x,hy,NB.z); core.position.set(NB.x,hy,NB.z); back.scale.setScalar(4.2); back.material.opacity=.65; glow.scale.setScalar(3.4*pu); core.scale.setScalar(1.3*pu);
+      for(const m of [rd,rb]){ m.position.set(P.x,gy,P.z); m.scale.setScalar(Math.max(.05,r)); } rd.material.opacity=.8; rb.material.opacity=1; rb.material.color.setHex(win?0xffffff:0x5ab0ff);
+      if(win&&!k.win){ k.win=1; Sound.tone('sine',1800,2600,.08,.08); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'BLINK!',t:0,big:true,col:'#9fd0ff'}); }
+      return true; },
+    kill(){ for(const m of all){ scene.remove(m); try{ if(m.geometry) m.geometry.dispose(); }catch(e){} } }}); }
 function np1HitRed(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=Math.hypot(dx,dz)||1; return twHitP(dmg,P.x+dx/d*1.2,P.z+dz/d*1.2,{melee:true,win:NP1_WIN,onParry}); }
 // ---------- homing: through a tell he stays glued in front of you; at the strike he lunges whatever the gap ----------
 // (moving never escapes a red slash or the grab: only the dodge button does, inside the window)
@@ -13666,7 +13679,7 @@ const NP1M={
     const hops=2+(Math.random()<.5?1:0), side=Math.random()<.5?1:-1;
     for(let i=0;i<hops;i++){ const P=Player, [dx,dz,d]=np1Dir(), last=i===hops-1, dd=last?2:Math.max(3.4,d*(1-(i+1)/(hops+.5))), off=last?0:side*(i%2?-1:1)*rnd(2,3);
       nbBoost(P.x-dx*dd-dz*off,P.z-dz*dd+dx*off);
-      if(last){ np1Tell(false); if(typeof NBS!=='undefined') NBS.fixRow=4; /* the hand raised */ NP1.grabLand=Game.time+NP1_TELL; NP1.lunge=1; NP1.pdDone=0; }
+      if(last){ np1Tell(false); if(typeof NBS!=='undefined') NBS.fixRow=4; /* the hand raised */ NP1.grabLand=Game.time+NP1_TELL; NP1.lunge=1; NP1.pdDone=0; try{ np1GrabTell(); }catch(e){ console.error('grab tell',e); } }
       else yield .22; }
     while(Game.time<NP1.grabLand&&!NP1.pdDone){ const [gx,gz]=np1Dir(), P4=Player; np1Fly(NP1.dt,P4.x-gx*1.9,P4.z-gz*1.9,20); yield NP1.dt; }
     if(NP1.pdDone){ NP1.lunge=0; NP1.pdDone=0; if(typeof NBS!=='undefined') NBS.fixRow=null; yield .5; return; } /* the perfect dodge carries him on past you */
@@ -13694,8 +13707,8 @@ function np1PerfectDodge(ux,uz){ const P=Player, l=Math.hypot(ux,uz)||1; ux/=l; 
   const L=[]; for(let i=0;i<46;i++) L.push({a:rnd(0,6.283),r:rnd(.55,1),w:rnd(1,3.5),sp:rnd(.8,1.4)}); NP1.pdFx={t:0,L};
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); }
 function np1PdUpd(S,rdt,wdt){ const P=Player; /* rdt: real time (Ali's dash, the window), wdt: world time (near-frozen) */
-  const u=Math.min(1,S.t/.26), e=u>=1?1:1-Math.pow(2,-10*u); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3;
-  P.cineAnim=u<1?'run':'idle'; /* a dash on his run cycle (side-on in the third-person view), not a teleport pose */ if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f; /* the afterimages face the same way he runs */ S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.016; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
+  const u=Math.min(1,S.t/NP1_DASH), e=1-Math.pow(1-u,3); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3;
+  P.cineAnim=u<1?'run':'idle'; /* a dash on his run cycle (side-on in the third-person view), not a teleport pose */ if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f; /* the afterimages face the same way he runs */ S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.035; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(Math.random()<.5?0x3a8aff:0x8fd0ff); }catch(e){} }
   if(u<1){ for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.2,.2),P.y+rnd(.3,1.3),P.z+rnd(-.2,.2),0,0,0,.25,0x8fd3ff,.3,0,true); } /* Shayan's dash streak */
   if(u<1) for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),(S.sx-S.ex)*rnd(1,3),rnd(-.3,.6),(S.sz-S.ez)*rnd(1,3),.4,i%2?0x3a8aff:0xffffff,.3,0,true);
   else if(Math.random()<.6) FX.spawn(P.x+rnd(-.6,.6),P.y+rnd(.2,2.2),P.z+rnd(-.6,.6),0,rnd(.3,1),0,.6,0x6ab8ff,.22,0,true);
@@ -13898,7 +13911,7 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
         // speed lines rushing in from the edges on the dash
         if(k>0) for(const l of F.L){ const r1=R0*l.r, r0=r1*(1-.45*Math.min(1,F.t*l.sp*6)); D.strokeStyle=`rgba(${l.w>2.5?'200,230,255':'255,255,255'},${.75*k})`; D.lineWidth=l.w; D.beginPath(); D.moveTo(cx+Math.cos(l.a)*r1,cy+Math.sin(l.a)*r1); D.lineTo(cx+Math.cos(l.a)*r0,cy+Math.sin(l.a)*r0); D.stroke(); }
         D.restore(); }
-      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.1&&Q.t<1.1){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,(1.1-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
+      const Q=NP1.seq; if(Q&&Q.k==='pdodge'&&Q.t>.1&&Q.t<(Q.end||1.1)&&Q.fin==null){ const pu=1+.08*Math.sin(Q.t*28), al=Math.min(1,((Q.end||1.1)-Q.t)*5); D.save(); D.globalAlpha=al; D.translate(UW/2,UH*.62); D.scale(pu,pu); D.font=`900 ${TT?34:40}px ${FB}`; D.textAlign='center'; D.lineWidth=7; D.strokeStyle='#06101c'; D.strokeText('COUNTER',0,0); D.fillStyle='#9fd0ff'; D.fillText('COUNTER',0,0);
         D.font=`800 ${TT?18:18}px ${FB}`; D.lineWidth=4; D.strokeText(K('attack'),0,30); D.fillStyle='#ffffff'; D.fillText(K('attack'),0,30); D.restore(); }
       const H=NP1.hint; if(H){ H.t+=1/60; if(H.t>H.dur) NP1.hint=null; else { const al=Math.min(1,H.t*4,(H.dur-H.t)*3); D.save(); D.globalAlpha=al; D.font=`800 ${TT?20:22}px ${FB}`; D.textAlign='center'; D.lineWidth=5; D.strokeStyle='#06101c'; D.strokeText(H.text,UW/2,UH*.22); D.fillStyle='#e8f6ff'; D.fillText(H.text,UW/2,UH*.22); D.restore(); } }
     }catch(e){ console.error('np1 ui',e); } }; })();
@@ -13958,9 +13971,10 @@ NP1M.excal=function*(){ const E=npxStart();
   while(E.t<NPX.lvT*3){ E.beat=E.clock; const dt=NP1.dt; E.t+=dt; const lv=Math.min(3,Math.floor(E.t/NPX.lvT)); if(lv>E.lv){ E.lv=lv; npxLevel(E,lv); } yield dt; } /* slower than Ali's: his level 3 comes first */
   // level 3: the line locks onto Ali; the rainbow glint zig-zags up the blade as five impact frames
   { const [dx,dz]=np1Dir(); E.ux=dx; E.uz=dz; } E.phase='window'; E.lock=1; E.landT=Game.time+.4+NPX.flareT+NP1_TELL+NPX.swing;
-  // five rainbow glints on the blade in the owner's order (upper-left, lower-right, lower-left, upper-right, the centre), each a Nakamura smear impact frame (npxSmear)
-  for(let i=0;i<5;i++){ E.beat=E.clock; const px=-E.uz, pz=E.ux, side=NPX_GLINTS[i][0]*3, h=NB.y+2.9+NPX_GLINTS[i][1], gx=NB.x+px*side, gz=NB.z+pz*side; /* px,pz: Ali's screen-left */
-    npxGlint(gx,h,gz); impactFrame([[1,3]]); npxSmearAt(gx,h,gz,3); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); FX.hitstop=Math.max(FX.hitstop,.03); Sound.tone('square',900+i*300,900+i*300,.05,.07); Sound.sfx(i===4?'crossboom':'deflect'); shake(.3+i*.08);
+  // five rainbow glints around the blade in the owner's order, placed on screen (upper-left, lower-right, lower-left, upper-right,
+  // then the centre on the blade), each a Yutaka Nakamura impact frame: a held beat of inverted and ink frames (NPX_IMP) with the smear
+  for(let i=0;i<5;i++){ E.beat=E.clock; const [gx,h,gz]=npxGlintPos(E,NPX_GLINTS[i]), last=i===4;
+    npxGlint(gx,h,gz); impactFrame(NPX_IMP[i].map(x=>x.slice())); npxSmearAt(gx,h,gz,NPX_IMP[i].reduce((a,x)=>a+x[1],0),last); FX.flash=0; FX.hitstop=Math.max(FX.hitstop,last?.12:.06); Sound.tone('square',900+i*300,900+i*300,.05,.07); Sound.sfx(i===4?'crossboom':'deflect'); shake(.3+i*.08);
     for(let w=0;w<.08;){ const dt=NP1.dt; w+=dt; E.beat=E.clock; if(E.phase!=='window') return; yield dt; } }
   // the flare: a heavy sound, the sword charging even more: blue lines fanning off the blade, the blade pulsing wider
   npxFlare(E);
@@ -13993,7 +14007,14 @@ function npxLevel(E,lv){ E.pulse=1; if(lv<1) return; E.len=NPX.L[lv]; E.w=NPX.W[
 function npxBladeLine(E,lv){ if(E.gash) E.gash.life=0; E.gash=twGash({life:60,rev:.05,fade:.3,w:16+lv*10,op:.95,taper:.1,sparks:6+lv*6,blue:1,alive:()=>NP1.ex===E&&E.phase!=='cut'&&E.phase!=='clash',
     pts:()=>{ const s=Math.sin(E.ang), c=Math.cos(E.ang), dx=E.ux*s, dy=c, dz=E.uz*s, hx=NB.x, hy=NB.y+2.9, hz=NB.z, L=Math.min(E.dl,70); return np1LinePts(hx,hy,hz,hx+dx*L,hy+dy*L,hz+dz*L,1); }}); }
 // the level 3 flare: six blue lines fanning out of the hilt beside the blade, the blade wider, the air shaking
-const NPX_GLINTS=[[1,13],[-1,4],[1,4],[-1,13],[0,8.5]]; /* [screen side (+1 = Ali's left), height up the blade] in flash order */
+const NPX_GLINTS=[[-1,1],[1,-1],[-1,-1],[1,1],[0,0]]; /* [screen x (-1 = left), screen y (+1 = up)] around the blade's middle, in flash order */
+// the impact frames per glint: [shader mode, frames]; 2 = inverted (the glint's light goes black on white), 1 = ink (black and white),
+// 3 = red and black; the smear's ink flips with the mode, so each beat strobes between negative and positive like a Nakamura cut
+const NPX_IMP=[[[2,1],[1,2],[2,1]],[[2,1],[1,2],[2,1]],[[2,1],[1,2],[2,1]],[[2,1],[1,2],[2,1]],[[2,2],[1,2],[3,2],[2,1],[1,2]]];
+// a glint's spot in the world from its spot on screen: the blade's middle (8.5 up the hilt) plus the camera's right and up, scaled with distance
+function npxGlintPos(E,g){ const hx=NB.x, hy=NB.y+2.9+8.5, hz=NB.z; let fx=hx-camera.position.x, fz=hz-camera.position.z; const d=Math.hypot(fx,fz,hy-camera.position.y);
+  let l=Math.hypot(fx,fz); if(!(l>.5)){ fx=-E.ux; fz=-E.uz; l=1; } fx/=l; fz/=l; const k=Math.max(6,d||0), rx=-fz, rz=fx; /* rx,rz: screen right */
+  return [hx+rx*g[0]*k*.2, hy+g[1]*k*.12, hz+rz*g[0]*k*.2]; }
 function npxFlare(E){ const hx=NB.x, hy=NB.y+2.9, hz=NB.z, px=-E.uz, pz=E.ux; E.w=NPX.W[3]*1.45; E.pulse=1.5;
   Sound.sfx('crossboom'); Sound.sfx('choir'); Sound.tone('sawtooth',40,90,1.4,.3); Sound.hiss(250,1.6,.5,'lowpass'); Sound.hiss(4500,.5,.3,'bandpass'); shake(1.6); FX.flash=1; grade.uniforms.flashCol.value.set(.5,.95,1); impactFrame([[1,2],[3,2],[2,1]]); FX.hitstop=Math.max(FX.hitstop,.12);
   npxFlames(E);
@@ -14010,15 +14031,16 @@ function npxFlames(E){ const F={t:0,side:[],up:[]}; E.flames=F; const ns=6; if(!
       F.up.forEach((e,i)=>{ const h=i*2.6, wob=Math.sin(F.t*9+i*1.7)*.25; e.m.position.set(hx+px*wob,hy+2+h*grow,hz+pz*wob); const sz=(4.2-i*.5)*grow*(1+.07*Math.sin(F.t*17+i*2)); e.m.scale.set(sz*(e.A.w/e.A.h),sz,1); e.m.material.opacity=Math.max(.4,1-i*.15); });
       return alive; }, kill(){ for(const e of F.side.concat(F.up)) try{ pxvStop(e); }catch(x){} } }); }
 // the Nakamura smear: for a few frames, hand-drawn scribble lines streaking out from the glint over the black-and-white frame, a white core, black masses at the sides
-function npxSmearAt(x,y,z,n){ NPX.smear={x,y,z,n,seed:Math.random()*1e4}; }
+function npxSmearAt(x,y,z,n,big){ NPX.smear={x,y,z,n,big,seed:Math.random()*1e4}; }
 function npxSmear(){ const S=NPX.smear; if(!S||S.n<=0) return; S.n--; const q=toScreen(S.x,S.y,S.z); if(q[2]>1) return; const cx=Math.max(-UW*.2,Math.min(UW*1.2,q[0])), cy=Math.max(-UH*.2,Math.min(UH*1.2,q[1])), R=Math.hypot(UW,UH);
   let sd=S.seed+S.n*77; const rr=()=>{ sd=(sd*9301+49297)%233280; return sd/233280; };
+  const inv=grade.uniforms.imp&&grade.uniforms.imp.value>1.5&&grade.uniforms.imp.value<2.5, ink=inv?'#ffffff':'#000000', paper=inv?'#000000':'#ffffff'; /* on an inverted frame the ink is white */
   D.save(); D.lineCap='round';
-  for(let i=0;i<260;i++){ const a=rr()*6.283, r0=60+rr()*90, len=R*(.25+rr()*.9), w=.6+rr()*rr()*4; D.strokeStyle=rr()<.12?'#ffffff':'#000000'; D.lineWidth=w; D.beginPath(); let px=cx+Math.cos(a)*r0, py=cy+Math.sin(a)*r0; D.moveTo(px,py);
+  for(let i=0;i<(S.big?340:260);i++){ const a=rr()*6.283, r0=60+rr()*90, len=R*(.25+rr()*.9), w=.6+rr()*rr()*(S.big?6:4); D.strokeStyle=rr()<.12?paper:ink; D.lineWidth=w; D.beginPath(); let px=cx+Math.cos(a)*r0, py=cy+Math.sin(a)*r0; D.moveTo(px,py);
     for(let k=1;k<=5;k++){ const t=k/5, jit=(rr()-.5)*8*t; px=cx+Math.cos(a)*(r0+len*t)+Math.cos(a+1.57)*jit; py=cy+Math.sin(a)*(r0+len*t)+Math.sin(a+1.57)*jit; D.lineTo(px,py); } D.stroke(); }
-  for(let i=0;i<7;i++){ const a=rr()*6.283, r0=R*(.22+rr()*.3), sp=.18+rr()*.25; D.fillStyle='#000000'; D.beginPath(); D.moveTo(cx+Math.cos(a-sp)*r0,cy+Math.sin(a-sp)*r0); /* the black masses, scribble-edged */
+  for(let i=0;i<7;i++){ const a=rr()*6.283, r0=R*(.22+rr()*.3), sp=.18+rr()*.25; D.fillStyle=ink; D.beginPath(); D.moveTo(cx+Math.cos(a-sp)*r0,cy+Math.sin(a-sp)*r0); /* the black masses, scribble-edged */
     for(let k=0;k<=8;k++){ const b=a-sp+sp*2*k/8, rk=r0+(rr()-.5)*60; D.lineTo(cx+Math.cos(b)*rk,cy+Math.sin(b)*rk); } D.lineTo(cx+Math.cos(a+sp)*R,cy+Math.sin(a+sp)*R); D.lineTo(cx+Math.cos(a-sp)*R,cy+Math.sin(a-sp)*R); D.closePath(); D.fill(); }
-  const g=D.createRadialGradient(cx,cy,0,cx,cy,110); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.55,'rgba(255,255,255,.9)'); g.addColorStop(1,'rgba(255,255,255,0)'); D.fillStyle=g; D.fillRect(cx-120,cy-120,240,240); D.restore(); }
+  const pc=inv?'0,0,0':'255,255,255', g=D.createRadialGradient(cx,cy,0,cx,cy,110); g.addColorStop(0,`rgba(${pc},1)`); g.addColorStop(.55,`rgba(${pc},.9)`); g.addColorStop(1,`rgba(${pc},0)`); D.fillStyle=g; D.fillRect(cx-120,cy-120,240,240); D.restore(); }
 // the deep red's sparks: steel grinding off the hilt and the ground cracking red
 function npxSparks(E){ const hx=NB.x, hy=NB.y+2.9, hz=NB.z; for(let i=0;i<4;i++){ FX.spark(hx+rnd(-.4,.4),hy+rnd(-.3,.6),hz+rnd(-.4,.4)); } FX.burst(hx,hy,hz,40,0xff2a3a,8,.35); FX.burst(hx,hy,hz,20,0x5a0008,6,.4);
   for(let i=0;i<8;i++){ const a=i/8*6.283+rnd(-.2,.2); FX.line(hx+Math.cos(a)*1.2,hz+Math.sin(a)*1.2,a,rnd(2,5),.14,0xff2a3a,.9); } Sound.sfx('deflect'); Sound.tone('sawtooth',160,40,.5,.14); shake(.5); }
@@ -14043,7 +14065,7 @@ function npxGlint(x,y,z){ const mk=()=>{ const g=new THREE.Sprite(new THREE.Spri
       for(const g of [streak,star,halo]) g.position.set(x,y,z); streak.scale.set(14*(1+u),1.6*(1+u)*a+.01,1); star.scale.setScalar(5*a+.01); halo.scale.setScalar(8*(.5+u));
       halo.material.opacity=.7*a; streak.material.opacity=a; star.material.opacity=a; return u<1; },
     kill(){ scene.remove(streak); scene.remove(star); scene.remove(halo); }});
-  [1046,1318,1568,2093,2637].forEach((f,i)=>Sound.tone(i%2?'sine':'triangle',f,f*1.01,.6+i*.08,.06)); Sound.sfx('ting'); FX.flash=Math.max(FX.flash,.25); grade.uniforms.flashCol.value.set(1,1,1); }
+  [1046,1318,1568,2093,2637].forEach((f,i)=>Sound.tone(i%2?'sine':'triangle',f,f*1.01,.6+i*.08,.06)); Sound.sfx('ting'); }
 // ---------- a strip on the ground along a line (the telegraph, the ravine): jag = how ragged its edges are ----------
 function npxStrip(x0,z0,ux,uz,len,half,jag,dy,mat){ const N=Math.max(2,Math.ceil(len/1.5)), px=-uz, pz=ux, pos=[], idx=[];
   for(let i=0;i<=N;i++){ const d=i*len/N, cx=x0+ux*d, cz=z0+uz*d, wl=half*(1+rnd(-jag,jag)), wr=half*(1+rnd(-jag,jag));
@@ -14061,8 +14083,8 @@ function npxDodge(mx,mz){ const E=NP1.ex, P=Player, px=-E.uz, pz=E.ux; E.lock=0;
   Sound.tone('sine',2400,3800,.25,.14); Sound.tone('triangle',1200,1900,.22,.1); Sound.sfx('whoosh'); Sound.sfx('dash'); Sound.tone('sine',120,38,.4,.28); Sound.hiss(2600,.4,.14,'bandpass');
   try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh){ g.mesh.material.color.setHex(0x6ab8ff); g.mesh.scale.multiplyScalar(1.25); } }catch(e){} FX.burst(P.x,P.y+1,P.z,40,0x3a8aff,7,.45); FX.ring(P.x,P.y+.1,P.z,'#6ab8ff',3,.35);
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'PERFECT DODGE',t:0,big:true,col:'#8fc4ff'}); }
-function npxDodgeUpd(S,rdt){ const P=Player, u=Math.min(1,S.t/.26), e=u>=1?1:1-Math.pow(2,-10*u); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3; P.cineAnim=u<1?'run':'idle'; if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f;
-  S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.016; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x6ab8ff); }catch(e){} }
+function npxDodgeUpd(S,rdt){ const P=Player, u=Math.min(1,S.t/NP1_DASH), e=1-Math.pow(1-u,3); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=groundY(P.x,P.z)+Math.sin(u*Math.PI)*.3; P.cineAnim=u<1?'run':'idle'; if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f;
+  S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.035; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x6ab8ff); }catch(e){} }
   if(u<1) for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,2),P.z+rnd(-.4,.4),(S.sx-S.ex)*rnd(1,3),rnd(-.3,.6),(S.sz-S.ez)*rnd(1,3),.4,i%2?0x3a8aff:0xffffff,.3,0,true);
   try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=S.t<.1?TPS.FOV+16*(S.t/.1):TPS.FOV+6+10*Math.exp(-(S.t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
   if(S.t>=.75){ NP1.seq=null; np1PdLook(false); Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.6; Sound.hiss(1800,.3,.12,'bandpass'); } }
@@ -14528,23 +14550,35 @@ function npFwdBlink(ux,uz,d){ const P=Player, D=5, on=d<2.6; let tx,tz,ty;
 // ---------- the flip dodge (the grab, blinking into him) ----------
 function npFlipDodge(){ const P=Player, [dx,dz]=np1Dir(); np1PerfectDodge(-dx,-dz); const S=NP1.seq; if(!S||S.k!=='pdodge') return; const gy=groundY(NB.x-dx*3.2,NB.z-dz*3.2), high=NB.y-groundY(NB.x,NB.z)>2.5;
   Object.assign(S,{flip:1,ex:NB.x-dx*3.2,ez:NB.z-dz*3.2,sy:P.y,ey:high?Math.max(gy,NB.y-1.1):gy,top:NB.y+3.6,nx:0,nz:0}); P.alFlipT=Game.time; P.cineAnim='jump'; Sound.sfx('djump'); }
-function npFlipUpd(S,rdt,wdt){ const P=Player, u=Math.min(1,S.t/.5), e=u<1?1-Math.pow(1-u,2):1; P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); const base=lerp(S.sy,S.ey,e); P.y=base+Math.sin(u*Math.PI)*Math.max(.5,S.top-Math.max(S.sy,S.ey));
-  P.cineAnim='jump'; if(u<1&&S.t>.1&&P.alFlipT==null) P.alFlipT=Game.time; P.ang=Math.atan2(S.ez-S.sz,S.ex-S.sx); if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f;
-  S.gt-=rdt; if(u<1&&S.gt<=0){ S.gt=.02; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x6ab8ff); }catch(e){} }
-  if(u<1) for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.3,.3),P.y+rnd(.2,1.6),P.z+rnd(-.3,.3),0,0,0,.3,i%2?0x3a8aff:0xffffff,.3,0,true);
-  try{ if(typeof TPS!=='undefined'&&TPS.on){ camera.fov=S.t<.1?TPS.FOV+16*(S.t/.1):TPS.FOV+6+10*Math.exp(-(S.t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
-  if(NP1.pdFx) NP1.pdFx.t=S.t; if(typeof NBS!=='undefined') NBS.fixRow=4; /* his hand still out, grabbing air */
-  if(S.t>.1&&S.t<1.1&&consume('attack')){ np1PdLook(false); npFlipCounter(); return; }
-  if(S.t>=1.1){ NP1.seq=null; np1PdLook(false); Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; if(typeof NBS!=='undefined') NBS.fixRow=null; } }
+// the flip, in real time through the slow-mo: he vaults up to the top of the arc over his head (NPF_RISE), hangs there upside
+// down while time crawls (to NPF_HOLD); attack = the flip counter from the top (pressed on the way up, it fires at the top).
+// No press: time snaps back and he finishes the vault to the far side (NPF_FIN)
+const NPF_RISE=.4, NPF_HOLD=1.35, NPF_FIN=.3;
+function npFlipUpd(S,rdt,wdt){ const P=Player, t=S.t; let u, fk, bob=0; S.end=NPF_HOLD;
+  if(S.fin==null){ if(t<NPF_RISE){ const k=t/NPF_RISE; u=.5*(1-(1-k)*(1-k)); fk=.5*k; } else { u=.5+.02*Math.min(1,(t-NPF_RISE)/(NPF_HOLD-NPF_RISE)); fk=.5; bob=Math.sin((t-NPF_RISE)*5)*.07; Game.slowT=Math.max(Game.slowT,.2); } }
+  else { const k=Math.min(1,(t-S.fin)/NPF_FIN); u=.52+.48*k*k; fk=.5+.5*k; }
+  P.x=lerp(S.sx,S.ex,u); P.z=lerp(S.sz,S.ez,u); const base=lerp(S.sy,S.ey,u); P.y=base+Math.sin(u*Math.PI)*Math.max(.5,S.top-Math.max(S.sy,S.ey))+bob;
+  P.cineAnim='jump'; P.alFlipT=fk<1?Game.time-.55*Math.min(.99,fk):null; /* the front flip, frozen upside down at the top */ P.ang=Math.atan2(S.ez-S.sz,S.ex-S.sx); if(typeof TPS!=='undefined'&&TPS.f) P.f=TPS.f;
+  const moving=t<NPF_RISE||S.fin!=null; S.gt-=rdt; if(moving&&S.gt<=0){ S.gt=.035; try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0x6ab8ff); }catch(e){} }
+  if(moving) for(let i=0;i<3;i++) FX.spawn(P.x+rnd(-.3,.3),P.y+rnd(.2,1.6),P.z+rnd(-.3,.3),0,0,0,.3,i%2?0x3a8aff:0xffffff,.3,0,true);
+  else if(Math.random()<.5) FX.spawn(P.x+rnd(-.5,.5),P.y+rnd(.2,1.8),P.z+rnd(-.5,.5),0,rnd(.2,.6),0,.5,0x6ab8ff,.22,0,true);
+  try{ if(typeof TPS!=='undefined'&&TPS.on&&S.fin==null){ camera.fov=t<.1?TPS.FOV+16*(t/.1):TPS.FOV+6+10*Math.exp(-(t-.1)*7); camera.updateProjectionMatrix(); } }catch(e){}
+  if(NP1.pdFx) NP1.pdFx.t=t; if(typeof NBS!=='undefined') NBS.fixRow=4; /* his hand still out, grabbing air */
+  if(S.fin==null&&t>.1&&consume('attack')) S.q=1;
+  if(S.q&&t>=NPF_RISE){ np1PdLook(false); npFlipCounter(S.ex-S.sx,S.ez-S.sz); return; }
+  if(S.fin==null&&t>=NPF_HOLD){ S.fin=t; np1PdLook(false); Game.slowT=0; Sound.hiss(1800,.3,.12,'bandpass'); Sound.tone('sine',90,420,.25,.12); /* time snaps back */ }
+  if(S.fin!=null&&t-S.fin>=NPF_FIN){ NP1.seq=null; Game.slowT=0; P.cineFly=false; P.cineAnim=null; P.inv=.35; P.vy=0; if(typeof NBS!=='undefined') NBS.fixRow=null; } }
 (function(){ const pu=np1PdUpd; np1PdUpd=function(S,rdt,wdt){ if(S&&S.flip) return npFlipUpd(S,rdt,wdt); return pu.apply(this,arguments); }; })();
-// the flip counter: away from him, somersaulting, three Jujishous back over the shoulder, the camera swung round in front
-function npFlipCounter(){ const P=Player, [dx,dz]=np1Dir(), ux=dx, uz=dz, px=-uz, pz=ux; /* ux,uz: away from Nathan (np1Dir points from him to Ali) */ NP1.pdT=-9; NP1.gen=null; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined') NBS.fixRow=null;
-  P.aliAtk=null; P.cineFly=true; P.cineAnim='jump'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0; P.alFlipT=Game.time; const gy=groundY(P.x+ux*8,P.z+uz*8);
-  NP1.seq={k:'flipctr',t:0,sx:P.x,sz:P.z,sy:P.y,ex:P.x+ux*8,ez:P.z+uz*8,ey:gy,ux,uz,px,pz,n:0,fired:[]}; Game.letterTo=.5;
+// the flip counter: from the top of the vault on over and away from him, somersaulting, three Jujishous down into him as he
+// passes over, the camera swung round in front. vx,vz: the vault's direction (default: away from Nathan)
+function npFlipCounter(vx,vz){ const P=Player, [dx,dz]=np1Dir(), vl=Math.hypot(vx||0,vz||0), ux=vl>.1?vx/vl:dx, uz=vl>.1?vz/vl:dz, px=-uz, pz=ux; NP1.pdT=-9; NP1.gen=null; NB.dsh=null; NB.stunned=1; if(typeof NBS!=='undefined') NBS.fixRow=null;
+  P.aliAtk=null; P.cineFly=true; P.cineAnim='jump'; P.inv=99; P.vx=P.vz=P.vy=0; Game.slowT=0; P.alFlipT=Game.time-.55*.5; /* on from the upside-down top of the flip */ const gy=groundY(P.x+ux*8,P.z+uz*8);
+  NP1.seq={k:'flipctr',t:0,sx:P.x,sz:P.z,sy:P.y,ex:P.x+ux*8,ez:P.z+uz*8,ey:gy,ux,uz,px,pz,n:0,fired:[],bump:P.y-gy>2?.9:2.2}; Game.letterTo=.5;
   NP1.cam={x:P.x+ux*5.5+px*1.2,y:P.y+1.6,z:P.z+uz*5.5+pz*1.2,lx:P.x,ly:P.y+1.2,lz:P.z}; Sound.sfx('whoosh'); Sound.sfx('secret'); FX.flash=.3; grade.uniforms.flashCol.value.set(1,.2,.3);
   Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'FLIP COUNTER',t:0,big:true,col:'#ff6a7a'}); }
-const NP_FLIP_T=[.18,.42,.66];
-function npFlipCtrUpd(S,dt){ const P=Player, k=Math.min(1,S.t/1.25), e=k*(2-k); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=Math.max(groundY(P.x,P.z),lerp(S.sy,S.ey,k*k)+Math.sin(Math.min(1,S.t/1.25)*Math.PI)*2.2);
+const NP_FLIP_T=[.04,.26,.48]; /* the first on the press, over his head */
+function npFlipCtrUpd(S,dt){ const P=Player, k=Math.min(1,S.t/1.25), e=k*(2-k); P.x=lerp(S.sx,S.ex,e); P.z=lerp(S.sz,S.ez,e); P.y=Math.max(groundY(P.x,P.z),lerp(S.sy,S.ey,k*k)+Math.sin(Math.min(1,S.t/1.25)*Math.PI)*(S.bump||2.2));
+  for(const b of S.fired) if(b.life>0&&!b.deflected){ b.y=lerp(b.y,NB.y+1.6,Math.min(1,dt*9)); b.g.position.y=b.y; } /* the shots dive down into him */
   if(S.t>.62&&!S.flip2){ S.flip2=1; P.alFlipT=Game.time; } P.cineAnim='jump'; P.ang=Math.atan2(S.uz,S.ux); P.f=S.ux>=0?1:-1; /* he faces the camera (his flight), the shots go back over his shoulder */
   const C=NP1.cam; if(C&&S.t<1.3){ C.x=lerp(C.x,P.x+S.ux*5.5+S.px*1.2,Math.min(1,dt*6)); C.z=lerp(C.z,P.z+S.uz*5.5+S.pz*1.2,Math.min(1,dt*6)); C.y=lerp(C.y,P.y+1.4,Math.min(1,dt*6)); C.lx=P.x; C.ly=P.y+1.2; C.lz=P.z; }
   while(S.n<3&&S.t>=NP_FLIP_T[S.n]){ S.n++; const a0=P.ang, f0=P.f, n0=BEAMS.length; try{ aliGetsuga(true); }catch(e){ console.error('flip shot',e); } P.ang=a0; P.f=f0; const b=BEAMS.length>n0?BEAMS[BEAMS.length-1]:null;
@@ -17668,8 +17702,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.40 (Oct 29): notes for the next session (CLAUDE.md); no gameplay change.";
-const DBG_NEW=[];
+const DBG_PATCH="v1.41 (Oct 31): Nathan on Ali's road: the flip dodge hangs over his head in the slow-mo and the flip counter fires from the top; the perfect dodges dash visibly; a louder grab tell (blue hand glow, a closing ring, BLINK!); the Starbreaker's five glints placed on screen as real impact frames.";
+const DBG_NEW=['nathan:grab','nathan:excal'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -18131,7 +18165,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.40';
+const GAME_VERSION='v1.41';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

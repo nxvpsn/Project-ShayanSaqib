@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.40 (Oct 29): notes for the next session (CLAUDE.md); no gameplay change.";
-const DBG_NEW=[];
+const DBG_PATCH="v1.41 (Oct 31): Nathan on Ali's road: the flip dodge hangs over his head in the slow-mo and the flip counter fires from the top; the perfect dodges dash visibly; a louder grab tell (blue hand glow, a closing ring, BLINK!); the Starbreaker's five glints placed on screen as real impact frames.";
+const DBG_NEW=['nathan:grab','nathan:excal'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
