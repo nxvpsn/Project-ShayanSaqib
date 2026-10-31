@@ -227,21 +227,24 @@ TWK.omar.lc1=function*(T){ twLCPrep(T); Game.letterTo=.35; twCutin('omar','LIGHT
 // ---------- Harvest: dodge the souls. Swords pass through them; a soul you dodge flies on into Omar ----------
 // A soul that hits you: half a heart and a 1s slow. Each wave locks onto where you are; the last wave is fast enough to need a dash.
 TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='gone')){ yield .2; return; } const sp=twSp(T); twBark('omar',"Lanternbrook's souls... they taste like bread.",true); Sound.sfx('choir'); T.cast=1;
-  twBig('DODGE THE SOULS',{size:46,col:'#bfe8ff',y:UH*.24,dur:1.5,sub:'Blades pass through them. Dodged souls fly into Omar.'});
+  twBig('DODGE THE SOULS',{size:46,col:'#bfe8ff',y:UH*.24,dur:1.5,sub:'They fly straight in: walk diagonally or double jump. Dodged souls fly into Omar.'});
   const N=12, R=9, tell=(ph>=3?.38:.45)/sp, H={a:rnd(0,6.28),k:0,live:true,t:0,w:0,pend:null}, souls=[];
   for(let i=0;i<N;i++) souls.push({i,st:'orbit',x:Player.x,z:Player.z,t:0,m:twBB(texSoul(),.9,1.1)}); TW._harvest=souls;
   // the waves run inside the hazard, so Omar keeps moving and attacking while the souls circle you: a quarter flashes every 3s, then rushes
-  const launch=(pick,last)=>{ const P=Player, v=(last?26:ph>=3?19:16)*sp, lead=last?.35:.15;
+  // each wave flies in along the screen axes (3 of up/down/left/right), aimed where you stand: walking diagonally (45° to every
+  // path) or a double jump (over 1.6) clears it
+  const launch=(pick,last)=>{ const P=Player, v=(last?26:ph>=3?19:16)*sp, lead=0;
     pick.forEach(o=>{ if(o.st!=='tell') return; const tx=P.x+P.vx*lead, tz=P.z+P.vz*lead, dx=tx-o.x, dz=tz-o.z, d=Math.hypot(dx,dz)||1; o.st='rush'; o.t=0; o.vx=dx/d*v; o.vz=dz/d*v; o.trav=0; o.len=d+3; }); Sound.sfx('whoosh'); };
   twHz({upd(dt,play){ const P=Player; if(play){ H.a+=dt*.85; H.k=Math.min(1,H.k+dt*1.5); H.t+=dt;
-        if(H.w<4&&H.t>=2+3*H.w){ const w=H.w++, pick=souls.filter(o=>o.i%4===w&&o.st==='orbit'); pick.forEach(o=>{ o.st='tell'; o.t=0; }); Sound.sfx('charge'); H.pend={at:H.t+tell,pick,last:w===3}; }
+        if(H.w<4&&H.t>=2+3*H.w){ const w=H.w++, pick=souls.filter(o=>o.i%4===w&&o.st==='orbit'); pick.forEach(o=>{ o.st='tell'; o.t=0; }); Sound.sfx('charge'); { const skip=Math.floor(Math.random()*4), free=[0,1,2,3].filter(k=>k!==skip).map(k=>k*Math.PI/2); /* the axis slots, one left out */
+          for(const o of pick){ const a=H.a+o.i*6.283/N; let bi=0, bd=9; free.forEach((sl,j)=>{ const d=Math.abs(Math.atan2(Math.sin(sl-a),Math.cos(sl-a))); if(d<bd){ bd=d; bi=j; } }); o.slot=free.splice(bi,1)[0]; } } H.pend={at:H.t+tell,pick,last:w===3}; }
         if(H.pend&&H.t>=H.pend.at){ launch(H.pend.pick,H.pend.last); H.pend=null; } }
       let any=false;
       if(play&&P.soulSlowT>Game.time){ P.x-=P.vx*dt*.5; P.z-=P.vz*dt*.5; }
       for(const o of souls){ if(o.st==='gone') continue; any=true; const gy=groundY(o.x,o.z); if(play) o.t+=dt;
-        if(o.st==='orbit'||o.st==='tell'){ const a=H.a+o.i*6.283/N, r=R*H.k; o.x=P.x+Math.cos(a)*r; o.z=P.z+Math.sin(a)*r; }
+        if(o.st==='orbit'||o.st==='tell'){ let a=H.a+o.i*6.283/N; const r=R*H.k; if(o.st==='tell'&&o.slot!=null){ const k=Math.min(1,o.t/Math.max(.05,tell*.6)); a+=Math.atan2(Math.sin(o.slot-a),Math.cos(o.slot-a))*(1-(1-k)*(1-k)); } /* glides onto its axis while it flashes */ o.x=P.x+Math.cos(a)*r; o.z=P.z+Math.sin(a)*r; }
         else if(o.st==='rush'&&play){ o.x+=o.vx*dt; o.z+=o.vz*dt; o.trav+=Math.hypot(o.vx,o.vz)*dt; if(Math.random()<.9) FX.spawn(o.x,gy+1,o.z,0,.4,0,.3,0xff8ab0,.25,0,true);
-          if(Math.hypot(P.x-o.x,P.z-o.z)<.9&&P.y<gy+2.2){ const r=twHitP(1,o.x,o.z,{ub:true}); if(r==='hit'||r==='block'){ P.soulSlowT=Game.time+1; Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'DRAINED',t:0,col:'#ff8ab0'}); FX.burst(o.x,gy+1,o.z,16,0xff8ab0,4,.3); o.st='gone'; scene.remove(o.m); continue; } }
+          if(Math.hypot(P.x-o.x,P.z-o.z)<.75&&P.y<gy+1.6){ const r=twHitP(1,o.x,o.z,{ub:true}); if(r==='hit'||r==='block'){ P.soulSlowT=Game.time+1; Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'DRAINED',t:0,col:'#ff8ab0'}); FX.burst(o.x,gy+1,o.z,16,0xff8ab0,4,.3); o.st='gone'; scene.remove(o.m); continue; } }
           if(o.trav>o.len){ o.st='home'; o.t=0; } }
         else if(o.st==='home'&&play){ const dx=T.x-o.x, dz=T.z-o.z, d=Math.hypot(dx,dz)||1, v=14; o.x+=dx/d*v*dt; o.z+=dz/d*v*dt; if(Math.random()<.8) FX.spawn(o.x,gy+1,o.z,0,.4,0,.3,0xbfe8ff,.25,0,true);
           if(d<1||o.t>2){ if(d<1&&!T.hide){ twHurt(T,1.5,'soul'); /* 'soul': never feeds his Sekiro stance (21_omar2) */ Game.dmgNums.push({x:o.x,y:gy+2.2,z:o.z,n:'FREED',t:0,col:'#bfe8ff'}); } FX.burst(o.x,gy+1,o.z,14,0xbfe8ff,4,.3); Sound.sfx('hit'); o.st='gone'; scene.remove(o.m); continue; } }

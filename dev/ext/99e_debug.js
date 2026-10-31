@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.42 (Oct 31): Omar\'s Sekiro stance only counts your own attacks: freed Lanternbrook souls and his parried scythes hit him but never add to the Fullmoon Counter.";
-const DBG_NEW=['omar:sekiro'];
+const DBG_PATCH="v1.43 (Oct 31): Omar's Harvest: each wave of souls flies straight in along the screen axes (3 of up/down/left/right), aimed where you stand: walk diagonally or double jump to dodge it.";
+const DBG_NEW=['omar:harvest'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
