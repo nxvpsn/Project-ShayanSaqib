@@ -187,6 +187,8 @@ s = patch(s, "#wrap{position:relative;flex:0 0 auto;box-shadow:0 0 0 1px rgba(21
 s = patch(s, "#ui:focus-visible{box-shadow:0 0 0 2px var(--gold)}", "#ui:focus-visible{box-shadow:none}")
 s = patch(s, "#hint{font-size:13px;", "#hint{display:none!important;font-size:13px;")
 s = patch(s, "body{background:var(--ink);color:var(--parchment);margin:0;", "body{background:#000;color:var(--parchment);margin:0;")  # the bars on a non-16:9 screen match the game's black
+# Shayan's glide sinks at 0.72 a second (was 1.3): a double jump and a glide keeps him over Omar's Harvest souls (1.6 up) for 1.4s
+s = patch(s, "P.vy=ALI()?0:Math.max(P.vy,-1.3);", "P.vy=ALI()?0:Math.max(P.vy,-.72);")
 s = patch(s, "const aw=full?vw:document.body.clientWidth-32, ah=full?vh:document.body.clientHeight-(getComputedStyle(hint).display==='none'?16:hint.offsetHeight+24);", "const aw=vw, ah=vh;")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 

@@ -226,6 +226,8 @@ TWK.omar.lc1=function*(T){ twLCPrep(T); Game.letterTo=.35; twCutin('omar','LIGHT
 
 // ---------- Harvest: dodge the souls. Swords pass through them; a soul you dodge flies on into Omar ----------
 // A soul that hits you: half a heart and a 1s slow. Each wave locks onto where you are; the last wave is fast enough to need a dash.
+// gliding over Harvest: Shayan's glide sinks at 0.72 a second (build.py), so a double jump at the top of the first jump plus
+// a glide keeps him over the souls' 1.6 for 1.4s (measured; 0.52s without the glide)
 TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='gone')){ yield .2; return; } const sp=twSp(T); twBark('omar',"Lanternbrook's souls... they taste like bread.",true); Sound.sfx('choir'); T.cast=1;
   twBig('DODGE THE SOULS',{size:46,col:'#bfe8ff',y:UH*.24,dur:1.5,sub:'They fly straight in: walk diagonally or double jump. Dodged souls fly into Omar.'});
   const N=12, R=9, tell=(ph>=3?.38:.45)/sp, H={a:rnd(0,6.28),k:0,live:true,t:0,w:0,pend:null}, souls=[];
