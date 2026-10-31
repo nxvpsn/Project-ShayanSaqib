@@ -244,7 +244,7 @@ TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='go
           if(Math.hypot(P.x-o.x,P.z-o.z)<.9&&P.y<gy+2.2){ const r=twHitP(1,o.x,o.z,{ub:true}); if(r==='hit'||r==='block'){ P.soulSlowT=Game.time+1; Game.dmgNums.push({x:P.x,y:P.y+2.4,z:P.z,n:'DRAINED',t:0,col:'#ff8ab0'}); FX.burst(o.x,gy+1,o.z,16,0xff8ab0,4,.3); o.st='gone'; scene.remove(o.m); continue; } }
           if(o.trav>o.len){ o.st='home'; o.t=0; } }
         else if(o.st==='home'&&play){ const dx=T.x-o.x, dz=T.z-o.z, d=Math.hypot(dx,dz)||1, v=14; o.x+=dx/d*v*dt; o.z+=dz/d*v*dt; if(Math.random()<.8) FX.spawn(o.x,gy+1,o.z,0,.4,0,.3,0xbfe8ff,.25,0,true);
-          if(d<1||o.t>2){ if(d<1&&!T.hide){ twHurt(T,1.5,'bolt'); Game.dmgNums.push({x:o.x,y:gy+2.2,z:o.z,n:'FREED',t:0,col:'#bfe8ff'}); } FX.burst(o.x,gy+1,o.z,14,0xbfe8ff,4,.3); Sound.sfx('hit'); o.st='gone'; scene.remove(o.m); continue; } }
+          if(d<1||o.t>2){ if(d<1&&!T.hide){ twHurt(T,1.5,'soul'); /* 'soul': never feeds his Sekiro stance (21_omar2) */ Game.dmgNums.push({x:o.x,y:gy+2.2,z:o.z,n:'FREED',t:0,col:'#bfe8ff'}); } FX.burst(o.x,gy+1,o.z,14,0xbfe8ff,4,.3); Sound.sfx('hit'); o.st='gone'; scene.remove(o.m); continue; } }
         const tl=o.st==='tell'; o.m.position.set(o.x,groundY(o.x,o.z)+1+(tl?Math.sin(o.t*40)*.15:Math.sin(H.a*3+o.i)*.15),o.z); o.m.scale.setScalar(tl?1.35:o.st==='rush'?1.2:1);
         o.m.material.color.setHex(o.st==='home'?0xbfe8ff:tl||o.st==='rush'?0xffb0c8:0xbfe8ff); }
       return any&&H.live; }, kill(){ souls.forEach(o=>scene.remove(o.m)); }});

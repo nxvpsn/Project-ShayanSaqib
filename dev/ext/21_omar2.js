@@ -22,7 +22,7 @@ function twSekiroParry(T,src){ if((T.skCd||0)>Game.time) return; T.skCd=Game.tim
   for(let i=0;i<3;i++) FX.spark(mx,T.y+1.3,mz); FX.ring(T.x,groundY(T.x,T.z)+.1,T.z,'#b06aff',2.4,.35); FX.flash=.32; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[2,1]]);
   const need=T.skNeed||3; Game.dmgNums.push({x:T.x,y:T.y+3.2*(T.scale||1),z:T.z,n:'PARRIED '+Math.min(need,T.skN)+'/'+need,t:0,big:true,col:'#d0a0ff'});
   if(src==='melee'){ const a=Math.atan2(P.z-T.z,P.x-T.x); P.vx+=Math.cos(a)*5; P.vz+=Math.sin(a)*5; } }
-(function(){ const th=twHurt; twHurt=function(T,d,src){ if(T&&T.who==='omar'&&T.sekiroT>Game.time&&T.state==='atk'&&T.last==='sekiro'&&T.hp>0&&!TW._ally&&!['ally','ff','test','soul'].includes(src)){ twSekiroParry(T,src); return false; } /* freed Harvest souls never feed his Fullmoon Counter */ return th.apply(this,arguments); }; })();
+(function(){ const th=twHurt; twHurt=function(T,d,src){ if(T&&T.who==='omar'&&T.sekiroT>Game.time&&T.state==='atk'&&T.last==='sekiro'&&T.hp>0&&!TW._ally&&!['ally','ff','test','soul'].includes(src)&&!(src==='bolt'&&TW._bolt&&TW._bolt.kind==='scythe')){ twSekiroParry(T,src); return false; } /* freed Lanternbrook souls and his own scythes (parried back) never feed his Fullmoon Counter: they just hit */ return th.apply(this,arguments); }; })();
 function texBlackCrescent(){ if(TW._bcTex) return TW._bcTex; const S=256, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   const shape=()=>{ c.beginPath(); c.arc(S/2,S/2,104,0,7); c.arc(S/2+46,S/2-30,92,0,7,true); };
   c.save(); c.shadowColor='rgba(140,60,230,.9)'; c.shadowBlur=8; c.fillStyle='#8a3aff'; shape(); c.fill('evenodd'); c.restore(); /* black, with a thin purple outline */
