@@ -8923,6 +8923,11 @@ TWK.omar.sentence=function*(T,ph){ const sp=twSp(T); twBark('omar',ph>=2?"Double
 // ---------- Shadow Requiem (clones): they start far out and arrive one per beat; each one is a timed parry, its eyes flash when the window opens ----------
 // Attacking early while standing in a clone's line (the first clone lets that slide until it is halfway to you): that clone blinks behind you, grabs you and lifts you up, and every clone that has not
 // dashed yet flies through you (half a heart each). Not pressing at all just means the clone hits you (1 heart), or you dodge out of its line.
+// From any angle: out of a clone's line, an attack timed as it passes within TW_CLONE_REACH of you (beside you, behind, diagonal) parries
+// it too: the first press from the parry window (0.26s) before it comes into reach until 0.15s after it leaves; an early one just misses, no grab.
+const TW_CLONE_REACH=2.4, TW_CLONE_LATE=.15; /* LATE: a press just after it has passed you still hits it in the back */
+function twCloneSideParry(c,cl,p,gy){ const now=Game.time; c.hit=true; c.res=now; c.sfrom=p.t; twMeleeParry(c.x,c.z,{heavy:true,melee:true,onParry:()=>{ c.d0=99; Game.dmgNums.push({x:c.x,y:gy+3,z:c.z,n:'SHATTER',t:0,col:'#d0a0ff'}); }});
+  for(const o of cl) if(o!==c&&o.from!=null&&o.from<p.t){ o.from=p.t; o.sfrom=Math.max(o.sfrom||0,p.t); } /* that press is spent: it can't also count as early for the next clone */ }
 TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem. My clones are also emotionally unavailable.",true); T.cast=1; Sound.sfx('howl');
   const P=Player, n=ph>=3?5:4, a0=rnd(0,6.28), tell=.55/sp, vel=18*sp, gap=.7, t0=Game.time, cl=[], S={done:false,grab:null}; TW._clones=cl;
   for(let i=0;i<n;i++){ const a=a0+i*6.283/n, p=twClampXZ(P.x+Math.cos(a)*13,P.z+Math.sin(a)*10.4,.8), Sp=new Sprite3D(128,128,28); Sp.mesh.material.color.setHex(0x6a3aa8); Sp.glow(.35);
@@ -8936,7 +8941,7 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
       else { const act=cl.find(c=>!c.res&&!c.gone);
         for(const c of cl){ if(c.gone) continue; alive=true; const gy=groundY(c.x,c.z), prev=cl[c.i-1];
           if(c.st==='wait'&&now>=c.ts){ c.st='tell'; c.a=Math.atan2(P2.z-c.z,P2.x-c.x); c.dist=Math.hypot(P2.x-c.x,P2.z-c.z); c.lx=c.x; c.lz=c.z; FX.line(c.x,c.z,c.a,15,1.2,0xa04aff,tell); Sound.sfx('charge');
-            c.from=Math.max(c.ts+TW_STRICT.grace,prev&&prev.res?prev.res+.15:0); }
+            c.from=Math.max(c.ts+TW_STRICT.grace,prev&&prev.res?prev.res+.15:0); c.sfrom=c.from; }
           else if(c.st==='tell'&&now>=c.ts+tell){ c.st='dash'; Sound.sfx('dash'); }
           if(c.st!=='wait'&&!c.glint&&twRealAhead(ahead(c,P2,now))<=.17){ c.glint=true; Sound.sfx('ting'); const g=twGlow(0xffffff,2.4); g.position.set(c.x,gy+2.2,c.z); twHz({upd(d2){ this.t+=d2; g.material.opacity=Math.max(0,1-this.t/.3); return this.t<.3; }, kill(){ scene.remove(g); }}); }
           // the next clone to arrive judges the first press made in its line: early = the grab
@@ -8947,6 +8952,10 @@ TWK.omar.clones=function*(T,ph){ const sp=twSp(T); twBark('omar',"Shadow Requiem
             if(S.grab) return true; }
           if(c.st==='dash'&&play){ c.x+=Math.cos(c.a)*vel*dt; c.z+=Math.sin(c.a)*vel*dt; c.d0+=vel*dt; if(!c.hit) twRushTell(c,c.a); if(Math.random()<.9) FX.spawn(c.x,gy+rnd(.4,3),c.z,0,0,0,.35,0x2a0a3a,.8,0,false);
             if(!c.hit&&Math.hypot(P2.x-c.x,P2.z-c.z)<1.15&&Math.abs(P2.y-gy)<1.8){ const r=twStrictDo(c.from,()=>twHitP(2,c.x,c.z,{heavy:true,melee:true,onParry:()=>{ c.d0=99; Game.dmgNums.push({x:c.x,y:gy+3,z:c.z,n:'SHATTER',t:0,col:'#d0a0ff'}); }})); if(r!=='none'){ c.hit=true; c.res=now; } }
+            // out of its line: a timed attack as it passes within reach parries it from the side, behind or a diagonal
+            if(!c.hit&&(!c.res||c.d0<c.dist+TW_CLONE_REACH+1)&&!inLine(c,P2)&&P2.dash<=0&&P2.hurt<=0&&!P2.cineFly&&Math.hypot(P2.x-c.x,P2.z-c.z)<TW_CLONE_REACH&&Math.abs(P2.y-gy)<2.2){ if(c.near0==null) c.near0=now; c.nearT=now; }
+            if(!c.hit&&c.nearT!=null&&now-c.nearT<=TW_CLONE_LATE)
+              for(let g=0;g<40;g++){ const p=twStrictFirst(c.sfrom); if(!p) break; if(p.t<c.near0-TW_STRICT.win){ c.sfrom=p.t; continue; } twCloneSideParry(c,cl,p,gy); break; }
             if(!c.res&&c.d0>c.dist+1.2) c.res=now;
             if(c.d0>c.dist+6){ if(!c.res) c.res=now; FX.burst(c.x,gy+1.6,c.z,22,0x2a0a3a,4,.45,false); c.S.dispose(); c.gone=1; continue; } } } }
       for(const c of cl){ if(c.gone) continue; const gy=groundY(c.x,c.z); c.S.draw((cv,cx,by)=>drawOmarBoss(cv,cx,by,Math.cos(c.a)>0?1:-1,{t:now-t0+3,scythe:1,swing:c.st==='dash'||c.st==='fly'?1:0,cast:c.st==='tell'||c.st==='rise'?1:0,flash:0,form:2})); c.S.place(c.x,(c.y||gy)+1.1,c.z,gy); }
@@ -17725,8 +17734,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.47 (Oct 31): a retry after a death restarts the fight clean: no leftover hazards, projectiles or beams, slow-mo or impact frames, and the special meter and parry pips back to empty. Shayan's glide (v1.46) sinks slower everywhere.";
-const DBG_NEW=['omar:harvest'];
+const DBG_PATCH="v1.48 (Oct 31): Omar's Shadow Requiem clones can be parried from any angle: out of a clone's line, attack as it passes within reach (beside you, behind, diagonal). Retries restart the fight clean (v1.47).";
+const DBG_NEW=['omar:clones'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -18213,7 +18222,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.47';
+const GAME_VERSION='v1.48';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

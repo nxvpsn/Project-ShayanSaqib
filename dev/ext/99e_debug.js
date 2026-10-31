@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.47 (Oct 31): a retry after a death restarts the fight clean: no leftover hazards, projectiles or beams, slow-mo or impact frames, and the special meter and parry pips back to empty. Shayan's glide (v1.46) sinks slower everywhere.";
-const DBG_NEW=['omar:harvest'];
+const DBG_PATCH="v1.48 (Oct 31): Omar's Shadow Requiem clones can be parried from any angle: out of a clone's line, attack as it passes within reach (beside you, behind, diagonal). Retries restart the fight clean (v1.47).";
+const DBG_NEW=['omar:clones'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
