@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.46 (Oct 31): Shayan's glide sinks slower everywhere (0.72 a second, was 1.3): over Omar's Harvest a double jump and a glide keeps him above the souls for 1.4s. Debug Combo (v1.45) chains 2-3 mechanics like the real fight.";
+const DBG_PATCH="v1.47 (Oct 31): a retry after a death restarts the fight clean: no leftover hazards, projectiles or beams, slow-mo or impact frames, and the special meter and parry pips back to empty. Shayan's glide (v1.46) sinks slower everywhere.";
 const DBG_NEW=['omar:harvest'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
