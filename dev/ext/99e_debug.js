@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.44 (Oct 31): Debug: Combo runs 2-3 mechanics at once (Mechanics: tick Combo, tap the moves, Run together; Again and Loop repeat it). Again now restarts Harvest; Loop works on the duo. Harvest itself is from v1.43: souls fly in along the screen axes, walk diagonally or double jump.";
+const DBG_PATCH="v1.45 (Oct 31): Debug Combo chains 2-3 mechanics like the real fight: each starts when the one before has finished, after his normal gap; what it left behind keeps going (Mechanics: tick Combo, tap them in order, Run combo; Again and Loop repeat it). Harvest (v1.43): souls fly in along the screen axes, walk diagonally or double jump.";
 const DBG_NEW=['omar:harvest'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -67,11 +67,11 @@ function dbgSpawn(id){ if(!DBG_ROUTE[DBG.ali?'ali':'shayan'].includes(id)){ dbgS
     else if(id==='hamza'){ hzgStart(); TW.giant.inv=false; }
     else if(id==='nathan'){ nbMake(c.x,c.z-6); NB.bars=NB.hp=NB_PHASES[0]; run(function*(){ yield* nbBeginPhase(1); }); }
     resetPlayer({x:c.x,z:c.z+5},true); Player.hp=Player.maxHp; dbgApplyMode(); }); }
-function dbgDespawn(){ DBG.move=null; if(Game.mech||DBG.boss==='grimmaw'||DBG.boss==='paul') dbgArena(null); else { twEndFight(); TW.giant=null; if(typeof hzgClearBabies==='function') hzgClearBabies(); nbRemove(); Game.arena=null; Cam.focus=null; Cam.zoom=1; Game.bossBar=0; } }
+function dbgDespawn(){ DBG.move=null; DBG.cq=null; if(Game.mech||DBG.boss==='grimmaw'||DBG.boss==='paul') dbgArena(null); else { twEndFight(); TW.giant=null; if(typeof hzgClearBabies==='function') hzgClearBabies(); nbRemove(); Game.arena=null; Cam.focus=null; Cam.zoom=1; Game.bossBar=0; } }
 // the AI mode is enforced every frame in dbgTick; this just cancels what the boss is doing when you pick Idle
-function dbgApplyMode(){ if(DBG.mode!=='idle') return; const T=dbgSolo(), F=dbgDuo(); if(T){ T.gen=null; T.state='idle'; } if(F){ F.C.gen=F.O.gen=null; F.busy=0; } if(TW.giant) TW.giant.gen=null; if(NB){ NB.gen=null; NB.busyAtk=0; } if(dbgNP1()){ NP1.gen=null; np1Clear(); } twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; });
+function dbgApplyMode(){ if(DBG.mode!=='idle') return; DBG.cq=null; const T=dbgSolo(), F=dbgDuo(); if(T){ T.gen=null; T.state='idle'; } if(F){ F.C.gen=F.O.gen=null; F.busy=0; } if(TW.giant) TW.giant.gen=null; if(NB){ NB.gen=null; NB.busyAtk=0; } if(dbgNP1()){ NP1.gen=null; np1Clear(); } twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; });
   const Tm=Game.mech&&Game.mech.th; if(Tm){ Tm.gen=null; Tm.eb=[]; Tm.spell=null; } const K=dbgKJ(); if(K&&['kj','twcombo'].includes(K.state)){ K.kjg=null; K.twg=null; K.state='recover'; K.st=0; } }
-function dbgRun(k,ph){ const b=DBG.boss; if(ph&&b!=='grimmaw'&&dbgPhase()&&dbgPhase()!==ph) dbgSetPhase(ph); DBG.move=k; DBG.last={a:'move',k,ph}; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
+function dbgRun(k,ph,keep){ const b=DBG.boss; if(!keep){ DBG.cq=null; if(ph&&b!=='grimmaw'&&dbgPhase()&&dbgPhase()!==ph) dbgSetPhase(ph); DBG.move=k; DBG.last={a:'move',k,ph}; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; }); } /* keep: a combo step, the earlier moves' hazards stay */
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T||!TWK[b][k]) return; T.stun=0; T.state='atk'; T.last=k; T.gen=TWK[b][k](T,T.phase); T.wait=0; }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; F.lc=0; F.busy=0; F.C.stun=F.O.stun=0; if(k==='scytheRain'&&!TW.planted.length) dbgSay('Scythe Rain needs planted scythes: run Volley first'); twDuo3Begin(F,k); }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; G.mv=null; G.gen=HZG[k](G,G.phase); G.wait=0; }
@@ -80,24 +80,25 @@ function dbgRun(k,ph){ const b=DBG.boss; if(ph&&b!=='grimmaw'&&dbgPhase()&&dbgPh
   else if(b==='mech'){ const T=Game.mech&&Game.mech.th; if(!T) return; T.dbgSpell=k; T.gen=null; T.wait=0; T.eb=[]; T.spell=null; }
   else if(b==='grimmaw'){ const K=dbgKJ(); if(!K||['rain','clash','frenzy','special','dome','dome_in','intro'].includes(K.state)){ dbgSay('Kojima is busy (a phase change or cutscene)'); return; } K.kjg=null; K.twg=null; K.vanish=0; if(K.spr) K.spr.show(true); K.vx=K.vz=0;
     const q=ph||K.phase||1; if(k==='rush'){ K.state='twcombo'; K.st=0; K.twg=grimRush(K); K.tww=0; } else if(KJM[k]){ K.state='kj'; K.st=0; K.kjg=KJM[k](K,q); K.kjw=0; } else { K.chain=k==='slash'?Math.min(2,q):1; if(k==='blink'){ K.chain=1; K.rush=0; } K.state=k+'_w'; K.st=0; } }
+  if(keep){ dbgSay('Combo: '+dbgName(k)); return; }
   dbgSay('Running: '+dbgName(k)+(ph?'  (phase '+['','I','II','III','IV'][ph]+')':'')); }
-// COMBO: 2-3 mechanics at once. Their generators run side by side in one (dbgPar), so the boss's own busy/stun rules still apply
-function* dbgPar(gs){ const S=gs.filter(Boolean).map(g=>({g,w:0,done:0})); let dt=0;
-  while(true){ for(const s of S){ if(s.done) continue; s.w-=dt; let n=0; while(!s.done&&s.w<=0&&n++<500){ let r; try{ r=s.g.next(); }catch(e){ console.error('dbg combo',e); s.done=1; break; } if(r.done) s.done=1; else s.w+=typeof r.value==='number'?r.value:1/60; } }
-    const live=S.filter(s=>!s.done); if(!live.length) return; dt=Math.max(1/120,Math.min(...live.map(s=>s.w))); yield dt; } }
+// COMBO: 2-3 mechanics in a row, the way the real fight chains them: each one starts only when the one before has finished
+// (its generator done, the boss free: not stunned, not in a limit cut), after the gap the boss itself takes between moves.
+// Hazards a move leaves behind (scythes in flight, the souls, the tear) keep going while the next one is cast; a move that
+// holds the boss (a monologue) runs whole before anything else. The order is the order you picked them in.
 const DBG_COMBO=['caotan','omar','duo','hamza','nathan'];
+function dbgGap(){ const b=DBG.boss; let g=.8;
+  if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(T) g=T.cd; } else if(b==='hamza'&&TW.giant) g=TW.giant.cd; else if(b==='nathan'&&dbgNP1()) g=NP1.cd;
+  else if(b==='nathan'&&NB) g=[0,.5,.38,.28,.2][NB.phase]||.4; else if(b==='duo'){ const F=dbgDuo(); g=F&&typeof DUO3!=='undefined'&&DUO3.gap?DUO3.gap[F.phase]:1; }
+  return clamp(+g||.8,.1,3); }
 function dbgCombo(ks,ph){ const b=DBG.boss; if(!DBG_COMBO.includes(b)){ dbgSay('Combos work on Caotan, Omar, the duo, Hamza and Nathan'); return; } if(!ks||ks.length<2){ dbgSay('Pick 2 or 3 mechanics first'); return; }
-  if(ph&&dbgPhase()&&dbgPhase()!==ph) dbgSetPhase(ph); DBG.move=ks.join('+'); DBG.last={a:'combo',ks:ks.slice(),ph}; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; }); DBG.comboRun=1;
-  try{ if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; T.stun=0; T.state='atk'; T.last=ks[0]; T.gen=dbgPar(ks.filter(k=>TWK[b][k]).map(k=>TWK[b][k](T,T.phase))); T.wait=0; }
-    else if(b==='duo'){ const F=dbgDuo(); if(!F) return; F.lc=0; F.busy=0; F.C.stun=F.O.stun=0; F.C._also=F.O._also=0; twDuo3Begin(F,ks[0]); F.C.gen=twMidGen(F.mid,dbgPar(ks.filter(k=>DUO[k]).map(k=>DUO[k](F.C,F.O,F.phase)))); F.C.wait=0; }
-    else if(b==='hamza'){ const G=TW.giant; if(!G) return; G.mv=null; G.gen=dbgPar(ks.filter(k=>HZG[k]).map(k=>HZG[k](G,G.phase))); G.wait=0; }
-    else if(b==='nathan'&&dbgNP1()){ if(!NB) return; np1Clear(); NP1.stunT=0; NB.stunned=0; if(NP1.done){ NP1.done=0; NP1.hp=NP1.max; } NP1.gen=dbgPar(ks.filter(k=>NP1M[k]).map(k=>NP1M[k]())); NP1.wait=0; }
-    else if(b==='nathan'){ if(!NB) return; NB.gen=dbgPar(ks.map(k=>nbPattern(k))); NB.wait=0; NB.busyAtk=1; } } finally{ DBG.comboRun=0; }
-  dbgSay('Running together: '+ks.map(dbgName).join(' + ')); }
-// a duo move that starts a twin's own generator (twDuoAlso) adds it to what that twin already runs in a combo, instead of replacing it
-(function(){ const da=twDuoAlso; twDuoAlso=function(T,g){ try{ if(DBG.on&&DBG.last&&DBG.last.a==='combo'&&T&&T._also&&T.gen){ const F=TW.fight; T.gen=dbgPar([T.gen,twMidGen(F&&F.mid,g)]); return; } }catch(e){ console.error('dbg also',e); } const r=da.apply(this,arguments); if(T) T._also=1; return r; }; })();
-function dbgName2(L){ return L.a==='move'?dbgName(L.k):L.a==='combo'?L.ks.map(dbgName).join(' + '):((dbgLCs().find(q=>q[1]===L.k&&q[2]===L.ph)||[L.k])[0]); }
-function dbgSetPhase(n){ const b=DBG.boss; if(b==='grimmaw'){ dbgSay("Kojima's phases change arenas: use his phase-change buttons"); return; } DBG.move=null; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
+  dbgRun(ks[0],ph); DBG.move=ks.join('+'); DBG.last={a:'combo',ks:ks.slice(),ph}; DBG.cq=ks.slice(1); DBG.cqGap=null;
+  dbgSay('Combo: '+ks.map(dbgName).join(' → ')); }
+// every frame (from dbgTick): when the boss is free again, wait his gap, then cast the next one
+function dbgComboTick(){ const Q=DBG.cq; if(!Q||!Q.length||Game.state!=='play'||Game.script) return; if(dbgBusy()){ DBG.cqGap=null; return; }
+  if(DBG.cqGap==null){ DBG.cqGap=dbgGap(); return; } DBG.cqGap-=1/60; if(DBG.cqGap>0) return; DBG.cqGap=null; dbgRun(Q.shift(),0,true); }
+function dbgName2(L){ return L.a==='move'?dbgName(L.k):L.a==='combo'?L.ks.map(dbgName).join(' → '):((dbgLCs().find(q=>q[1]===L.k&&q[2]===L.ph)||[L.k])[0]); }
+function dbgSetPhase(n){ const b=DBG.boss; DBG.cq=null; if(b==='grimmaw'){ dbgSay("Kojima's phases change arenas: use his phase-change buttons"); return; } DBG.move=null; twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; const hp=twHPFor(n,b); Object.assign(T,{phase:n,hp,maxHp:hp,form:n,gen:null,state:'idle',inv:false,stun:0,bag:[],down:0,dying:0,cd:1}); T.lcDone[n]=0; twMeta(T); Sound.play(TW_MUSIC[b][n]); }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; F.phase=n; F.lc=0; F.lcDone[n]=0; F.bag=[]; F.busy=0; F.pend=null; for(const T of [F.C,F.O]) Object.assign(T,{phase:n,hp:DUO_HP[n],maxHp:DUO_HP[n],form:n,down:0,inv:false,stun:0,gen:null,state:'idle',bag:[]}); }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; Object.assign(G,{phase:n,hp:HZG_HP[n],maxHp:HZG_HP[n],bag:[],lcDone:0,inv:false,gen:null,pend:null,frenzied:0}); }
@@ -117,7 +118,7 @@ function dbgKill(){ const b=DBG.boss, ot=TW.otk; TW.otk=false;
     else if(b==='nathan'&&NB){ NB.lcA=NB.lcB=1; NB.inv=false; const p=NB.phase, bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; nbDamage(NB.bars-bot+.01); }
     else if(b==='mech'&&Game.mech&&Game.mech.boss){ const B=Game.mech.boss, T=Game.mech.th; if(T){ T.tick=thTicks(T.ph).length; T.finDone=1; } B.vuln=true; mechDamage(B.hp+1,0,0,0,true); }
     else if(b==='grimmaw'&&dbgKJ()){ const K=Game.boss; if(K.state==='dome'){ K.armor=0; damageBoss(1); } else if(K.state==='boxes'){ kjBoxesEnd(K,true); } else { K.inv=false; if(['kj','twcombo'].includes(K.state)){ K.state='idle'; K.kjg=K.twg=null; } damageBoss(K.hp+1); } } } finally{ TW.otk=ot; } }
-function dbgLC(kind,ph){ const b=DBG.boss; DBG.last={a:'lc',k:kind,ph}; if(kind==='kill'){ if(dbgPhase()!==ph) dbgSetPhase(ph); dbgKill(); dbgSay('Phase change'); return; }
+function dbgLC(kind,ph){ const b=DBG.boss; DBG.cq=null; DBG.last={a:'lc',k:kind,ph}; if(kind==='kill'){ if(dbgPhase()!==ph) dbgSetPhase(ph); dbgKill(); dbgSay('Phase change'); return; }
   if(b==='grimmaw'){ dbgKJLC(kind,ph); return; }
   if(dbgPhase()!==ph&&kind!=='frenzy'&&kind!=='over') dbgSetPhase(ph); twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; T.hp=T.maxHp/2; T.state='lc'; T.lcDone[ph]=1; T.gen=TWK[b]['lc'+(ph-1)](T); T.wait=0; }
@@ -143,7 +144,8 @@ function dbgTick(){ if(!DBG.on) return; if(DBG.wantOpen&&Game.state==='play'&&!G
   if(NB&&(idle||loop)){ NB.cd=Math.max(NB.cd,.5); NB.dodgeCd=Math.max(NB.dodgeCd||0,.5); if(dbgNP1()) NP1.cd=Math.max(NP1.cd,.5); }
   const K=dbgKJ(); if(K&&(idle||loop)&&K.state==='idle') K.cd=Math.max(K.cd||0,.5);
   const Tm=Game.mech&&Game.mech.th; if(Game.mech) Game.mech.dbgIdle=idle; if(Tm&&DBG.boss==='mech') Tm.dbgLoop=DBG.mode==='loop';
-  if(loop&&Game.state==='play'&&!Game.script&&DBG.boss!=='mech'&&!dbgBusy()){ DBG.loopT=(DBG.loopT||0)+1/60; if(DBG.loopT>.6){ DBG.loopT=0; if(DBG.last&&DBG.last.a==='combo') dbgCombo(DBG.last.ks,DBG.last.ph); else dbgRun(DBG.move,DBG.last&&DBG.last.a==='move'?DBG.last.ph:0); } } else DBG.loopT=0;
+  try{ dbgComboTick(); }catch(e){ console.error('dbg combo',e); DBG.cq=null; }
+  if(loop&&Game.state==='play'&&!Game.script&&DBG.boss!=='mech'&&!dbgBusy()&&!(DBG.cq&&DBG.cq.length)){ DBG.loopT=(DBG.loopT||0)+1/60; if(DBG.loopT>.6){ DBG.loopT=0; if(DBG.last&&DBG.last.a==='combo') dbgCombo(DBG.last.ks,DBG.last.ph); else dbgRun(DBG.move,DBG.last&&DBG.last.a==='move'?DBG.last.ph:0); } } else DBG.loopT=0;
   if(DBG.slow&&Game.state==='play') Game.timeScale=Math.min(Game.timeScale||1,.5); }
 (function(){ const uw=updateWorld; updateWorld=function(dt){ const r=uw.apply(this,arguments); try{ dbgTick(); }catch(e){ console.error('debug',e); } return r; }; })();
 // final defeats leave the story alone here
@@ -199,9 +201,9 @@ function dbgSecMoves(x,y,w,cols){ const b=DBG.boss, bh=DBK.bh;
   const lcs=dbgLCs().filter(q=>q[2]===sel);
   if(lcs.length){ uCaps('LIMIT CUTS · PHASE CHANGES',x,y,UIC.dim,10); y+=8; lcs.forEach(([l,k,p],i)=>{ const col=i%2, bw=(w-6)/2; dbgBtn(x+col*(bw+6),y,bw,bh,l,'lc:'+k+':'+p,{nw:dbgNew(b,k),left:1,red:1}); if(col||i===lcs.length-1) y+=bh+4; }); y+=8; }
   const pool=dbgPool(sel), cmb=DBG.comboOn&&DBG_COMBO.includes(b); if(cmb&&DBG.pickPh!==sel){ DBG.pick=[]; DBG.pickPh=sel; }
-  if(DBG_COMBO.includes(b)){ dbgChk(x,y,!!DBG.comboOn,'Combo: run 2-3 mechanics at the same time','t:combo',w); y+=DBK.bh>24?30:24;
-    if(cmb){ const n=DBG.pick.length; uText(n?'Picked: '+DBG.pick.map(dbgName).join(' + '):'Tap 2 or 3 moves below, then Run together.',x,y+4,`600 ${DBK.fs-1}px ${FB}`,n?UIC.accL:UIC.mut); y+=14;
-      const hw=(w-6)/2; dbgBtn(x,y,hw,bh,'Run together ('+n+'/3)','comborun',{on:n>=2,dim:n<2}); dbgBtn(x+hw+6,y,hw,bh,'Clear picks','comboclear'); y+=bh+10; } }
+  if(DBG_COMBO.includes(b)){ dbgChk(x,y,!!DBG.comboOn,'Combo: chain 2-3 mechanics like the real fight','t:combo',w); y+=DBK.bh>24?30:24;
+    if(cmb){ const n=DBG.pick.length; uText(n?'In this order: '+DBG.pick.map(dbgName).join(' → '):'Tap 2 or 3 moves in the order he casts them, then Run combo.',x,y+4,`600 ${DBK.fs-1}px ${FB}`,n?UIC.accL:UIC.mut); y+=14;
+      const hw=(w-6)/2; dbgBtn(x,y,hw,bh,'Run combo ('+n+'/3)','comborun',{on:n>=2,dim:n<2}); dbgBtn(x+hw+6,y,hw,bh,'Clear picks','comboclear'); y+=bh+10; } }
   uCaps('MOVES IN THIS PHASE ('+pool.length+')',x,y,UIC.dim,10); y+=8;
   const nc=cols||3, cw=(w-(nc-1)*6)/nc; pool.forEach((k,i)=>{ const col=i%nc, row=Math.floor(i/nc), pi=cmb?DBG.pick.indexOf(k):-1; dbgBtn(x+col*(cw+6),y+row*(bh+4),cw,bh,(pi>=0?(pi+1)+' · ':'')+dbgName(k),'move:'+k+':'+sel,{on:cmb?pi>=0:DBG.move===k,nw:dbgNew(b,k),left:1}); });
   y+=Math.ceil(pool.length/nc)*(bh+4)+10;
