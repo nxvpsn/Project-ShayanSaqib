@@ -1487,7 +1487,7 @@ function updatePlayer(dt){
     if((mx||mz)&&!P.atk) P.ang=Math.atan2(mz,mx); if(P.scripted&&(P.scripted.x||P.scripted.z)) P.ang=Math.atan2(P.scripted.z,P.scripted.x);
     if(ctl&&consume('jump')) P.jbuf=.12; else P.jbuf-=dt;
     if(P.jbuf>0&&P.hurt<=0&&!P.block){ if(P.onGround||P.coyote>0){ P.vy=ALI()?11.7:8.2; P.coyote=0; P.jbuf=0; P.onGround=false; Sound.sfx('jump'); FX.burst(P.x,P.y+.05,P.z,5,0xd8d0c0,1.5,.2,false,2); }
-      else if(P.jumps>0){ P.vy=ALI()?10.5:7.4; P.jumps=0; P.jbuf=0; Sound.sfx('djump'); for(let i=0;i<10;i++) FX.spawn(P.x,P.y,P.z,rnd(-2,2),rnd(-1,.5),rnd(-2,2),.4,0xbfe8ff,.2,0,true); } }
+      else if(P.jumps>0){ P.vy=ALI()?10.5:(typeof shDJumpV==='function'?shDJumpV():7.4); P.jumps=0; P.jbuf=0; Sound.sfx('djump'); for(let i=0;i<10;i++) FX.spawn(P.x,P.y,P.z,rnd(-2,2),rnd(-1,.5),rnd(-2,2),.4,0xbfe8ff,.2,0,true); } }
     if(!held.jump&&P.vy>3&&!P.scripted) P.vy-=G_ACC*1.2*dt;
     const wasG=P.gliding; P.gliding=ctl&&!P.onGround&&held.jump&&P.jumps===0&&P.vy<=0&&!P.atk&&P.hurt<=0;
     if(P.gliding&&!wasG) Sound.sfx(ALI()?'dash':'glide');
@@ -6689,6 +6689,13 @@ function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=
 // ---------- parry i-frames don't blink (the i-frames stay) ----------
 (function(){ const ph=playerHit; playerHit=function(){ const r=ph.apply(this,arguments); if(r==='parry') Player.parryIF=1; return r; };
   const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments), P=Player; if(P.parryIF){ if(P.inv>0&&P.hurt<=0) P.noBlink=Game.time+.1; else P.parryIF=0; } return r; }; })();
+
+// ---------- the double jump: always his full height (SH_DJ_H above where he left the ground, the height a double jump at the
+// top of the first one reached), whenever it is pressed: it sets the speed that peaks there (mashing used to peak at 1.2,
+// late presses lower). P.jy0 = the ground he jumped from; capped so falling off a ledge can't launch him
+const SH_DJ_H=2.41;
+function shDJumpV(){ const P=Player, base=P.jy0!=null?P.jy0:P.y, d=Math.max(0,base+SH_DJ_H-P.y); return Math.min(11.2,Math.sqrt(2*G_ACC*d)+G_ACC/120); }
+(function(){ const up=updatePlayer; updatePlayer=function(dt){ try{ const P=Player; if(P.onGround) P.jy0=P.y; }catch(e){} return up.apply(this,arguments); }; })();
 
 // ----- 06c_pxvfx.js -----
 // =====================================================================
@@ -17742,7 +17749,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.50 (Nov 1): a full heal after the Getsuga clash that ends Omar's phase III limit cut (Black Crescent), won or lost. Harvest in phase II on its own (v1.49).";
+const DBG_PATCH="v1.51 (Nov 1): Shayan's double jump always reaches his full height (2.41 above where he jumped from), whenever you press it. A full heal after Omar's phase III clash (v1.50).";
 const DBG_NEW=['omar:lc'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -18230,7 +18237,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.50';
+const GAME_VERSION='v1.51';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

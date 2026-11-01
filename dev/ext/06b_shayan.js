@@ -119,3 +119,10 @@ function shFullCounterFX(){ const P=Player, x=P.x, z=P.z, gy=P.y, ang=P.ang, ux=
 // ---------- parry i-frames don't blink (the i-frames stay) ----------
 (function(){ const ph=playerHit; playerHit=function(){ const r=ph.apply(this,arguments); if(r==='parry') Player.parryIF=1; return r; };
   const up=updatePlayer; updatePlayer=function(dt){ const r=up.apply(this,arguments), P=Player; if(P.parryIF){ if(P.inv>0&&P.hurt<=0) P.noBlink=Game.time+.1; else P.parryIF=0; } return r; }; })();
+
+// ---------- the double jump: always his full height (SH_DJ_H above where he left the ground, the height a double jump at the
+// top of the first one reached), whenever it is pressed: it sets the speed that peaks there (mashing used to peak at 1.2,
+// late presses lower). P.jy0 = the ground he jumped from; capped so falling off a ledge can't launch him
+const SH_DJ_H=2.41;
+function shDJumpV(){ const P=Player, base=P.jy0!=null?P.jy0:P.y, d=Math.max(0,base+SH_DJ_H-P.y); return Math.min(11.2,Math.sqrt(2*G_ACC*d)+G_ACC/120); }
+(function(){ const up=updatePlayer; updatePlayer=function(dt){ try{ const P=Player; if(P.onGround) P.jy0=P.y; }catch(e){} return up.apply(this,arguments); }; })();

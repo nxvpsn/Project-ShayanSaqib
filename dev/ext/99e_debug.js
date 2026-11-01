@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.50 (Nov 1): a full heal after the Getsuga clash that ends Omar's phase III limit cut (Black Crescent), won or lost. Harvest in phase II on its own (v1.49).";
+const DBG_PATCH="v1.51 (Nov 1): Shayan's double jump always reaches his full height (2.41 above where he jumped from), whenever you press it. A full heal after Omar's phase III clash (v1.50).";
 const DBG_NEW=['omar:lc'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
