@@ -9005,7 +9005,12 @@ TWK.omar.lc1=function*(T){ twLCPrep(T); Game.letterTo=.35; twCutin('omar','LIGHT
 // A soul that hits you: half a heart and a 1s slow. Each wave locks onto where you are; the last wave is fast enough to need a dash.
 // gliding over Harvest: Shayan's glide sinks at 0.72 a second (build.py), so a double jump at the top of the first jump plus
 // a glide keeps him over the souls' 1.6 for 1.4s (measured; 0.52s without the glide)
-TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='gone')){ yield .2; return; } const sp=twSp(T); twBark('omar',"Lanternbrook's souls... they taste like bread.",true); Sound.sfx('choir'); T.cast=1;
+// Phase II has Harvest on its own, to learn it: he waits for his scythes in flight to land, teleports away from you (still on
+// screen), casts, and holds still until every soul is gone, so nothing else comes with it. In phase III it runs alongside his other moves.
+if(!TWPOOL.omar[2].includes('harvest')) TWPOOL.omar[2].push('harvest');
+TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='gone')){ yield .2; return; }
+  const solo=ph<3; if(solo){ for(let w=0;w<2&&BOLTS.some(b=>!b.dead&&!b.friendly);w+=.1) yield .1; const P0=Player, a=Math.atan2(T.z-P0.z,T.x-P0.x); T.mv=null; twBlink(T,P0.x+Math.cos(a)*7.5,P0.z+Math.sin(a)*7.5*.78); yield .35; }
+  const sp=twSp(T); twBark('omar',"Lanternbrook's souls... they taste like bread.",true); Sound.sfx('choir'); T.cast=1;
   twBig('DODGE THE SOULS',{size:46,col:'#bfe8ff',y:UH*.24,dur:1.5,sub:'They fly straight in: walk diagonally or double jump. Dodged souls fly into Omar.'});
   const N=12, R=9, tell=(ph>=3?.38:.45)/sp, H={a:rnd(0,6.28),k:0,live:true,t:0,w:0,pend:null}, souls=[];
   for(let i=0;i<N;i++) souls.push({i,st:'orbit',x:Player.x,z:Player.z,t:0,m:twBB(texSoul(),.9,1.1)}); TW._harvest=souls;
@@ -9030,7 +9035,7 @@ TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='go
         const tl=o.st==='tell'; o.m.position.set(o.x,groundY(o.x,o.z)+1+(tl?Math.sin(o.t*40)*.15:Math.sin(H.a*3+o.i)*.15),o.z); o.m.scale.setScalar(tl?1.35:o.st==='rush'?1.2:1);
         o.m.material.color.setHex(o.st==='home'?0xbfe8ff:tl||o.st==='rush'?0xffb0c8:0xbfe8ff); }
       return any&&H.live; }, kill(){ souls.forEach(o=>{ o.st='gone'; scene.remove(o.m); }); }}); /* gone when cleared, so the next Harvest (Debug's Again) can start */
-  yield 1; T.cast=0; };
+  yield 1; if(solo){ while(TW._harvest===souls&&souls.some(o=>o.st!=='gone')){ T.cast=.5; T.mv=null; yield .1; } yield .3; } T.cast=0; };
 
 // =====================================================================
 // PLANTED SCYTHES (Omar's solo fight): a purple scythe you hit bounces up and sticks in the ground, black and dull.
@@ -17734,8 +17739,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.48 (Oct 31): Omar's Shadow Requiem clones can be parried from any angle: out of a clone's line, attack as it passes within reach (beside you, behind, diagonal). Retries restart the fight clean (v1.47).";
-const DBG_NEW=['omar:clones'];
+const DBG_PATCH="v1.49 (Nov 1): Omar casts Harvest in phase II too, on its own: he teleports away from you (still on screen) and holds still until every soul is gone; phase III still mixes it with his other moves. Clones parry from any angle (v1.48).";
+const DBG_NEW=['omar:harvest'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -18222,7 +18227,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.48';
+const GAME_VERSION='v1.49';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

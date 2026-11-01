@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.48 (Oct 31): Omar's Shadow Requiem clones can be parried from any angle: out of a clone's line, attack as it passes within reach (beside you, behind, diagonal). Retries restart the fight clean (v1.47).";
-const DBG_NEW=['omar:clones'];
+const DBG_PATCH="v1.49 (Nov 1): Omar casts Harvest in phase II too, on its own: he teleports away from you (still on screen) and holds still until every soul is gone; phase III still mixes it with his other moves. Clones parry from any angle (v1.48).";
+const DBG_NEW=['omar:harvest'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

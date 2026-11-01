@@ -237,7 +237,12 @@ TWK.omar.lc1=function*(T){ twLCPrep(T); Game.letterTo=.35; twCutin('omar','LIGHT
 // A soul that hits you: half a heart and a 1s slow. Each wave locks onto where you are; the last wave is fast enough to need a dash.
 // gliding over Harvest: Shayan's glide sinks at 0.72 a second (build.py), so a double jump at the top of the first jump plus
 // a glide keeps him over the souls' 1.6 for 1.4s (measured; 0.52s without the glide)
-TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='gone')){ yield .2; return; } const sp=twSp(T); twBark('omar',"Lanternbrook's souls... they taste like bread.",true); Sound.sfx('choir'); T.cast=1;
+// Phase II has Harvest on its own, to learn it: he waits for his scythes in flight to land, teleports away from you (still on
+// screen), casts, and holds still until every soul is gone, so nothing else comes with it. In phase III it runs alongside his other moves.
+if(!TWPOOL.omar[2].includes('harvest')) TWPOOL.omar[2].push('harvest');
+TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='gone')){ yield .2; return; }
+  const solo=ph<3; if(solo){ for(let w=0;w<2&&BOLTS.some(b=>!b.dead&&!b.friendly);w+=.1) yield .1; const P0=Player, a=Math.atan2(T.z-P0.z,T.x-P0.x); T.mv=null; twBlink(T,P0.x+Math.cos(a)*7.5,P0.z+Math.sin(a)*7.5*.78); yield .35; }
+  const sp=twSp(T); twBark('omar',"Lanternbrook's souls... they taste like bread.",true); Sound.sfx('choir'); T.cast=1;
   twBig('DODGE THE SOULS',{size:46,col:'#bfe8ff',y:UH*.24,dur:1.5,sub:'They fly straight in: walk diagonally or double jump. Dodged souls fly into Omar.'});
   const N=12, R=9, tell=(ph>=3?.38:.45)/sp, H={a:rnd(0,6.28),k:0,live:true,t:0,w:0,pend:null}, souls=[];
   for(let i=0;i<N;i++) souls.push({i,st:'orbit',x:Player.x,z:Player.z,t:0,m:twBB(texSoul(),.9,1.1)}); TW._harvest=souls;
@@ -262,7 +267,7 @@ TWK.omar.harvest=function*(T,ph){ if(TW._harvest&&TW._harvest.some(o=>o.st!=='go
         const tl=o.st==='tell'; o.m.position.set(o.x,groundY(o.x,o.z)+1+(tl?Math.sin(o.t*40)*.15:Math.sin(H.a*3+o.i)*.15),o.z); o.m.scale.setScalar(tl?1.35:o.st==='rush'?1.2:1);
         o.m.material.color.setHex(o.st==='home'?0xbfe8ff:tl||o.st==='rush'?0xffb0c8:0xbfe8ff); }
       return any&&H.live; }, kill(){ souls.forEach(o=>{ o.st='gone'; scene.remove(o.m); }); }}); /* gone when cleared, so the next Harvest (Debug's Again) can start */
-  yield 1; T.cast=0; };
+  yield 1; if(solo){ while(TW._harvest===souls&&souls.some(o=>o.st!=='gone')){ T.cast=.5; T.mv=null; yield .1; } yield .3; } T.cast=0; };
 
 // =====================================================================
 // PLANTED SCYTHES (Omar's solo fight): a purple scythe you hit bounces up and sticks in the ground, black and dull.
