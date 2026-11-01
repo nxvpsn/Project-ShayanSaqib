@@ -388,7 +388,7 @@ function d5SkyHole(x,y,z){ const V=twHoleVis(x,y,z,4,true), S={x,y,z,k:0,t:0,cra
 // ---------- Ali's tree: a spiral of steps around a trunk, a flat platform on top (it raises the field's height grid; undone after) ----------
 function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), saved=[], meshes=[], set=(ix,iz,h)=>{ if(ix<0||iz<0||ix>=L.w||iz>=L.d) return; saved.push([ix,iz,L.H[iz][ix],L.B[iz][ix]]); L.H[iz][ix]=h; L.B[iz][ix]=false; };
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
-  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,.35,d),dark), e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edge); m.add(e); m.position.set(x,y-.17,z); m.userData.tw=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
+  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,.35,d),dark.clone()), /* its own material: the climb camera fades it */ e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edge); m.add(e); m.position.set(x,y-.17,z); m.userData.tw=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
   const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww] of [[red,w],[0xffffff,w*.35]]){ const b=beamMesh(col,ww); b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
@@ -448,8 +448,15 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   JC.flash=.6; FX.flash=.4; grade.uniforms.flashCol.value.set(1,.4,.45); shake(.6); cineSet(tx+4,gy+3,tz+14,tx,gy+H*.55,tz); yield d5Say('omarLC',12,'surprised'); yield d5Say('omarLC',13);
   if(A){ A.hold=0; A.face=null; } TW._mantle=1; S.climb=1; Game.letterTo=0; P.inv=1; F.miraHold=0; Cam.cine=null;
   twBig('CLIMB THE TREE',{size:50,col:'#ff8a9a',y:UH*.24,dur:2,sub:'Run into each step to climb it'});
-  // the climbing camera: behind and above you, looking at your feet
-  const cam=S.cam={}; Game.fxUpd.push(()=>{ if(S.cam!==cam||!F.d5) return false; const P2=Player; cineSet(P2.x+2,P2.y+5.5,P2.z+11,P2.x,P2.y+1,P2.z-1); return true; }); }
+  // the climbing camera: behind and above you, looking at your feet, eased (no snapping as you hop up a step); a cutscene
+  // during the climb keeps its own shots; a step or the platform between the camera and you (higher and nearer the camera)
+  // fades to its red outline, so the steps on the near side never hide you on the far ones
+  const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
+    try{ const P2=Player, W=[P2.x+2,P2.y+5.5,P2.z+11,P2.x,P2.y+1,P2.z-1]; if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
+      const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
+function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
+    const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
+    mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } }
 
 function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree, H=T.H; F.miraHold=1; Game.letterTo=.5; P.vx=P.vz=0;
   if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }

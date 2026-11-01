@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.51 (Nov 1): Shayan's double jump always reaches his full height (2.41 above where he jumped from), whenever you press it. A full heal after Omar's phase III clash (v1.50).";
-const DBG_NEW=['omar:lc'];
+const DBG_PATCH="v1.52 (Nov 1): Big Back Hamza is one phase, no limit cuts, with phase II and limit-cut moves mixed in (lane rolls, Big Bite, baby ring); at zero the twins kill him before he becomes Space Hamza (black hole + mega laser). Tree climb camera: eased, and steps in the way fade.";
+const DBG_NEW=['hamza:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -28,7 +28,7 @@ function dbgSay(t){ DBG.msg={t,at:performance.now()}; }
 function dbgKJ(){ return DBG.boss==='grimmaw'&&Game.boss&&Game.boss.state!=='dead'?Game.boss:null; }
 function dbgSolo(){ return TW.fight&&TW.fight.kind==='solo'?TW.foes[0]:null; }
 function dbgDuo(){ return TW.fight&&TW.fight.kind==='duo'?TW.fight:null; }
-function dbgPhases(){ if(dbgNP1()) return 1; return {caotan:3,omar:3,duo:3,hamza:2,nathan:4,mech:2,grimmaw:3}[DBG.boss]||0; }
+function dbgPhases(){ if(dbgNP1()) return 1; return {caotan:3,omar:3,duo:3,hamza:1,nathan:4,mech:2,grimmaw:3}[DBG.boss]||0; }
 function dbgPhase(){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); return T?T.phase:0; } if(b==='duo'){ const F=dbgDuo(); return F?F.phase:0; }
   if(b==='hamza') return TW.giant?TW.giant.phase:0; if(b==='nathan') return NB?(dbgNP1()?1:NB.phase):0; if(b==='mech') return Game.mech?Game.mech.phase:0; if(b==='grimmaw'){ const K=dbgKJ(); return K?K.phase||1:0; } return 0; }
 function dbgHP(){ const b=DBG.boss; let h=null,m=1; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(T){ h=T.hp; m=T.maxHp; } } else if(b==='duo'){ const F=dbgDuo(); if(F){ h=F.C.hp+F.O.hp; m=F.C.maxHp+F.O.maxHp; } }
@@ -48,7 +48,7 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
 // limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
 function dbgLCs(){ if(dbgNP1()) return []; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
   duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
-  hamza:[['All-You-Can-Eat (limit cut)','buffet',2],['Last Call (finale)','frenzy',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
+  hamza:[],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
   grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
 // ---------- actions ----------

@@ -5,7 +5,7 @@ const HZG_HP=[0,130,160];
 function hzgHurt(d,src){ d=hzgHurtGod(d,src); const G=TW.giant; if(!G||G.hp<=0) return false; if(G.inv){ FX.spark(G.x,G.y+2,G.z); return false; }
   d=Math.round(d*(G.stun>0?1.5:1)*10)/10; G.hp=Math.max(0,G.hp-d); G.flash=.1; FX.burst(G.x,G.y+2,G.z,8,0xffb0c8,3,.25); Game.dmgNums.push({x:G.x,y:G.y+4.6,z:G.z,n:d,t:0,col:'#ffc8da'});
   if(G.hp<=0&&!G.pend){ G.inv=true; G.gen=null; twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); G.pend=G.phase<2?hzgPhase2:hzgFinale; } return true; }
-function hzgBar(){ const G=TW.giant; if(!G||G.noBar) return; const T={who:'hamzagiant',title:'Hamza, Big Back Edition',sub:G.phase<2?'The Swine Who Would Eat Lanternbrook':'Second Breakfast',hp:G.hp,maxHp:G.maxHp,phase:G.phase,phases:2,lcDone:{2:1},inv:G.inv,stun:G.stun,shown:G.shown};
+function hzgBar(){ const G=TW.giant; if(!G||G.noBar) return; const T={who:'hamzagiant',title:'Hamza, Big Back Edition',sub:G.phase<2?'The Swine Who Would Eat Lanternbrook':'Second Breakfast',hp:G.hp,maxHp:G.maxHp,phase:1,phases:1,lcDone:{2:1},inv:G.inv,stun:G.stun,shown:G.shown};
   twBarFor(T,(UW-620)/2,UH-52-Game.letter*70,620,true); G.shown=T.shown; }
 function hzgDraw(){ const G=TW.giant, H=Game.hamza; if(!G||!H) return; H.mode='giant'; H.x=G.x; H.y=G.y; H.z=G.z; H.mouth=G.mouth; H.f=Player.x>G.x?1:-1; H.gs=G.gs; H.front=0; if(gpSprite) gpSprite.glow(G.flash>0?.9:G.stun>0?.5:.42); }
 function hzgStart(){ const c=L.zone?{x:L.zone.x,z:L.zone.z}:{x:Player.x,z:Player.z}, lock=twArenaAround(c.x,c.z);
