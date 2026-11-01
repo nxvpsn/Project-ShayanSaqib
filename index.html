@@ -8718,6 +8718,9 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
   if(win){ twBig('CLASH WON',{size:58,col:'#9fd8ff',sub:'The black crescent shatters'}); twBark('omar',"My... my moon... it's full of holes...",true); T.hp=Math.max(1,T.hp-T.maxHp*.15); T.flash=.6; }
   else { twBig('CLASH LOST',{size:58,col:'#ff6a7a'}); twBark('omar',"Edge... wins... barely.",true); P.inv=0; hurtPlayer(3,T.x,T.z); }
   T.lockF=0; T.swing=0; T.cast=0; return win; }
+// after the Black Crescent's Getsuga clash (won or lost): a full heal, the green ring and a chime
+function twOmarClashHeal(){ const P=Player, gy=groundY(P.x,P.z); P.hp=P.maxHp; FX.ring(P.x,gy+.1,P.z,'#8affb0',3,.5); FX.burst(P.x,gy+1,P.z,40,0x8affb0,5,.3); Sound.sfx('heart');
+  Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'FULL HEAL',t:0,big:true,col:'#8affb0'}); }
 TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=groundY(c.x,c.z);
   if(TW.iaiCk){ Game.letterTo=.45; twBark('omar',"Again? Fine. The lights go out... again.",true); yield 1; }
   else { Game.letterTo=.45; twCutin('omar','BLACK CRESCENT','Limit Break  ·  Requiem of the Dark Moon','#1a0030',2.4); Sound.sfx('gong'); Sound.sfx('void');
@@ -8745,7 +8748,7 @@ TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=grou
     B.r=diag*1.2; twDarkTo(.985,70); TW.dark.k=.985; MN.gone=1; Cam.cine=null; yield .3;
     for(let t=0;t<.5;t+=.016){ B.a=1-t/.5; yield .016; } TW.blackout=null; }
   // 3) Iai in the dark, then the clash (retries start here)
-  yield* twOmarIai(T); yield .3; const win=yield* twOmarClash(T); TW.iaiCk=0; yield 1.4;
+  yield* twOmarIai(T); yield .3; const win=yield* twOmarClash(T); TW.iaiCk=0; twOmarClashHeal(); yield 1.4;
   grade.uniforms.sat.value=1; applyLook(L.look); T.scythe=0; T.hide=0; Game.letterTo=0; T.inv=false; T.stun=2; T.state='stun'; T.lcDone[3]=1; yield T.stun; };
 // dying in the Iai restarts phase III straight into the Iai; leaving the fight forgets it
 (function(){ const ef=twEndFight; twEndFight=function(){ twOmarLCClear(); TW.iaiCk=0; TW.sentence=null; return ef.apply(this,arguments); };
@@ -17739,8 +17742,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.49 (Nov 1): Omar casts Harvest in phase II too, on its own: he teleports away from you (still on screen) and holds still until every soul is gone; phase III still mixes it with his other moves. Clones parry from any angle (v1.48).";
-const DBG_NEW=['omar:harvest'];
+const DBG_PATCH="v1.50 (Nov 1): a full heal after the Getsuga clash that ends Omar's phase III limit cut (Black Crescent), won or lost. Harvest in phase II on its own (v1.49).";
+const DBG_NEW=['omar:lc'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -18227,7 +18230,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.49';
+const GAME_VERSION='v1.50';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

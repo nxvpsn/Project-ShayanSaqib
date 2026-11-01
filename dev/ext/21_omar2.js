@@ -266,6 +266,9 @@ function* twOmarClash(T){ const P=Player, B=twBounds(); twDarkTo(0); TW.iai=null
   if(win){ twBig('CLASH WON',{size:58,col:'#9fd8ff',sub:'The black crescent shatters'}); twBark('omar',"My... my moon... it's full of holes...",true); T.hp=Math.max(1,T.hp-T.maxHp*.15); T.flash=.6; }
   else { twBig('CLASH LOST',{size:58,col:'#ff6a7a'}); twBark('omar',"Edge... wins... barely.",true); P.inv=0; hurtPlayer(3,T.x,T.z); }
   T.lockF=0; T.swing=0; T.cast=0; return win; }
+// after the Black Crescent's Getsuga clash (won or lost): a full heal, the green ring and a chime
+function twOmarClashHeal(){ const P=Player, gy=groundY(P.x,P.z); P.hp=P.maxHp; FX.ring(P.x,gy+.1,P.z,'#8affb0',3,.5); FX.burst(P.x,gy+1,P.z,40,0x8affb0,5,.3); Sound.sfx('heart');
+  Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'FULL HEAL',t:0,big:true,col:'#8affb0'}); }
 TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=groundY(c.x,c.z);
   if(TW.iaiCk){ Game.letterTo=.45; twBark('omar',"Again? Fine. The lights go out... again.",true); yield 1; }
   else { Game.letterTo=.45; twCutin('omar','BLACK CRESCENT','Limit Break  ·  Requiem of the Dark Moon','#1a0030',2.4); Sound.sfx('gong'); Sound.sfx('void');
@@ -293,7 +296,7 @@ TWK.omar.lc2=function*(T){ twLCPrep(T); const A=twLock(), c=twCenter(), gy0=grou
     B.r=diag*1.2; twDarkTo(.985,70); TW.dark.k=.985; MN.gone=1; Cam.cine=null; yield .3;
     for(let t=0;t<.5;t+=.016){ B.a=1-t/.5; yield .016; } TW.blackout=null; }
   // 3) Iai in the dark, then the clash (retries start here)
-  yield* twOmarIai(T); yield .3; const win=yield* twOmarClash(T); TW.iaiCk=0; yield 1.4;
+  yield* twOmarIai(T); yield .3; const win=yield* twOmarClash(T); TW.iaiCk=0; twOmarClashHeal(); yield 1.4;
   grade.uniforms.sat.value=1; applyLook(L.look); T.scythe=0; T.hide=0; Game.letterTo=0; T.inv=false; T.stun=2; T.state='stun'; T.lcDone[3]=1; yield T.stun; };
 // dying in the Iai restarts phase III straight into the Iai; leaving the fight forgets it
 (function(){ const ef=twEndFight; twEndFight=function(){ twOmarLCClear(); TW.iaiCk=0; TW.sentence=null; return ef.apply(this,arguments); };
