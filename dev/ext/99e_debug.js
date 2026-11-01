@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.52 (Nov 1): Big Back Hamza is one phase, no limit cuts, with phase II and limit-cut moves mixed in (lane rolls, Big Bite, baby ring); at zero the twins kill him before he becomes Space Hamza (black hole + mega laser). Tree climb camera: eased, and steps in the way fade.";
-const DBG_NEW=['hamza:*'];
+const DBG_PATCH="v1.53 (Nov 1): the duo's Kuroi Kaimon (Omar's limit cut) opens with FALLING MOON instead of the graves: he dives on you five times, parry each landing as his scythe glints or step out of the circle. Hamza is one phase (v1.52).";
+const DBG_NEW=['duo:omarlc'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

@@ -411,12 +411,36 @@ function* d5OmarLCIntro(F,C,O,retry){ const P=Player, A=twAliAny(), c=F.center, 
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; Game.letterTo=0; P.inv=1; F.miraHold=0;
   C.gen=d5OmarLCPlay(F,C,O); C.wait=0; C.state='lc'; O.gen=twWaitFor(C)(); O.wait=0; O.state='lc'; Sound.play('diva'); }
 
+// FALLING MOON (part A of Kuroi Kaimon): Omar blinks high over you; a solid dark circle follows you (D5_DIVE.follow), locks
+// (D5_DIVE.lock), his scythe glints .17s before he lands (D5_DIVE.drop after the lock): attack on the landing = parry
+// (he bounces back up), in the circle without it = hit, out of the circle = a miss and a shockwave. Returns 1 when parried.
+const D5_DIVE={follow:.6,lock:.38,drop:.12,r:1.9,hy:6};
+function* d5MoonDive(F,O,k){ const P=Player, D=D5_DIVE, sp=1+k*.04; let tx=P.x, tz=P.z; twBlink(O,P.x+rnd(-1.2,1.2),P.z-1); O.hy=D.hy; O.scythe=1; O.cast=.6; Sound.sfx('void');
+  const gy0=groundY(tx,tz), disc=new THREE.Mesh(new THREE.CircleGeometry(D.r,40),new THREE.MeshBasicMaterial({color:0x1a0626,transparent:true,opacity:.62,depthWrite:false})), rim=new THREE.Mesh(new THREE.RingGeometry(D.r-.14,D.r,40),new THREE.MeshBasicMaterial({color:0xb06aff,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide}));
+  for(const m of [disc,rim]){ m.rotation.x=-Math.PI/2; m.userData.tw=1; scene.add(m); } const put=()=>{ const g=groundY(tx,tz)+.07; disc.position.set(tx,g,tz); rim.position.set(tx,g+.01,tz); };
+  let parried=0;
+  try{ // the circle follows you, then locks
+    for(let t=0;t<D.follow/sp;t+=1/60){ const P2=Player; tx=lerp(tx,P2.x,.18); tz=lerp(tz,P2.z,.18); O.x=lerp(O.x,tx,.12); O.z=lerp(O.z,tz-1,.12); put(); rim.scale.setScalar(1+.08*Math.sin(t*30)); yield 1/60; }
+    Sound.sfx('charge'); rim.material.color.setHex(0xffffff); rim.scale.setScalar(1); O.x=tx; O.z=tz; O.diveLand=Game.time+(D.lock+D.drop)/sp; /* when he lands (tests read it) */ const from=Game.time+TW_STRICT.grace*.5;
+    for(let t=0;t<D.lock/sp;t+=1/60){ put(); if(!rim.g&&t>=D.lock/sp+D.drop/sp-.17){ /* .17s before he lands */ rim.g=1; Sound.sfx('ting'); const g=twGlow(0xffffff,2.6); g.userData.tw=1; const yy=groundY(tx,tz)+D.hy+1.6; g.position.set(tx,yy,tz); twHz({upd(d2){ this.t+=d2; g.material.opacity=Math.max(0,1-this.t/.3); return this.t<.3; }, kill(){ scene.remove(g); }}); } yield 1/60; }
+    // the dive: straight down, the silver slash on the way
+    pxvMeleeTell(tx,tz); Sound.sfx('dash'); const y0=O.hy; for(let t=0;t<D.drop/sp;t+=1/60){ const u=Math.min(1,(t+1/60)/(D.drop/sp)); O.hy=lerp(y0,.3,u*u); O.y=groundY(O.x,O.z)+O.hy; yield 1/60; }
+    O.hy=.3; O.y=groundY(tx,tz)+.3; shake(.7); Sound.sfx('slam'); FX.burst(tx,groundY(tx,tz)+.4,tz,40,0x8a3aff,6,.4); FX.burst(tx,groundY(tx,tz)+.4,tz,24,0x140a1a,5,.4,false);
+    const P3=Player, inC=Math.hypot(P3.x-tx,P3.z-tz)<D.r+.3&&P3.y<groundY(tx,tz)+1.8;
+    if(inC){ const r=twStrictDo(from,()=>twHitP(3,tx,tz,{heavy:true,melee:true,onParry:()=>{ parried=1; Game.dmgNums.push({x:tx,y:groundY(tx,tz)+3,z:tz,n:'PARRIED',t:0,col:'#ffd45a'}); }})); if(r==='parry') parried=1; }
+    else { FX.ring(tx,groundY(tx,tz)+.1,tz,'#b06aff',3.2,.4); }
+    impactFrame(parried?[[2,1],[1,1]]:[[1,1]]); for(const m of [disc,rim]) scene.remove(m);
+    // back up to the sky (a parry knocks him up hard)
+    const y1=O.hy; for(let t=0;t<.35;t+=1/60){ O.hy=lerp(y1,D.hy,t/.35); yield 1/60; } O.hy=D.hy; }
+  finally{ scene.remove(disc); scene.remove(rim); O.cast=0; }
+  return parried; }
 function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={tombs:[],stop:0}; TW.d5tombs=S.tombs; TW.lcCleanup=()=>d5OmarLCClean(F); twCamTrack(.35,1.6);
   d5Run(d5CaoDriver(C,()=>S.stop||!F.d5));
-  // A) the tombstones
-  for(let k=0;k<6;k++){ const x=c.x+(k-2.5)*3.1, z=c.z-1.8+(k%2?1.6:-1.2); S.tombs.push(d5Tomb(x,z)); yield .18; }
-  d5Bark('omarLC',5); twBig('HIDE BEHIND THE GRAVES',{size:44,col:'#c08aff',y:UH*.24,dur:1.6,sub:'They stop his Getsugas, until they break'});
-  for(let t=0;t<12;t+=1.2){ const P=Player, a=Math.atan2(P.z-O.z,P.x-O.x); twAnim(O,{x:clamp(c.x+rnd(-5,5),B.x0+2,B.x1-2)},.6,twEIO); d5Getsuga(O,a,{warn:.65,sp:13}); if(t>2.5) d5Getsuga(O,a+(Math.random()<.5?.45:-.45),{warn:.75,sp:13}); if(t>6) d5Getsuga(O,a+(Math.random()<.5?.9:-.9),{warn:.8,sp:13}); yield 1.2; }
+  // A) FALLING MOON: he blinks over you and dives five times; parry each landing (attack as his scythe glints)
+  twBark('omar',"Look up. The moon is falling. ...It is me. I am the moon.",true); twBig('PARRY THE FALLING MOON',{size:44,col:'#c08aff',y:UH*.24,dur:1.8,sub:'Attack as he lands (his scythe glints), or step out of the circle'});
+  yield 1.2; let par=0; for(let k=0;k<5&&!S.stop;k++){ par+=yield* d5MoonDive(F,O,k); yield k<4?.35:.2; }
+  if(par>=5){ twBig('FULL MOON PARRIED',{size:48,col:'#ffd45a',y:UH*.26,dur:1.4,sub:'Every dive sent back to the sky'}); twBark('omar',"...That is not how the moon works.",true); }
+  twBlink(O,c.x,Math.max(B.z0+1.5,c.z-8.5)); O.hy=6; yield 1;
   // B) the portals
   d5Bark('omarLC',6); twBig('THE DOORS ARE OPEN',{size:44,col:'#c08aff',y:UH*.24,dur:1.5,sub:'Watch where they come out'});
   for(let w=0;w<5;w++){ const n=w<2?2:3, P=Player; O.scythe=1; O.swing=1; Sound.sfx('void');
