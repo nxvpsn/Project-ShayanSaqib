@@ -5806,7 +5806,8 @@ const alEase=u=>1-Math.pow(1-Math.max(0,Math.min(1,u)),3), AL_REST=-1.42; /* the
 // in a fight (or right after he swung) he stands with the katana drawn
 function alFighting(isP){ return !!(TW&&TW.fight)||!!Game.boss||(typeof NB!=='undefined'&&!!NB&&!!NB.alive)||(isP&&Game.time-(Player.swingT||-9)<3); }
 // the stance as drawn, with the tip finished to a point (the source frames cut it off) and a glint running up the blade now and then
-function alStanceFX(o,d,t){ const g=ALS.guard[d], p=ALS.tip[d]; if(d===4) return; const L=Math.hypot(p[0]-g[0],p[1]-g[1])||1, ux=(p[0]-g[0])/L, uy=(p[1]-g[1])/L;
+function alDirOk(d){ d=Math.round(+d); return Number.isFinite(d)?((d%8)+8)%8:0; } /* a facing outside 0-7 (or NaN) threw in the real browser and skipped his frame */
+function alStanceFX(o,d,t){ d=alDirOk(d); const g=ALS.guard[d], p=ALS.tip[d]; if(d===4) return; const L=Math.hypot(p[0]-g[0],p[1]-g[1])||1, ux=(p[0]-g[0])/L, uy=(p[1]-g[1])/L;
   o.fillStyle='#dfe6ee'; for(let i=1;i<=3;i++) o.fillRect(Math.round(p[0]+ux*i-.5),Math.round(p[1]+uy*i),i<3?2:1,1);
   const k=(t%2.4)/.35; if(k<1){ const x=Math.round(g[0]+ux*L*k), y=Math.round(g[1]+uy*L*k); o.fillStyle='#ffffff'; o.fillRect(x-1,y,3,1); o.fillRect(x,y-1,1,3); } }
 // the katana in his hand: a = angle (0 = straight ahead, negative = up), fx = which side he faces, trail = smear of earlier angles
@@ -5833,7 +5834,7 @@ drawAliHD=function(c,cx,by,f,s){ s=s||{}; if(!ALS.ok||!ALS.img||s.old) return AL
     const cut=(a0,a1,u0,u1,lean,from,back)=>{ const k=alEase((u-u0)/(u1-u0)), on=u>=u0&&u<=u1+.12; let ang=a0+(a1-a0)*k;
         if(u<u0&&from!=null) ang=from+(a0-from)*(u/u0); /* wind-up out of the stance */ if(back!=null&&u>u1+.2) ang=a1+(back-a1)*alEase((u-u1-.2)/(1-u1-.2)); /* settle back */
         return {ang,lean:lean*Math.sin(Math.PI*Math.min(1,Math.max(0,(u-u0+.1)/(u1-u0+.3)))),trail:on&&k>.05&&k<.98?(a1-a0)*.35:0}; };
-    const grip=d=>{ const g=ALS.guard[d]; return [g[0],g[1]]; }, fight=alFighting(isP);
+    const grip=d=>{ const g=ALS.guard[alDirOk(d)]; return [g[0],g[1]]; }, fight=alFighting(isP);
     const swing=(S)=>alPaint(c,cx,by,18,side,{flash:fl,rot:fx*S.lean,dx:fx*S.lean*14,blade:(o)=>{ const [hx,hy]=grip(side); alBlade(o,hx,hy,S.ang,fx,28,null,S.trail,true); }});
     if(a==='run'||a==='walk') alPaint(c,cx,by,9+dir,Math.floor(t*(a==='run'?11:7))%6,{flash:fl});
     else if(a==='jump'||a==='fall'){ const k=isP?alFlipK():(a==='jump'?(t*1.8)%1:1);
