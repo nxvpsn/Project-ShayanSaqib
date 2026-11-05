@@ -59,7 +59,7 @@ drawAliHD=function(c,cx,by,f,s){ s=s||{}; if(!ALS.ok||!ALS.img||s.old) return AL
     else if(a==='dead'||a==='down') alPaint(c,cx,by,0,side,{flash:fl,rot:-fx*Math.PI/2,dx:fx*33,dy:-19});
     else if(a==='aliS1'||a==='attack') swing(cut(-2.3,1.05,.12,.5,.2,AL_REST,AL_REST));
     else if(a==='aliS2'){ const S=u<.45?cut(AL_REST,.95,.05,.32,.15):cut(.95,-1.7,.48,.74,.1,null,AL_REST); swing(S); }
-    else if(a==='aliSpin'){ const d=(side+Math.floor(u*16))%8, v=AL_VEC[d], q=AL_FX[d]||1;
+    else if(a==='aliSpin'){ const d=alDirOk(side+Math.floor((Number.isFinite(u)?u:0)*16)), v=AL_VEC[d], q=AL_FX[d]||1;
       alPaint(c,cx,by,18,d,{flash:fl,blade:(o,ft)=>{ const g=d===0||d===4?[48,44]:grip(d), hx=g[0], hy=g[1]+3, L=28; for(let k=3;k>=0;k--){ o.globalAlpha=k?.12*(4-k):1; const w=Math.atan2(v[1]*.45,v[0])-k*.32*q;
         o.fillStyle=k?'#ffffff':'#dfe6ee'; for(let i=3;i<=L;i++) o.fillRect(Math.round(hx+Math.cos(w)*i),Math.round(hy+Math.sin(w)*i),2,2); } o.globalAlpha=1; o.fillStyle='#c8a050'; o.fillRect(Math.round(hx)-1,hy-1,3,3); }}); }
     else if(a==='beam') alPaint(c,cx,by,18,side,{flash:fl,rot:fx*.12,dx:fx*2,blade:(o)=>{ const [hx,hy]=grip(side); alBlade(o,hx,hy,.45,fx,28,null,0,true); }});
