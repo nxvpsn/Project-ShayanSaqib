@@ -10,7 +10,12 @@ if(!ONLY||ONLY==='hamza'){ warp('sh_both_f',"!!TW.giant&&Game.state==='play'&&!G
   // one phase (round 5): every move in his pool, then the swallow
   const pool=JSON.parse(R("JSON.stringify(HZG_POOL[1])")); for(const k of [...new Set(pool)]){ R(`(function(){ const G=TW.giant; G.stun=0; G.gen=HZG.${k}(G,1); G.wait=0; })()`); let n=0; for(;n<40&&R("!!TW.giant&&!!TW.giant.gen");n++) drive(.5); out.push(k+' '+(n/2)+'s st='+R("Game.state")+' errs='+B.errs.length); }
   R("(function(){ const G=TW.giant; Player.x=G.x+1; Player.z=G.z; G.gen=HZG.bigBite(G,1); G.wait=0; })()"); drive(8); out.push('big bite '+R("JSON.stringify({st:Game.state,php:Player.hp,ph:TW.giant&&TW.giant.phase})"));
-  // at zero: no phase II, no limit cut: the twins kill him (black hole + mega laser), then turn on you
+  // phase I at zero: KAWAII BULK, then phase II's moves, MUKBANG LIVE at half, then at zero the twins kill him
+  for(let s=0;s<120&&!R("Game.state==='play'&&!Game.script");s++) drive(.5); R("hzgHurt(9999,'test')"); for(let s=0;s<120&&!(R("!!TW.giant&&TW.giant.phase===2&&Game.state==='play'&&!Game.script"));s++) drive(.5); out.push('phase II '+R("JSON.stringify({ph:TW.giant&&TW.giant.phase,hp:TW.giant&&TW.giant.hp,st:Game.state})"));
+  for(const k of ['kawaiiStomp','meteor','bigBite']){ R(`(function(){ const G=TW.giant; G.stun=0; G.gen=HZG.${k}(G,2); G.wait=0; })()`); let n=0; for(;n<40&&R("!!TW.giant&&!!TW.giant.gen");n++) drive(.5); out.push(k+'@2 '+(n/2)+'s errs='+B.errs.length); }
+  for(let s=0;s<120&&!R("Game.state==='play'&&!Game.script");s++) drive(.5); R("(function(){ const G=TW.giant; G.stun=0; G.hp=G.maxHp*.55; hzgHurt(G.maxHp*.1,'test'); })()"); out.push('mukbang started '+R("!!TW.giant.gen&&TW.giant.inv"));
+  for(let s=0;s<120&&!R("TW.giant&&TW.giant.stun>0&&!TW.lcCleanup");s++) drive(.5); out.push('food coma '+R("JSON.stringify({stun:TW.giant&&+TW.giant.stun.toFixed(1),hg:!!TW.hg,lcDone:TW.giant&&TW.giant.lcDone,st:Game.state})"));
+  for(let s=0;s<120&&!R("Game.state==='play'&&!Game.script");s++) drive(.5);
   for(let s=0;s<120&&!R("Game.state==='play'&&!Game.script");s++) drive(.5); R("hzgHurt(9999,'test')"); let gone=-1; for(let s=0;s<240;s++){ drive(.5); if(gone<0&&!R("!!TW.giant")) gone=s/2; if(R("!!TW.fight&&TW.fight.kind==='duo'&&Game.state==='play'&&!Game.script")) break; }
   out.push('finale: giant gone at '+gone+'s, fight='+R("TW.fight&&TW.fight.kind")+' st='+R("Game.state")+' lc/hg='+R("!!TW.hg")); }
 if(!ONLY||ONLY==='nathan'){ R("Game.flags.ali=1; Object.assign(SCR,SCRA);"); warp('al_nathan',"typeof NB!=='undefined'&&!!NB&&NB.alive&&!NB.inv&&Game.state==='play'&&!Game.script"); out.push('nathan start '+R("JSON.stringify({bars:NB&&NB.bars,ali:ALI()})"));

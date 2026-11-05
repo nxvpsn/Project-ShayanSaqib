@@ -421,7 +421,7 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(!tpsFight()||!NP1.live||Game.letter>.5) return;
       const TT=IS_TOUCH(), bw=Math.min(UW*.6,560), bx=(UW-bw)/2, by=6, /* his bar: a thin line along the very top edge */ k=Math.max(0,NP1.hp/NP1.max), a=NP1.bar;
       D.save(); D.globalAlpha=a; D.fillStyle='rgba(10,18,28,.7)'; D.fillRect(bx,by,bw,4); D.fillStyle=NP1.done?'#ffd45a':NB&&NB.stunned?'#ffffff':'#3ff4ff'; D.fillRect(bx,by,bw*k,4);
-      D.font=`800 11px ${FB}`; D.textAlign='right'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText('NATHAN',bx-6,by+2); D.fillStyle='#bfefff'; D.fillText('NATHAN',bx-6,by+2); D.restore();
+      D.font=`800 11px ${FB}`; D.textAlign='right'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; const nm='NATHAN'+((NP1.ph||1)>1?'  '+['','I','II','III'][NP1.ph]:''); D.strokeText(nm,bx-6,by+2); D.fillStyle=(NP1.ph||1)>=3?'#ffb4a8':'#bfefff'; D.fillText(nm,bx-6,by+2); D.restore();
       const Fc=NP1.seq&&NP1.seq.k==='fc'?NP1.seq:null; if(Fc&&Fc.L){ const k2=Fc.t<NP1_FC.dash?1:Math.max(0,1-(Fc.t-NP1_FC.dash)/.2); if(k2>0){ const cx=UW/2, cy=UH*.5, R0=Math.hypot(UW,UH)*.55; D.save(); /* speed lines rushing in on the dash */
           for(const l of Fc.L){ const a=l.a+rnd(-.015,.015), r1=R0*l.r, r0=r1*(1-.55*Math.min(1,Fc.t*l.sp*9)); D.strokeStyle=`rgba(${l.w>3?'255,170,185':'255,255,255'},${.8*k2})`; D.lineWidth=l.w; D.beginPath(); D.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1); D.lineTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0); D.stroke(); }
           D.restore(); } }

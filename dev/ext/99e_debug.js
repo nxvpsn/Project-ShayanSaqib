@@ -28,16 +28,16 @@ function dbgSay(t){ DBG.msg={t,at:performance.now()}; }
 function dbgKJ(){ return DBG.boss==='grimmaw'&&Game.boss&&Game.boss.state!=='dead'?Game.boss:null; }
 function dbgSolo(){ return TW.fight&&TW.fight.kind==='solo'?TW.foes[0]:null; }
 function dbgDuo(){ return TW.fight&&TW.fight.kind==='duo'?TW.fight:null; }
-function dbgPhases(){ if(dbgNP1()) return 1; return {caotan:3,omar:3,duo:3,hamza:1,nathan:4,mech:2,grimmaw:3}[DBG.boss]||0; }
+function dbgPhases(){ if(dbgNP1()) return 3; return {caotan:3,omar:3,duo:3,hamza:2,nathan:4,mech:2,grimmaw:3}[DBG.boss]||0; }
 function dbgPhase(){ const b=DBG.boss; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); return T?T.phase:0; } if(b==='duo'){ const F=dbgDuo(); return F?F.phase:0; }
-  if(b==='hamza') return TW.giant?TW.giant.phase:0; if(b==='nathan') return NB?(dbgNP1()?1:NB.phase):0; if(b==='mech') return Game.mech?Game.mech.phase:0; if(b==='grimmaw'){ const K=dbgKJ(); return K?K.phase||1:0; } return 0; }
+  if(b==='hamza') return TW.giant?TW.giant.phase:0; if(b==='nathan') return NB?(dbgNP1()?(NP1.ph||1):NB.phase):0; if(b==='mech') return Game.mech?Game.mech.phase:0; if(b==='grimmaw'){ const K=dbgKJ(); return K?K.phase||1:0; } return 0; }
 function dbgHP(){ const b=DBG.boss; let h=null,m=1; if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(T){ h=T.hp; m=T.maxHp; } } else if(b==='duo'){ const F=dbgDuo(); if(F){ h=F.C.hp+F.O.hp; m=F.C.maxHp+F.O.maxHp; } }
   else if(b==='hamza'&&TW.giant){ h=TW.giant.hp; m=TW.giant.maxHp; } else if(b==='nathan'&&NB&&dbgNP1()){ h=NP1.hp; m=NP1.max; } else if(b==='nathan'&&NB){ const p=NB.phase, top=NB_PHASES[p-1], bot=NB_PHASES[p]!=null?NB_PHASES[p]:0; h=NB.bars-bot; m=top-bot; } else if(b==='mech'&&Game.mech&&Game.mech.boss){ h=Game.mech.boss.hp; m=Game.mech.boss.maxHp; } else if(b==='grimmaw'&&dbgKJ()){ h=Game.boss.hp; m=Game.boss.maxHp||1; }
   return h==null?null:clamp(h/m,0,1); }
 // the pool of one phase (what the boss can pick there), in a stable order
 function dbgPool(ph){ const b=DBG.boss, u=a=>[...new Set(a||[])];
   if(b==='caotan'||b==='omar') return u(TWPOOL[b][ph]).filter(k=>TWK[b][k]); if(b==='duo') return u((DUO3_POOL[ph]||[]).concat(ph===3?['scytheRain']:[])).filter(k=>DUO[k]);
-  if(b==='hamza') return u(HZG_POOL[ph]).filter(k=>HZG[k]); if(b==='nathan') return dbgNP1()?Object.keys(NP1M):u(NB_POOL[ph]); if(b==='mech') return (TH_SPELLS[ph]||[]).map(s=>s[2]);
+  if(b==='hamza') return u(HZG_POOL[ph]).filter(k=>HZG[k]); if(b==='nathan') return dbgNP1()?(typeof NP_POOLS!=='undefined'?u(NP_POOLS[ph]||NP_POOLS[1]):Object.keys(NP1M)).filter(k=>NP1M[k]):u(NB_POOL[ph]); if(b==='mech') return (TH_SPELLS[ph]||[]).map(s=>s[2]);
   if(b==='grimmaw') return u((KJ_POOL[ph]||[]).concat(['rush'])); return []; }
 function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw') return uniq([1,2,3].flatMap(dbgPool));
   if(b==='caotan'||b==='omar') return uniq([1,2,3].flatMap(p=>TWPOOL[b][p]||[])).filter(k=>TWK[b][k]);
@@ -46,9 +46,9 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
   if(b==='nathan') return dbgNP1()?Object.keys(NP1M):uniq([1,2,3,4].flatMap(p=>NB_POOL[p]||[]));
   if(b==='mech') return TH_SPELLS[1].concat(TH_SPELLS[2]).map(s=>s[2]); return []; }
 // limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
-function dbgLCs(){ if(dbgNP1()) return []; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
+function dbgLCs(){ if(dbgNP1()) return [['Lunar Eclipse (limit cut)','eclipse',2],['Ten Thousand Suns (limit cut)','suns',3],['Phase change','kill',1],['Phase change','kill',2]]; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
   duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
-  hamza:[],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
+  hamza:[['Mukbang Live (limit cut)','buffet',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
   grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
 // ---------- actions ----------
@@ -102,7 +102,7 @@ function dbgSetPhase(n){ const b=DBG.boss; DBG.cq=null; if(b==='grimmaw'){ dbgSa
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; const hp=twHPFor(n,b); Object.assign(T,{phase:n,hp,maxHp:hp,form:n,gen:null,state:'idle',inv:false,stun:0,bag:[],down:0,dying:0,cd:1}); T.lcDone[n]=0; twMeta(T); Sound.play(TW_MUSIC[b][n]); }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; F.phase=n; F.lc=0; F.lcDone[n]=0; F.bag=[]; F.busy=0; F.pend=null; for(const T of [F.C,F.O]) Object.assign(T,{phase:n,hp:DUO_HP[n],maxHp:DUO_HP[n],form:n,down:0,inv:false,stun:0,gen:null,state:'idle',bag:[]}); }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; Object.assign(G,{phase:n,hp:HZG_HP[n],maxHp:HZG_HP[n],bag:[],lcDone:0,inv:false,gen:null,pend:null,frenzied:0}); }
-  else if(b==='nathan'&&dbgNP1()){ np1Clear(); NP1.hp=NP1.max; NP1.done=0; NP1.stunT=0; NP1.gen=null; }
+  else if(b==='nathan'&&dbgNP1()){ np1Clear(); NP1.done=0; NP1.stunT=0; NP1.gen=null; NB.inv=false; NB.alive=true; Cam.cine=null; Game.letterTo=0; if(typeof npSetPhase==='function') npSetPhase(n,true); else NP1.hp=NP1.max; }
   else if(b==='nathan'){ if(!NB) return; NB.bars=NB.hp=NB_PHASES[n-1]; NB.alive=true; NB.lcA=n>2?1:0; NB.lcB=n>3?1:0; NB.over=0; NB.pend=null; nbClear(); run(function*(){ yield* nbBeginPhase(n); }); }
   else if(b==='mech'){ if(!Game.mech) return; Game.mech._resp=1; startMechPhase(n); }
   dbgSay('Phase '+['','I','II','III','IV'][n]); }
@@ -127,6 +127,7 @@ function dbgLC(kind,ph){ const b=DBG.boss; DBG.cq=null; DBG.last={a:'lc',k:kind,
     else if(kind==='caolc'){ F.caoLC=0; run(function*(){ yield* d5CaoLCIntro(F,C,O,true); }); }
     else if(kind==='burnout'){ F.caoLC=1; F.burned=0; C.hp=O.hp=0; twBurnoutGo(F,C,O); } }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; if(kind==='buffet'){ G.lcDone=1; G.inv=true; G.mv=null; G.gen=hzgBuffet(G); G.wait=0; } else { G.frenzied=1; G.gen=null; run(function*(){ yield* hzgFrenzy(G); if(TW.giant===G){ G.inv=false; G.hp=Math.max(G.hp,G.maxHp*.2); Game.state='play'; Game.letterTo=0; Cam.cine=null; } }); } }
+  else if(b==='nathan'&&dbgNP1()){ if(!NB) return; if(kind==='eclipse'||kind==='suns'){ np1Clear(); NP1.done=0; NP1.stunT=0; NB.stunned=0; NP1.gen=null; NP1.hp=Math.min(NP1.hp,NP1.max/2); NP1.lcDone=1; NP1.lcPend=1; } }
   else if(b==='nathan'){ if(!NB) return; if(kind==='over'){ NB.over=1; run(function*(){ yield* nbOverdrive(); if(NB){ NB.alive=true; yield* nbBeginPhase(NB.phase); } }); }
     else { if(kind==='storm') NB.lcA=1; else NB.lcB=1; NB.inv=true; nbClear(); NB.pend=kind==='storm'?nbStorm:nbHeaven; nbPend(); } }
   dbgSay('Running: '+((dbgLCs().find(q=>q[1]===kind&&q[2]===ph)||[kind])[0])); }

@@ -10,10 +10,9 @@ HZG.babyRing=function*(G,ph){ const P=Player, n=8, cx=P.x, cz=P.z; twBark('hamza
   for(let i=0;i<n;i++){ const a=i/n*6.283, q=twClampXZ(cx+Math.cos(a)*3.6,cz+Math.sin(a)*3.6,1); FX.ring(q.x,groundY(q.x,q.z)+.08,q.z,'#ffb0c8',1.2,.6); } yield .6;
   for(let i=0;i<n;i++){ const a=i/n*6.283, q=twClampXZ(cx+Math.cos(a)*3.6,cz+Math.sin(a)*3.6,1); hzgBaby(q.x,q.z,{drop:1,h:7}); } Sound.sfx('oink'); G.mouth=0; yield 1; };
 HZG_POOL[1]=['bounce','flop','stampede','babies','meteor','babyRain','laneRolls','bigBite','babyRing'];
-HZG_POOL[2]=HZG_POOL[1].slice(); /* nothing reaches phase II any more; old bags and Debug lists stay valid */
+/* phase II: 59k_hamza6 */
 
-// at zero: straight to the finale (the old Second Breakfast transformation is gone)
-hzgPhase2=function*(){ yield* hzgFinale(); };
+// phase I at zero: the transition is 59k_hamza6's KAWAII BULK; phase II at zero: this finale
 hzgFinale=function*(){ const G=TW.giant, P=Player, H=Game.hamza, C=hzgAlly('caotan'), O=hzgAlly('omar'); if(!G) return;
   hzgClearBabies(); twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); Sound.stop(); Game.letterTo=1; P.inv=99; G.inv=true; G.noBar=1; G.gen=null; G.roll=0; G.mouth=.4; G.frenzied=1;
   const gy=groundY(G.x,G.z); for(const A of [C,O]) if(A){ A.hold=1; A.air=0; }
