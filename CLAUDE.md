@@ -1,6 +1,6 @@
 # The Moonsinger's Bell (Project-ShayanSaqib): notes for Claude
 
-A single-page browser game (Three.js r147, pixel art, Kokoro-voiced), live on GitHub Pages from `main` (last shipped: v1.39, Oct 29 2026):
+A single-page browser game (Three.js r147, pixel art, Kokoro-voiced), live on GitHub Pages from `main` (last shipped: v1.54, Nov 5 2026; revert point before the v1.54 overhaul: branch `backup/v1.53-stable`):
 https://nxvpsn.github.io/Project-ShayanSaqib/. The owner tests only on the live site, so **finished work is pushed to `main`** (and your session branch).
 Details for everything here: `dev/docs/ARCHITECTURE.md` (grep it, never read it whole; §7 tests, §9 playbook by request type).
 
@@ -15,7 +15,7 @@ Details for everything here: `dev/docs/ARCHITECTURE.md` (grep it, never read it 
 - `dev/ext/*.js`: every change since the original game, concatenated in filename order. Edit these.
 - `dev/build.py`: builds `index.html` from `dev/base/original.html` + `patch(s, old, new)` edits (anchor must match once) + `dev/ext` + the voice list. Base-game changes go through `patch()`; never edit `index.html` or `original.html`.
 - `dev/game.js`: generated base game (grep/sed only; names in ARCHITECTURE §2). Tests: `dev/harness*.js`, `bot2.js`, `t_*.js`.
-- Newest systems (rows in ARCHITECTURE §2): Nathan on Ali's road `59t`-`59z` (TPS camera, phase I moves, Starbreaker, polish, posture, air; the road ends after phase I in `nbFinale`), Big Back Hamza round 4 `59i_hamza4.js` (arena-free moves, snout shove, hop, rolling stampede, parryable landings, ALL-YOU-CAN-EAT, LAST CALL), Kojima `40k`-`40n` (skins for borrowed moves, the box hunt instead of the dome, the crew/hydra sprites in `03k`), the stun meter `01c_stunmeter.js`, the caged cursor `08e_cursorcage.js`, Ali's charge `08d_alicharge.js`.
+- Newest systems (rows in ARCHITECTURE §2): Nathan on Ali's road `59t`-`59ze` (TPS camera, phase I moves, Starbreaker, polish, posture, air; phases II/III, limit cuts, transitions and Ali's 3D ultimate in `59zc`, VFX in `59ze`; the finale after phase III), Big Back Hamza phase II `59k` (finale `59j`), ambient motes `04c`, Big Back Hamza round 4 `59i_hamza4.js` (arena-free moves, snout shove, hop, rolling stampede, parryable landings, ALL-YOU-CAN-EAT, LAST CALL), Kojima `40k`-`40n` (skins for borrowed moves, the box hunt instead of the dome, the crew/hydra sprites in `03k`), the stun meter `01c_stunmeter.js`, the caged cursor `08e_cursorcage.js`, Ali's charge `08d_alicharge.js`.
 - Project skills in `.claude/skills/`: `scenario-pixel-vfx` (pixel VFX sheets, free and local; skip its paid Scenario steps), `game-feel`, `game-ui-ux`, `shader-programming`, `performance-optimization`.
 - Setup runs at session start (`bash dev/setup.sh`; `--voices` only when voicing: it downloads Kokoro, then `python3 build_voices.py ../index.html --dry-run` lists the lines, `--jobs 4` renders them; Hamza the pig is not in the voice cast, his barks are text).
 - The skills under `.claude/skills/` are repo files: Claude Code loads them by itself, setup.sh does not touch them, nothing to install.
@@ -67,5 +67,5 @@ Test what you touch with its test (§7; menus also with `TOUCH=1`). One commit p
 - Final report: the outcome first, the version it shipped as, then a short list of what to check on the live site, and the Debug Mode NEW items.
 - Fights never wall the player in (no `Game.arena` locks): keep a boss's moves near the player with a box that follows them instead. Bosses must not trudge or stutter: inertia, a homing boost, a hop back.
 - References stay "inspired by, not copies of" (the Kojima crew, the hydra). A boss's borrowed moves get skins that fit the boss; the attack itself stays.
-- Mechanics the owner removed: Hamza's quake, belly slide, roll-as-its-own-move, the laser dome; Nathan phases II-IV on Ali's road (phase I ends in the finale).
+- Mechanics the owner removed: Hamza's quake, belly slide, roll-as-its-own-move, the laser dome, his old limit cuts (ALL-YOU-CAN-EAT, LAST CALL) and Space Hamza. (Nathan phases II-III on Ali's road were rebuilt in v1.54.)
 - Keys: `Esc` menu, `P` pause, `V` voices, `M` mute, hold `F` fast-forward. Secret numpad keys (never in on-screen key lists; on touch: Esc → Options → Cheats): `0` infinite HP, `1` infinite Full Counter, `2` one-hit kill (skips limit cuts), `3` timeline unlocks, `5` Debug Mode. Name rebindable keys on screen with `K('action')`.

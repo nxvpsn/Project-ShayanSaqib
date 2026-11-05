@@ -45,7 +45,7 @@ function npCloneShatter(o){ FX.burst(o.x,o.y+1.6,o.z,40,0x9ff8ff,7,.4); FX.burst
 function* npCloneStrike(o,dmg,onParry){ const P=Player; o.row=0; np1Glint(o.x,o.y+2.6,o.z,0xff2a3a,4.2); Sound.tone('square',1500,600,.14,.07);
   for(let t=0;t<NP1_TELL-.12;t+=NP1.dt){ o.face=null; o.place(); yield NP1.dt; }
   const sx=o.x, sz=o.z; o.row=4; Sound.sfx('whoosh');
-  for(let t=0;t<.12;t+=NP1.dt){ const u=Math.min(1,(t+NP1.dt)/.12), P2=Player, [ux,uz]=[P2.x-sx,P2.z-sz], d=Math.hypot(ux,uz)||1; o.x=sx+ux/d*Math.max(0,d-1.3)*u; o.z=sz+uz/d*Math.max(0,d-1.3)*u; o.row=1+Math.min(11,Math.floor(u*8)); twRushTell(o,Math.atan2(uz,ux)); o.place(); yield NP1.dt; }
+  for(let t=0;t<.12;t+=NP1.dt){ const u=Math.min(1,(t+NP1.dt)/.12), P2=Player, [ux,uz]=[P2.x-sx,P2.z-sz], d=Math.hypot(ux,uz)||1; o.x=sx+ux/d*Math.max(0,d-1.3)*u; o.z=sz+uz/d*Math.max(0,d-1.3)*u; o.row=1+Math.min(11,Math.floor(u*8)); twRushTell(o,Math.atan2(uz,ux)); o.place(); for(let q=0;q<3;q++) FX.spawn(o.x+rnd(-.3,.3),o.y+rnd(.4,3.2),o.z+rnd(-.3,.3),-ux/d*6,rnd(-.3,.3),-uz/d*6,.22,q%2?0x3ff4ff:0xffffff,.22,0,true); yield NP1.dt; }
   Sound.sfx('swing'); const r=np1HitRed(dmg,o.x,o.z,onParry); o.row=8; o.place(); return r; }
 
 // ---------- PHASE II/III MOVES ----------
@@ -58,6 +58,8 @@ NP1M.railgun=function*(){ NP1.cur='railgun'; twBark('nathan',npPh()>=3?"Rail can
     // the sight: a thin red line from his barrel to you while it charges
     const s1=beamMesh(0xff2a3a,.03), s2=beamMesh(0xffffff,.012); for(const m of [s1,s2]){ m.userData.temp=1; scene.add(m); }
     np1Obj({bit:1,upd(){ if(!sight.on) return false; const P2=Player; for(const m of [s1,s2]){ m.position.set(hx(),hy(),hz()); m.lookAt(P2.x,P2.y+1.2,P2.z+1e-4); m.scale.set(1,1,Math.max(.01,Math.hypot(P2.x-hx(),P2.y+1.2-hy(),P2.z-hz()))); } return true; }, kill(){ scene.remove(s1); scene.remove(s2); }});
+    { const orb=twGlow(0xff3a4a,.3); orb.userData.temp=1; const ch={t:0}; np1Obj({bit:1,upd(dt){ ch.t+=dt; if(ch.t>.95) return false; const k=Math.min(1,ch.t/.5); orb.position.set(hx(),hy(),hz()); orb.scale.setScalar(.3+k*1.8+Math.sin(ch.t*50)*.15); orb.material.opacity=.9;
+        if(ch.t<.5) for(let q=0;q<3;q++){ const a=rnd(0,6.28), b=rnd(-1.2,1.2), r=rnd(1.2,2.2), x=hx()+Math.cos(a)*r, y=hy()+b, z=hz()+Math.sin(a)*r; FX.spawn(x,y,z,(hx()-x)*4,(hy()-y)*4,(hz()-z)*4,.25,q%2?0xff2a3a:0xffffff,.14,0,true); } return true; }, kill(){ scene.remove(orb); }}); }
     yield .5; np1Glint(hx(),hy(),hz(),0xff2a3a,5); np1Tell(true); if(typeof nbsSlash==='function') NBS.fixRow=13; yield NP1_TELL; sight.on=0;
     const P2=Player, ty=P2.y+1.2; np1Beam(hx(),hy(),hz(),P2.x+(P2.x-hx())*.4,ty,P2.z+(P2.z-hz())*.4,0xff2a3a,.24,.28); Sound.sfx('mechshot'); Sound.sfx('beam'); shake(.35); if(typeof NBS!=='undefined') NBS.fixRow=null;
     const r=np1HitRed(2,NB.x,NB.z,()=>{ Game.dmgNums.push({x:P2.x,y:P2.y+3,z:P2.z,n:'REFLECTED',t:0,big:true,col:'#ffd45a'}); });
@@ -82,17 +84,17 @@ NP1M.sweep=function*(){ NP1.cur='sweep'; twBark('nathan',npPh()>=3?"Full moon sw
   const L=17, gy=()=>groundY(NB.x,NB.z), turns=npPh()>=3?2:1; Sound.sfx('charge'); if(typeof NBS!=='undefined') NBS.fixRow=2;
   // the tell: a gold ring on the ground at its reach, JUMP
   FX.ring(NB.x,gy()+.1,NB.z,'#ffd23a',L,.9); Game.dmgNums.push({x:Player.x,y:Player.y+2.8,z:Player.z,n:'JUMP!',t:0,big:true,col:'#ffd23a'}); np1Glint(NB.x,NB.y+2.4,NB.z,0xffd23a,4); yield .55;
-  const ms=[beamMesh(0x2a1a00,.3),beamMesh(0xffc23a,.2),beamMesh(0xffffff,.07)]; for(const m of ms){ m.userData.temp=1; scene.add(m); }
+  const ms=[beamMesh(0x2a1a00,.3),beamMesh(0xffc23a,.2),beamMesh(0xffffff,.07)], tr=[0,1,2].map(()=>{ const m=beamMesh(0xffc23a,.16); m.material.transparent=true; m.material.blending=THREE.AdditiveBlending; m.material.depthWrite=false; return m; }); for(const m of [...ms,...tr]){ m.userData.temp=1; scene.add(m); }
   const S={a:Math.atan2(Player.z-NB.z,Player.x-NB.x)+Math.PI,prev:null,dir:Math.random()<.5?1:-1,t:0,hit:0}, sp=Math.PI*2/(npPh()>=3?1.1:1.4);
-  const o=np1Obj({bit:1,upd(dt){ return !S.done; }, kill(){ S.done=1; for(const m of ms) scene.remove(m); if(typeof NBS!=='undefined'&&NBS.fixRow===2) NBS.fixRow=null; }});
+  const o=np1Obj({bit:1,upd(dt){ return !S.done; }, kill(){ S.done=1; for(const m of [...ms,...tr]) scene.remove(m); if(typeof NBS!=='undefined'&&NBS.fixRow===2) NBS.fixRow=null; }});
   try{ for(let k=0;k<turns;k++){ if(k){ S.dir=-S.dir; Sound.sfx('charge'); yield .25; } S.hit=0; let sw=0; Sound.sfx('beam'); Sound.sfx('whoosh');
       while(sw<Math.PI*2){ const dt=NP1.dt, da=sp*dt; S.prev=S.a; S.a+=S.dir*da; sw+=da; const y=gy()+.55, ux=Math.cos(S.a), uz=Math.sin(S.a);
-        ms.forEach((m,i)=>{ m.position.set(NB.x,y,NB.z); m.lookAt(NB.x+ux,y,NB.z+uz); m.scale.set(1,1,L); }); FX.spawn(NB.x+ux*L*Math.random(),y,NB.z+uz*L*Math.random(),0,rnd(.5,2),0,.3,Math.random()<.5?0xffd23a:0xffffff,.3,0,true);
+        ms.forEach((m,i)=>{ m.position.set(NB.x,y,NB.z); m.lookAt(NB.x+ux,y,NB.z+uz); m.scale.set(1,1,L); }); tr.forEach((m,i)=>{ const b=S.a-S.dir*(i+1)*.09; m.position.set(NB.x,y,NB.z); m.lookAt(NB.x+Math.cos(b),y,NB.z+Math.sin(b)); m.scale.set(1,1,L); m.material.opacity=.4-i*.12; }); FX.spawn(NB.x+ux*L*Math.random(),y,NB.z+uz*L*Math.random(),0,rnd(.5,2),0,.3,Math.random()<.5?0xffd23a:0xffffff,.3,0,true);
         const P2=Player, pa=Math.atan2(P2.z-NB.z,P2.x-NB.x), pd=Math.hypot(P2.x-NB.x,P2.z-NB.z), crossed=Math.abs(angDiff(pa,S.a))<da*1.5+.06;
         if(!S.hit&&crossed&&pd<L+.4&&P2.y-groundY(P2.x,P2.z)<1.1&&P2.inv<=0&&!P2.cineFly&&P2.dash<=0){ S.hit=1; hurtPlayer(2,NB.x,NB.z); FX.burst(P2.x,P2.y+.6,P2.z,24,0xffd23a,5,.3); }
         else if(!S.hit&&crossed&&pd<L+.4){ S.hit=1; Game.dmgNums.push({x:P2.x,y:P2.y+2.6,z:P2.z,n:'CLEAR',t:0,col:'#ffd23a'}); }
         yield dt; } } }
-  finally{ S.done=1; if(typeof NBS!=='undefined') NBS.fixRow=null; for(const m of ms) scene.remove(m); }
+  finally{ S.done=1; if(typeof NBS!=='undefined') NBS.fixRow=null; for(const m of [...ms,...tr]) scene.remove(m); }
   np1Open(1.2); yield .3; };
 // Blink Chain (III): he blinks round you five times; each blink is RED (parry) or BLUE (blink at the last moment)
 NP1M.blinkchain=function*(){ NP1.cur='blinkchain'; twBark('nathan',"Red or blue, wanderer. Choose wrong.",true); np1Hint('chain','BLINK CHAIN: RED = parry, BLUE = blink ('+K('dash')+') at the last moment');
@@ -124,7 +126,7 @@ function* npLCEclipse(){ const P=Player, gy=groundY(P.x,P.z); NP1.cur='lc'; NP1.
   // the shot: low behind Ali, up at him as he rises
   Game.letterTo=.5; const [dx,dz]=np1Dir(); NP1.cam={x:P.x+dx*6,y:gy+1.2,z:P.z+dz*6,lx:NB.x,ly:NB.y+3,lz:NB.z};
   NB.hov=5; twBark('nathan',"Lunar Eclipse. The moon goes dark... and so do you.",true); twCutin('nathan','LUNAR ECLIPSE','Limit Break  ·  six shadows, one moon','#1a4aff',1.8); Sound.sfx('void'); grade.uniforms.tint.value.set(.6,.66,1.1); yield 1.6;
-  NP1.cam=null; Game.letterTo=0; twBig('PARRY EVERY SHADOW',{size:46,col:'#9ff8ff',y:UH*.24,dur:1.6,sub:'Each one flashes RED before it comes'});
+  NP1.cam=null; Game.letterTo=0; npFaceNB(); twBig('PARRY EVERY SHADOW',{size:46,col:'#9ff8ff',y:UH*.24,dur:1.6,sub:'Each one flashes RED before it comes'});
   const a0=rnd(0,6.28), cl=[]; for(let i=0;i<6;i++){ const a=a0+i*6.283/6; cl.push(npClone(P.x+Math.cos(a)*7,P.z+Math.sin(a)*7)); yield .08; }
   const keep=np1Obj({bit:1,upd(){ const P2=Player; cl.forEach((o,i)=>{ if(o.dead||o.busy) return; const a=a0+i*6.283/6+Game.time*.4; o.x=lerp(o.x,P2.x+Math.cos(a)*7,.08); o.z=lerp(o.z,P2.z+Math.sin(a)*7,.08); o.y=groundY(o.x,o.z)+1.2; o.row=15+(Math.floor(Game.time*14)%6); o.place(); }); return cl.some(o=>!o.dead); }, kill(){ cl.forEach(o=>{ if(!o.dead){ o.kill(); o.dead=1; } }); }});
   try{ yield .8;
@@ -142,7 +144,7 @@ function* npLCEclipse(){ const P=Player, gy=groundY(P.x,P.z); NP1.cur='lc'; NP1.
 function* npLCSuns(){ const P=Player, gy=groundY(P.x,P.z); NP1.cur='lc'; NP1.lcInv=1;
   Game.letterTo=.5; const [dx,dz]=np1Dir(); NP1.cam={x:P.x+dx*7,y:gy+1,z:P.z+dz*7,lx:NB.x,ly:NB.y+6,lz:NB.z};
   NB.hov=9; twBark('nathan',"If I burn out, I take the sky with me. TEN THOUSAND SUNS!",true); twCutin('nathan','TEN THOUSAND SUNS','Limit Break  ·  the sky is his','#ff3a1a',1.8); Sound.sfx('secret'); grade.uniforms.tint.value.set(1.2,.78,.66); yield 1.6;
-  NP1.cam=null; Game.letterTo=0; twBig('SURVIVE THE SKY',{size:46,col:'#ffb02a',y:UH*.24,dur:1.6,sub:'RED funnels: parry or blink · GOLD circles: move'});
+  NP1.cam=null; Game.letterTo=0; npFaceNB(); twBig('SURVIVE THE SKY',{size:46,col:'#ffb02a',y:UH*.24,dur:1.6,sub:'RED funnels: parry or blink · GOLD circles: move'});
   const bs=[], n=8; for(let i=0;i<n;i++){ const b=nbBit(NB.x,NB.y+2,NB.z); b.a=i*6.283/n; bs.push(b);
     np1Obj({bit:1,upd(dt){ if(b.gone) return false; const P2=Player; b.a+=dt*.35; const tx=P2.x+Math.cos(b.a)*8, tz=P2.z+Math.sin(b.a)*8, ty=P2.y+6; b.x=lerp(b.x,tx,Math.min(1,dt*3)); b.y=lerp(b.y,ty,Math.min(1,dt*3)); b.z=lerp(b.z,tz,Math.min(1,dt*3)); b.m.position.set(b.x,b.y,b.z); b.m.lookAt(P2.x,P2.y+1,P2.z); return true; }, kill(){ if(!b.gone){ b.gone=1; nbKillBit(b); } }}); }
   try{ yield 1;
@@ -180,8 +182,11 @@ function npLCEnd(){ NP1.lcInv=0; if(NP1.cur==='lc') NP1.cur=null; try{ const Lk=
     const next=npPh()+1; NB.pend=function*(){ yield wait(1.8); yield* (next===2?npCine12():npCine23()); }; nbPend(); }; })();
 // the end of a transition: the next phase, healed, the camera back behind Ali
 function npBegin(n){ const P=Player; np1Clear(); NP1.cam=null; npSetPhase(n,true); NP1.done=0; NP1.stunT=0; NP1.gen=null; NP1.wait=0; NP1.cd=1.4; NP1.last=null;
-  NB.inv=false; NB.alive=true; NB.stunned=0; NB.hov=1.4; P.hp=P.maxHp; P.inv=1.2; P.cineFly=false; P.cineAnim=null; Cam.cine=null; Game.letterTo=0; Game.state='play'; try{ Sound.play('diva'); }catch(e){} }
-function npShotNB(dist,side,up,ly){ const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, gy=groundY(NB.x,NB.z); cineSet(NB.x+dx*dist+px*side,gy+up,NB.z+dz*dist+pz*side,NB.x,gy+(ly||2.4),NB.z); }
+  NB.inv=false; NB.alive=true; NB.stunned=0; NB.hov=1.4; P.hp=P.maxHp; P.inv=1.2; P.cineFly=false; P.cineAnim=null; Cam.cine=null; Game.letterTo=0; Game.state='play'; npFaceNB(); try{ Sound.play('diva'); }catch(e){} }
+// the fight's camera picks up behind Ali, facing Nathan (not where it was looking before the cutscene)
+function npFaceNB(){ try{ if(typeof TPS!=='undefined'&&NB){ const P=Player; TPS.yaw=Math.atan2(NB.z-P.z,NB.x-P.x); P.ang=TPS.yaw; } }catch(e){} }
+function npShotNB(dist,side,up,ly){ const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, gy=groundY(NB.x,NB.z); let cx=NB.x+dx*dist+px*side, cz=NB.z+dz*dist+pz*side;
+  if(Math.hypot(cx-P.x,cz-P.z)<1.8){ const sg=side<0?-1:1; cx+=px*2.4*sg; cz+=pz*2.4*sg; } /* never inside Ali when he stands where the shot would be */ cineSet(cx,gy+up,cz,NB.x,gy+(ly||2.4),NB.z); }
 function npShotAli(dist,side,up){ const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, gy=groundY(P.x,P.z); cineSet(P.x-dx*dist+px*side,gy+up,P.z-dz*dist+pz*side,P.x,gy+1.5,P.z); }
 // I -> II: MOONLESS SKY. He purges his armour; the sky goes dark
 function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
@@ -259,6 +264,6 @@ function* npUlt(){ const P=Player; P.sp=0; P.inv=99; P.hp=P.maxHp; Game.dmgNums.
     FX.burst(cx,cy,cz,80,0xff2a3a,10,.5); FX.burst(cx,cy,cz,40,0x0a0006,8,.5,false); FX.ring(cx,groundY(cx,cz)+.1,cz,'#ff3a4a',6,.5);
     Game.dmgNums.push({x:cx,y:cy+3,z:cz,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff6a7a'}); hitNB(); try{ npPosture(40,'ULTIMATE'); }catch(e){} yield wait(.6); }
   // back behind Ali
-  P.x=ox; P.z=oz; P.y=groundY(ox,oz); P.cineFly=false; P.cineAnim=null; P.inv=.8; NP1.cam=null; Game.letterTo=0; JC.lines=[];
+  P.x=ox; P.z=oz; P.y=groundY(ox,oz); P.cineFly=false; P.cineAnim=null; P.inv=.8; NP1.cam=null; Game.letterTo=0; JC.lines=[]; npFaceNB();
   if(NB&&NB.alive&&!NP1.done){ NP1.stunT=0; np1Stun(2.2,'SHATTERED'); } }
 (function(){ const au=aliUltimate; aliUltimate=function*(){ const E=NP1.ex; if(npUltOk()&&!(E&&E.phase==='window')){ if(NP1.lcInv){ Game.dmgNums.push({x:Player.x,y:Player.y+2.6,z:Player.z,n:"HE'S UNTOUCHABLE",t:0,col:'#9ff8ff'}); return; } yield* npUlt(); return; } yield* au.apply(this,arguments); }; })();

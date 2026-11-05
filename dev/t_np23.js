@@ -6,7 +6,7 @@ function drive(sec,js){ for(let i=0;i<sec*60;i++){ R(`(function(){ const P=Playe
 const bot="if(Game.state==='play'&&!Game.dlg){ const k=Math.floor(Game.time*1.3)%4; held.left=k===0; held.right=k===1; held.up=k===2; held.down=k===3; if(Math.random()<.15) hit.attack=true; if(Math.random()<.02) hit.dash=true; if(Math.random()<.03) hit.jump=true; }";
 R("run(function*(){ yield* twWarp('al_nathan'); })"); for(let i=0;i<400;i++){ drive(.25); if(R("typeof NB!=='undefined'&&!!NB&&NB.alive&&Game.state==='play'&&!Game.script&&np1On()")) break; }
 const st=()=>R("JSON.stringify({st:Game.state,ph:NP1.ph,hp:Math.round(NP1.hp),max:NP1.max,done:NP1.done,lc:NP1.lcDone,inv:!!NB.inv,scr:!!Game.script,cine:!!Cam.cine,cam:!!NP1.cam,seq:NP1.seq&&NP1.seq.k,gen:!!NP1.gen,objs:NP1.objs.length,php:Player.hp})");
-out.push('start '+st());
+out.push('start '+st()); const sc0=R('scene.children.length');
 const E0=()=>B.errs.length;
 function move(k){ R(`NP1.stunT=0; NB.stunned=0; np1Clear(); NP1.gen=NP1M.${k}(); NP1.wait=0;`); let n=0; for(;n<60&&R("!!NP1.gen||!!NP1.seq");n++) drive(.5,bot); drive(.5); out.push(k+' ph'+R('NP1.ph')+' '+(n/2)+'s objs='+R('NP1.objs.length')+' errs='+E0()); }
 // phase I -> II
@@ -25,6 +25,7 @@ for(const k of ['blinkchain','starfall','twinfang','sweep']) move(k);
 R("NP1.stunT=0; NB.stunned=0; nbDamage(NP1.hp-NP1.max/2+1,'np1')"); drive(.2); for(let s=0;s<120&&R("NP1.cur==='lc'||NP1.cur==='grab'||!!NP1.seq");s++) drive(.25,bot); drive(1); out.push('after suns: '+st()+' errs='+E0());
 // a while of the real AI in phase III
 drive(25,bot); out.push('ai 25s: '+st()+' errs='+E0());
+out.push('scene children start '+sc0+' now '+R('scene.children.length')+' (after np1Clear: '+R('(np1Clear(),scene.children.length)')+')');
 // III -> the finale
 R("NP1.stunT=0; NB.stunned=0; nbDamage(9999,'np1')"); for(let s=0;s<300&&R("typeof NB!=='undefined'&&!!NB")&&R("Game.state")!=='end';s++) drive(.5); out.push('finale: st='+R('Game.state')+' NB='+R("typeof NB!=='undefined'&&!!NB"));
 console.log(out.join('\n')); console.log('ERRORS',B.errs.length); [...new Set(B.errs)].slice(0,12).forEach(e=>console.log(' !',e));

@@ -8,6 +8,7 @@
 // The transition is a script (say/wait/tween); the limit cut is his generator (seconds), cleaned up by TW.lcCleanup.
 // =====================================================================
 HZG.kawaiiStomp=function*(G,ph){ const gy=groundY(G.x,G.z); twBark('hamza',"Kawaii... STOMP! Uwu! Bismillah!",true); G.mouth=1; Sound.sfx('pigroar');
+  if(!TW.hzStompHint){ TW.hzStompHint=1; twBig('JUMP THE PINK RINGS',{size:44,col:'#ff6ab0',y:UH*.24,dur:1.6,sub:'Each stomp sends one along the ground'}); }
   for(let k=0;k<3;k++){ G.air=1.6; yield .32; G.air=0; Sound.sfx('slam'); shake(.6); FX.burst(G.x,gy+.3,G.z,30,0xff6ab0,6,.35); FX.burst(G.x,gy+.3,G.z,16,0xffffff,5,.3);
     twWave(G.x,G.z,{sp:k===2?9:7.5,max:13,col:0xff3a8a,dmg:2}); yield .5; }
   G.mouth=0; yield .5; };
@@ -59,3 +60,17 @@ hzgBuffet=function*(G){ const c=G.center||twCenter(), P=Player, gy=groundY(c.x,c
     TW.hg=null; yield .4;
   } finally { TW.lcCleanup=null; cleanup(); }
   twBig('FOOD COMA',{size:60,col:'#ffd45a',sub:'Stream ended. Hamza is stunned: go!'}); twBark('hamza',"...Like and subscribe... zzz...",true); G.inv=false; G.stun=5; yield 5; };
+// phase II's look: pink sparkles and the odd heart drifting off him (cosmetic)
+(function(){ const hu=hzgUpdate; hzgUpdate=function(dt,play){ const r=hu.apply(this,arguments); try{ const G=TW.giant; if(G&&G.phase>=2&&G.hp>0&&!G.noBar){ const s=(G.gs||.55)/.55;
+      if(Math.random()<dt*18) FX.spawn(G.x+rnd(-2.4,2.4)*s,G.y+rnd(.6,4.6)*s,G.z+rnd(-1,1),0,rnd(.6,1.6),0,.8,Math.random()<.6?0xff6ab0:0xffffff,.22,-1,true);
+      if(Math.random()<dt*2.2) FX.spawn(G.x+rnd(-1.6,1.6)*s,G.y+rnd(3,5)*s,G.z,rnd(-.3,.3),rnd(1,2),0,1.2,0xff3a8a,.4,-.5,true); } }catch(e){ console.error('hamza aura',e); } return r; }; })();
+// MUKBANG LIVE's stream chat (cosmetic): a LIVE badge, a viewer count going up, chat scrolling top right while it runs
+const HZG_CHAT=[['hamza_stan_420','POG'],['caotan_official','report this stream'],['omar_edge','...'],['xX_bacon_Xx','is he gonna eat the blacksmith??'],['mira_chan','SHAYAN DODGE'],['hikari_chan_rip','F'],['bismillah_bot','Bismillah x10'],['piglet_37','DAD WATCH ME'],['senpai_noticer','senpai is so brave ♡'],['dayoldkojima','my lawyers are watching'],['nathan_alt','mid mukbang tbh'],['big_back_fan','SMASH. THAT. LIKE.'],['omar_edge','I donated nothing'],['kenji','is this the festival?'],['caotan_official','HIKARI-CHAN DESERVED BETTER']];
+(function(){ const hb=hzgBuffet; hzgBuffet=function*(G){ const C={t:0,n:0,v:1200,msgs:[]}; TW.hzChat=C; try{ yield* hb.apply(this,arguments); } finally{ if(TW.hzChat===C) TW.hzChat=null; } }; })();
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ const C=TW.hzChat; if(!C||!TW.giant||Game.state==='title') return; const dt=1/60; C.t+=dt; C.v+=Math.floor(rnd(0,40));
+    if(C.t>C.n*.55){ C.n++; C.msgs.push(HZG_CHAT[Math.floor(Math.random()*HZG_CHAT.length)]); if(C.msgs.length>6) C.msgs.shift(); }
+    const TT=IS_TOUCH(), fs=TT?16:14, w=TT?300:280, x=UW-w-12, y=TT?120:96, lh=fs+6; D.save(); D.globalAlpha=Math.min(1,C.t*3);
+    D.fillStyle='rgba(10,8,16,.62)'; D.fillRect(x,y,w,lh*(C.msgs.length+1)+12); D.fillStyle='#ff2a3a'; D.beginPath(); D.arc(x+14,y+12,5,0,7); D.fill();
+    D.font=`900 ${fs}px ${FB}`; D.textAlign='left'; D.textBaseline='middle'; D.fillStyle='#ffffff'; D.fillText('LIVE  ·  '+C.v.toLocaleString()+' watching',x+26,y+12);
+    C.msgs.forEach(([u,m],i)=>{ const yy=y+12+lh*(i+1); D.font=`800 ${fs}px ${FB}`; D.fillStyle=['#ff8ac8','#8fd0ff','#ffd45a','#9affb0'][u.length%4]; D.fillText(u+':',x+10,yy); const uw=D.measureText(u+': ').width; D.font=`600 ${fs}px ${FB}`; D.fillStyle='#ffffff'; D.fillText(m,x+10+uw,yy); });
+    D.restore(); }catch(e){ console.error('hz chat',e); } }; })();
