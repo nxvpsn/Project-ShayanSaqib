@@ -42,7 +42,7 @@ function alPaint(c,cx,by,row,col,o){ o=o||{}; if(!ALS.off) ALS.off=mkCanvas(96,9
 function alFlipK(){ const P=Player; return P.alFlipT!=null?(Game.time-P.alFlipT)/.55:1; }
 drawAliHD=function(c,cx,by,f,s){ s=s||{}; if(!ALS.ok||!ALS.img||s.old) return AL_OLD_DRAW(c,cx,by,f,s);
   try{ const P=Player, isP=!!P&&ALI()&&s.t===P.t&&s.anim===P.anim, a=s.anim||'idle', t=s.t||0;
-    let dir=f>0?2:6; if(isP&&Game.state==='play'&&!P.cineFly&&!P.scripted){ const ang=P.ang||0, cs=Math.cos(ang); if(!(Math.abs(cs)>.3&&Math.sign(cs)!==Math.sign(f||1))) dir=shDirIdx(ang); }
+    let dir=f>0?2:6; if(isP&&Game.state==='play'&&!P.cineFly&&!P.scripted){ const ang=P.ang||0, cs=Math.cos(ang); if(!(Math.abs(cs)>.3&&Math.sign(cs)!==Math.sign(f||1))) dir=shDirIdx(ang); } dir=alDirOk(dir);
     const side=dir===0?(f>0?1:7):dir===4?(f>0?3:5):dir, fx=AL_FX[side], fl=s.flash>0?'rgba(255,255,255,.85)':null;
     const u=s.ap!=null?s.ap:(/^aliS/.test(a)&&isP&&P.aliAtk?P.aliAtk.u:(t*2.5)%1);
     const cut=(a0,a1,u0,u1,lean,from,back)=>{ const k=alEase((u-u0)/(u1-u0)), on=u>=u0&&u<=u1+.12; let ang=a0+(a1-a0)*k;
