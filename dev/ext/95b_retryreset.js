@@ -25,3 +25,7 @@ function plSane(){ const P=Player; if(!P) return; let bad=null;
   const L1=PL_SAFE.last||(PL_SAFE.last={}); for(const k of PL_SAFE.k) L1[k]=P[k]; }
 (function(){ const up=updatePlayer; updatePlayer=function(dt){ try{ plSane(); }catch(e){} const r=up.apply(this,arguments); try{ plSane(); }catch(e){} return r; }; })();
 (function(){ const uw=updateWorld; updateWorld=function(dt){ try{ plSane(); }catch(e){} return uw.apply(this,arguments); }; })();
+// the map lookups never throw on a NaN position (the one freeze seen in a real-browser run was cellH reading L.H[NaN]):
+// a non-finite x or z reads as open ground at height 0 for that call, and plSane puts the position back next frame
+(function(){ const gy=groundY; groundY=function(x,z){ if(!Number.isFinite(x)||!Number.isFinite(z)) return 0; return gy.apply(this,arguments); };
+  const ch=cellH; cellH=function(x,z){ if(!Number.isFinite(x)||!Number.isFinite(z)) return 0; return ch.apply(this,arguments); }; })();
