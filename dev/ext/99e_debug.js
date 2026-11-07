@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.54 (Nov 5): Nathan on Ali's road has phases II (Moonless Sky) and III (Last Light) with new moves, two limit cuts, transitions and a 3D ultimate for Ali; Big Back Hamza has phase II (Kawaii Bulk) with MUKBANG LIVE; Nathan VFX overhaul; ambient motes everywhere.";
-const DBG_NEW=['nathan:*','hamza:*'];
+const DBG_PATCH="v1.55 (Nov 7): Kojima's red tape, paywall and shredder skins stay in his fight (a Kojima move cut short used to leave Caotan's lasers and Omar's holes wearing them). Nathan II/III and Hamza II (v1.54).";
+const DBG_NEW=['grimmaw:tape','grimmaw:wall','grimmaw:shredder'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

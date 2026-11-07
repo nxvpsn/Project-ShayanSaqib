@@ -38,8 +38,13 @@ function kjShredVis(x,y,z,r){ const body=new THREE.Group(); const bx=new THREE.M
   return {x,y,z,r,k:0,t:0,set(k){ this.k=k; const s=Math.max(.01,k); body.scale.setScalar(s); body.position.set(this.x,this.y-.2,this.z); body.rotation.y=Math.sin(this.t*2)*.15; led.material.color.setHex(Math.floor(this.t*8)%2?0xff2030:0x801018); glow.position.set(this.x+.5*s,this.y+.4*s,this.z+.3*s); glow.scale.setScalar(Math.max(.01,s*(1.2+.3*Math.sin(this.t*16))));
       if(k>.1){ for(let i=0;i<3;i++){ const a=rnd(0,6.28), rr=rnd(1.5,4); FX.spawn(this.x+Math.cos(a)*rr,this.y+rnd(-.5,1),this.z+Math.sin(a)*rr,-Math.cos(a)*rr*1.6,.3,-Math.sin(a)*rr*1.6,.5,i%2?0xf6f4ee:0xd8d4ca,.22,0,false); } if(Math.random()<.5) FX.spawn(this.x+rnd(-.5,.5),this.y+.6,this.z,0,.8,0,.3,0xffffff,.12,0,false); } },
     kill(){ scene.remove(body); scene.remove(glow); }}; }
-// the three moves, re-skinned (the generators are 40k's, with the helper swapped for the call)
-(function(){ const tape=KJM.tape, wall=KJM.wall, shred=KJM.shredder;
-  KJM.tape=function*(b,ph){ const tb=twBeam; twBeam=function(o){ return kjSkinBeam(()=>tb(o),()=>kjTapeVis(o.x,o.z,o.ang,o.len,o.warn,o.dur)); }; try{ yield* tape.call(this,b,ph); } finally{ twBeam=tb; } };
-  KJM.wall=function*(b,ph){ const tb=twBeam; twBeam=function(o){ return kjSkinBeam(()=>tb(o),()=>kjWallVis(o.x,o.z,o.ang,o.len,o.warn,o.dur)); }; try{ yield* wall.call(this,b,ph); } finally{ twBeam=tb; } };
-  KJM.shredder=function*(b,ph){ const hv=twHoleVis; twHoleVis=function(x,y,z,r){ return kjShredVis(x,y,z,r); }; try{ yield* shred.call(this,b,ph); } finally{ twHoleVis=hv; } }; })();
+// the three moves, re-skinned (the generators are 40k's). The skin is a flag, not a swapped global: the helpers are wrapped
+// once and dress a beam/hole only while the Kojima move that set the flag is still the one running (b.kjg). Swapping the
+// global inside the generator leaked: a move cut short (a stagger, a phase change, a retry, Debug) never ran its finally,
+// and every later fight drew Caotan's lasers as red tape and Omar's holes as shredders.
+const KJS={skin:null,b:null,g:null};
+function kjSkinLive(k){ const b=KJS.b; return KJS.skin===k&&!!b&&Game.boss===b&&b.hp>0&&b.state==='kj'&&!!KJS.g&&b.kjg===KJS.g; }
+(function(){ const tb=twBeam; twBeam=function(o){ if(kjSkinLive('tape')) return kjSkinBeam(()=>tb(o),()=>kjTapeVis(o.x,o.z,o.ang,o.len,o.warn,o.dur)); if(kjSkinLive('wall')) return kjSkinBeam(()=>tb(o),()=>kjWallVis(o.x,o.z,o.ang,o.len,o.warn,o.dur)); return tb.apply(this,arguments); };
+  const hv=twHoleVis; twHoleVis=function(x,y,z,r){ if(kjSkinLive('shredder')) return kjShredVis(x,y,z,r); return hv.apply(this,arguments); }; })();
+(function(){ const skin=(k,g0)=>function*(b,ph){ KJS.skin=k; KJS.b=b; KJS.g=b.kjg; try{ yield* g0.call(this,b,ph); } finally{ if(KJS.skin===k&&KJS.b===b) KJS.skin=null; } };
+  KJM.tape=skin('tape',KJM.tape); KJM.wall=skin('wall',KJM.wall); KJM.shredder=skin('shredder',KJM.shredder); })();
