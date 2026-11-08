@@ -1,16 +1,18 @@
 // =====================================================================
-// THE BOX HUNT (replaces the laser dome at 50% of phase III): Kojima vanishes and twenty cardboard boxes drop around the arena.
+// THE BOX HUNT (replaces the laser dome at 50% of phase III): Kojima vanishes and ten cardboard boxes drop in one cluster a few steps from you (KJB.n, KJB.R).
 // One has him in it and shakes a little; hit it and he's out and staggered for 3.2s. Every wrong box blows up (2 damage within 2.3).
 // After 22 seconds he climbs out on his own. Hits count from the sword (meleeHits: Shayan's and Ali's), Getsugas (BEAMS) and friendly bolts.
 // =====================================================================
-const KJB={list:null,t:0,geo:null,mat:null,dur:22};
+const KJB={list:null,t:0,geo:null,mat:null,dur:22,n:10,R:4.6}; /* n boxes in a cluster of radius R */
 function kjBoxesStart(b){ const P=Player; clearBossFx(b); b.domeDone=1; b.state='boxes'; b.st=0; b.vx=b.vz=0; b.inv=true; b.armor=0; P.charge=0; b.kjg=null; b.twg=null;
   bossSmoke(b); b.vanish=1; b.spr.show(false); Sound.sfx('dash'); Sound.sfx('howl'); kjBoxesClear();
-  const T=kjTex(); KJB.geo=KJB.geo||new THREE.BoxGeometry(1.3,1,1.3); KJB.mat=KJB.mat||new THREE.MeshLambertMaterial({map:T.box}); const A=L.arena||twBounds(), pts=[], real=Math.floor(Math.random()*20);
-  for(let i=0;i<20;i++){ let x=0,z=0,ok=false; for(let k=0;k<240&&!ok;k++){ const gap=k<80?2.3:k<160?1.8:1.4; x=rnd(A.x0+1.5,A.x1-1.5); z=rnd(A.z0+1.5,A.z1-1.5); ok=Math.hypot(x-P.x,z-P.z)>2.4&&pts.every(q=>Math.hypot(q.x-x,q.z-z)>gap)&&cellH(x,z)<500; } if(!ok) continue; /* the spacing relaxes until all twenty fit */
+  const T=kjTex(); KJB.geo=KJB.geo||new THREE.BoxGeometry(1.3,1,1.3); KJB.mat=KJB.mat||new THREE.MeshLambertMaterial({map:T.box}); const A=L.arena||twBounds(), pts=[], N=KJB.n, real=Math.floor(Math.random()*N);
+  // one cluster a few steps from you, toward the middle of the arena: ten boxes close together, not twenty over the whole map
+  const mx=(A.x0+A.x1)/2, mz=(A.z0+A.z1)/2, cx=clamp(lerp(P.x,mx,.35),A.x0+KJB.R+1.5,A.x1-KJB.R-1.5), cz=clamp(lerp(P.z,mz,.35),A.z0+KJB.R+1.5,A.z1-KJB.R-1.5);
+  for(let i=0;i<N;i++){ let x=0,z=0,ok=false; for(let k=0;k<240&&!ok;k++){ const gap=k<80?2.1:k<160?1.8:1.5, R=KJB.R*(k<120?1:1.35), a=rnd(0,6.283), r=Math.sqrt(Math.random())*R; x=cx+Math.cos(a)*r; z=cz+Math.sin(a)*r; ok=x>A.x0+1&&x<A.x1-1&&z>A.z0+1&&z<A.z1-1&&Math.hypot(x-P.x,z-P.z)>2.2&&pts.every(q=>Math.hypot(q.x-x,q.z-z)>gap)&&cellH(x,z)<500; } if(!ok) continue; /* the spacing relaxes until all twenty fit */
     const m=new THREE.Mesh(KJB.geo,KJB.mat); m.userData.tw=1; m.rotation.y=rnd(0,6.28); const gy=groundY(x,z); m.position.set(x,gy+9,z); scene.add(m); pts.push({m,x,z,gy,real:pts.length===real,ph:rnd(0,6.28),drop:rnd(0,.6),t:0,landed:0}); }
   if(!pts.some(q=>q.real)&&pts.length) pts[0].real=true; KJB.list=pts; KJB.t=0;
-  Game.banner={name:'Which box?',sub:'Hit the box he is in: the real one shakes. Every wrong one blows up.',t:0}; twBark('grimmaw',"Twenty boxes. One genius. Choose wrong and it goes on YOUR insurance.",true); Game.slowT=.4; shake(.4); }
+  Game.banner={name:'Which box?',sub:'Hit the box he is in: the real one shakes. Every wrong one blows up.',t:0}; twBark('grimmaw',"Ten boxes. One genius. Choose wrong and it goes on YOUR insurance.",true); Game.slowT=.4; shake(.4); }
 function kjBoxesClear(){ if(!KJB.list) return; for(const q of KJB.list) if(!q.dead) scene.remove(q.m); KJB.list=null; }
 function kjBoxPop(q,wrong,hurt){ if(q.dead) return; q.dead=1; scene.remove(q.m); const P=Player;
   if(wrong){ FX.burst(q.x,q.gy+.6,q.z,30,0xff6a3a,6,.35); FX.burst(q.x,q.gy+.6,q.z,16,0xc8a064,4,.4,false); FX.ring(q.x,q.gy+.1,q.z,'#ff8a5a',2.6,.3); Sound.sfx('crash'); shake(.5); if(hurt&&Math.hypot(P.x-q.x,P.z-q.z)<2.3) twHitP(2,q.x,q.z,{ub:true}); Game.dmgNums.push({x:q.x,y:q.gy+2,z:q.z,n:'WRONG',t:0,col:'#ff8a5a'}); }
