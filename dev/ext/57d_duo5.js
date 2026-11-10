@@ -397,6 +397,13 @@ function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), sav
   ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.85,iz0,sx,h,sz,.22); });
   for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
   return {ix0,iz0,H,meshes,steps,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
+// the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
+function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(18,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.86,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(17.4,18,48),new THREE.MeshBasicMaterial({color:0x9a4aff,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide}));
+  g.add(d); g.add(e); g.rotation.x=-Math.PI/2; g.userData.tw=1; scene.add(g); const V={y:gy-1,t:0,cd:0}; S.void=V;
+  twHz({upd(dt,play){ if(!F.d5||F.d5!==S||S.done||!S.tree) return false; if(d5OnPlatform(S)){ V.y=Math.min(V.y,T.H-1.2); } else if(play){ V.t+=dt; if(V.t>3) V.y=Math.min(T.H-1.6,V.y+dt*.4); }
+      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,16); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
+      V.cd-=dt; const P=Player; if(play&&V.cd<=0&&P.y<V.y-.25&&!P.cineFly&&!P.hidden){ V.cd=1.2; P.inv=0; hurtPlayer(1,P.x,P.z,true); P.vy=12; P.onGround=false; P.inv=1; FX.burst(P.x,P.y+1,P.z,30,0x9a4aff,6,.4); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'THE VOID',t:0,col:'#c08aff'}); }
+      return true; }, kill(){ scene.remove(g); }}); }
 function d5OnPlatform(S){ const P=Player, T=S.tree; return T&&P.y>T.H-.5&&Math.abs(P.x-T.ix0)<2&&Math.abs(P.z-T.iz0)<2; }
 function d5OmarLCClean(F){ const S=F.d5; if(!S) return; S.stop=1; (S.tombs||[]).forEach(d5TombBreak); TW.d5tombs=null; if(S.sky) S.sky.dead=true; if(S.tree) S.tree.kill(); if(S.drill){ S.drill.dead=1; scene.remove(S.drill.g); } if(S.rig) S.rig.dead=1; TW._mantle=0; if(TW.mash&&TW.mash.d5) TW.mash=null; S.cam=null; F.d5=null; F.drillReady=0; }
 
@@ -453,7 +460,9 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
   for(let t=0;t<12;t+=.9){ const P=Player; O.cast=.4; for(const s of [-.3,0,.3]) twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,11,s,{col:0x8a3aff,dmg:2,life:3}); Sound.sfx('swing'); if(Math.floor(t/.9)%3===2) d5Getsuga(O,Math.atan2(P.z-O.z,P.x-O.x),{warn:.6,sp:14}); yield .9; }
   // D) the sky gate (a cutscene), then the climb
   S.stop=1; F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
-  for(let t=0;!d5OnPlatform(S);t+=.1){ if(t%1.8<.1){ const P=Player; twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,9,rnd(-.15,.15),{col:0x8a3aff,dmg:1,life:3.5}); Sound.sfx('swing'); } yield .1; }
+  d5VoidRise(F,S); twBig('THE VOID IS RISING',{size:46,col:'#c08aff',y:UH*.3,dur:2,sub:'Climb. Do not look down.'}); twBark('omar',"The void rises. Climb, little heroes. It is patient. I am not.",true);
+  for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(t%1.8<.1){ twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,9,rnd(-.15,.15),{col:0x8a3aff,dmg:1,life:3.5}); Sound.sfx('swing'); }
+    if(t>2&&t%2.3<.1) twSkyScythe(P.x+P.vx*.3,P.z+P.vz*.3,1); yield .1; }
   S.cam=null; F.pend=()=>d5PlatformCine(F,C,O); while(!S.done) yield .1; }
 
 function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
@@ -467,16 +476,20 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   // Ali: a path up
   const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; cineSet(A.x+1.2,A.y+.7,A.z+3,A.x,A.y+1.8,A.z); yield wait(.3); yield d5Say('omarLC',11); }
   // the tree, cut from the ground up, the camera tilting with it
-  S.tree=d5TreeBuild(tx,tz,H); JC.flash=.5; Sound.sfx('secret'); const all=S.tree.meshes, n=all.length; cineSet(tx+1,gy+1,tz+11,tx,gy+1.5,tz);
-  for(let i=0;i<n;i++){ all[i].visible=true; if(i%3===0){ twTinyJC(tx,gy+H*i/n,tz,220); Sound.sfx(i%2?'swing':'hit'); } if(i%4===0) cineSet(tx+1,gy+1+H*i/n*.7,tz+11+i*.05,tx,gy+1.5+H*i/n,tz); yield wait(.05); }
-  JC.flash=.6; FX.flash=.4; grade.uniforms.flashCol.value.set(1,.4,.45); shake(.6); cineSet(tx+4,gy+3,tz+14,tx,gy+H*.55,tz); yield d5Say('omarLC',12,'surprised'); yield d5Say('omarLC',13);
+  S.tree=d5TreeBuild(tx,tz,H); JC.flash=.5; Sound.sfx('secret'); const all=S.tree.meshes, n=all.length;
+  // one crane shot: the camera circles the trunk and climbs with the tree as Ali cuts it into being, step by step
+  const tc={u:0}, cam2=dgCam(()=>{ const u=tc.u, a=1.1+u*1.5, r=15+u*5; return [tx+Math.cos(a)*r,gy+1.2+u*H*.75,tz+Math.sin(a)*r+4,tx,gy+1+u*H*.85,tz]; },5);
+  for(let i=0;i<n;i++){ all[i].visible=true; tc.u=i/n; if(i%3===0){ const hh=gy+H*i/n, aa=i*.9; twTinyJC(tx,hh,tz,220); Sound.sfx(i%2?'swing':'hit'); aliGhost(tx+Math.cos(aa)*2.6,hh,tz+Math.sin(aa)*2.6); FX.burst(tx+Math.cos(aa)*2.6,hh+1,tz+Math.sin(aa)*2.6,10,0xff2a3a,4,.25); shake(.12); } yield wait(.05); }
+  // the reveal: low at its foot, the whole tree against the black gate
+  tc.u=1; cam2.want=()=>[tx+7,gy+1,tz+17,tx,gy+H*.62,tz]; cam2.k=3.5; JC.flash=.7; FX.flash=.5; grade.uniforms.flashCol.value.set(1,.4,.45); impactFrame([[2,1],[1,2],[3,1]]); shake(.8); Sound.sfx('crossboom');
+  yield wait(.5); yield d5Say('omarLC',12,'surprised'); yield d5Say('omarLC',13); cam2.dead=1;
   if(A){ A.hold=0; A.face=null; } TW._mantle=1; S.climb=1; Game.letterTo=0; P.inv=1; F.miraHold=0; Cam.cine=null;
   twBig('CLIMB THE TREE',{size:50,col:'#ff8a9a',y:UH*.24,dur:2,sub:'Run into each step to climb it'});
   // the climbing camera: behind and above you, looking at your feet, eased (no snapping as you hop up a step); a cutscene
   // during the climb keeps its own shots; a step or the platform between the camera and you (higher and nearer the camera)
   // fades to its red outline, so the steps on the near side never hide you on the far ones
   const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
-    try{ const P2=Player, W=[P2.x+2,P2.y+5.5,P2.z+11,P2.x,P2.y+1,P2.z-1]; if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
+    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x+2.5,cam.sy+6.5,P2.z+13,P2.x,cam.sy+1.2,P2.z-1]; if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
       const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
 function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
     const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));

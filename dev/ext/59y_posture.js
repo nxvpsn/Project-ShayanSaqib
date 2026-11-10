@@ -27,7 +27,7 @@ function npNathanParry(){ const P=Player, [dx,dz]=np1Dir(), mx=lerp(NB.x,P.x,.45
   const K={t:0,sx:P.x,sz:P.z}; NPO.kick=K; P.hurt=.4; P.aliAtk=null; P.charge=0; P.vx=P.vz=0; FX.ring(P.x,groundY(P.x,P.z)+.1,P.z,'#9ff8ff',2,.3);
   Game.fxUpd.push(dt=>{ if(NPO.kick!==K) return false; K.t+=dt; const u=Math.min(1,K.t/.32), e=1-Math.pow(1-u,3); P.x=K.sx+dx*4.5*e; P.z=K.sz+dz*4.5*e; P.y=Math.max(groundY(P.x,P.z),P.y);
     if(u<1&&Math.random()<.8) FX.spawn(P.x,P.y+rnd(.3,1.5),P.z,0,0,0,.25,0x9ff8ff,.3,0,true); if(u>=1){ NPO.kick=null; return false; } return true; });
-  NP1.gen=null; NP1.cd=.15; if(NP1.order&&NP1.order.length>1) NP1.order.length=0; /* straight into a random move */ }
+  if(!NP1.gen){ NP1.cd=.15; if(NP1.order&&NP1.order.length>1) NP1.order.length=0; } /* idle: straight into a random move. Mid-move he keeps the move (it used to be dropped: mashing kicked him out of his own attacks) */ }
 // ---------- hooks ----------
 // the damage model: his parry of the sword, Getsugas at half (+posture), 2x while he's down
 (function(){ const nd=nbDamage; nbDamage=function(d,ult){ if(npoOn()&&NP1.melee&&NP1.charging&&!NB.stunned){ try{ np1Interrupt(); }catch(e){ console.error('np interrupt',e); } return nd.apply(this,arguments); }

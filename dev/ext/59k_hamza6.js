@@ -18,26 +18,26 @@ HZG_POOL[2]=['bounce','flop','stampede','babies','meteor','babyRain','laneRolls'
 // ---------- I -> II: KAWAII BULK ----------
 hzgPhase2=function*(){ const G=TW.giant, P=Player, C=hzgAlly('caotan'), O=hzgAlly('omar'); if(!G) return; const gy=groundY(G.x,G.z);
   hzgClearBabies(); twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); Sound.stop(); Game.letterTo=1; P.inv=99; G.inv=true; G.gen=null; G.roll=0; G.air=0; G.mouth=.3; for(const A of [C,O]) if(A){ A.hold=1; A.air=0; }
-  cineSet(G.x+2,gy+2,G.z+9,G.x,gy+2.6,G.z); yield wait(.4); yield say('hamza',"Oink... Hamza is... not... full...");
-  if(C&&O){ C.x=G.x-4.5; C.z=G.z+2.5; O.x=G.x+4.5; O.z=G.z+2.5; cineSet(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
+  twCineGlide(G.x+2,gy+2,G.z+9,G.x,gy+2.6,G.z); yield wait(.4); yield say('hamza',"Oink... Hamza is... not... full...");
+  if(C&&O){ C.x=G.x-4.5; C.z=G.z+2.5; O.x=G.x+4.5; O.z=G.z+2.5; twCineGlide(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
     yield say('caotan',"Senpai, I'll pin him! HIKARI-CHAN, BODY PILLOW SLAM!",'angry');
     // the pillow flies... into his mouth
     const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,1.6,.25),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0};
     Game.fxUpd.push(()=>{ if(fl.done){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,G.x,u),lerp(gy+1.6,gy+2.6,u)+Math.sin(u*Math.PI)*2.5,lerp(C.z,G.z+.6,u)); pil.rotation.z=u*12; pil.rotation.x=u*5; return true; });
-    cineSet(G.x-3,gy+2,G.z+8,G.x-1,gy+2.6,G.z); Sound.sfx('whoosh'); yield tween(fl,{u:1},.7,t=>t); fl.done=1;
+    twCineGlide(G.x-3,gy+2,G.z+8,G.x-1,gy+2.6,G.z); Sound.sfx('whoosh'); yield tween(fl,{u:1},.7,t=>t); fl.done=1;
     G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.7); FX.burst(G.x,gy+2.6,G.z+.8,40,0xffb0d8,6,.4); yield wait(.3); Sound.sfx('chomp'); yield wait(.25); Sound.sfx('chomp');
-    cineSet(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...He ate Hikari-chan.",'sad');
-    cineSet(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"Rest in pillow."); }
-  cineSet(G.x+1.5,gy+2.2,G.z+7,G.x,gy+2.8,G.z); yield say('hamza',"Soft. Tastes like anime. Hamza feels... KAWAII.");
+    twCineGlide(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...He ate Hikari-chan.",'sad');
+    twCineGlide(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"Rest in pillow."); }
+  twCineGlide(G.x+1.5,gy+2.2,G.z+7,G.x,gy+2.8,G.z); yield say('hamza',"Soft. Tastes like anime. Hamza feels... KAWAII.");
   // he goes pink and bigger
   Sound.sfx('choir'); const gl={on:1}; Game.fxUpd.push(()=>{ if(!gl.on||!TW.giant) return false; G.flash=.12+.12*Math.sin(Game.time*24); for(let i=0;i<5;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(G.x+Math.cos(a)*r,G.y+rnd(.5,5),G.z+Math.sin(a)*r,0,rnd(1,3),0,.7,i%2?0xff6ab0:0xffffff,.32,0,true); } return true; });
-  cineSet(G.x,gy+.5,G.z+11,G.x,gy+5,G.z); yield tween(G,{gs:(G.gs||.55)*1.25},1.1,t=>1-Math.pow(1-t,3)); gl.on=0; G.flash=0; Sound.sfx('pigroar'); shake(1); impactFrame([[3,2],[1,2]]);
+  twCineGlide(G.x,gy+.5,G.z+11,G.x,gy+5,G.z); yield tween(G,{gs:(G.gs||.55)*1.25},1.1,t=>1-Math.pow(1-t,3)); gl.on=0; G.flash=0; Sound.sfx('pigroar'); shake(1); impactFrame([[3,2],[1,2]]);
   try{ grade.uniforms.tint.value.set(1.08,.94,1.04); }catch(e){}
   evaCard(['PHASE II','KAWAII BULK'],1.8,1); yield wait(1.8);
-  twCamP(6.2,1.2); yield say('shayan',"Hamza, buddy. Spit out the waifu.",'angry');
-  if(C){ cineSet(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"I'LL AVENGE YOU, HIKARI-CHAN!!",'angry'); }
+  twCineGlide(P.x+1.2,P.y+1.8,P.z+6.2,P.x,P.y+1.05,P.z); yield say('shayan',"Hamza, buddy. Spit out the waifu.",'angry');
+  if(C){ twCineGlide(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"I'LL AVENGE YOU, HIKARI-CHAN!!",'angry'); }
   G.phase=2; G.hp=G.maxHp=HZG_HP[2]; G.inv=false; G.pend=null; G.bag=[]; G.cd=1.2; G.mouth=0; G.lcDone=0; G.air=0; Sound.play('diva'); for(const A of [C,O]) if(A){ A.hold=0; A.air=0; }
-  yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); Cam.cine=null; Game.letterTo=0; P.inv=1; };
+  twCineGlideEnd(); yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); Cam.cine=null; Game.letterTo=0; P.inv=1; };
 
 // ---------- LIMIT CUT (II, 50%): MUKBANG LIVE ----------
 hzgBuffet=function*(G){ const c=G.center||twCenter(), P=Player, gy=groundY(c.x,c.z); G.inv=true; G.mouth=0; G.mv=null; G.roll=0; /* this generator IS G.gen: never null it here */
