@@ -12195,13 +12195,14 @@ function d5SkyHole(x,y,z){ const V=twHoleVis(x,y,z,4,true), S={x,y,z,k:0,t:0,cra
 // ---------- Ali's tree: a spiral of steps around a trunk, a flat platform on top (it raises the field's height grid; undone after) ----------
 function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), saved=[], meshes=[], set=(ix,iz,h)=>{ if(ix<0||iz<0||ix>=L.w||iz>=L.d) return; saved.push([ix,iz,L.H[iz][ix],L.B[iz][ix]]); L.H[iz][ix]=h; L.B[iz][ix]=false; };
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
-  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,.35,d),dark.clone()), /* its own material: the climb camera fades it */ e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edge); m.add(e); m.position.set(x,y-.17,z); m.userData.tw=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
+  // every step is a held-open cut: a flat spray of crossing slashes (red edge, dark heart, white core), not a slab
+  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w*1.7,d*1.7),new THREE.MeshBasicMaterial({map:d5SlashTex(),transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,y+.02,z); m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
   const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww] of [[red,w],[0xffffff,w*.35]]){ const b=beamMesh(col,ww); b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
-  for(let k=0;k<3;k++){ const a=k*2.09; blade(ix0+Math.cos(a)*.5,gy,iz0+Math.sin(a)*.5,ix0+Math.cos(a+1.4)*.4,H,iz0+Math.sin(a+1.4)*.4,.5); }
+  for(let k=0;k<9;k++){ const a=k*.7, lo=gy+(k%3)*H*.12, hi=H-(k%2)*H*.1; blade(ix0+Math.cos(a)*(.3+k%3*.25),lo,iz0+Math.sin(a)*(.3+k%3*.25),ix0+Math.cos(a+1.6)*(.25+k%2*.3),hi,iz0+Math.sin(a+1.6)*(.25+k%2*.3),k%3?.14:.3); } /* the trunk: nine long cuts crossing each other */
   const ring=[[-1,1],[-2,1],[-2,0],[-2,-1],[-2,-2],[-1,-2],[0,-2],[1,-2],[1,-1],[1,0],[1,1],[0,1]], steps=[];
-  ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.85,iz0,sx,h,sz,.22); });
+  ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.8,iz0,sx+rnd(-.5,.5),h,sz+rnd(-.5,.5),.1); blade(ix0,h*.92,iz0,sx+rnd(-.6,.6),h,sz+rnd(-.6,.6),.07); });
   for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
   return {ix0,iz0,H,meshes,steps,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
 // the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
@@ -12211,6 +12212,10 @@ function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.G
       g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,16); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
       V.cd-=dt; const P=Player; if(play&&V.cd<=0&&P.y<V.y-.25&&!P.cineFly&&!P.hidden){ V.cd=1.2; P.inv=0; hurtPlayer(1,P.x,P.z,true); P.vy=12; P.onGround=false; P.inv=1; FX.burst(P.x,P.y+1,P.z,30,0x9a4aff,6,.4); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'THE VOID',t:0,col:'#c08aff'}); }
       return true; }, kill(){ scene.remove(g); }}); }
+function d5SlashTex(){ if(TW._slTex) return TW._slTex; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  try{ const lens=(ang,len,w,fill)=>{ c.save(); c.translate(S/2,S/2); c.rotate(ang); c.beginPath(); c.moveTo(-len,0); c.quadraticCurveTo(0,-w,len,0); c.quadraticCurveTo(0,w,-len,0); c.closePath(); c.fillStyle=fill; c.fill(); c.restore(); };
+    for(const [a,l] of [[.12,62],[-.4,56],[.65,52],[-.95,48],[1.25,46],[1.9,40]]){ lens(a,l,9.5,'rgba(255,42,58,.95)'); lens(a,l-3,6,'#12040a'); lens(a,l-2,1.5,'#ffffff'); } }catch(e){}
+  const t=new THREE.CanvasTexture(cv); TW._slTex=t; return t; }
 function d5OnPlatform(S){ const P=Player, T=S.tree; return T&&P.y>T.H-.5&&Math.abs(P.x-T.ix0)<2&&Math.abs(P.z-T.iz0)<2; }
 function d5OmarLCClean(F){ const S=F.d5; if(!S) return; S.stop=1; (S.tombs||[]).forEach(d5TombBreak); TW.d5tombs=null; if(S.sky) S.sky.dead=true; if(S.tree) S.tree.kill(); if(S.drill){ S.drill.dead=1; scene.remove(S.drill.g); } if(S.rig) S.rig.dead=1; TW._mantle=0; if(TW.mash&&TW.mash.d5) TW.mash=null; S.cam=null; F.d5=null; F.drillReady=0; }
 
@@ -12296,11 +12301,11 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   // during the climb keeps its own shots; a step or the platform between the camera and you (higher and nearer the camera)
   // fades to its red outline, so the steps on the near side never hide you on the far ones
   const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
-    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x+2.5,cam.sy+6.5,P2.z+13,P2.x,cam.sy+1.2,P2.z-1]; if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
+    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+8.2*1.45,P2.z+15*1.45,P2.x,cam.sy+.4,P2.z]; /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
       const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
 function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
     const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
-    mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } }
+    if(m.userData.slash){ mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } /* the cuts flicker */ else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
 
 function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree, H=T.H; F.miraHold=1; Game.letterTo=.5; P.vx=P.vz=0;
   if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
@@ -15209,16 +15214,27 @@ function* npUlt(){ const P=Player; P.sp=0; P.inv=99; P.hp=P.maxHp; Game.dmgNums.
     const from=hung.map(h=>({x:h.x,y:h.y,z:h.z})); Sound.sfx('beam'); K=5;
     yield* hold(.34,u=>{ const e=u*u; hung.forEach((h,i)=>h.m.position.set(lerp(from[i].x,cx,e),lerp(from[i].y,cy,e),lerp(from[i].z,cz,e))); orb(a0+1.9,9-u*2,2.4); fov(F0+12-12*u); });
     hung.forEach(h=>{ scene.remove(h.m); FX.burst(h.m.position.x,h.m.position.y,h.m.position.z,16,0xff3a4a,6,.3); }); hung.length=0; Sound.sfx('slam'); shake(.7); if(NB&&NB.alive&&!NP1.done) hitNB();
-    // 5. the final crescent: the camera drops low behind Nathan and tilts up; Ali falls through him out of the sky and lands past him, back to back
-    if(NB&&NB.alive&&!NP1.done){ Voice.bark('aliFinal'); aliGhost(ox,oy,oz); const bx=cx-Math.cos(a0)*2.6, bz=cz-Math.sin(a0)*2.6; P.x=cx; P.z=cz; P.y=g0+9; P.cineAnim='beam'; P.ang=a0+Math.PI; K=6;
-      yield* hold(.3,()=>{ W=[cx-Math.cos(a0)*6.5+Math.sin(a0)*1.5,g0+.7,cz-Math.sin(a0)*6.5-Math.cos(a0)*1.5,cx,g0+5,cz]; });
-      const y0=P.y; yield* hold(.16,u=>{ const e=u*u; P.y=lerp(y0,g0,e); P.x=lerp(cx,bx,e); P.z=lerp(cz,bz,e); W[4]=lerp(g0+5,g0+1.6,e); });
-      P.y=groundY(bx,bz); P.cineAnim='aliIai'; twGash({life:1,rev:.05,fade:.35,w:40,sparks:40,pts:()=>np1LinePts(cx,g0+8,cz,bx,g0-.2,bz,6)});
-      impactFrame([[1,2],[3,2],[2,1]]); FX.flash=1; grade.uniforms.flashCol.value.set(1,.2,.3); JC.flash=1; Sound.sfx('crossboom'); Sound.sfx('slam'); shake(1.4); FX.hitstop=.15; fov(F0+10);
-      // the held beat: Ali in the foreground, sword out; behind him Nathan bursts
-      yield* hold(.5,u=>{ W=[bx-Math.cos(a0)*3+Math.sin(a0)*1.2,g0+1.2,bz-Math.sin(a0)*3-Math.cos(a0)*1.2,lerp(bx,cx,.6),g0+1.8,lerp(bz,cz,.6)]; fov(F0+10-10*u); });
-      FX.burst(cx,cy,cz,80,0xff2a3a,10,.5); FX.burst(cx,cy,cz,40,0x0a0006,8,.5,false); FX.ring(cx,g0+.1,cz,'#ff3a4a',6,.5); Sound.sfx('crossboom'); shake(1); JC.flash=.8;
-      Game.dmgNums.push({x:cx,y:cy+3,z:cz,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff6a7a'}); hitNB(); try{ npPosture(40,'ULTIMATE'); }catch(e){} yield* hold(.55); }
+    // 5. the final cut: low behind Ali's back as he draws, the camera chases him through Nathan, and on the cut it whips round
+    // to his front: Ali facing us mid-slash, Nathan split behind him (the flip counter's language)
+    if(NB&&NB.alive&&!NP1.done){ Voice.bark('aliFinal'); const dx=Math.cos(a0), dz=Math.sin(a0), sx=cx+dx*7, sz=cz+dz*7, ex=cx-dx*5, ez=cz-dz*5, fa=Math.atan2(-dz,-dx);
+      aliGhost(P.x,P.y,P.z); P.x=sx; P.z=sz; P.y=groundY(sx,sz); P.ang=fa; P.cineAnim='charge'; K=6; Sound.sfx('charge');
+      yield* hold(.5,u=>{ W=[sx+dx*3.2-dz*1.7,g0+1.7,sz+dz*3.2+dx*1.7,cx,g0+2.2,cz]; fov(F0-6*u); if(Math.random()<.6) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,1.8),P.z+rnd(-.4,.4),0,rnd(1,3),0,.4,0xff2a3a,.2,0,true); });
+      try{ npStar(P.x,P.y+1.4,P.z,0xff2a3a,2.4,.3); }catch(e){} Sound.sfx('ting'); yield* hold(.12);
+      P.cineAnim='dash'; Sound.sfx('dash'); Sound.sfx('whoosh'); K=10; let cut=0, gi=0; FX.line(sx,sz,fa,12,.6,0xff2a3a,.7);
+      yield* hold(.2,u=>{ const e=u*u; P.x=lerp(sx,ex,e); P.z=lerp(sz,ez,e); P.y=groundY(P.x,P.z); if(gi++%2===0){ try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0xff3a4a); }catch(e){} }
+        for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.3,.3),P.y+rnd(.2,1.8),P.z+rnd(-.3,.3),dx*rnd(6,14),rnd(-.5,.5),dz*rnd(6,14),.3,i%2?0xff2a3a:0xffffff,.3,0,true);
+        W=[P.x+dx*3.4-dz*2.1,g0+1.9,P.z+dz*3.4+dx*2.1,P.x-dx*2,g0+1.6,P.z-dz*2]; fov(F0-6+16*u);
+        if(!cut&&(P.x-cx)*dx+(P.z-cz)*dz<0){ cut=1; twGash({life:1.2,rev:.04,fade:.4,w:46,sparks:50,pts:()=>twArcPts(cx,cy,cz,-dx,-dz,3.6,-1.25,1.25,8)}); twGash({life:1,rev:.05,fade:.35,w:26,sparks:20,pts:()=>np1LinePts(cx+dx*4,g0+1.2,cz+dz*4,cx-dx*4,g0+2.6,cz-dz*4,4)});
+          try{ const q=toScreen(cx,cy,cz); for(let i=0;i<6;i++){ const a=rnd(-.5,.5), L1=rnd(500,900); JC.lines.push({x0:q[0]-Math.cos(a)*L1/2,y0:q[1]-Math.sin(a)*L1/2+rnd(-60,60),x1:q[0]+Math.cos(a)*L1/2,y1:q[1]+Math.sin(a)*L1/2+rnd(-60,60),t:0,ttl:.5}); } }catch(e){}
+          impactFrame([[2,1],[1,2],[3,2],[2,1]]); FX.flash=1; grade.uniforms.flashCol.value.set(1,.2,.3); JC.flash=1; Sound.sfx('crossboom'); Sound.sfx('slam'); shake(1.6); FX.hitstop=.14; NB.flash=.4;
+          FX.burst(cx,cy,cz,60,0xffffff,10,.4); FX.burst(cx,cy,cz,50,0xff2a3a,9,.5); for(let i=0;i<3;i++) FX.ring(cx,g0+.1,cz,i?'#ff3a4a':'#ffffff',3+i*2,.35+i*.1); hitNB(); } });
+      // the whip: half a turn round him, from his back to his face, while he holds the follow-through
+      P.x=ex; P.z=ez; P.y=groundY(ex,ez); P.cineAnim='aliIai'; K=8; Game.dmgNums.push({x:cx,y:cy+3,z:cz,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff6a7a'});
+      yield* hold(.42,u=>{ const e=u*u*(3-2*u), ca=a0+Math.PI*e, r=lerp(3.4,3.1,e); W=[P.x+Math.cos(ca)*r,g0+lerp(1.6,1.25,e),P.z+Math.sin(ca)*r,lerp(P.x,cx,.25*e),g0+1.55,lerp(P.z,cz,.25*e)]; fov(F0+10-12*e); if(Math.random()<.7) FX.spawn(cx+rnd(-1,1),cy+rnd(-1.5,1.5),cz+rnd(-1,1),rnd(-3,3),rnd(-1,4),rnd(-3,3),.4,Math.random()<.5?0xff2a3a:0xffffff,.25,0,true); });
+      // the held beat: Ali in front, sword out; Nathan frozen behind him, then he bursts
+      Sound.sfx('heartbeat'); yield* hold(.45,u=>{ NB.flash=u>.5?.3:0; fov(F0-2-2*u); });
+      FX.burst(cx,cy,cz,90,0xff2a3a,11,.55); FX.burst(cx,cy,cz,50,0x0a0006,9,.5,false); FX.burst(cx,cy,cz,40,0xffffff,8,.4); FX.ring(cx,g0+.1,cz,'#ff3a4a',7,.5); Sound.sfx('crossboom'); shake(1.2); JC.flash=.9; impactFrame([[1,1],[3,2]]); fov(F0+8);
+      hitNB(); try{ npPosture(40,'ULTIMATE'); }catch(e){} yield* hold(.55,u=>fov(F0+8-8*u)); }
     // 6. back behind Ali: the camera glides to where the fight's camera will be, then lets go
     P.x=ox; P.z=oz; P.y=groundY(ox,oz); P.cineAnim=null; P.ang=Math.atan2(cz-oz,cx-ox); K=4;
     yield* hold(.85,u=>{ const dx=Math.cos(a0), dz=Math.sin(a0); if(u<.45) W=[cx-dz*7.5+dx*2,g0+5.5,cz+dx*7.5+dz*2,lerp(cx,ox,.4),cy,lerp(cz,oz,.4)]; /* round his side, never through him */ else W=[ox+dx*8,oy+3.5,oz+dz*8,lerp(ox,cx,.33),oy+1.3,lerp(oz,cz,.33)]; fov(F0); }); }

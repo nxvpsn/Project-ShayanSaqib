@@ -182,7 +182,7 @@ function npLCEnd(){ NP1.lcInv=0; if(NP1.cur==='lc') NP1.cur=null; try{ const Lk=
     const next=npPh()+1; NB.pend=function*(){ yield wait(1.8); yield* (next===2?npCine12():npCine23()); }; nbPend(); }; })();
 // the end of a transition: the next phase, healed, the camera back behind Ali
 function npBegin(n){ const P=Player; np1Clear(); NP1.cam=null; npSetPhase(n,true); NP1.done=0; NP1.stunT=0; NP1.gen=null; NP1.wait=0; NP1.cd=1.4; NP1.last=null;
-  NB.inv=false; NB.alive=true; NB.stunned=0; NB.hov=1.4; P.hp=P.maxHp; P.inv=1.2; P.cineFly=false; P.cineAnim=null; twCineGlideEnd(); Cam.cine=null; Game.letterTo=0; Game.state='play'; npFaceNB(); try{ Sound.play('diva'); }catch(e){} }
+  NB.inv=false; NB.alive=true; NB.stunned=0; NB.hov=1.4; P.hp=P.maxHp; P.inv=1.2; P.cineFly=false; P.cineAnim=null; twCineGlideEnd(); npCineLens(false); Cam.cine=null; Game.letterTo=0; Game.state='play'; npFaceNB(); try{ Sound.play('diva'); }catch(e){} }
 // the fight's camera picks up behind Ali, facing Nathan (not where it was looking before the cutscene)
 function npFaceNB(){ try{ if(typeof TPS!=='undefined'&&NB){ const P=Player; TPS.yaw=Math.atan2(NB.z-P.z,NB.x-P.x); P.ang=TPS.yaw; } }catch(e){} }
 // the cutscene camera glides (like the duo's grabs): every shot is a target, the camera eases to it from wherever it was
@@ -190,11 +190,16 @@ function twCineGlide(px,py,pz,lx,ly,lz,k){ const G=TW.glide; if(G&&!G.dead){ G.w
   const c=Cam.cine, cp=camera.position, L0=Cam.look||{x:lx,y:ly,z:lz}, s0={w:[px,py,pz,lx,ly,lz],k:k||5,v:c?[c.px,c.py,c.pz,c.lx,c.ly,c.lz]:[+cp.x||px,+cp.y||py,+cp.z||pz,+L0.x||lx,+L0.y||ly,+L0.z||lz],dead:0}; TW.glide=s0;
   Game.fxUpd.push(dt=>{ try{ if(s0.dead||TW.glide!==s0||!Game.script) { s0.dead=1; if(TW.glide===s0) TW.glide=null; return false; } const e=1-Math.exp(-Math.max(0,dt||1/60)*s0.k); for(let i=0;i<6;i++) s0.v[i]=lerp(s0.v[i],s0.w[i],e); cineSet(...s0.v); return true; }catch(e){ console.error('glide',e); return false; } }); cineSet(...s0.v); return s0; }
 function twCineGlideEnd(){ if(TW.glide){ TW.glide.dead=1; TW.glide=null; } }
-function npShotNB(dist,side,up,ly){ const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, gy=groundY(NB.x,NB.z); let cx=NB.x+dx*dist+px*side, cz=NB.z+dz*dist+pz*side;
-  if(Math.hypot(cx-P.x,cz-P.z)<1.8){ const sg=side<0?-1:1; cx+=px*2.4*sg; cz+=pz*2.4*sg; } /* never inside Ali when he stands where the shot would be */ twCineGlide(cx,gy+up,cz,NB.x,gy+(ly||2.4),NB.z); }
-function npShotAli(dist,side,up){ const P=Player, [dx,dz]=np1Dir(), px=-dz, pz=dx, gy=groundY(P.x,P.z); twCineGlide(P.x-dx*dist+px*side,gy+up,P.z-dz*dist+pz*side,P.x,gy+1.5,P.z); }
+// Shots for 2D sprites: always the gameplay camera's kind of angle (looking down about 25 degrees, never low and close, which
+// shows a billboard as a flat card), 6+ units back on a longer lens; a shot changes by pushing in, pulling out or sliding.
+const NP_CINE={pitch:.46,min:6,fov:42};
+function npCineLens(on){ try{ camera.fov=on?NP_CINE.fov:(typeof TPS!=='undefined'?TPS.FOV:55); camera.updateProjectionMatrix(); }catch(e){} }
+function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), gy=groundY(x,z), px=-uz, pz=ux; twCineGlide(x+ux*d+px*side,gy+ly+d*NP_CINE.pitch,z+uz*d+pz*side,x,gy+ly,z,4); }
+function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(); npShotAt(NB.x,NB.z,(ly||2.4),dist+2,side,dx,dz); } /* from Ali's side of him */
+function npShotAli(dist,side,up){ const [dx,dz]=np1Dir(); npShotAt(Player.x,Player.z,1.4,dist+3,side,-dx*.25+(-dz)*.97*(side<0?-1:1),-dz*.25+dx*.97*(side<0?-1:1)); } /* from his side, Nathan's direction across the frame */
+function npShotBoth(dist,side){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
 // I -> II: MOONLESS SKY. He purges his armour; the sky goes dark
-function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
+function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
   npShotNB(5,1.4,1.4,2.2); NB.hov=.7; yield wait(.5);
   yield say('nathan',"...Not bad, wanderer. Not bad at all.",'angry');
   npShotAli(3.4,1,1.5); yield say('ali',"Get up. We're not done.");
@@ -208,32 +213,34 @@ function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; Game.letterTo=1
   npShotAli(3.6,1.2,1.3); yield say('ali',"You took your armour off to go faster.");
   npShotNB(4,-1,1.8,3.4); yield say('nathan',"I took it off to look cooler. Going faster is a side effect.");
   if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+1.4,mi.z+3.4,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"He's... kind of glowing. Is that allowed?!",'surprised'); }
-  npShotNB(7,0,1.2,3.6); twCutin('nathan','MOONLESS SKY','Phase II  ·  the first seal breaks','#1a4aff',1.8); yield wait(1.2);
+  npShotBoth(13,1); twCutin('nathan','MOONLESS SKY','Phase II  ·  the first seal breaks','#1a4aff',1.8); yield wait(1.2);
   evaCard(['PHASE II','MOONLESS SKY'],1.8,1); Sound.sfx('slam'); yield wait(1.8);
   npShotNB(5,1,1.6,3); yield say('nathan',"Let's dance in the dark, Ali.");
   npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
   npShotNB(5,-1,1.6,3); yield say('nathan',"Everyone dances when the floor is on fire.",'angry');
   yield tween(NB,{hov:1.4},.4,twEIO); npBegin(2); }
-// II -> III: LAST LIGHT. The limiter screams, he goes red-hot
-function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
+// II -> III: LAST LIGHT. Every plate blows off, the funnels fall dead; a pistol in one hand, the laser sword in the other, on foot
+function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
   npShotNB(5,-1.2,1.3,2.2); NB.hov=.7; yield wait(.5);
-  Sound.sfx('heartbeat'); yield say('nathan',"Warning. Core temperature... critical. Limiter... still on.",'angry');
-  npShotAli(3.4,1,1.5); yield say('ali',"Then turn it off.");
-  npShotNB(4.2,1,1.7,2.6); yield say('nathan',"...Are you giving ME advice? In MY boss fight?",'surprised');
-  npShotAli(3.2,-1,1.4); yield say('ali',"You're bad at it.");
-  npShotNB(4.6,0,1.4,2.8); yield say('nathan',"Limiter release. Second seal... broken.",'angry');
-  NB.hov=1.4; Sound.sfx('secret'); yield tween(NB,{hov:3.6},.7,twEIO);
-  for(let i=0;i<8;i++){ FX.burst(NB.x,NB.y+2.2,NB.z,26,i%2?0xff3a1a:0xffd27a,7,.45); NB.flash=i%2?.3:0; Sound.sfx(i%2?'charge':'slam'); shake(.35); yield wait(.08); }
-  FX.flash=.9; grade.uniforms.flashCol.value.set(1,.4,.2); impactFrame([[3,2],[1,2],[2,2]]); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[3].tint); if(g.sat) g.sat.value=NP_LOOK[3].sat; }catch(e){} NB.red=1; if(NB.mat) NB.mat.color.setHex(0xffb4b0);
-  npShotAli(3.6,1.2,1.3); yield say('ali',"How many seals do you have?");
-  npShotNB(4,-1,1.8,3.6); yield say('nathan',"...Three. It's a trilogy.");
-  if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+1.4,mi.z+3.4,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"Ali, he's RED now! Red is bad, right?!",'surprised'); npShotAli(3.2,-1,1.4); yield say('ali',"Red means parry."); }
-  npShotNB(7,0,1.2,3.8); twCutin('nathan','LAST LIGHT','Phase III  ·  limiter released','#ff2a1a',1.8); yield wait(1.2);
+  Sound.sfx('heartbeat'); yield say('nathan',"Warning. Reactor critical. Funnels offline. Armour integrity... zero.",'angry');
+  npShotAli(3.4,1,1.5); yield say('ali',"Your machine is finished.");
+  npShotNB(4.2,1,1.7,2.6); yield say('nathan',"The machine is. I'm not.",'angry');
+  // the funnels drop out of the sky, dead
+  npShotBoth(15,1); for(let i=0;i<6;i++){ const a=i*1.05, x=NB.x+Math.cos(a)*rnd(3,6), z=NB.z+Math.sin(a)*rnd(3,6), gy=groundY(x,z), b=nbBit(x,gy+7,z); b.m.children.forEach(c=>{ try{ c.material.color.setHex(0x4a5560); }catch(e){} });
+    const f={t:0}; Game.fxUpd.push(dt=>{ f.t+=dt||1/60; const y=Math.max(gy+.3,gy+7-f.t*f.t*14); b.y=y; b.m.position.set(x,y,z); b.m.rotation.x+=.2; if(y<=gy+.31&&!f.hit){ f.hit=1; FX.burst(x,gy+.3,z,10,0x8a8f98,3,.3,false); Sound.sfx('block'); } if(f.t>2.2){ nbKillBit(b); return false; } return true; }); yield wait(.12); }
+  yield wait(.5); yield say('nathan',"Purge it. All of it.");
+  // the plates blow off one by one
+  npShotNB(5,0,1.6,2.6); NB.hov=1.2; for(let i=0;i<9;i++){ const h=rnd(.8,3.8); FX.burst(NB.x+rnd(-.8,.8),NB.y+h,NB.z,26,i%2?0xe8eef4:0xb8c4d0,9,.6,false); FX.burst(NB.x,NB.y+h,NB.z,14,0xff5a2a,6,.4); NB.flash=.25; Sound.sfx(i%2?'crash':'slam'); shake(.35+i*.04); if(i%3===2) impactFrame([[1,1]]); yield wait(.11); }
+  FX.flash=.9; grade.uniforms.flashCol.value.set(1,.5,.3); impactFrame([[3,2],[1,2],[2,2]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[3].tint); if(g.sat) g.sat.value=NP_LOOK[3].sat; }catch(e){} NB.red=1; if(NB.mat) NB.mat.color.setHex(0xffb4b0);
+  yield tween(NB,{hov:.25},.5,twEIO); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#ffb07a',3,.4); Sound.sfx('slam'); shake(.5);
+  npShotNB(4.5,1.2,1.5,2.2); yield say('nathan',"No armour. No funnels. One pistol. One sword. Two feet.");
+  npShotAli(3.4,-1,1.4); yield say('ali',"That's more than you've had all fight.");
+  if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"He took his robot OFF?! Ali, he's just a guy! A very angry guy!",'surprised'); }
+  npShotBoth(12,-1); twCutin('nathan','LAST LIGHT','Phase III  ·  gun, blade and bare hands','#ff2a1a',1.8); yield wait(1.2);
   evaCard(['PHASE III','LAST LIGHT'],1.8,1); Sound.sfx('slam'); yield wait(1.8);
-  npShotNB(5,1,1.6,3.2); yield say('nathan',"This is my last light, Ali. Look at it. It's the last thing you'll see.",'angry');
-  npShotAli(3,1,1.5); yield say('ali',"It's bright. That's all.");
-  yield tween(NB,{hov:1.4},.4,twEIO); npBegin(3); }
-
+  npShotNB(5,1,1.6,2.2); yield say('nathan',"I learned to fight before I learned to fly, Ali. Come here.",'angry');
+  npShotAli(3,1,1.5); yield say('ali',"Finally. Someone I can reach.");
+  npBegin(3); NB.hov=.25; }
 // ---------- ALI'S ULTIMATE, IN 3D (this fight only): THE WORLD + a cage of crescents round him, the camera orbiting ----------
 // The 2D version hangs its Getsugas round the screen's centre; here time stops, Ali blinks to eight points on a sphere
 // round Nathan (high and low), hangs a Jujishou at each, the camera circles; twenty cuts open round HIM on screen; time
@@ -268,16 +275,27 @@ function* npUlt(){ const P=Player; P.sp=0; P.inv=99; P.hp=P.maxHp; Game.dmgNums.
     const from=hung.map(h=>({x:h.x,y:h.y,z:h.z})); Sound.sfx('beam'); K=5;
     yield* hold(.34,u=>{ const e=u*u; hung.forEach((h,i)=>h.m.position.set(lerp(from[i].x,cx,e),lerp(from[i].y,cy,e),lerp(from[i].z,cz,e))); orb(a0+1.9,9-u*2,2.4); fov(F0+12-12*u); });
     hung.forEach(h=>{ scene.remove(h.m); FX.burst(h.m.position.x,h.m.position.y,h.m.position.z,16,0xff3a4a,6,.3); }); hung.length=0; Sound.sfx('slam'); shake(.7); if(NB&&NB.alive&&!NP1.done) hitNB();
-    // 5. the final crescent: the camera drops low behind Nathan and tilts up; Ali falls through him out of the sky and lands past him, back to back
-    if(NB&&NB.alive&&!NP1.done){ Voice.bark('aliFinal'); aliGhost(ox,oy,oz); const bx=cx-Math.cos(a0)*2.6, bz=cz-Math.sin(a0)*2.6; P.x=cx; P.z=cz; P.y=g0+9; P.cineAnim='beam'; P.ang=a0+Math.PI; K=6;
-      yield* hold(.3,()=>{ W=[cx-Math.cos(a0)*6.5+Math.sin(a0)*1.5,g0+.7,cz-Math.sin(a0)*6.5-Math.cos(a0)*1.5,cx,g0+5,cz]; });
-      const y0=P.y; yield* hold(.16,u=>{ const e=u*u; P.y=lerp(y0,g0,e); P.x=lerp(cx,bx,e); P.z=lerp(cz,bz,e); W[4]=lerp(g0+5,g0+1.6,e); });
-      P.y=groundY(bx,bz); P.cineAnim='aliIai'; twGash({life:1,rev:.05,fade:.35,w:40,sparks:40,pts:()=>np1LinePts(cx,g0+8,cz,bx,g0-.2,bz,6)});
-      impactFrame([[1,2],[3,2],[2,1]]); FX.flash=1; grade.uniforms.flashCol.value.set(1,.2,.3); JC.flash=1; Sound.sfx('crossboom'); Sound.sfx('slam'); shake(1.4); FX.hitstop=.15; fov(F0+10);
-      // the held beat: Ali in the foreground, sword out; behind him Nathan bursts
-      yield* hold(.5,u=>{ W=[bx-Math.cos(a0)*3+Math.sin(a0)*1.2,g0+1.2,bz-Math.sin(a0)*3-Math.cos(a0)*1.2,lerp(bx,cx,.6),g0+1.8,lerp(bz,cz,.6)]; fov(F0+10-10*u); });
-      FX.burst(cx,cy,cz,80,0xff2a3a,10,.5); FX.burst(cx,cy,cz,40,0x0a0006,8,.5,false); FX.ring(cx,g0+.1,cz,'#ff3a4a',6,.5); Sound.sfx('crossboom'); shake(1); JC.flash=.8;
-      Game.dmgNums.push({x:cx,y:cy+3,z:cz,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff6a7a'}); hitNB(); try{ npPosture(40,'ULTIMATE'); }catch(e){} yield* hold(.55); }
+    // 5. the final cut: low behind Ali's back as he draws, the camera chases him through Nathan, and on the cut it whips round
+    // to his front: Ali facing us mid-slash, Nathan split behind him (the flip counter's language)
+    if(NB&&NB.alive&&!NP1.done){ Voice.bark('aliFinal'); const dx=Math.cos(a0), dz=Math.sin(a0), sx=cx+dx*7, sz=cz+dz*7, ex=cx-dx*5, ez=cz-dz*5, fa=Math.atan2(-dz,-dx);
+      aliGhost(P.x,P.y,P.z); P.x=sx; P.z=sz; P.y=groundY(sx,sz); P.ang=fa; P.cineAnim='charge'; K=6; Sound.sfx('charge');
+      yield* hold(.5,u=>{ W=[sx+dx*3.2-dz*1.7,g0+1.7,sz+dz*3.2+dx*1.7,cx,g0+2.2,cz]; fov(F0-6*u); if(Math.random()<.6) FX.spawn(P.x+rnd(-.4,.4),P.y+rnd(.2,1.8),P.z+rnd(-.4,.4),0,rnd(1,3),0,.4,0xff2a3a,.2,0,true); });
+      try{ npStar(P.x,P.y+1.4,P.z,0xff2a3a,2.4,.3); }catch(e){} Sound.sfx('ting'); yield* hold(.12);
+      P.cineAnim='dash'; Sound.sfx('dash'); Sound.sfx('whoosh'); K=10; let cut=0, gi=0; FX.line(sx,sz,fa,12,.6,0xff2a3a,.7);
+      yield* hold(.2,u=>{ const e=u*u; P.x=lerp(sx,ex,e); P.z=lerp(sz,ez,e); P.y=groundY(P.x,P.z); if(gi++%2===0){ try{ const g=aliGhost(P.x,P.y,P.z); if(g&&g.mesh) g.mesh.material.color.setHex(0xff3a4a); }catch(e){} }
+        for(let i=0;i<4;i++) FX.spawn(P.x+rnd(-.3,.3),P.y+rnd(.2,1.8),P.z+rnd(-.3,.3),dx*rnd(6,14),rnd(-.5,.5),dz*rnd(6,14),.3,i%2?0xff2a3a:0xffffff,.3,0,true);
+        W=[P.x+dx*3.4-dz*2.1,g0+1.9,P.z+dz*3.4+dx*2.1,P.x-dx*2,g0+1.6,P.z-dz*2]; fov(F0-6+16*u);
+        if(!cut&&(P.x-cx)*dx+(P.z-cz)*dz<0){ cut=1; twGash({life:1.2,rev:.04,fade:.4,w:46,sparks:50,pts:()=>twArcPts(cx,cy,cz,-dx,-dz,3.6,-1.25,1.25,8)}); twGash({life:1,rev:.05,fade:.35,w:26,sparks:20,pts:()=>np1LinePts(cx+dx*4,g0+1.2,cz+dz*4,cx-dx*4,g0+2.6,cz-dz*4,4)});
+          try{ const q=toScreen(cx,cy,cz); for(let i=0;i<6;i++){ const a=rnd(-.5,.5), L1=rnd(500,900); JC.lines.push({x0:q[0]-Math.cos(a)*L1/2,y0:q[1]-Math.sin(a)*L1/2+rnd(-60,60),x1:q[0]+Math.cos(a)*L1/2,y1:q[1]+Math.sin(a)*L1/2+rnd(-60,60),t:0,ttl:.5}); } }catch(e){}
+          impactFrame([[2,1],[1,2],[3,2],[2,1]]); FX.flash=1; grade.uniforms.flashCol.value.set(1,.2,.3); JC.flash=1; Sound.sfx('crossboom'); Sound.sfx('slam'); shake(1.6); FX.hitstop=.14; NB.flash=.4;
+          FX.burst(cx,cy,cz,60,0xffffff,10,.4); FX.burst(cx,cy,cz,50,0xff2a3a,9,.5); for(let i=0;i<3;i++) FX.ring(cx,g0+.1,cz,i?'#ff3a4a':'#ffffff',3+i*2,.35+i*.1); hitNB(); } });
+      // the whip: half a turn round him, from his back to his face, while he holds the follow-through
+      P.x=ex; P.z=ez; P.y=groundY(ex,ez); P.cineAnim='aliIai'; K=8; Game.dmgNums.push({x:cx,y:cy+3,z:cz,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff6a7a'});
+      yield* hold(.42,u=>{ const e=u*u*(3-2*u), ca=a0+Math.PI*e, r=lerp(3.4,3.1,e); W=[P.x+Math.cos(ca)*r,g0+lerp(1.6,1.25,e),P.z+Math.sin(ca)*r,lerp(P.x,cx,.25*e),g0+1.55,lerp(P.z,cz,.25*e)]; fov(F0+10-12*e); if(Math.random()<.7) FX.spawn(cx+rnd(-1,1),cy+rnd(-1.5,1.5),cz+rnd(-1,1),rnd(-3,3),rnd(-1,4),rnd(-3,3),.4,Math.random()<.5?0xff2a3a:0xffffff,.25,0,true); });
+      // the held beat: Ali in front, sword out; Nathan frozen behind him, then he bursts
+      Sound.sfx('heartbeat'); yield* hold(.45,u=>{ NB.flash=u>.5?.3:0; fov(F0-2-2*u); });
+      FX.burst(cx,cy,cz,90,0xff2a3a,11,.55); FX.burst(cx,cy,cz,50,0x0a0006,9,.5,false); FX.burst(cx,cy,cz,40,0xffffff,8,.4); FX.ring(cx,g0+.1,cz,'#ff3a4a',7,.5); Sound.sfx('crossboom'); shake(1.2); JC.flash=.9; impactFrame([[1,1],[3,2]]); fov(F0+8);
+      hitNB(); try{ npPosture(40,'ULTIMATE'); }catch(e){} yield* hold(.55,u=>fov(F0+8-8*u)); }
     // 6. back behind Ali: the camera glides to where the fight's camera will be, then lets go
     P.x=ox; P.z=oz; P.y=groundY(ox,oz); P.cineAnim=null; P.ang=Math.atan2(cz-oz,cx-ox); K=4;
     yield* hold(.85,u=>{ const dx=Math.cos(a0), dz=Math.sin(a0); if(u<.45) W=[cx-dz*7.5+dx*2,g0+5.5,cz+dx*7.5+dz*2,lerp(cx,ox,.4),cy,lerp(cz,oz,.4)]; /* round his side, never through him */ else W=[ox+dx*8,oy+3.5,oz+dz*8,lerp(ox,cx,.33),oy+1.3,lerp(oz,cz,.33)]; fov(F0); }); }

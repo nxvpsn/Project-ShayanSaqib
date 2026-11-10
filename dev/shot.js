@@ -30,7 +30,7 @@ const ROOT=path.resolve(__dirname,'..'), MIME={'.html':'text/html','.js':'text/j
   const ev=js=>page.evaluate(js);
   // game time is stepped synchronously with rendering stubbed (software GL runs the real loop at a few fps): n frames of 1/60
   const step=n=>page.evaluate(n=>{ const cr=composer.render, raf=window.requestAnimationFrame; composer.render=()=>{}; window.requestAnimationFrame=()=>0;
-    try{ let t=last; for(let i=0;i<n;i++){ t+=1000/60; if(Game.dlg&&Game.dlg.t>.35){ if(Game.dlg.type==='choice') Game.dlg.sel=0; hit.confirm=true; } loop(t); } } finally{ composer.render=cr; window.requestAnimationFrame=raf; last=performance.now(); } },n);
+    try{ let t=last; for(let i=0;i<n;i++){ t+=1000/60; if(Game.dlg&&Game.dlg.t>.35){ if(Game.dlg.type==='choice') Game.dlg.sel=(Game.dlg.opts.some(o=>/friends/.test(o.t))?1:0); /* never the co-op lobby */ hit.confirm=true; } loop(t); } } finally{ composer.render=cr; window.requestAnimationFrame=raf; last=performance.now(); } },n);
   const waitGame=s=>step(Math.max(1,Math.round(s*60)));
   const clickThrough=async(cond,maxS)=>{ for(let i=0;i<maxS;i++){ if(await ev(cond)) return true; await step(60); } return false; }; /* maxS: game seconds */
   // one real frame, then the shot (the software renderer takes its time)

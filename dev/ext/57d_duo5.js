@@ -388,13 +388,14 @@ function d5SkyHole(x,y,z){ const V=twHoleVis(x,y,z,4,true), S={x,y,z,k:0,t:0,cra
 // ---------- Ali's tree: a spiral of steps around a trunk, a flat platform on top (it raises the field's height grid; undone after) ----------
 function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), saved=[], meshes=[], set=(ix,iz,h)=>{ if(ix<0||iz<0||ix>=L.w||iz>=L.d) return; saved.push([ix,iz,L.H[iz][ix],L.B[iz][ix]]); L.H[iz][ix]=h; L.B[iz][ix]=false; };
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
-  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,.35,d),dark.clone()), /* its own material: the climb camera fades it */ e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edge); m.add(e); m.position.set(x,y-.17,z); m.userData.tw=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
+  // every step is a held-open cut: a flat spray of crossing slashes (red edge, dark heart, white core), not a slab
+  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w*1.7,d*1.7),new THREE.MeshBasicMaterial({map:d5SlashTex(),transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,y+.02,z); m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
   const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww] of [[red,w],[0xffffff,w*.35]]){ const b=beamMesh(col,ww); b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
-  for(let k=0;k<3;k++){ const a=k*2.09; blade(ix0+Math.cos(a)*.5,gy,iz0+Math.sin(a)*.5,ix0+Math.cos(a+1.4)*.4,H,iz0+Math.sin(a+1.4)*.4,.5); }
+  for(let k=0;k<9;k++){ const a=k*.7, lo=gy+(k%3)*H*.12, hi=H-(k%2)*H*.1; blade(ix0+Math.cos(a)*(.3+k%3*.25),lo,iz0+Math.sin(a)*(.3+k%3*.25),ix0+Math.cos(a+1.6)*(.25+k%2*.3),hi,iz0+Math.sin(a+1.6)*(.25+k%2*.3),k%3?.14:.3); } /* the trunk: nine long cuts crossing each other */
   const ring=[[-1,1],[-2,1],[-2,0],[-2,-1],[-2,-2],[-1,-2],[0,-2],[1,-2],[1,-1],[1,0],[1,1],[0,1]], steps=[];
-  ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.85,iz0,sx,h,sz,.22); });
+  ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.8,iz0,sx+rnd(-.5,.5),h,sz+rnd(-.5,.5),.1); blade(ix0,h*.92,iz0,sx+rnd(-.6,.6),h,sz+rnd(-.6,.6),.07); });
   for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
   return {ix0,iz0,H,meshes,steps,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
 // the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
@@ -404,6 +405,10 @@ function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.G
       g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,16); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
       V.cd-=dt; const P=Player; if(play&&V.cd<=0&&P.y<V.y-.25&&!P.cineFly&&!P.hidden){ V.cd=1.2; P.inv=0; hurtPlayer(1,P.x,P.z,true); P.vy=12; P.onGround=false; P.inv=1; FX.burst(P.x,P.y+1,P.z,30,0x9a4aff,6,.4); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'THE VOID',t:0,col:'#c08aff'}); }
       return true; }, kill(){ scene.remove(g); }}); }
+function d5SlashTex(){ if(TW._slTex) return TW._slTex; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  try{ const lens=(ang,len,w,fill)=>{ c.save(); c.translate(S/2,S/2); c.rotate(ang); c.beginPath(); c.moveTo(-len,0); c.quadraticCurveTo(0,-w,len,0); c.quadraticCurveTo(0,w,-len,0); c.closePath(); c.fillStyle=fill; c.fill(); c.restore(); };
+    for(const [a,l] of [[.12,62],[-.4,56],[.65,52],[-.95,48],[1.25,46],[1.9,40]]){ lens(a,l,9.5,'rgba(255,42,58,.95)'); lens(a,l-3,6,'#12040a'); lens(a,l-2,1.5,'#ffffff'); } }catch(e){}
+  const t=new THREE.CanvasTexture(cv); TW._slTex=t; return t; }
 function d5OnPlatform(S){ const P=Player, T=S.tree; return T&&P.y>T.H-.5&&Math.abs(P.x-T.ix0)<2&&Math.abs(P.z-T.iz0)<2; }
 function d5OmarLCClean(F){ const S=F.d5; if(!S) return; S.stop=1; (S.tombs||[]).forEach(d5TombBreak); TW.d5tombs=null; if(S.sky) S.sky.dead=true; if(S.tree) S.tree.kill(); if(S.drill){ S.drill.dead=1; scene.remove(S.drill.g); } if(S.rig) S.rig.dead=1; TW._mantle=0; if(TW.mash&&TW.mash.d5) TW.mash=null; S.cam=null; F.d5=null; F.drillReady=0; }
 
@@ -489,11 +494,11 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   // during the climb keeps its own shots; a step or the platform between the camera and you (higher and nearer the camera)
   // fades to its red outline, so the steps on the near side never hide you on the far ones
   const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
-    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x+2.5,cam.sy+6.5,P2.z+13,P2.x,cam.sy+1.2,P2.z-1]; if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
+    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+8.2*1.45,P2.z+15*1.45,P2.x,cam.sy+.4,P2.z]; /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
       const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
 function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
     const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
-    mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } }
+    if(m.userData.slash){ mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } /* the cuts flicker */ else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
 
 function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree, H=T.H; F.miraHold=1; Game.letterTo=.5; P.vx=P.vz=0;
   if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
