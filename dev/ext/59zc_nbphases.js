@@ -279,8 +279,8 @@ function* npUlt(){ const P=Player; P.sp=0; P.inv=99; P.hp=P.maxHp; Game.dmgNums.
       FX.burst(cx,cy,cz,80,0xff2a3a,10,.5); FX.burst(cx,cy,cz,40,0x0a0006,8,.5,false); FX.ring(cx,g0+.1,cz,'#ff3a4a',6,.5); Sound.sfx('crossboom'); shake(1); JC.flash=.8;
       Game.dmgNums.push({x:cx,y:cy+3,z:cz,n:'GETSUGA TENSHOU',t:0,big:true,col:'#ff6a7a'}); hitNB(); try{ npPosture(40,'ULTIMATE'); }catch(e){} yield* hold(.55); }
     // 6. back behind Ali: the camera glides to where the fight's camera will be, then lets go
-    P.x=ox; P.z=oz; P.y=groundY(ox,oz); P.cineAnim=null; P.ang=Math.atan2(cz-oz,cx-ox); K=7;
-    yield* hold(.35,()=>{ const dx=Math.cos(a0), dz=Math.sin(a0); W=[ox+dx*8,oy+3.5,oz+dz*8,lerp(ox,cx,.33),oy+1.3,lerp(oz,cz,.33)]; fov(F0); }); }
+    P.x=ox; P.z=oz; P.y=groundY(ox,oz); P.cineAnim=null; P.ang=Math.atan2(cz-oz,cx-ox); K=4;
+    yield* hold(.85,u=>{ const dx=Math.cos(a0), dz=Math.sin(a0); if(u<.45) W=[cx-dz*7.5+dx*2,g0+5.5,cz+dx*7.5+dz*2,lerp(cx,ox,.4),cy,lerp(cz,oz,.4)]; /* round his side, never through him */ else W=[ox+dx*8,oy+3.5,oz+dz*8,lerp(ox,cx,.33),oy+1.3,lerp(oz,cz,.33)]; fov(F0); }); }
   finally{ if(Game.zw) zwEnd(); for(const h of hung0()) scene.remove(h); fov(F0); P.cineFly=false; P.cineAnim=null; P.inv=.8; NP1.cam=null; Game.letterTo=0; JC.lines=[]; npFaceNB(); }
   function hung0(){ return []; }
   if(NB&&NB.alive&&!NP1.done){ NP1.stunT=0; np1Stun(2.2,'SHATTERED'); } }

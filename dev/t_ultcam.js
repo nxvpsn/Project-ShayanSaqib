@@ -1,0 +1,10 @@
+// Ali's 3D ultimate: the camera path is one continuous move (no jumps), above ground, never inside Ali or Nathan
+const B=require('./bot2.js'); const R=B.R, H=B.H;
+R("Game.state='cut'; newGame();"); H.frames(20); R("Game.script=null; Game.dlg=null; twUnlockAll(true); Game.flags.ali=1; Object.assign(SCR,SCRA); NBS.ok=true; NBS.img={}; run(function*(){ yield* twWarp('al_nathan'); })");
+for(let i=0;i<400;i++){ R("if(Game.dlg&&Game.dlg.t>.35){ if(Game.dlg.type==='choice') Game.dlg.sel=(Game.dlg.opts.some(o=>/friends/.test(o.t))?1:0); hit.confirm=true; }"); H.frames(15); if(R("typeof NB!=='undefined'&&!!NB&&NB.alive&&Game.state==='play'&&!Game.script&&np1On()")) break; }
+R("NP1.cd=99; Player.sp=20; globalThis.__c=[]; run(aliUltimate);");
+let n=0; for(;n<600&&R("!!Game.script");n++){ H.frames(1); R("(function(){ const C=NP1.cam; if(C) __c.push([C.x,C.y,C.z,C.lx,C.ly,C.lz,Player.x,Player.y,Player.z,groundY(C.x,C.z),Game.zw?1:0]); })()"); }
+const c=JSON.parse(R("JSON.stringify(__c)")); let maxStep=0, maxLook=0, low=99, nearP=99, nearN=99, at=0; const nb=JSON.parse(R("JSON.stringify([NB.x,NB.y,NB.z])"));
+for(let i=1;i<c.length;i++){ const a=c[i-1], b=c[i], st=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]), lk=Math.hypot(b[3]-a[3],b[4]-a[4],b[5]-a[5]); if(st>maxStep){ maxStep=st; at=i; } maxLook=Math.max(maxLook,lk); low=Math.min(low,b[1]-b[9]); nearP=Math.min(nearP,Math.hypot(b[0]-b[6],b[1]-(b[7]+1),b[2]-b[8])); if(b[1]<nb[1]+4.2) nearN=Math.min(nearN,Math.hypot(b[0]-nb[0],b[2]-nb[2])); }
+console.log('frames',c.length,'('+(c.length/60).toFixed(1)+'s) max camera step/frame',maxStep.toFixed(2),'at',(at/60).toFixed(2)+'s','max look step',maxLook.toFixed(2),'lowest above ground',low.toFixed(2),'nearest to Ali',nearP.toFixed(2),'nearest to Nathan while below his head (xz)',nearN.toFixed(2));
+console.log('after:',R("JSON.stringify({cam:!!NP1.cam,zw:Game.zw,fly:Player.cineFly,st:Game.state,hp:Math.round(NP1.hp),stun:NB.stunned})"),'ERRORS',B.errs.length,[...new Set(B.errs)].slice(0,3));
