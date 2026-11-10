@@ -63,7 +63,7 @@ function kjStart(b){ const o=KJ_POOL[Math.min(3,b.phase||1)]; let k=o[Math.floor
     try{ if(b&&Game.state==='play'){
         if(b.state==='idle'&&(b.cd||0)-dt<=0){ kjStart(b); }
         if(b.state==='kj'&&b.kjg){ b.vx*=.8; b.vz*=.8; b.ang=Math.atan2(Player.z-b.z,Player.x-b.x); b.kjw-=dt; let n=0;
-          while(b.kjw<=0&&n++<20){ const r=b.kjg.next(); if(r.done){ b.kjg=null; b.ap=null; b.state='recover'; b.st=0; break; } b.kjw+=r.value||.1; } }
+          while(b.kjw<=0&&n++<20){ const r=b.kjg.next(); if(r.done){ b.kjg=null; b.ap=null; if(b.state==='kj'){ b.state='recover'; b.st=0; } /* a move that ends in its own stagger keeps it */ break; } b.kjw+=r.value||.1; } }
         else if(b.state!=='kj') b.kjg=null; } }
     catch(e){ console.error('kojima',e); b.kjg=null; b.state='recover'; b.st=0; }
     const r=ub.apply(this,arguments);

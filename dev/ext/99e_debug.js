@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.56 (Nov 8): Kojima's box hunt: ten boxes in one cluster a few steps from you instead of twenty over the whole arena. Kojima's skins stay in his fight (v1.55).";
-const DBG_NEW=['grimmaw:kjdome'];
+const DBG_PATCH="v1.57 (Nov 10): attacks overlap like the solo twin fights: Hamza's side dishes (gravy, bacon, snot), Nathan's gold circles through phases II/III, the duo's crossfire. Kojima has five new basics: Return to Sender, Nap Time, Deadline, Paper Cuts, Fine Print.";
+const DBG_NEW=['grimmaw:sender','grimmaw:nap','grimmaw:deadline','grimmaw:beat','grimmaw:fineprint','hamza:*','nathan:*','duo:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
