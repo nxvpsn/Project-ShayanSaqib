@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.59 (Nov 11): Ali's ultimate ends in a dash through Nathan with a chase camera that whips to his front; it also ran at half speed in the browser (fixed). The slash tree is made of slashes, the climb stays at gameplay zoom. Phase transitions re-angled for sprites; Nathan strips his armour before phase III.";
-const DBG_NEW=['duo:omarlc','nathan:*','hamza:*'];
+const DBG_PATCH="v1.60 (Nov 11): the duo has limit cuts at half of phases II and III (Twin Eclipse, Love and Death); new transition cutscenes for Nathan (the machine wakes up) and Hamza (he eats Hikari-chan, messily) with Omar-style titles; the slash tree in Judgement Cut colours; black holes visibly pull.";
+const DBG_NEW=['duo:mid','duo:omarlc','nathan:*','hamza:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
