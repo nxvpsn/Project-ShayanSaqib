@@ -111,10 +111,10 @@ function* np1Rend(){ const P=Player; if(Game.state!=='play') return; NP1.seq={k:
     // he dashes through to the other side and cuts on the way
     nbAfterimage(NB.x,NB.y,NB.z); side=-side; NB.x=P.x+px*side*1.7-dx*.3; NB.z=P.z+pz*side*1.7-dz*.3; NB.dsh=null; if(typeof nbsSlash==='function') nbsSlash(.26,.3);
     const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a); twGash({life:last?.9:.5,rev:.05,fade:last?.3:.18,w:last?34:20,sparks:last?40:14,blue:1,pts:()=>twArcPts(P.x,P.y+1.3,P.z,ux,uz,last?3.2:2.2,-1.1,1.1,7)});
-    try{ const q=toScreen(P.x,P.y+1.3,P.z), L0=last?520:360, sa=rnd(0,Math.PI); JC.lines.push({x0:q[0]-Math.cos(sa)*L0/2,y0:q[1]-Math.sin(sa)*L0/2,x1:q[0]+Math.cos(sa)*L0/2,y1:q[1]+Math.sin(sa)*L0/2,t:0,ttl:last?.5:.3}); if(JC.lines.length>16) JC.lines.shift(); }catch(e){}
-    Sound.sfx('swing'); Sound.sfx(last?'crossboom':'hit'); FX.spark(P.x,P.y+1.2,P.z); FX.burst(P.x,P.y+1.3,P.z,last?40:14,0xff2a3a,last?8:4,.3); JC.flash=Math.max(JC.flash||0,last?.9:.35); shake(last?1.2:.35); FX.hitstop=Math.max(FX.hitstop,last?.2:.06);
-    Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:last?'METEOR REND':'×'+n,t:0,big:last,col:'#ff6a7a'}); hurtPlayer(.8,NB.x,NB.z); P.inv=99; P.hurt=0; P.cineFly=true; P.cineAnim='hurt'; if(Game.state!=='play') break;
-    if(last){ impactFrame([[1,2],[3,2],[2,1]]); grade.uniforms.flashCol.value.set(1,.2,.3); FX.flash=.7; }
+    try{ const q=toScreen(P.x,P.y+1.3,P.z), L0=last?520:360, sa=rnd(0,Math.PI); const X0=q[0]-Math.cos(sa)*L0/2, Y0=q[1]-Math.sin(sa)*L0/2, X1=q[0]+Math.cos(sa)*L0/2, Y1=q[1]+Math.sin(sa)*L0/2; twGash({life:last?.5:.3,rev:.04,fade:.15,w:last?16:11,blue:1,pts:()=>[[X0,Y0],[(X0+X1)/2,(Y0+Y1)/2],[X1,Y1]]}); /* his cuts are cyan: never the red Judgement Cut lines (those are Ali's) */ }catch(e){}
+    Sound.sfx('swing'); Sound.sfx(last?'crossboom':'hit'); FX.spark(P.x,P.y+1.2,P.z); FX.burst(P.x,P.y+1.3,P.z,last?40:14,0x3a8aff,last?8:4,.3); FX.burst(P.x,P.y+1.3,P.z,last?16:6,0xffffff,last?6:3,.25); if(last){ FX.flash=Math.max(FX.flash,.5); grade.uniforms.flashCol.value.set(.3,.6,1); } shake(last?1.2:.35); FX.hitstop=Math.max(FX.hitstop,last?.2:.06);
+    Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:last?'METEOR REND':'×'+n,t:0,big:last,col:'#8fc4ff'}); hurtPlayer(.8,NB.x,NB.z); P.inv=99; P.hurt=0; P.cineFly=true; P.cineAnim='hurt'; if(Game.state!=='play') break;
+    if(last){ impactFrame([[1,2],[2,2],[1,1]]); grade.uniforms.flashCol.value.set(.3,.6,1); FX.flash=.7; }
     yield NP1.dt; }
   // the 5th sends him flying: 6 units away from Nathan, the camera chasing
   if(Game.state==='play'&&NP1.seq&&NP1.seq.k==='rend'){ const [ex,ez]=np1Dir(), sx=P.x, sz=P.z; P.cineAnim='fall'; NB.x=sx-ex*1.6; NB.z=sz-ez*1.6;

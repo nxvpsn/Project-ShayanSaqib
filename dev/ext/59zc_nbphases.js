@@ -194,20 +194,26 @@ function twCineGlideEnd(){ if(TW.glide){ TW.glide.dead=1; TW.glide=null; } }
 // shows a billboard as a flat card), 6+ units back on a longer lens; a shot changes by pushing in, pulling out or sliding.
 const NP_CINE={pitch:.46,min:6,fov:42};
 function npCineLens(on){ try{ camera.fov=on?NP_CINE.fov:(typeof TPS!=='undefined'?TPS.FOV:55); camera.updateProjectionMatrix(); }catch(e){} }
-function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), gy=groundY(x,z), px=-uz, pz=ux; twCineGlide(x+ux*d+px*side,gy+ly+d*NP_CINE.pitch,z+uz*d+pz*side,x,gy+ly,z,4); }
-function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(); npShotAt(NB.x,NB.z,(ly||2.4),dist+2,side,dx,dz); } /* from Ali's side of him */
+// A shot far from the last one is a CUT (then a slow push-in), not a glide: gliding from Ali's close-up to Nathan's swept the
+// camera across the whole field and through both of them. Only a nearby reframing glides.
+function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), gy=groundY(x,z), px=-uz, pz=ux, T=[x+ux*d+px*side,gy+ly+d*NP_CINE.pitch,z+uz*d+pz*side,x,gy+ly,z], G=TW.glide, v=G&&!G.dead?G.v:null;
+  if(v&&Math.hypot(v[0]-T[0],v[1]-T[1],v[2]-T[2])<7&&Math.hypot(v[3]-T[3],v[4]-T[4],v[5]-T[5])<4){ twCineGlide(T[0],T[1],T[2],T[3],T[4],T[5],3); return; }
+  twCineGlideEnd(); const k=1.14; cineSet(T[3]+(T[0]-T[3])*k,T[4]+(T[1]-T[4])*k,T[5]+(T[2]-T[5])*k,T[3],T[4],T[5]); twCineGlide(T[0],T[1],T[2],T[3],T[4],T[5],1.1); }
+function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(), hu=!!NP1.human, h=hu?1.3:Math.max(0,NB.y-groundY(NB.x,NB.z))+2.3; npShotAt(NB.x,NB.z,h,dist+(hu?1.5:4+h*.35),side,dx,dz); } /* from Ali's side of him, aimed at his chest wherever he hovers (the old fixed height framed his feet once he rose) */
 function npShotAli(dist,side,up){ const [dx,dz]=np1Dir(); npShotAt(Player.x,Player.z,1.4,dist+3,side,-dx*.25+(-dz)*.97*(side<0?-1:1),-dz*.25+dx*.97*(side<0?-1:1)); } /* from his side, Nathan's direction across the frame */
-function npShotBoth(dist,side){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
+function npShotBoth(dist,side,ly){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,ly||1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
+// the two of them 9-13 units apart before a transition starts (wherever the phase ended), so every shot frames the same way
+function npStage(){ try{ const P=Player, [dx,dz,d]=np1Dir(); if(d<9||d>13){ const t=d<9?10:12; nbAfterimage(NB.x,NB.y,NB.z); NB.x=P.x-dx*t; NB.z=P.z-dz*t; NB.dsh=null; if(NB.mesh){ NB.mesh.position.x=NB.x; NB.mesh.position.z=NB.z; } } }catch(e){ console.error('np stage',e); } }
 // I -> II: MOONLESS SKY. The pilot is done holding back: the machine wakes up. He rises, eight funnels unfold round him,
 // the missile racks open, the sky goes dark behind him; the title rides a slow slide across both of them
-function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; const bits=[];
+function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; const bits=[]; npStage();
   try{
     npShotNB(5,1.4,1.4,2.2); NB.hov=.7; for(let i=0;i<4;i++){ FX.spark(NB.x+rnd(-.8,.8),NB.y+rnd(1,3),NB.z); Sound.sfx('hit'); yield wait(.12); }
     yield say('nathan',"...You cut the pilot, wanderer. Well done.",'angry');
     npShotAli(3.4,1,1.5); yield say('ali',"Get up.");
     npShotNB(4.2,-1.2,1.8,2.6); yield say('nathan',"The pilot was being polite. The machine has no manners.");
     // he rises; the camera pulls out with him
-    Sound.sfx('charge'); Sound.sfx('drone'); npShotBoth(13,1); yield tween(NB,{hov:4.2},1.1,twEIO);
+    Sound.sfx('charge'); Sound.sfx('drone'); npShotBoth(17,1,3.6); yield tween(NB,{hov:4.2},1.1,twEIO);
     yield say('nathan',"All systems. All weapons. Safety... off.",'angry');
     // the funnels unfold in a ring, one by one, each with a ping and a flare
     for(let i=0;i<8;i++){ const b=nbBit(NB.x,NB.y+2,NB.z); b.a=i*Math.PI/4; b.k=0; bits.push(b); Sound.tone('sine',700+i*90,900+i*90,.12,.06); FX.burst(NB.x,NB.y+2,NB.z,8,0x3ff4ff,4,.25); yield wait(.09); }
@@ -220,14 +226,14 @@ function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true
     npShotNB(5,-1,1.8,4.6); yield say('nathan',"Every toy. I counted. You should have brought more sword.");
     if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"Ali! He has a LOT of guns now! That's so many guns!",'surprised'); }
     // the title, Omar-style, over a slow slide past the two of them (no card, no cut)
-    npShotBoth(15,1); yield wait(.3); twZeldaCard('Phase II','Moonless Sky','All weapons free',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx-dz*13+dx*4,groundY(mx,mz)+7.5,mz+dx*13+dz*4,mx,groundY(mx,mz)+2.4,mz,.8); } yield wait(2.9);
+    npShotBoth(18,1,3.6); yield wait(.3); twZeldaCard('Phase II','Moonless Sky','All weapons free',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx-dz*16+dx*4,groundY(mx,mz)+10.5,mz+dx*16+dz*4,mx,groundY(mx,mz)+3.6,mz,.7); } yield wait(2.9);
     npShotNB(5,1,1.6,4.2); yield say('nathan',"Dance, Ali. The floor is about to be on fire.",'angry');
     npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
     spin.on=0; yield tween(NB,{hov:1.4},.4,twEIO);
   } finally { for(const b of bits){ try{ nbKillBit(b); }catch(e){} } }
   npBegin(2); }
 // II -> III: LAST LIGHT. Every plate blows off, the funnels fall dead; a pistol in one hand, the laser sword in the other, on foot
-function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
+function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; npStage();
   npShotNB(5,-1.2,1.3,2.2); NB.hov=.7; yield wait(.5);
   Sound.sfx('heartbeat'); yield say('nathan',"Warning. Reactor critical. Funnels offline. Armour integrity... zero.",'angry');
   npShotAli(3.4,1,1.5); yield say('ali',"Your machine is finished.");
@@ -238,7 +244,7 @@ function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true
   yield wait(.5); yield say('nathan',"Purge it. All of it.");
   // the plates blow off one by one
   npShotNB(5,0,1.6,2.6); NB.hov=1.2; for(let i=0;i<9;i++){ const h=rnd(.8,3.8); FX.burst(NB.x+rnd(-.8,.8),NB.y+h,NB.z,26,i%2?0xe8eef4:0xb8c4d0,9,.6,false); FX.burst(NB.x,NB.y+h,NB.z,14,0xff5a2a,6,.4); NB.flash=.25; Sound.sfx(i%2?'crash':'slam'); shake(.35+i*.04); if(i%3===2) impactFrame([[1,1]]); yield wait(.11); }
-  FX.flash=.9; grade.uniforms.flashCol.value.set(1,.5,.3); impactFrame([[3,2],[1,2],[2,2]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[3].tint); if(g.sat) g.sat.value=NP_LOOK[3].sat; }catch(e){} NB.red=1; if(NB.mat) NB.mat.color.setHex(0xffb4b0);
+  FX.flash=.9; grade.uniforms.flashCol.value.set(1,.5,.3); impactFrame([[3,2],[1,2],[2,2]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[3].tint); if(g.sat) g.sat.value=NP_LOOK[3].sat; }catch(e){} NB.red=1; if(NB.mat) NB.mat.color.setHex(0xffb4b0); NP1.human=1; /* the armour is off: the pilot himself from here (59zh) */
   yield tween(NB,{hov:.25},.5,twEIO); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#ffb07a',3,.4); Sound.sfx('slam'); shake(.5);
   npShotNB(4.5,1.2,1.5,2.2); yield say('nathan',"No armour. No funnels. One pistol. One sword. Two feet.");
   npShotAli(3.4,-1,1.4); yield say('ali',"That's more than you've had all fight.");

@@ -1,7 +1,7 @@
 // =====================================================================
 // NATHAN, THE NEW PHASES II AND III (Ali's road; replaces 59zc's railgun/twinfang/sweep/blinkchain/starfall and both limit cuts)
 //   II  MOONLESS SKY, the machine (240): missiles (cut them down; the last, red one is parried back into him), buster
-//       (a thick beam down a marked lane that turns after you: run round it), grid (laser lanes with one gap, three
+//       (a thick beam down a marked lane that sweeps after you at 1.15 rad/s: blink through, jump, or get behind him), grid (laser lanes with one gap, three
 //       times, the gap moves), funnelgrab (two red funnel dives: parry = Ali throws it back), tackle (a straight boost
 //       charge, parry or sidestep, a burning trail left behind) + combo and grab. Limit cut at half: FULL BURST
 //       (missiles, grids, the buster with missiles), then OVERHEAT: 5s down.
@@ -36,16 +36,21 @@ function npLane(x,z,ang,L,W,warn,dur,o){ o=o||{}; const gy=groundY(x,z), ux=Math
 // a missile: homes on Ali; a sword swing or a Getsuga near it cuts it down. o.red: the parry one (np1HitRed), parried it flies back into him
 function npMissile(sx,sy,sz,o){ o=o||{}; const g=new THREE.Group(), body=new THREE.Mesh(new THREE.ConeGeometry(.17,.75,6),new THREE.MeshBasicMaterial({color:o.red?0xff2a3a:0xe8eef4})); body.rotation.x=Math.PI/2; g.add(body);
   const gl=npSprite(o.red?0xff2a3a:0xffb04a,o.red?1.8:1); gl.userData.temp=0; g.add(gl); g.userData.temp=1; scene.add(g); const M={x:sx,y:sy,z:sz,vx:rnd(-3,3),vy:rnd(7,10),vz:rnd(-3,3),t:0,back:0,told:0,dead:0};
-  const pop=(big)=>{ FX.burst(M.x,M.y,M.z,big?30:14,o.red?0xff2a3a:0xffb04a,big?7:5,.3); FX.burst(M.x,M.y,M.z,8,0xffffff,4,.25); Sound.sfx(big?'crossboom':'hit'); };
+  const pop=(big,cut)=>{ FX.burst(M.x,M.y,M.z,big?30:14,o.red?0xff2a3a:0xffb04a,big?7:5,.3); FX.burst(M.x,M.y,M.z,8,0xffffff,4,.25); Sound.sfx(big?'crossboom':'hit');
+    if(cut){ /* a cut missile goes off: a fireball, a ring, two halves spinning away, a short hit-stop and a camera kick; several in one swing count up */ const ch=NP1.cutT!=null&&Game.time-NP1.cutT<.5?(NP1.cutN=(NP1.cutN||1)+1):(NP1.cutN=1); NP1.cutT=Game.time;
+      FX.burst(M.x,M.y,M.z,34,0xff8a2a,9,.4); FX.burst(M.x,M.y,M.z,16,0x2a2a30,5,.6,false); try{ npStar(M.x,M.y,M.z,0xffe0a0,1.8,.28); FX.ring(M.x,groundY(M.x,M.z)+.1,M.z,'#ffb04a',3.2,.35); }catch(e){}
+      for(let h=0;h<2;h++){ const sg=h?1:-1; for(let k=0;k<6;k++) FX.spawn(M.x,M.y,M.z,M.vz*.25*sg+rnd(-1,1),rnd(2,5),-M.vx*.25*sg+rnd(-1,1),.6,k%2?0xe8eef4:0x8a8f98,.3,12,false); }
+      Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.tone('sawtooth',160,40,.25,.14); FX.hitstop=Math.max(FX.hitstop,.045); shake(.35+Math.min(.5,ch*.08)); if(typeof TPS!=='undefined') TPS.kick=Math.max(TPS.kick||0,.25); FX.flash=Math.max(FX.flash,.18); grade.uniforms.flashCol.value.set(1,.8,.5);
+      Game.dmgNums.push({x:M.x,y:M.y+.6,z:M.z,n:ch>1?'CUT ×'+ch:'CUT',t:0,big:ch>=3,col:'#ffd27a'}); try{ addSP(.5); if(ch===4) npPosture(8,'missiles'); }catch(e){} } };
   np1Obj({bit:1,upd(dt){ if(M.dead) return false; M.t+=dt; const P=Player, tx=M.back?NB.x:P.x, ty=M.back?NB.y+2:P.y+1.1, tz=M.back?NB.z:P.z, dx=tx-M.x, dy=ty-M.y, dz=tz-M.z, d=Math.hypot(dx,dy,dz)||1, sp=M.back?28:(o.sp||9.5)+M.t*1.8, k=Math.min(1,dt*(M.back?14:M.t<.45?1:4.4));
       M.vx=lerp(M.vx,dx/d*sp,k); M.vy=lerp(M.vy,dy/d*sp,k); M.vz=lerp(M.vz,dz/d*sp,k); M.x+=M.vx*dt; M.z+=M.vz*dt; M.y=Math.max(groundY(M.x,M.z)+.3,M.y+M.vy*dt); g.position.set(M.x,M.y,M.z); g.lookAt(M.x+M.vx,M.y+M.vy,M.z+M.vz);
       if(Math.random()<.8) FX.spawn(M.x,M.y,M.z,0,0,0,.3,o.red?0xff5a4a:0xffd27a,.16,0,true);
       if(M.back){ if(d<1.7){ pop(true); shake(.5); NB.flash=.3; nbDamage(o.back||12,'np1'); try{ npPosture(15,'REFLECT'); }catch(e){} return false; } return M.t<8; }
       if(o.red){ if(!M.told&&d<6.5){ M.told=1; np1Glint(M.x,M.y,M.z,0xff2a3a,3.4); } if(d<1.5){ const r=np1HitRed(2,M.x,M.z); if(r==='parry'){ M.back=1; M.t=0; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'RETURN TO SENDER',t:0,big:true,col:'#ffd45a'}); return true; } pop(true); return false; } return M.t<12; }
-      if(Math.hypot(P.x-M.x,P.z-M.z)<2.5&&Math.abs(P.y+1-M.y)<2.6&&Game.time-(P.swingT||-9)<.15){ pop(); Game.dmgNums.push({x:M.x,y:M.y+.6,z:M.z,n:'CUT',t:0,col:'#ffd27a'}); return false; }
-      for(const b of BEAMS){ if(b.ali&&b.life>0&&Math.hypot(b.x-M.x,b.z-M.z)<1.7&&Math.abs(b.y-M.y)<2.5){ pop(); return false; } }
+      if(Math.hypot(P.x-M.x,P.z-M.z)<2.5&&Math.abs(P.y+1-M.y)<2.6&&Game.time-(P.swingT||-9)<.15){ pop(false,true); return false; }
+      for(const b of BEAMS){ if(b.ali&&b.life>0&&Math.hypot(b.x-M.x,b.z-M.z)<1.7&&Math.abs(b.y-M.y)<2.5){ pop(false,true); return false; } }
       if(d<.9){ pop(); if(P.inv<=0&&P.dash<=0&&!P.cineFly) hurtPlayer(1,M.x,M.z); return false; } return M.t<12; }, kill(){ M.dead=1; scene.remove(g); }}); return M; }
-function* npVolley(n,red){ for(let i=0;i<n;i++){ const sd=i%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{red:red&&i===n-1,sp:9+((NP1.ph||1)>=3?1:0)}); Sound.sfx('mechshot'); FX.burst(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,8,0xffd27a,4,.25); NB.flash=.08; yield .13; } }
+function* npVolley(n,red){ for(let i=0;i<n;i++){ const sd=i%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{red:red&&i===n-1,sp:9+((NP1.ph||1)>=3?1:0)}); Sound.sfx('mechshot'); FX.burst(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,8,0xffd27a,4,.25); NB.flash=.08; yield .09; } }
 // the buster: a thick beam from him along the ground; the lane shows first and follows you, then the beam turns after you slowly
 function* npBuster(dur,rate){ const L=34, W=2.6, S={a:Math.atan2(Player.z-NB.z,Player.x-NB.x),t:0,on:0,cd:0,done:0}, gy=()=>groundY(NB.x,NB.z);
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0x04101c,transparent:true,opacity:.6,depthWrite:false})); m.rotation.x=-Math.PI/2; m.userData.temp=1; scene.add(m);
@@ -63,9 +68,9 @@ function* npGrid(n,warn){ for(let v=0;v<n;v++){ const P=Player, [dx,dz]=np1Dir()
     for(let i=0;i<lanes;i++){ if(i===gap) continue; const off=(i-(lanes-1)/2)*W; npLane(ox+px*off,oz+pz*off,ang,28,W-.25,warn,.5,{dmg:2}); } Sound.sfx('charge'); Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'FIND THE GAP',t:0,col:'#9ff8ff'}); yield warn+.55; } }
 // ---------- PHASE II MOVES ----------
 NP1M.missiles=function*(){ NP1.cur='missiles'; twBark('nathan',"Missiles away. Cut them, if your arm is fast enough.",true); np1Hint('miss','MISSILES: cut them out of the air with your sword. The RED one: parry it back into him');
-  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*11,P.z-dz*11); } NB.hov=Math.max(NB.hov||1.4,3); yield .4; yield* npVolley(8,true); yield 3.2; np1Open(1); yield .3; };
-NP1M.buster=function*(){ NP1.cur='buster'; twBark('nathan',"Buster cannon. Run in circles. It's funnier.",true); np1Hint('bust','BUSTER: the beam turns after you slowly. Run round him, or get behind him');
-  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*9,P.z-dz*9); } yield .4; yield* npBuster(2.6,.62); np1Open(1.6); yield .3; };
+  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*11,P.z-dz*11); } NB.hov=Math.max(NB.hov||1.4,3); yield .4; yield* npVolley(7,false); yield .7; yield* npVolley(7,false); yield .6; yield* npVolley(5,true); yield 3; np1Open(1); yield .3; };
+NP1M.buster=function*(){ NP1.cur='buster'; twBark('nathan',"Buster cannon. Run in circles. It's funnier.",true); np1Hint('bust','BUSTER: the beam sweeps after you. Blink through it, jump it, or get in close and behind him');
+  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*9,P.z-dz*9); } yield .4; yield* npBuster(3.4,1.15); np1Open(1.6); yield .3; };
 NP1M.grid=function*(){ NP1.cur='grid'; twBark('nathan',"Funnel grid. One gap. Find it.",true); np1Hint('grid','GRID: dark lanes are about to burn. Stand in the one lane that is not marked');
   { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*12,P.z-dz*12); } yield .35; yield* npGrid(3,1.05); np1Open(1); yield .3; };
 NP1M.funnelgrab=function*(){ NP1.cur='funnelgrab'; twBark('nathan',"Funnels. Fetch.",true); np1Hint('fgrab','RED funnel dives: parry one and Ali throws it back');
@@ -121,7 +126,7 @@ NP1M.stance=function*(){ NP1.cur='stance'; twBark('nathan',"Come on, then. Hit m
 // ---------- LIMIT CUTS (no camera takeover) ----------
 npLCEclipse=function*(){ NP1.cur='lc'; NP1.lcInv=1; twCutin('nathan','FULL BURST','Limit Break  ·  every weapon at once','#1a8aff',1.8); twBark('nathan',"Full burst. Everything I have. Don't take it personally.",true); Sound.sfx('secret');
   try{ { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*12,P.z-dz*12); } NB.hov=4; yield 1.5; twBig('FULL BURST',{size:46,col:'#9ff8ff',y:UH*.24,dur:1.6,sub:'Cut the missiles · find the gap · run from the beam'});
-    yield* npVolley(10,true); yield 2.6; yield* npGrid(3,.85); yield* npVolley(5,false); yield .5; yield* npBuster(3,.7); yield .3; }
+    yield* npVolley(9,false); yield .5; yield* npVolley(9,true); yield 2.6; yield* npGrid(3,.85); yield* npVolley(8,false); yield .5; yield* npBuster(3.6,1.3); yield .3; }
   finally{ npLCEnd(); }
   twBark('nathan',"Heat... critical. Vent... venting...",true); for(let i=0;i<5;i++) FX.burst(NB.x,NB.y+rnd(1,3),NB.z,16,0xc8d4e0,5,.5,false); np1Stun(5,'OVERHEAT'); };
 npLCSuns=function*(){ NP1.cur='lc'; NP1.lcInv=1; twCutin('nathan','LAST ROUND','Limit Break  ·  eight beats and a blade','#ff3a1a',1.8); twBark('nathan',"Last magazine. Last round. Last dance, Ali.",true); Sound.sfx('secret');
@@ -151,3 +156,10 @@ nprTick=function(dt){ if(!(typeof npOn==='function'&&npOn())||NP1.done||!NB||!NB
       np1Obj({upd(){ if(NP1.lunge&&!NP1.pdDone&&Game.time<NP1.grabLand+.05) return true; try{ if(NB.mat) NB.mat.color.setHex(c0); }catch(e){} return false; }, kill(){ try{ if(NB&&NB.mat) NB.mat.color.setHex(c0); }catch(e){} }}); }catch(e){ console.error('grab tell 2',e); } return r; }; })();
 // in cutscenes on this field every sprite faces the camera (they only did during play: side shots showed them edge-on)
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const r=uc.apply(this,arguments); try{ if(typeof tpsFight==='function'&&tpsFight()&&Cam.cine&&!NP1.cam){ for(const s of SPRITES) if(s&&s.mesh) s.mesh.quaternion.copy(camera.quaternion); if(NB&&NB.mesh){ NB.mesh.quaternion.copy(camera.quaternion); NB.mesh.scale.x=1; } } }catch(e){ console.error('cine billboard',e); } return r; }; })();
+// ---------- v1.65 ----------
+// his blue tears never throw the pink Judgement Cut sparks (those are Ali's)
+(function(){ const tg=twGash; twGash=function(o){ const r=tg.apply(this,arguments); try{ if(o&&o.blue) o.sparked=1; }catch(e){} return r; }; })();
+// a red strike's parry window is never wider than the back half of its own tell: with a short tell (the funnels' 0.32-0.45s)
+// the 0.3s window covered nearly all of it, so swinging at Nathan through the move parried every shot by accident
+(function(){ const hr=np1HitRed; np1HitRed=function(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=Math.hypot(dx,dz)||1, el=NP1.tellT!=null?Game.time-NP1.tellT:9, win=Math.max(.14,Math.min(NP1_WIN,el*.5));
+    return twHitP(dmg,P.x+dx/d*1.2,P.z+dz/d*1.2,{melee:true,win,onParry}); }; })();

@@ -95,7 +95,7 @@ function npAli(dt){ const P=Player, sp=Math.hypot(P.vx||0,P.vz||0), gy=groundY(P
 // ---------- 13. the grab's slam: a crater ring, a dust wall and a heavy camera dip when Ali hits the ground ----------
 function npGrabSlam(){ const S=NP1.seq; if(!S||S.k!=='grab'){ NPP.slamSeen=0; return; } if(!S.slam||NPP.slamSeen) return; NPP.slamSeen=1; const P=Player, gy=groundY(P.x,P.z);
   FX.ring(P.x,gy+.1,P.z,'#d8ccb0',4.5,.5); FX.ring(P.x,gy+.12,P.z,'#4a9aff',3,.4); for(let i=0;i<30;i++){ const a=i/30*6.283; FX.spawn(P.x+Math.cos(a)*.8,gy+.2,P.z+Math.sin(a)*.8,Math.cos(a)*rnd(3,7),rnd(1,3.5),Math.sin(a)*rnd(3,7),.7,0x9a8e78,.45,0,false); }
-  for(let i=0;i<6;i++) FX.line(P.x,P.z,i/6*6.283+rnd(-.2,.2),rnd(2,4),.14,0x4a9aff,.6); if(typeof TPS!=='undefined') TPS.kick=-.5; impactFrame([[3,2],[1,1]]); }
+  for(let i=0;i<6;i++) FX.line(P.x,P.z,i/6*6.283+rnd(-.2,.2),rnd(2,4),.14,0x4a9aff,.6); if(typeof TPS!=='undefined') TPS.kick=-.5; impactFrame([[2,1],[1,1]]); /* no red frame on his grab */ }
 // ---------- 14. his sword glows: a cyan light rides the blade through every slash (and burns brighter on the tell) ----------
 function npBladeGlow(dt){ if(!NPP.blade){ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x7ff4ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g); NPP.blade=g; }
   const g=NPP.blade, sl=typeof NBS!=='undefined'&&NBS.slashA!=null, tell=Game.time<(NP1.redEnd||0); if(!sl&&!tell){ g.visible=false; return; }

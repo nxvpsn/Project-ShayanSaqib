@@ -210,7 +210,8 @@ function drawNathanCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fr=s.fros
   const dr=still?0:Math.sin(t*1.3), ar=still?0:Math.sin(t*1.1);
   const P={b:-6+Math.round(dr),lean:0,F:[[-3,-2+Math.round(dr*2)],[4,-4-Math.round(dr*2)]],ua:[-.9+ar*.3,1.1-ar*.3],el:[.5,.6+ar*.2],hd:0,hx:sh};
   if(tk){ P.ua[1]=.9+Math.sin(t*3.4)*.35; P.el[1]=1.3; }
-  const D={hip:14,torso:16,thigh:7,shin:8,uarm:6,farm:6,sep:2,ssep:5,neck:1}, J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy;
+  if(s.pose) Object.assign(P,s.pose); /* a fight pose (59zh: Nathan on foot) */
+  const D={hip:14,torso:16,thigh:7,shin:8,uarm:6,farm:6,sep:2,ssep:5,neck:1}, J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy; if(s.out) s.out.J=J;
   // scarf trailing
   if(SC>.05){ c.globalAlpha=SC; for(let i=0;i<7;i++) p(sx-6-i*3,sy+1+Math.round(Math.sin(t*2+i)*2)+i,4,2,i%2?C.scarfS:C.scarf); c.globalAlpha=1; }
   cArm(p,J.A[0],4,Jk>.5?C.jacD:C.suitD,Jk>.5?C.jacD:C.suitD,C.skinD);
