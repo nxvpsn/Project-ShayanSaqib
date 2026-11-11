@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.68 (Nov 11): Nathan phase II rebuilt as BERSERK: Itano Circus (leave each lock-on ring, parry the red missile), Funnel Storm (parry the red funnel), Mirage (parry three clone rushes, blink the real one), no ground lines, no sword-spam missiles. The graphics pass on every map (ground, road edges, trees, lamp posts) and a shading pass on every character but Shayan, Ali and the mech. Village props can be climbed; the parry trainer moved.";
-const DBG_NEW=['nathan:circus','nathan:storm','nathan:mirage','nathan:strafe','nathan:buster','nathan:tackle','nathan:funnelgrab'];
+const DBG_PATCH="v1.69 (Nov 11): the HD-2D overhaul is reverted: the original look is back on every map (ground, houses, trees, props, colour grade, tilt-shift) and on every character. No boss mechanics changed.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
