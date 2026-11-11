@@ -1,18 +1,20 @@
 // =====================================================================
-// BLACK HOLES PULL (added on top of their look, nothing replaced): every hole gets a suction dressing that animates itself:
-// three thin rings that keep contracting into it (fading in at the rim, gone at the core) and a spiral of arms turning
-// under them. Mini holes and the duo's/Hamza's holes (twHoleVis), Omar's solo Collapse (TW.bh), Nathan's (nbMakeBH).
-// The meshes drive themselves from onBeforeRender, so no update hook can be left running.
+// BLACK HOLES PULL (added on top of their look, nothing replaced): every hole gets a quiet suction dressing: small motes of
+// light falling into it on inward spirals (faster the closer they get) and a few wisps, which are short fading trails of
+// the same soft dots. No rings, no drawn shapes. Mini holes and the duo's/Hamza's holes (twHoleVis), Omar's solo Collapse
+// (TW.bh), Nathan's (nbMakeBH). One hidden driver mesh animates the lot from onBeforeRender: no update hook to leave running.
 // =====================================================================
-function bhSpiralTex(){ if(TW._bhSp) return TW._bhSp; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
-  try{ c.lineCap='round'; for(let arm=0;arm<3;arm++){ for(let i=0;i<60;i++){ const u=i/60, a=arm*2.094+u*5.2, r=4+u*58, a2=arm*2.094+(u+1/60)*5.2, r2=4+(u+1/60)*58; c.strokeStyle='rgba(255,255,255,'+(.75*(1-u)).toFixed(2)+')'; c.lineWidth=1+3.5*(1-u);
-        c.beginPath(); c.moveTo(S/2+Math.cos(a)*r,S/2+Math.sin(a)*r); c.lineTo(S/2+Math.cos(a2)*r2,S/2+Math.sin(a2)*r2); c.stroke(); } } }catch(e){}
-  const t=new THREE.CanvasTexture(cv); TW._bhSp=t; return t; }
-function bhSuction(col){ const g=new THREE.Group(); g.rotation.x=-Math.PI/2; g.userData.bhs=1;
-  for(let i=0;i<3;i++){ const m=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:i%2?0xffffff:(col||0xb06aff),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
-    m.onBeforeRender=function(){ const u=((performance.now()/1000)*.9+i/3)%1, e=u*u; this.scale.setScalar(Math.max(.05,5.2-4.2*e)); this.material.opacity=Math.max(0,Math.min(1,u*4)*(1-e)*.7); }; g.add(m); }
-  const sp=new THREE.Mesh(new THREE.PlaneGeometry(9,9),new THREE.MeshBasicMaterial({map:bhSpiralTex(),color:col||0xb06aff,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
-  sp.position.z=-.05; sp.onBeforeRender=function(){ this.rotation.z=-(performance.now()/1000)*3.2; const p=1+.06*Math.sin(performance.now()/90); this.scale.setScalar(p); }; g.add(sp); return g; }
+function bhDotTex(){ if(TW._bhDot) return TW._bhDot; const S=32, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  try{ const g=c.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.35,'rgba(255,255,255,.45)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,S,S); }catch(e){}
+  const t=new THREE.CanvasTexture(cv); TW._bhDot=t; return t; }
+function bhSuction(col){ const g=new THREE.Group(); g.rotation.x=-Math.PI/2; g.userData.bhs=1; const P=[], tint=col||0xc9a8ff;
+  const dot=(c,wisp,lag,k)=>{ const m=new THREE.Sprite(new THREE.SpriteMaterial({map:bhDotTex(),color:c,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); m.scale.setScalar(.01); g.add(m); return {m,wisp,lag,k}; };
+  for(let i=0;i<14;i++) P.push({a:Math.random()*6.283,ph:Math.random(),sp:.34+Math.random()*.22,R:3.4+Math.random()*2,h:(Math.random()-.5)*2.2,sz:.07+Math.random()*.06,d:[dot(i%3?0xffffff:tint,0,0,1)]});
+  for(let i=0;i<5;i++){ const d=[]; for(let j=0;j<6;j++) d.push(dot(j%2?tint:0xffffff,1,j*.022,1-j/6.5)); P.push({a:i*1.2566+Math.random()*.5,ph:Math.random(),sp:.26+Math.random()*.1,R:4.2+Math.random()*1.4,h:(Math.random()-.5)*1.4,sz:.15,d}); }
+  const drv=new THREE.Mesh(new THREE.PlaneGeometry(.01,.01),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); drv.frustumCulled=false;
+  drv.onBeforeRender=function(){ try{ const t=performance.now()/1000; for(const p of P) for(const o of p.d){ let u=(t*p.sp+p.ph-o.lag)%1; if(u<0) u+=1; const e=u*u, r=Math.max(.3,p.R*(1-e)+.3*e), an=p.a+e*5.4;
+        o.m.position.set(Math.cos(an)*r,Math.sin(an)*r,p.h*(1-e)); const fade=Math.max(0,Math.min(1,u*5)*(1-e*e)); o.m.material.opacity=fade*(o.wisp?.3*o.k:.8); o.m.scale.setScalar(Math.max(.005,p.sz*o.k*(.6+.4*(1-e)))); } }catch(e){} };
+  g.add(drv); return g; }
 // twHoleVis: the dressing rides the hole's own scale
 (function(){ const hv=twHoleVis; twHoleVis=function(x,y,z,r){ const V=hv.apply(this,arguments); try{ if(V&&V.set&&!V.bhs){ const g=bhSuction(); g.userData.tw=1; g.visible=false; scene.add(g); V.bhs=g; const st=V.set, kl=V.kill;
         V.set=function(k){ const q=st.apply(this,arguments); try{ const s=Math.max(.01,this.r*k); g.visible=k>.08; g.position.set(this.x,this.y,this.z); g.scale.setScalar(s); }catch(e){} return q; };
