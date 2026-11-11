@@ -6527,6 +6527,106 @@ function vhVillage(G){ VH.decals.length=0;
 (function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ if(VH.on) vhVillage(G); }catch(e){ console.error('vh village',e); } return G; }; })();
 // the dusk: a little cooler and darker in the shade, the same warm low sun, so lamps and windows read as light sources
 (function(){ try{ if(VH.on&&typeof LOOKS!=='undefined'&&LOOKS.village){ LOOKS.village.hemi=[0x7c78d2,0x3c2a36,.55]; LOOKS.village.sun=[0xff9a66,1.45,LOOKS.village.sun[2]]; } }catch(e){} })();
+// =====================================================================
+// PASS 2 (v1.67): everything that is not a house. The ground (grass, path and cobbles redrawn at 64 px a unit over 2x2
+// cells, so no tile repeats next to itself; ragged grass hanging over every path and cobble edge), the trees (bigger,
+// leaf clusters lit from the low sun, a dark underside, bark), the lamp posts, the fountain, the stalls, new props (a
+// woodpile, hay bales, a cart, a bench, a clothesline, flower beds along the houses), soft contact shadows under
+// everything that stands on the ground, a wall of pines behind the houses, twice the grass.
+// =====================================================================
+function vhTiles(T){ const P=PAL.village, S=128, put=(k,cv)=>{ const t=tex(cv,1); t.repeat.set(.5,.5); T[k]=t; };
+  // grass: broad tonal patches, blades in three tones, clover, the odd flower and pebble
+  { const [cv,c]=mkCanvas(S,S), g=['#4e8c34','#447e2e','#5f9f3e','#74b24a','#3a6e28','#8cc45a']; R(c,0,0,S,S,g[0]);
+    for(let by=0;by<S;by+=8) for(let bx=0;bx<S;bx+=8){ const k=hash(Math.floor(bx/16)+3,Math.floor(by/16)+9)*.6+hash(bx,by)*.4; R(c,bx,by,8,8,k>.72?g[2]:k<.3?g[1]:g[0]); }
+    noiseFill(c,S,S,[g[1],g[2],g[0],g[4]],1500,31);
+    for(let i=0;i<420;i++){ const x=Math.floor(hash(i,61)*S), y=Math.floor(hash(61,i)*(S-5))+1, h=2+Math.floor(hash(i,62)*4), k=hash(i,63); R(c,x,y,1,h,k>.66?g[3]:k>.33?g[2]:g[5]); R(c,x,y+h,1,1,g[4]); if(i%5===0) R(c,(x+1)%S,y+h-1,1,2,g[4]); }
+    for(let i=0;i<14;i++){ const x=Math.floor(hash(i,71)*(S-8))+2, y=Math.floor(hash(71,i)*(S-8))+2; R(c,x,y,5,3,g[4]); R(c,x+1,y-1,3,1,g[4]); R(c,x+1,y,2,2,'#3f8a4a'); R(c,x+3,y+1,2,2,'#4a9a54'); }
+    for(let i=0;i<9;i++){ const x=Math.floor(hash(i,73)*(S-6))+2, y=Math.floor(hash(73,i)*(S-6))+2; R(c,x,y,2,2,P.flower[i%P.flower.length]); R(c,x,y+2,1,2,g[4]); R(c,x,y,1,1,'#fff6c8'); }
+    for(let i=0;i<5;i++){ const x=Math.floor(hash(i,77)*(S-6))+2, y=Math.floor(hash(77,i)*(S-6))+2; R(c,x,y,3,2,'#9a9486'); R(c,x,y,3,1,'#b8b2a4'); R(c,x,y+2,3,1,'rgba(0,0,0,.25)'); }
+    put('grass',cv); }
+  // the path: packed earth, two wheel ruts, pebbles with a lit top and a shadow, cracks, grass seeding in
+  { const [cv,c]=mkCanvas(S,S), d=['#b39a74','#a58c66','#c2aa82','#927a58','#cdb890']; R(c,0,0,S,S,d[0]); noiseFill(c,S,S,[d[1],d[2],d[0],d[4]],1700,33);
+    for(const ry of [40,88]) for(let x=0;x<S;x++){ const y=ry+Math.round(Math.sin(x/S*6.283*2)*2); R(c,x,y,1,5,'rgba(110,86,56,.4)'); R(c,x,y+5,1,1,'rgba(255,240,210,.18)'); if(hash(x,ry)>.6) R(c,x,y+2,1,1,d[3]); }
+    for(let i=0;i<46;i++){ const x=Math.floor(hash(i,81)*(S-5)), y=Math.floor(hash(81,i)*(S-5)), w=2+Math.floor(hash(i,82)*3); R(c,x,y+w-1,w,2,'rgba(60,40,20,.3)'); R(c,x,y,w,w-1,['#8d8678','#a39b8c','#7a7366'][i%3]); R(c,x,y,w,1,'rgba(255,255,255,.35)'); }
+    for(let i=0;i<7;i++){ let x=Math.floor(hash(i,85)*(S-20))+6, y=Math.floor(hash(85,i)*(S-20))+6; for(let k=0;k<12;k++){ R(c,x,y,1,1,'rgba(80,56,30,.45)'); x+=hash(k,i+5)>.45?1:-1; y+=1; } }
+    for(let i=0;i<16;i++){ const x=Math.floor(hash(i,87)*(S-3)), y=Math.floor(hash(87,i)*(S-4)); R(c,x,y,1,3,'#5f9f3e'); R(c,x+1,y+1,1,2,'#447e2e'); }
+    put('path',cv); }
+  // cobbles: rounded stones, each lit from the top with a dark foot, moss and dirt in the joints
+  { const [cv,c]=mkCanvas(S,S); R(c,0,0,S,S,'#352f2a'); const cols=['#8d8678','#7a7366','#a39b8c','#857c70','#978e80'];
+    for(let r=0,y=0;y<S;r++){ const h=18+Math.floor(hash(r,91)*8); let x=-Math.floor(hash(r,92)*14); while(x<S){ const w=18+Math.floor(hash(x+200,r)*14), col=cols[Math.floor(hash(x,r+3)*cols.length)];
+        R(c,x+2,y+1,w-3,h-1,col); R(c,x+1,y+2,w-1,h-3,col); R(c,x+2,y+1,w-3,2,'rgba(255,255,255,.2)'); R(c,x+3,y+3,Math.floor(w/3),1,'rgba(255,255,255,.22)'); R(c,x+2,y+h-3,w-3,3,'rgba(0,0,0,.22)'); R(c,x+w-2,y+3,1,h-6,'rgba(0,0,0,.14)');
+        if(hash(x,r)>.55){ R(c,x,y+Math.floor(h/2),2,3,'rgba(90,140,70,.85)'); R(c,x+Math.floor(w/2),y,3,1,'rgba(90,140,70,.8)'); } if(hash(r,x)>.8) R(c,x+5,y+6,3,2,'rgba(0,0,0,.12)'); x+=w; } y+=h; }
+    put('cobble',cv); } }
+(function(){ const mt=makeTileTextures; makeTileTextures=function(biome){ const T=mt.apply(this,arguments); try{ if(VH.on&&biome==='village') vhTiles(T); }catch(e){ console.error('vh tiles',e); } return T; }; })();
+// grass hanging over the path and cobble edges: one merged strip of small ragged quads on the road side of every border
+function vhEdges(G){ const [cv,c]=mkCanvas(64,24), g=['#4e8c34','#5f9f3e','#447e2e','#74b24a']; for(let x=0;x<64;x++){ const h=5+Math.floor(hash(x,5)*13)+(x%7===0?5:0); R(c,x,24-Math.min(24,h),1,Math.min(24,h),g[Math.floor(hash(x,9)*4)]); if(hash(x,11)>.7) R(c,x,24-Math.min(24,h),1,2,'#8cc45a'); }
+  const t=tex(cv), p=[], uv=[], n=[], dp=.42, q=(a,b,cc,d,u0)=>{ for(const [v,w] of [[a,[u0,0]],[b,[u0+.5,0]],[cc,[u0+.5,1]],[a,[u0,0]],[cc,[u0+.5,1]],[d,[u0,1]]]){ p.push(...v); uv.push(...w); n.push(0,1,0); } };
+  const road=(x,z)=>x>=0&&z>=0&&x<G.w&&z<G.d&&(G.T[z][x]==='path'||G.T[z][x]==='cobble');
+  for(let z=5;z<22;z++) for(let x=1;x<39;x++){ if(!road(x,z)) continue; const y=G.H[z][x]+.022, u0=hash(x,z)>.5?0:.5;
+    if(!road(x,z-1)&&G.T[z-1][x]==='grass') q([x,y,z+dp],[x+1,y,z+dp],[x+1,y,z],[x,y,z],u0);
+    if(!road(x,z+1)&&G.T[z+1][x]==='grass') q([x+1,y,z+1-dp],[x,y,z+1-dp],[x,y,z+1],[x+1,y,z+1],u0);
+    if(!road(x-1,z)&&G.T[z][x-1]==='grass') q([x+dp,y,z],[x+dp,y,z+1],[x,y,z+1],[x,y,z],u0);
+    if(!road(x+1,z)&&G.T[z][x+1]==='grass') q([x+1-dp,y,z+1],[x+1-dp,y,z],[x+1,y,z],[x+1,y,z+1],u0); }
+  if(!p.length) return; const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); geo.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));
+  const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})); m.receiveShadow=true; G.root.add(m); }
+// ---------- trees ----------
+function vhTreeSprite(kind,seed){ const W=128, H=152, [cv,c]=mkCanvas(W,H), cx=W/2, bl=kind==='blossom', L=bl?['#8a3e62','#b8587e','#dd86a6','#f6b8ce','#ffe2ec']:['#1f4a2a','#2f6a35','#458c42','#66ab52','#9ad070'], warm=bl?'#ffd0b8':'#d8d66a';
+  // trunk: bark in three tones, roots, two limbs
+  for(let y=H-58;y<H;y++){ const w=6+Math.round((y-(H-58))/58*4); R(c,cx-w,y,w*2,1,'#5a3b28'); R(c,cx-w,y,2,1,'#7a563a'); R(c,cx+w-4,y,4,1,'#3c2618'); if((y+seed)%7===0) R(c,cx-w+3,y,w,1,'#46301f'); }
+  R(c,cx-16,H-5,32,5,'#5a3b28'); R(c,cx-16,H-5,5,2,'#7a563a'); R(c,cx+8,H-4,8,4,'#3c2618'); pline(c,cx-2,H-52,cx-26,H-84,'#5a3b28',5); pline(c,cx+2,H-56,cx+24,H-90,'#4a3020',5); pline(c,cx,H-58,cx+2,H-96,'#5a3b28',6);
+  // the canopy: many leaf clusters, dark below, lit and warm on the sun's side (upper left)
+  const blob=(x,y,r)=>{ ell(c,x+2,y+3,r,r*.82,L[0]); ell(c,x,y,r,r*.8,L[1]); ell(c,x-r*.18,y-r*.2,r*.8,r*.62,L[2]); ell(c,x-r*.34,y-r*.36,r*.52,r*.38,L[3]); ell(c,x-r*.46,y-r*.5,r*.24,r*.16,L[4]); ell(c,x-r*.62,y-r*.34,r*.1,r*.08,warm); };
+  const B=[[cx,62,30],[cx-30,72,22],[cx+30,70,23],[cx-18,42,22],[cx+18,40,22],[cx,30,20],[cx-40,56,15],[cx+42,54,15],[cx,84,22],[cx-22,92,14],[cx+24,90,14],[cx-8,54,18],[cx+10,66,16]];
+  B.sort((a,b)=>b[1]-a[1]).forEach(([x,y,r],i)=>blob(x+Math.round((hash(i,seed)-.5)*6),y+Math.round((hash(seed,i)-.5)*5),r));
+  for(let i=0;i<150;i++){ const x=Math.floor(hash(i,seed+40)*W), y=Math.floor(hash(seed+40,i)*100)+10; R(c,x,y,2,1,i%3?L[4]:L[0]); }
+  try{ removeOrphans(c,W,H); outlinePass(c,W,H,[10,16,14]); }catch(e){} return cv; }
+(function(){ const at=addTree; addTree=function(G,x,z,kind,s){ try{ if(VH.on&&G&&G.biome==='village'&&(kind==='oak'||kind==='blossom')){ const v=Math.floor(hash(x,z)*3), key=kind+v, cv=(VH.trees||(VH.trees={}))[key]||(VH.trees[key]=vhTreeSprite(kind,v));
+        const m=billboard(cv,cv.width/PPU,cv.height/PPU,{foot:.1}); m.position.set(x,groundY(x,z),z); if(s&&s<1) m.scale.setScalar(s/1.1+.1); G.root.add(m); return m; } }catch(e){ console.error('vh tree',e); } return at.apply(this,arguments); }; })();
+// ---------- lamp posts, the fountain, the stalls ----------
+(function(){ const al=addLantern; addLantern=function(G,x,z){ const r=al.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'&&!VH.low){ const y=groundY(x,z), I=vhMat('iron');
+        addBox(G,.36,.16,.36,vhMat('stone'),x,y,z); addBox(G,.2,.1,.2,I,x,y+.16,z,false); addBox(G,.18,.06,.18,I,x,y+2.3,z,false); addBox(G,.06,.3,.06,I,x+.2,y+1.98,z,false); addBox(G,.3,.05,.05,I,x+.33,y+2.08,z,false);
+        const cap=new THREE.Mesh(new THREE.ConeGeometry(.27,.2,4),I); cap.rotation.y=Math.PI/4; cap.position.set(x+.5,y+2.28,z); G.root.add(cap); addBox(G,.34,.04,.34,I,x+.5,y+1.8,z,false); addBox(G,.05,.08,.05,I,x+.5,y+2.38,z,false);
+        for(const [ox,oz] of [[-.13,-.13],[.13,-.13],[-.13,.13],[.13,.13]]) addBox(G,.03,.36,.03,I,x+.5+ox,y+1.82,z+oz,false); } }catch(e){ console.error('vh lantern',e); } return r; }; })();
+(function(){ const af=addFountain; addFountain=function(G,cx,cz){ const r=af.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'){ const st=vhMat('stone');
+        for(let i=0;i<14;i++){ const a=i/14*6.283, m=addBox(G,.78,.2,.3,st,cx+Math.cos(a)*1.86,.58,cz+Math.sin(a)*1.86,false); m.rotation.y=-a+Math.PI/2; }
+        const sh=new THREE.Mesh(new THREE.RingGeometry(.5,1.45,28),new THREE.MeshBasicMaterial({color:0xbfe4ff,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})); sh.rotation.x=-Math.PI/2; sh.position.set(cx,.565,cz); G.root.add(sh);
+        const top=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.34,8),st); top.position.set(cx,2.2,cz); G.root.add(top);
+        for(let i=0;i<4;i++){ const a=i*1.57+.5, pad=new THREE.Mesh(new THREE.CircleGeometry(.16,8),new THREE.MeshLambertMaterial({color:0x4f9a4a})); pad.rotation.x=-Math.PI/2; pad.position.set(cx+Math.cos(a)*1.05,.57,cz+Math.sin(a)*1.05); G.root.add(pad); }
+        G.anim.push(()=>{ sh.material.opacity=.16+.08*Math.sin(Game.time*2.2); sh.rotation.z=Game.time*.3; }); } }catch(e){ console.error('vh fountain',e); } return r; }; })();
+(function(){ const as=addStall; addStall=function(G,x,z,col){ const r=as.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'&&!VH.low){ const cm=new THREE.MeshLambertMaterial({color:col}), wm=new THREE.MeshLambertMaterial({color:0xf2ece0}), cr=tpMat('crate');
+        for(let i=0;i<8;i++){ const m=addBox(G,.36,.16,.03,i%2?wm:cm,x+.2+i*.4,1.5,z+1.02,false); m.rotation.x=.2; }                       /* the awning's fringe */
+        addBox(G,.5,.42,.46,cr,x-.42,0,z+.55); addBox(G,.4,.32,.4,cr,x-.4,.42,z+.55); addBox(G,.46,.4,.44,cr,x+3.42,0,z+.5);                     /* crates either side */
+        for(const [sx,sc] of [[x+3.4,0xd9c08a],[x+3.75,0xc8a870]]){ const s=new THREE.Mesh(new THREE.CylinderGeometry(.17,.21,.46,8),new THREE.MeshLambertMaterial({color:sc})); s.position.set(sx,.63+(sx>x+3.6?-.4:0),z+.5+(sx>x+3.6?.3:0)); s.castShadow=true; G.root.add(s); }
+        addBox(G,.05,.34,.05,vhMat('iron'),x+2.85,1.5,z+.75,false); addBox(G,.16,.2,.16,new THREE.MeshLambertMaterial({color:0x2a2420,emissive:0xffb24a,emissiveIntensity:2.2}),x+2.85,1.3,z+.75,false); } }catch(e){ console.error('vh stall',e); } return r; }; })();
+// ---------- props, contact shadows, the backdrop ----------
+function vhSoftTex(){ if(VH.soft) return VH.soft; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d'); try{ const g=c.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.55,'rgba(255,255,255,.5)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,S,S); }catch(e){} return VH.soft=new THREE.CanvasTexture(cv); } /* a smooth falloff: the stepped pixel glow, in black, drew hard dark blocks */
+function vhShade(G,x,z,w,dp,op,owner){ op*=.62; const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:vhSoftTex(),color:0x0a0614,transparent:true,opacity:op,depthWrite:false,fog:false})); m.rotation.x=-Math.PI/2; m.position.set(x,groundY(x,z)+.03,z); m.scale.set(w,dp,1); G.root.add(m); VH.decals.push({m,op,owner,ph:0}); return m; }
+function vhVillage2(G){ const blk=(x,z)=>{ if(x>=0&&z>=0&&x<G.w&&z<G.d) G.B[z][x]=true; };
+  try{ vhEdges(G); }catch(e){ console.error('vh edges',e); }
+  // contact shadows: houses, trees, stalls, the fountain, the lamp posts
+  [[3,5,6,4],[11,4,7,5],[23,5,6,4],[31,4,7,5]].forEach(([x,z,w,d])=>{ const o=vhOwner(G,'house',x+w/2,z+d/2); vhShade(G,x+w/2,z+d+.25,w+1.6,1.7,.5,o); });
+  [[2,3],[10,2.5],[19.5,2.8],[22,3],[30,2.6],[38,3],[1.5,8],[15.4,8.6],[25.2,8.8]].forEach(([x,z])=>vhShade(G,x,z+.2,3.4,2,.45,vhOwner(G,'tree',x,z)));
+  [[13.5,17.5],[26.5,17.5]].forEach(([x,z])=>vhShade(G,x,z+.3,4.6,2.4,.45,vhOwner(G,'stall',x,z))); vhShade(G,20,11.2,5.6,5,.42,vhOwner(G,'fountain',20,11.2));
+  [[7,10],[15.5,10.2],[24.5,10.2],[33,10],[10,15.2],[29,15.2],[37,14.6]].forEach(([x,z])=>vhShade(G,x,z,1.1,.9,.5,vhOwner(G,'lantern',x+.2,z)));
+  if(!VH.low){ const wood=vhMat('beam'), woodL=vhMat('sill'), I=vhMat('iron');
+    // a woodpile in the gap between the first two houses
+    for(let r=0;r<3;r++) for(let i=0;i<4-r;i++){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.1,8),(i+r)%2?wood:woodL); m.rotation.x=Math.PI/2; m.position.set(9.35+i*.34+r*.17,.16+r*.29,5.7); m.castShadow=true; G.root.add(m); } blk(9,5); blk(10,5); vhShade(G,9.9,5.9,2,1.5,.45,null);
+    // hay bales in the other gap
+    { const hay=new THREE.MeshLambertMaterial({color:0xd8b04a}), band=new THREE.MeshLambertMaterial({color:0x8a6a2a}); for(const [hx,hy,hz] of [[29.4,0,5.7],[30.25,0,5.75],[29.8,.56,5.7]]){ addBox(G,.8,.56,.6,hay,hx,hy,hz); addBox(G,.82,.05,.62,band,hx,hy+.14,hz,false); addBox(G,.82,.05,.62,band,hx,hy+.38,hz,false); } blk(29,5); blk(30,5); vhShade(G,29.85,5.9,2.2,1.5,.45,null); }
+    // a hand cart below the fountain
+    { const bx=20.6, bz=18.6; addBox(G,1.5,.12,.86,wood,bx,.46,bz); for(const sz of [-.43,.43]) addBox(G,1.5,.3,.06,woodL,bx,.58,bz+sz); addBox(G,.06,.3,.86,woodL,bx-.75,.58,bz); for(const sz of [-.3,.3]){ const hd=addBox(G,.9,.06,.06,wood,bx+1.1,.52,bz+sz,false); hd.rotation.z=-.18; }
+      for(const sz of [-.5,.5]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.08,12),wood); w.rotation.x=Math.PI/2; w.position.set(bx-.15,.34,bz+sz); w.castShadow=true; G.root.add(w); const hub=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.1,8),I); hub.rotation.x=Math.PI/2; hub.position.set(bx-.15,.34,bz+sz); G.root.add(hub); }
+      for(const [ox,oc] of [[-.35,0xe0a040],[0,0xd05a4a],[.35,0x9ac05a]]) addBox(G,.3,.22,.3,new THREE.MeshLambertMaterial({color:oc}),bx+ox,.58,bz,false); blk(19,18); blk(20,18); blk(21,18); vhShade(G,bx,bz+.2,2.6,1.8,.45,null); }
+    // a bench facing the fountain
+    { const bx=16.45, bz=11.3; addBox(G,.42,.07,1.5,woodL,bx,.42,bz); addBox(G,.07,.5,1.5,wood,bx-.2,.48,bz); for(const sz of [-.6,.6]){ addBox(G,.4,.42,.07,I,bx,0,bz+sz); } blk(16,10); blk(16,11); vhShade(G,bx,bz,1.3,2.1,.4,null); }
+    // washing on a line between the first two houses
+    { const y=2.5, z=9.15; addBox(G,2.1,.02,.02,I,10,y,z,false); const cl=[0xf2ece0,0xc8423a,0x8ad0ff,0xf2c14e,0xf2ece0]; for(let i=0;i<5;i++){ const h=.34+hash(i,3)*.3, m=addBox(G,.3,h,.02,new THREE.MeshLambertMaterial({color:cl[i],side:THREE.DoubleSide}),9.2+i*.4,y-h,z,false); G.anim.push(()=>{ m.rotation.x=Math.sin(Game.time*1.6+i)*.12; }); } }
+    // flower beds along the house fronts, and twice the grass everywhere
+    try{ [[3,5,6,4],[11,4,7,5],[23,5,6,4],[31,4,7,5]].forEach(([x,z,w,d])=>scatterTufts(G,0,[{kind:'flower',cols:['#f2c14e','#ec8fb0','#ffffff','#9fd0ff','#e85a5a'],n:26,s:1.15},{kind:'fern',cols:['#2a5a2a','#3a7036'],n:10,s:1}],[x,z+d,x+w,z+d+.75]));
+      scatterTufts(G,0,[{kind:'grass',cols:['#3f7a2a','#4e8c34','#5f9f3e'],n:620,s:.85},{kind:'fern',cols:['#2a5a2a','#3a7036'],n:70,s:1.1},{kind:'tall',cols:['#3a6e28','#4e8c34'],n:120,s:1.5}],[1,5,39,22]); }catch(e){ console.error('vh tufts',e); } }
+  // the backdrop: pines standing close behind the houses and round the edges
+  try{ for(let i=0;i<17;i++){ const x=1+i*2.35+hash(i,5)*.8, z=.7+hash(5,i)*1.5, m=addTree(G,x,z,'pine',1); if(m){ m.scale.setScalar(1.1+hash(i,9)*.5); } } }catch(e){ console.error('vh pines',e); } }
+(function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ if(VH.on) vhVillage2(G); }catch(e){ console.error('vh village 2',e); } return G; }; })();
 
 // ----- 05e_alitree.js -----
 // =====================================================================
@@ -12345,14 +12445,14 @@ function d5SkyHole(x,y,z){ const V=twHoleVis(x,y,z,4,true), S={x,y,z,k:0,t:0,cra
 function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), saved=[], meshes=[], set=(ix,iz,h)=>{ if(ix<0||iz<0||ix>=L.w||iz>=L.d) return; saved.push([ix,iz,L.H[iz][ix],L.B[iz][ix]]); L.H[iz][ix]=h; L.B[iz][ix]=false; };
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
   // every step is a held-open cut: a flat spray of crossing slashes (red edge, dark heart, white core), not a slab
-  const tears=[], slab=(x,z,w,d,y)=>{ const n=w>3?5:3, a0=rnd(0,3.14); let first=null; for(let i=0;i<n;i++){ const len=w*(w>3?2.3:2.5), m=new THREE.Mesh(new THREE.PlaneGeometry(len,w>3?2.4:1.7),d5TearMat(len)); m.rotation.x=-Math.PI/2; m.rotation.z=a0+i*Math.PI/n+rnd(-.12,.12); m.position.set(x,y+.02+i*.012,z); m.renderOrder=2; m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); tears.push(m); first=first||m; } return first; }; /* a step is three Judgement Cut tears crossing (the platform five): the same tear the slash pass draws, held open in the world */
-  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ const len=Math.hypot(x1-x0,y1-y0,z1-z0), g=new THREE.Group(), mat=d5TearMat(len); for(let q=0;q<2;q++){ const ge=new THREE.PlaneGeometry(1,1); ge.rotateY(Math.PI/2); if(q) ge.rotateZ(Math.PI/2); ge.translate(0,0,.5); const m=new THREE.Mesh(ge,mat); m.renderOrder=2; g.add(m); } /* a long tear, two planes crossed so it reads from every side */ g.userData.tw=1; g.position.set(x0,y0,z0); g.lookAt(x1,y1,z1); g.scale.set(w*7,w*7,len); g.visible=false; scene.add(g); meshes.push(g); };
+  const tears=[], slab=(x,z,w,d,y)=>{ const n=w>3?5:3, a0=rnd(0,3.14); let first=null; for(let i=0;i<n;i++){ const len=w*(w>3?2.3:2.5), m=new THREE.Mesh(new THREE.PlaneGeometry(len,w>3?2.4:1.7),d5TearMat(len)); m.rotation.x=-Math.PI/2; m.rotation.z=a0+i*Math.PI/n+rnd(-.12,.12); m.position.set(x,y+.02+i*.012,z); m.renderOrder=2; m.userData.tw=1; m.userData.slash=1; m.userData.hy=y+(w>3?50:0); m.userData.at=[x,y,z]; m.visible=false; scene.add(m); meshes.push(m); tears.push(m); first=first||m; } return first; }; /* a step is three Judgement Cut tears crossing (the platform five): the same tear the slash pass draws, held open in the world */
+  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ const len=Math.hypot(x1-x0,y1-y0,z1-z0), g=new THREE.Group(), mat=d5TearMat(len); for(let q=0;q<2;q++){ const ge=new THREE.PlaneGeometry(1,1); ge.rotateY(Math.PI/2); if(q) ge.rotateZ(Math.PI/2); ge.translate(0,0,.5); const m=new THREE.Mesh(ge,mat); m.renderOrder=2; g.add(m); } /* a long tear, two planes crossed so it reads from every side */ g.userData.tw=1; g.userData.hy=Math.min(y0,y1)-.3; g.userData.at=[(x0+x1)/2,(y0+y1)/2,(z0+z1)/2]; g.position.set(x0,y0,z0); g.lookAt(x1,y1,z1); g.scale.set(w*7,w*7,len); g.visible=false; scene.add(g); meshes.push(g); };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
   for(let k=0;k<9;k++){ const a=k*.7, lo=gy+(k%3)*H*.12, hi=H-(k%2)*H*.1; blade(ix0+Math.cos(a)*(.3+k%3*.25),lo,iz0+Math.sin(a)*(.3+k%3*.25),ix0+Math.cos(a+1.6)*(.25+k%2*.3),hi,iz0+Math.sin(a+1.6)*(.25+k%2*.3),k%3?.14:.3); } /* the trunk: nine long cuts crossing each other */
   const ring=[[-1,1],[-2,1],[-2,0],[-2,-1],[-2,-2],[-1,-2],[0,-2],[1,-2],[1,-1],[1,0],[1,1],[0,1]], steps=[];
   ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.8,iz0,sx+rnd(-.5,.5),h,sz+rnd(-.5,.5),.1); blade(ix0,h*.92,iz0,sx+rnd(-.6,.6),h,sz+rnd(-.6,.6),.07); });
-  for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
+  for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H); meshes.sort((a,b)=>(a.userData.hy||0)-(b.userData.hy||0)); /* bottom to top, the platform last: the order the cuts are made in */
   return {ix0,iz0,H,meshes,steps:tears,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
 // the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
 function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(7.5,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.8,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(6.6,7.5,48),new THREE.MeshBasicMaterial({color:0x3a1466,transparent:true,opacity:.35,depthWrite:false,side:THREE.DoubleSide})); /* a soft dark lip, not a bright ring: it read as a telegraph */
@@ -12363,21 +12463,21 @@ function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.G
       return true; }, kill(){ scene.remove(g); }}); }
 // the Judgement Cut tear as a material (the slash pass's own maths, in the plane's UV space: the jagged lens, the void with
 // its wine nebula, filaments and stars inside, the crimson edge going white, the red rim glow outside)
-function d5TearMat(len){ const U={t:{value:0},sd:{value:Math.random()},L:{value:Math.max(1,len)},op:{value:1}};
+function d5TearMat(len){ const U={t:{value:0},sd:{value:Math.random()},L:{value:Math.max(1,len)},op:{value:1},k:{value:1}}; /* k: how much of the cut has been drawn (0..1 along it), a white-hot tip at the front */
   const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:`uniform float t,sd,L,op; varying vec2 vUv;
+    fragmentShader:`uniform float t,sd,L,op,k; varying vec2 vUv;
   float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
   float nz(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+1.),f.x),f.y); }
   float fbm(vec2 p){ return nz(p)*.55+nz(p*2.1+3.7)*.28+nz(p*4.3+9.1)*.17; }
-  void main(){ float tt=vUv.x, s=(vUv.y-.5)*2., prof=pow(max(0.,sin(3.14159*clamp(tt,0.,1.))),.5);
+  void main(){ float tt=vUv.x, s=(vUv.y-.5)*2., prof=pow(max(0.,sin(3.14159*clamp(tt,0.,1.))),.5); if(tt>k) discard; float tip=k<.999?smoothstep(k-.16,k,tt):0.;
     float jag=(nz(vec2(tt*L*6.+sd*40.,sd))-.5)*.7+(nz(vec2(tt*L*22.,sd*3.))-.5)*.35, w=.58*prof*(1.+jag), as=abs(s);
     if(as<w){ float e=as/max(w,1e-5); vec2 vp=vec2(tt*L*1.8-t*1.6, s*1.4+t*.6);
       float sw=fbm(vp*1.3), fil=pow(1.-abs(sin(e*7.*sign(s)+fbm(vp*2.)*6.+t*3.)),18.);
       vec2 sc=floor(vec2(tt*L*14.,s*9.)+sd*17.); float st=step(.975,h21(sc))*(.55+.45*sin(t*7.+h21(sc+1.)*40.));
       vec3 vc=mix(vec3(.012,0.,.03),vec3(.32,.02,.16),sw*sw*1.3)+vec3(.9,.25,.4)*fil*.55+vec3(st)*(1.-e);
       vec3 ec=mix(vec3(1.,.1,.2),vec3(1.,.95,.92),smoothstep(.82,.99,e));
-      gl_FragColor=vec4(mix(vc,ec,smoothstep(.6,1.,e)),op); }
-    else { float rim=exp(-(as-w)/.14)*step(.02,prof); if(rim<.03) discard; gl_FragColor=vec4(vec3(1.,.16,.26)*rim*1.15+vec3(1.,.9,.9)*pow(rim,4.)*.9,rim*op); } }`});
+      gl_FragColor=vec4(mix(mix(vc,ec,smoothstep(.6,1.,e)),vec3(1.,.96,.94),tip),op); }
+    else { float rim=exp(-(as-w)/.14)*step(.02,prof)*(1.+tip*1.5); if(rim<.03) discard; gl_FragColor=vec4(vec3(1.,.16,.26)*rim*1.15+vec3(1.,.9,.9)*pow(rim,4.)*.9,min(1.,rim)*op); } }`});
   m.userData.tear=1; return m; }
 function d5TearTick(T){ try{ const t=(performance.now()/1000)%100; for(const m of T.meshes||[]){ const ms=m.material?[m]:(m.children||[]); for(const q of ms){ const u=q.material&&q.material.uniforms; if(u&&u.t) u.t.value=t; } } }catch(e){} }
 function d5SlashTex(){ if(TW._slTex3) return TW._slTex3; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
@@ -12440,9 +12540,9 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
   for(let t=0;t<12;t+=.9){ const P=Player; O.cast=.4; for(const s of [-.3,0,.3]) twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,11,s,{col:0x8a3aff,dmg:2,life:3}); Sound.sfx('swing'); if(Math.floor(t/.9)%3===2) d5Getsuga(O,Math.atan2(P.z-O.z,P.x-O.x),{warn:.6,sp:14}); yield .9; }
   // D) the sky gate (a cutscene), then the climb
   S.stop=1; F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
-  d5VoidRise(F,S); twBig('THE VOID IS RISING',{size:46,col:'#c08aff',y:UH*.3,dur:2,sub:'Climb. Do not look down.'}); twBark('omar',"The void rises. Climb, little heroes. It is patient. I am not.",true);
-  /* the climb: the void under you is the only threat (he used to snipe with scythes from off screen and drop sky scythes on your step: hits out of nowhere, and their circle sat on the tree) */ BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); for(const h of TW.hz.slice()) if(h&&h.hole){ try{ h.kill&&h.kill(); }catch(e){} h.kill=null; h.upd=()=>false; } /* and no hungry hole left over from before the gate */
-  for(let t=0;!d5OnPlatform(S);t+=.1){ if(t%4<.1&&t>1) twBark('omar',["Climb faster. It is hungry.","Do not look down. ...You looked down.","The void sends its regards. From below."][Math.floor(t/4)%3],false); yield .1; }
+  /* the climb: nothing hurts you on the way up (the rising void is gone: its disc read as an unexplained marker on the tree and its hits as damage from nowhere; before that he sniped from off screen) */ BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); for(const h of TW.hz.slice()) if(h&&h.hole){ try{ h.kill&&h.kill(); }catch(e){} h.kill=null; h.upd=()=>false; }
+  twBark('omar',"Climb, little heroes. I will wait. I have all of eternity, and a very comfortable void.",true);
+  for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(P.inv<.5) P.inv=.5; if(t>6&&t%7<.1) twBark('omar',["Still climbing? The void is getting bored.","Take your time. I am only ending the world."][Math.floor(t/7)%2],false); yield .1; }
   S.cam=null; F.pend=()=>d5PlatformCine(F,C,O); while(!S.done) yield .1; }
 
 function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
@@ -12455,22 +12555,26 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   if(mi){ cineSet(mi.x+1,mi.y+.8,mi.z+3,mi.x,mi.y+2.4,mi.z-2); yield d5Say('omarLC',10,'surprised'); }
   // Ali: a path up
   const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; cineSet(A.x+1.2,A.y+.7,A.z+3,A.x,A.y+1.8,A.z); yield wait(.3); yield d5Say('omarLC',11); }
-  // the tree, cut from the ground up, the camera tilting with it
-  S.tree=d5TreeBuild(tx,tz,H); JC.flash=.5; Sound.sfx('secret'); const all=S.tree.meshes, n=all.length;
-  // one crane shot: the camera circles the trunk and climbs with the tree as Ali cuts it into being, step by step
-  const tc={u:0}, cam2=dgCam(()=>{ const u=tc.u, a=1.1+u*1.5, r=15+u*5; return [tx+Math.cos(a)*r,gy+1.2+u*H*.75,tz+Math.sin(a)*r+4,tx,gy+1+u*H*.85,tz]; },5);
-  for(let i=0;i<n;i++){ all[i].visible=true; tc.u=i/n; if(i%3===0){ const hh=gy+H*i/n, aa=i*.9; twTinyJC(tx,hh,tz,220); Sound.sfx(i%2?'swing':'hit'); aliGhost(tx+Math.cos(aa)*2.6,hh,tz+Math.sin(aa)*2.6); FX.burst(tx+Math.cos(aa)*2.6,hh+1,tz+Math.sin(aa)*2.6,10,0xff2a3a,4,.25); shake(.12); } yield wait(.05); }
-  // the reveal: low at its foot, the whole tree against the black gate
-  tc.u=1; cam2.want=()=>[tx+7,gy+1,tz+17,tx,gy+H*.62,tz]; cam2.k=3.5; JC.flash=.7; FX.flash=.5; grade.uniforms.flashCol.value.set(1,.4,.45); impactFrame([[2,1],[1,2],[3,1]]); shake(.8); Sound.sfx('crossboom');
-  yield wait(.5); yield d5Say('omarLC',12,'surprised'); yield d5Say('omarLC',13); cam2.dead=1;
+  // THE TREE IS CUT INTO BEING. Nothing of it exists until a cut is made: every piece (a step's tears, a trunk blade) is
+  // one Judgement Cut that draws itself along its length with a white-hot tip and then stays open. Bottom to top, Ali
+  // blinking from cut to cut, one steady wide shot from the front rising with the work (no orbit).
+  S.tree=d5TreeBuild(tx,tz,H); const all=S.tree.meshes, n=all.length, setK=(m,k)=>{ for(const q of (m.material?[m]:(m.children||[]))){ const u=q.material&&q.material.uniforms; if(u&&u.k) u.k.value=k; } };
+  for(const m of all){ m.visible=false; setK(m,0); }
+  const tc={u:0}, cam2=dgCam(()=>{ const u=tc.u; return [tx+2.5,gy+5+u*6.5,tz+27,tx,gy+1.5+u*H*.6,tz]; },3);
+  yield wait(.5); Sound.sfx('secret');
+  const cut=(m)=>{ m.visible=true; const a=m.userData.at||[tx,gy,tz], K={t:0}; Sound.sfx(Math.random()<.5?'swing':'hit'); aliGhost(a[0]+rnd(-.6,.6),a[1],a[2]+rnd(-.6,.6)); FX.burst(a[0],a[1]+.2,a[2],8,0xff2a3a,4,.25); FX.spark(a[0],a[1]+.3,a[2]); shake(.1);
+    Game.fxUpd.push(dt=>{ K.t+=dt||1/60; const k=Math.min(1,K.t/.16); setK(m,k); d5TearTick(S.tree||{}); return k<1&&!!S.tree; }); };
+  for(let i=0;i<n;i++){ cut(all[i]); tc.u=i/n; if(i%2) yield wait(i>n-6?.12:.07); }
+  yield wait(.25); for(const m of all) setK(m,1);
+  // the reveal: the whole tree standing, from its foot
+  tc.u=1; cam2.want=()=>[tx+6,gy+3,tz+24,tx,gy+H*.52,tz]; cam2.k=3; JC.flash=.7; FX.flash=.5; grade.uniforms.flashCol.value.set(1,.4,.45); impactFrame([[2,1],[1,2],[3,1]]); shake(.8); Sound.sfx('crossboom');
+  yield wait(.6); yield d5Say('omarLC',12,'surprised'); yield d5Say('omarLC',13); cam2.dead=1;
   if(A){ A.hold=0; A.face=null; } TW._mantle=1; S.climb=1; Game.letterTo=0; P.inv=1; F.miraHold=0; Cam.cine=null;
   twBig('CLIMB THE TREE',{size:50,col:'#ff8a9a',y:UH*.24,dur:2,sub:'Run into each step to climb it'});
-  // the climbing camera: behind and above you, looking at your feet, eased (no snapping as you hop up a step); a cutscene
-  // during the climb keeps its own shots; a step or the platform between the camera and you (higher and nearer the camera)
-  // fades to its red outline, so the steps on the near side never hide you on the far ones
-  const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
-    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+6.5,P2.z+20,P2.x,cam.sy+1.4,P2.z]; /* as far out as the fight, but flatter: the black gate in the sky stays above the frame instead of between the camera and you */ /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
-      const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
+  // the climb uses the fight's own camera (the same framing as the rest of the fight: it follows you up). A step or the
+  // platform between the camera and you fades so the near steps never hide you on the far ones.
+  twCamTrack(.35,1.6); const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
+    try{ d5TreeFade(S.tree,Player,dt,false); }catch(e){ console.error('d5 climb fade',e); } return true; }); }
 function d5TreeFade(T,P,dt,reset){ if(!T) return; d5TearTick(T); for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
     const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt._v!=null?mt._v:mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
     if(m.userData.slash){ if(mt.uniforms&&mt.uniforms.op){ mt._v=v; mt.uniforms.op.value=v; } else mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
@@ -13031,8 +13135,9 @@ function bhSuction(col){ const g=new THREE.Group(); g.rotation.x=-Math.PI/2; g.u
 // Moon's landing disc stayed on the ground, the mega rain left TW.storming set, a mid limit cut never ended. In the duo
 // fight the move a twin was running last frame and is no longer running is closed here (return() runs its finally blocks).
 // Also in this pass (57d): the tree is built from the Judgement Cut tear itself (d5TearMat), the climb's only threat is the
-// void (no sniping scythes, no sky scythes, no leftover holes; the void is a soft tide that stays under the top), and
-// Omar's portals are the rifts from his own fight.
+// tree's pieces appear one cut at a time (uniform k draws each tear along its length), nothing hurts you on the climb
+// (no void, no scythes, no leftover holes), the climb uses the fight's camera (twCamTrack), and Omar's portals are the
+// rifts from his own fight.
 // =====================================================================
 (function(){ const tu=twUpdate; twUpdate=function(dt){ const F=TW.fight, duo=F&&F.kind==='duo';
     try{ if(duo) for(const T of TW.foes||[]){ if(T&&T._g&&T._g!==T.gen){ const g=T._g; T._g=null; try{ g.return(); }catch(e){} } } }catch(e){ console.error('duo drop',e); }
@@ -15846,6 +15951,68 @@ function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; drawNathanCast(c,cx,by,
 function npxInRav(x,z){ for(const R of NPX.rav){ const rx=x-R.x0, rz=z-R.z0, al=rx*R.ux+rz*R.uz, sp=-rx*R.uz+rz*R.ux; if(al>0&&al<R.len&&Math.abs(sp)<R.half+.4) return {R,sp}; } return null; }
 (function(){ const fe=npxFallEnd; npxFallEnd=function(){ const had=!!NPX.fall, r=fe.apply(this,arguments); try{ if(had){ NPX.safeT=Game.time+1.5; if(typeof Game!=='undefined'&&Game.fxUpd) Game.fxUpd.push(()=>{ try{ const P=Player; if(Game.state==='play'&&!P.cineFly){ for(let i=0;i<8;i++){ const q=npxInRav(P.x,P.z); if(!q) break; const sg=q.sp>=0?1:-1, out=q.R.half+1.2-Math.abs(q.sp); P.x+=-q.R.uz*sg*out; P.z+=q.R.ux*sg*out; } P.y=groundY(P.x,P.z); } }catch(e){} return false; }); } }catch(e){ console.error('rav clear',e); } return r; }; })();
 (function(){ const ru=npxRavUpd; npxRavUpd=function(dt){ if(NPX.safeT>Game.time&&!NPX.fall){ const P=Player, og=P.onGround; P.onGround=false; try{ return ru.apply(this,arguments); } finally{ P.onGround=og; } } return ru.apply(this,arguments); }; })();
+
+// ----- 59zi_nbfast.js -----
+// =====================================================================
+// NATHAN, PHASE II AT SPEED (v1.67): the machine never stands still and something is always in the air.
+//   tempo     0.18s between moves (was 0.45), openings 35% shorter, missiles launch twice as fast and fly faster
+//   escort    all phase long a funnel blinks in near you every 1.4s and burns a thin lane through where you are heading
+//             (cyan, 0.65s warning: keep moving)
+//   missiles  three waves (9, 9, 8: the last one red) while he boosts to a new side between waves
+//   strafe    NEW: he circles you at speed; five red shots (parry each) with two missiles off his shoulders after each
+//   mirage    NEW: he dashes to four points round you leaving a clone at each; the clones fire lanes at you one after
+//             another, twice round; then the real one tackles
+//   grid      four volleys with a shorter warning, missiles between them
+//   buster    the beam sweeps at 1.5 rad/s with seven missiles launched while it burns
+//   tackle    twice in a row, the second from a new angle, shorter wind-up
+//   funnelgrab two dives, then a volley of five missiles from the side
+// =====================================================================
+NP_POOLS[2]=['missiles','strafe','mirage','grid','buster','tackle','strafe','funnelgrab','mirage','missiles','grab','combo'];
+NP_FIRST[2]=['missiles','strafe','mirage','grid','buster'];
+NPR.cd[2]=.18;
+(function(){ const op=np1Open; np1Open=function(t){ const a=[].slice.call(arguments); try{ if(typeof npOn==='function'&&npOn()&&(NP1.ph||1)===2&&typeof a[0]==='number') a[0]*=.65; }catch(e){} return op.apply(this,a); }; })();
+npVolley=function*(n,red){ const fast=(NP1.ph||1)>=2; for(let i=0;i<n;i++){ const sd=i%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{red:red&&i===n-1,sp:fast?12.5:9}); Sound.sfx('mechshot'); FX.burst(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,8,0xffd27a,4,.25); NB.flash=.08; yield fast?.055:.09; } };
+// a still of him in cyan, standing where he was: it turns to face the camera and flickers
+function npClone(x,z){ const y=NB.y, C={x,y,z,dead:0,t:0}; let m=null;
+  try{ const src=(typeof nbhOn==='function'&&nbhOn())?NBH.cv:NBS.cv, cv=document.createElement('canvas'); cv.width=src.width; cv.height=src.height; cv.getContext('2d').drawImage(src,0,0); const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false;
+    m=new THREE.Mesh(NB.mesh.geometry,new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:.8,color:0x7fd8ff,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.userData.temp=1; m.position.set(x,y,z); scene.add(m); }catch(e){ m=null; }
+  FX.burst(x,y+2,z,16,0x3ff4ff,5,.3); np1Obj({bit:1,upd(dt){ if(C.dead) return false; C.t+=dt; if(m){ m.quaternion.copy(camera.quaternion); m.material.opacity=.55+.3*Math.sin(C.t*30); } return true; }, kill(){ C.dead=1; if(m){ scene.remove(m); try{ m.material.map.dispose(); }catch(e){} FX.burst(x,y+2,z,14,0x3ff4ff,5,.3); } }}); return C; }
+// the escort: a funnel blinks in, marks a thin lane through where you are heading, burns it, goes
+function npEscort(){ const P=Player, a=rnd(0,6.283), R=rnd(8,11), x=P.x+Math.cos(a)*R, z=P.z+Math.sin(a)*R, ang=Math.atan2(P.z+(P.vz||0)*.35-z,P.x+(P.vx||0)*.35-x), b=nbBit(x,groundY(x,z)+2.2,z); b.x=x; b.z=z; b.y=groundY(x,z)+2.2; const S={t:0};
+  try{ b.m.position.set(b.x,b.y,b.z); b.m.lookAt(P.x,P.y+1,P.z); }catch(e){} Sound.tone('sine',1300,900,.08,.04);
+  npLane(x,z,ang,20,1.05,.65,.2,{dmg:1}); np1Obj({bit:1,upd(dt){ S.t+=dt; if(b.gone) return false; return S.t<.95; }, kill(){ if(!b.gone){ b.gone=1; nbKillBit(b); } }}); }
+(function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(typeof npOn==='function'&&npOn()&&(NP1.ph||1)===2&&!NP1.done&&NB&&NB.alive&&!NB.inv&&!NB.stunned&&!(NP1.stunT>0)&&!NP1.seq&&!NP1.ex&&!Game.script&&Game.state==='play'){ NP1.escT=(NP1.escT==null?2.5:NP1.escT)-dt; if(NP1.escT<=0){ NP1.escT=NP1.cur==='lc'?2.2:1.4; npEscort(); } } }catch(e){ console.error('np escort',e); } return r; }; })();
+NP1M.missiles=function*(){ NP1.cur='missiles'; twBark('nathan',"Missiles away. All of them. Cut fast.",true); np1Hint('miss','MISSILES: cut them out of the air with your sword. The RED one: parry it back into him');
+  for(let w=0;w<3;w++){ const P=Player, [dx,dz]=np1Dir(), sd=w%2?1:-1; nbBoost(P.x-dx*10-dz*sd*7,P.z-dz*10+dx*sd*7); NB.hov=Math.max(NB.hov||1.4,3); yield .2; yield* npVolley(w===2?8:9,w===2); yield .2; }
+  yield 1.5; np1Open(1); yield .2; };
+NP1M.strafe=function*(){ NP1.cur='strafe'; twBark('nathan',"Strafing run. Try to keep up.",true); np1Hint('strafe','STRAFE: he circles you. Every RED shot: parry. The missiles after it: cut');
+  const P=Player; let a=Math.atan2(NB.z-P.z,NB.x-P.x), dir=Math.random()<.5?1:-1, par=0; NB.hov=2.2;
+  for(let i=0;i<5;i++){ const a1=a+dir*rnd(1,1.4); for(let t=0;t<.36;t+=NP1.dt){ const u=Math.min(1,(t+NP1.dt)/.36), aa=a+(a1-a)*u, P2=Player; np1Fly(NP1.dt,P2.x+Math.cos(aa)*9,P2.z+Math.sin(aa)*9,36); if(typeof NBS!=='undefined') NBS.boostT=Math.max(NBS.boostT,.1); yield NP1.dt; } a=a1;
+    const res=yield* npBeatShot(1.5); if(res==='parry') par++; { const [dx,dz]=np1Dir(); for(const sd of [-1,1]) npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{sp:12.5}); Sound.sfx('mechshot'); }
+    if(i===2) dir=-dir; }
+  if(par>=5){ Game.dmgNums.push({x:NB.x,y:NB.y+4.4,z:NB.z,n:'EVERY SHOT PARRIED',t:0,big:true,col:'#ffd45a'}); np1Stun(2.2,'RUN BROKEN'); return; } np1Open(1); yield .2; };
+function* npTackleOnce(wind){ const P=Player, ang=Math.atan2(P.z-NB.z,P.x-NB.x), ux=Math.cos(ang), uz=Math.sin(ang), sx=NB.x, sz=NB.z, L=24; FX.line(sx,sz,ang,L,2.2,0xff2a3a,wind+.2); np1Tell('rush'); Sound.sfx('charge'); yield wind;
+  Sound.sfx('qbRoar'); Sound.sfx('whoosh'); if(typeof NBS!=='undefined'){ NBS.boostT=.5; NBS.bdir=ang; } let hit=0;
+  for(let t=0;t<.3;t+=NP1.dt){ const u=Math.min(1,(t+NP1.dt)/.3); NB.x=sx+ux*L*u; NB.z=sz+uz*L*u; NB.dsh=null; nbAfterimage(NB.x,NB.y,NB.z); twRushTell(NB,ang,1.4); if(typeof NBS!=='undefined') NBS.bdir=ang;
+    const P2=Player; if(!hit&&Math.hypot(P2.x-NB.x,P2.z-NB.z)<2&&P2.y<NB.y+2.5){ hit=1; const r=np1HitRed(3,NB.x,NB.z); if(r==='parry'){ FX.burst(P2.x,P2.y+1.2,P2.z,40,0xffffff,8,.35); impactFrame([[1,2],[2,1]]); shake(1); Sound.sfx('crossboom'); np1Stun(2.6,'TACKLE STOPPED'); return 'parry'; } if(r==='hit') np1Shove(6,.45,'hurt'); } yield NP1.dt; }
+  npLane(sx,sz,ang,L,1.5,0,2.4,{col:0xff7a2a,dmg:1,tick:.7,jump:true}); return hit?'hit':'miss'; }
+NP1M.tackle=function*(){ NP1.cur='tackle'; twBark('nathan',"Boost tackle. Twice. Don't blink. Actually, do.",true); np1Hint('tack','TACKLE: two straight charges. Parry, or step off the line (the trail burns)');
+  for(let i=0;i<2;i++){ const P=Player, [dx,dz]=np1Dir(), sd=i?(Math.random()<.5?1:-1):0; nbBoost(P.x-dx*13-dz*sd*9,P.z-dz*13+dx*sd*9); yield .3; if((yield* npTackleOnce(i?.3:.36))==='parry') return; while(NP1.seq) yield NP1.dt; yield .12; }
+  np1Open(1.2); yield .2; };
+NP1M.mirage=function*(){ NP1.cur='mirage'; twBark('nathan',"Mirage formation. Which one is me? All of them. Sort of.",true); np1Hint('mirage','MIRAGE: each clone burns a lane at you in turn. Keep moving: the real one charges last');
+  const P=Player, n=4, a0=rnd(0,6.283), cl=[]; NB.hov=1.8;
+  for(let i=0;i<n;i++){ const a=a0+i*6.283/n+rnd(-.25,.25), P2=Player; nbBoost(P2.x+Math.cos(a)*10,P2.z+Math.sin(a)*10); yield .16; cl.push(npClone(NB.x,NB.z)); }
+  { const P2=Player, [dx,dz]=np1Dir(); nbBoost(P2.x-dx*14,P2.z-dz*14); }
+  for(let r=0;r<2;r++) for(const c of cl){ if(c.dead) continue; const P2=Player, ang=Math.atan2(P2.z+(P2.vz||0)*.25-c.z,P2.x+(P2.vx||0)*.25-c.x); npLane(c.x,c.z,ang,24,1.3,.5,.2,{dmg:2}); np1Glint(c.x,c.y+2.2,c.z,0x3ff4ff,3); yield r?.16:.22; }
+  yield .55; for(const c of cl) c.dead=1;
+  if((yield* npTackleOnce(.32))==='parry') return; while(NP1.seq) yield NP1.dt; np1Open(1.2); yield .2; };
+NP1M.grid=function*(){ NP1.cur='grid'; twBark('nathan',"Funnel grid. One gap. Find it. Faster.",true); np1Hint('grid','GRID: dark lanes are about to burn. Stand in the one lane that is not marked');
+  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*12,P.z-dz*12); } yield .25; for(let v=0;v<4;v++){ yield* npGrid(1,.72); if(v%2===0) yield* npVolley(4,false); } np1Open(1); yield .2; };
+NP1M.buster=function*(){ NP1.cur='buster'; twBark('nathan',"Buster cannon. With garnish.",true); np1Hint('bust','BUSTER: the beam sweeps after you. Blink through it, jump it, or get in close and behind him');
+  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*9,P.z-dz*9); } yield .3;
+  const M={t:0,n:0}; np1Obj({bit:1,upd(dt){ M.t+=dt; if(M.n<7&&M.t>1.3+M.n*.24){ M.n++; const sd=M.n%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{sp:11}); Sound.sfx('mechshot'); } return M.n<7; }});
+  yield* npBuster(3.2,1.5); np1Open(1.6); yield .2; };
+NP1M.funnelgrab=(function(){ const old=NP1M.funnelgrab; return function*(){ yield* old.call(this); if(NP1.gen&&!NB.stunned&&!(NP1.stunT>0)){ NP1.cur='funnelgrab'; const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*8-dz*5,P.z-dz*8+dx*5); yield .15; yield* npVolley(5,false); } }; })();
 
 // ----- 60_coop.js -----
 // =====================================================================
@@ -18991,8 +19158,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.66 (Nov 11): Lanternbrook rebuilt as the HD-2D proof: new wall and roof textures at twice the detail, real timber, stone, shutters, porches and signs on the houses, warm light pooling on the ground from lanterns and windows, foreground grass, a cooler dusk. No boss mechanics changed.";
-const DBG_NEW=[];
+const DBG_PATCH="v1.67 (Nov 11): Duo: the tree is cut into being slash by slash, the climb has no void and uses the fight camera. Nathan phase II at speed: escort funnel lasers all phase, three missile waves, the new Strafe and Mirage (clones), a double tackle, a faster buster with missiles, a denser grid. Lanternbrook pass 2: ground, trees, lamp posts, fountain, stalls, props.";
+const DBG_NEW=['nathan:missiles','nathan:strafe','nathan:mirage','nathan:grid','nathan:buster','nathan:tackle','nathan:funnelgrab','duo:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -19481,7 +19648,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.66';
+const GAME_VERSION='v1.67';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.66 (Nov 11): Lanternbrook rebuilt as the HD-2D proof: new wall and roof textures at twice the detail, real timber, stone, shutters, porches and signs on the houses, warm light pooling on the ground from lanterns and windows, foreground grass, a cooler dusk. No boss mechanics changed.";
-const DBG_NEW=[];
+const DBG_PATCH="v1.67 (Nov 11): Duo: the tree is cut into being slash by slash, the climb has no void and uses the fight camera. Nathan phase II at speed: escort funnel lasers all phase, three missile waves, the new Strafe and Mirage (clones), a double tackle, a faster buster with missiles, a denser grid. Lanternbrook pass 2: ground, trees, lamp posts, fountain, stalls, props.";
+const DBG_NEW=['nathan:missiles','nathan:strafe','nathan:mirage','nathan:grid','nathan:buster','nathan:tackle','nathan:funnelgrab','duo:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

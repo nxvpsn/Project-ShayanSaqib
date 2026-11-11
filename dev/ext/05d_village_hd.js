@@ -92,3 +92,103 @@ function vhVillage(G){ VH.decals.length=0;
 (function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ if(VH.on) vhVillage(G); }catch(e){ console.error('vh village',e); } return G; }; })();
 // the dusk: a little cooler and darker in the shade, the same warm low sun, so lamps and windows read as light sources
 (function(){ try{ if(VH.on&&typeof LOOKS!=='undefined'&&LOOKS.village){ LOOKS.village.hemi=[0x7c78d2,0x3c2a36,.55]; LOOKS.village.sun=[0xff9a66,1.45,LOOKS.village.sun[2]]; } }catch(e){} })();
+// =====================================================================
+// PASS 2 (v1.67): everything that is not a house. The ground (grass, path and cobbles redrawn at 64 px a unit over 2x2
+// cells, so no tile repeats next to itself; ragged grass hanging over every path and cobble edge), the trees (bigger,
+// leaf clusters lit from the low sun, a dark underside, bark), the lamp posts, the fountain, the stalls, new props (a
+// woodpile, hay bales, a cart, a bench, a clothesline, flower beds along the houses), soft contact shadows under
+// everything that stands on the ground, a wall of pines behind the houses, twice the grass.
+// =====================================================================
+function vhTiles(T){ const P=PAL.village, S=128, put=(k,cv)=>{ const t=tex(cv,1); t.repeat.set(.5,.5); T[k]=t; };
+  // grass: broad tonal patches, blades in three tones, clover, the odd flower and pebble
+  { const [cv,c]=mkCanvas(S,S), g=['#4e8c34','#447e2e','#5f9f3e','#74b24a','#3a6e28','#8cc45a']; R(c,0,0,S,S,g[0]);
+    for(let by=0;by<S;by+=8) for(let bx=0;bx<S;bx+=8){ const k=hash(Math.floor(bx/16)+3,Math.floor(by/16)+9)*.6+hash(bx,by)*.4; R(c,bx,by,8,8,k>.72?g[2]:k<.3?g[1]:g[0]); }
+    noiseFill(c,S,S,[g[1],g[2],g[0],g[4]],1500,31);
+    for(let i=0;i<420;i++){ const x=Math.floor(hash(i,61)*S), y=Math.floor(hash(61,i)*(S-5))+1, h=2+Math.floor(hash(i,62)*4), k=hash(i,63); R(c,x,y,1,h,k>.66?g[3]:k>.33?g[2]:g[5]); R(c,x,y+h,1,1,g[4]); if(i%5===0) R(c,(x+1)%S,y+h-1,1,2,g[4]); }
+    for(let i=0;i<14;i++){ const x=Math.floor(hash(i,71)*(S-8))+2, y=Math.floor(hash(71,i)*(S-8))+2; R(c,x,y,5,3,g[4]); R(c,x+1,y-1,3,1,g[4]); R(c,x+1,y,2,2,'#3f8a4a'); R(c,x+3,y+1,2,2,'#4a9a54'); }
+    for(let i=0;i<9;i++){ const x=Math.floor(hash(i,73)*(S-6))+2, y=Math.floor(hash(73,i)*(S-6))+2; R(c,x,y,2,2,P.flower[i%P.flower.length]); R(c,x,y+2,1,2,g[4]); R(c,x,y,1,1,'#fff6c8'); }
+    for(let i=0;i<5;i++){ const x=Math.floor(hash(i,77)*(S-6))+2, y=Math.floor(hash(77,i)*(S-6))+2; R(c,x,y,3,2,'#9a9486'); R(c,x,y,3,1,'#b8b2a4'); R(c,x,y+2,3,1,'rgba(0,0,0,.25)'); }
+    put('grass',cv); }
+  // the path: packed earth, two wheel ruts, pebbles with a lit top and a shadow, cracks, grass seeding in
+  { const [cv,c]=mkCanvas(S,S), d=['#b39a74','#a58c66','#c2aa82','#927a58','#cdb890']; R(c,0,0,S,S,d[0]); noiseFill(c,S,S,[d[1],d[2],d[0],d[4]],1700,33);
+    for(const ry of [40,88]) for(let x=0;x<S;x++){ const y=ry+Math.round(Math.sin(x/S*6.283*2)*2); R(c,x,y,1,5,'rgba(110,86,56,.4)'); R(c,x,y+5,1,1,'rgba(255,240,210,.18)'); if(hash(x,ry)>.6) R(c,x,y+2,1,1,d[3]); }
+    for(let i=0;i<46;i++){ const x=Math.floor(hash(i,81)*(S-5)), y=Math.floor(hash(81,i)*(S-5)), w=2+Math.floor(hash(i,82)*3); R(c,x,y+w-1,w,2,'rgba(60,40,20,.3)'); R(c,x,y,w,w-1,['#8d8678','#a39b8c','#7a7366'][i%3]); R(c,x,y,w,1,'rgba(255,255,255,.35)'); }
+    for(let i=0;i<7;i++){ let x=Math.floor(hash(i,85)*(S-20))+6, y=Math.floor(hash(85,i)*(S-20))+6; for(let k=0;k<12;k++){ R(c,x,y,1,1,'rgba(80,56,30,.45)'); x+=hash(k,i+5)>.45?1:-1; y+=1; } }
+    for(let i=0;i<16;i++){ const x=Math.floor(hash(i,87)*(S-3)), y=Math.floor(hash(87,i)*(S-4)); R(c,x,y,1,3,'#5f9f3e'); R(c,x+1,y+1,1,2,'#447e2e'); }
+    put('path',cv); }
+  // cobbles: rounded stones, each lit from the top with a dark foot, moss and dirt in the joints
+  { const [cv,c]=mkCanvas(S,S); R(c,0,0,S,S,'#352f2a'); const cols=['#8d8678','#7a7366','#a39b8c','#857c70','#978e80'];
+    for(let r=0,y=0;y<S;r++){ const h=18+Math.floor(hash(r,91)*8); let x=-Math.floor(hash(r,92)*14); while(x<S){ const w=18+Math.floor(hash(x+200,r)*14), col=cols[Math.floor(hash(x,r+3)*cols.length)];
+        R(c,x+2,y+1,w-3,h-1,col); R(c,x+1,y+2,w-1,h-3,col); R(c,x+2,y+1,w-3,2,'rgba(255,255,255,.2)'); R(c,x+3,y+3,Math.floor(w/3),1,'rgba(255,255,255,.22)'); R(c,x+2,y+h-3,w-3,3,'rgba(0,0,0,.22)'); R(c,x+w-2,y+3,1,h-6,'rgba(0,0,0,.14)');
+        if(hash(x,r)>.55){ R(c,x,y+Math.floor(h/2),2,3,'rgba(90,140,70,.85)'); R(c,x+Math.floor(w/2),y,3,1,'rgba(90,140,70,.8)'); } if(hash(r,x)>.8) R(c,x+5,y+6,3,2,'rgba(0,0,0,.12)'); x+=w; } y+=h; }
+    put('cobble',cv); } }
+(function(){ const mt=makeTileTextures; makeTileTextures=function(biome){ const T=mt.apply(this,arguments); try{ if(VH.on&&biome==='village') vhTiles(T); }catch(e){ console.error('vh tiles',e); } return T; }; })();
+// grass hanging over the path and cobble edges: one merged strip of small ragged quads on the road side of every border
+function vhEdges(G){ const [cv,c]=mkCanvas(64,24), g=['#4e8c34','#5f9f3e','#447e2e','#74b24a']; for(let x=0;x<64;x++){ const h=5+Math.floor(hash(x,5)*13)+(x%7===0?5:0); R(c,x,24-Math.min(24,h),1,Math.min(24,h),g[Math.floor(hash(x,9)*4)]); if(hash(x,11)>.7) R(c,x,24-Math.min(24,h),1,2,'#8cc45a'); }
+  const t=tex(cv), p=[], uv=[], n=[], dp=.42, q=(a,b,cc,d,u0)=>{ for(const [v,w] of [[a,[u0,0]],[b,[u0+.5,0]],[cc,[u0+.5,1]],[a,[u0,0]],[cc,[u0+.5,1]],[d,[u0,1]]]){ p.push(...v); uv.push(...w); n.push(0,1,0); } };
+  const road=(x,z)=>x>=0&&z>=0&&x<G.w&&z<G.d&&(G.T[z][x]==='path'||G.T[z][x]==='cobble');
+  for(let z=5;z<22;z++) for(let x=1;x<39;x++){ if(!road(x,z)) continue; const y=G.H[z][x]+.022, u0=hash(x,z)>.5?0:.5;
+    if(!road(x,z-1)&&G.T[z-1][x]==='grass') q([x,y,z+dp],[x+1,y,z+dp],[x+1,y,z],[x,y,z],u0);
+    if(!road(x,z+1)&&G.T[z+1][x]==='grass') q([x+1,y,z+1-dp],[x,y,z+1-dp],[x,y,z+1],[x+1,y,z+1],u0);
+    if(!road(x-1,z)&&G.T[z][x-1]==='grass') q([x+dp,y,z],[x+dp,y,z+1],[x,y,z+1],[x,y,z],u0);
+    if(!road(x+1,z)&&G.T[z][x+1]==='grass') q([x+1-dp,y,z+1],[x+1-dp,y,z],[x+1,y,z],[x+1,y,z+1],u0); }
+  if(!p.length) return; const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); geo.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));
+  const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})); m.receiveShadow=true; G.root.add(m); }
+// ---------- trees ----------
+function vhTreeSprite(kind,seed){ const W=128, H=152, [cv,c]=mkCanvas(W,H), cx=W/2, bl=kind==='blossom', L=bl?['#8a3e62','#b8587e','#dd86a6','#f6b8ce','#ffe2ec']:['#1f4a2a','#2f6a35','#458c42','#66ab52','#9ad070'], warm=bl?'#ffd0b8':'#d8d66a';
+  // trunk: bark in three tones, roots, two limbs
+  for(let y=H-58;y<H;y++){ const w=6+Math.round((y-(H-58))/58*4); R(c,cx-w,y,w*2,1,'#5a3b28'); R(c,cx-w,y,2,1,'#7a563a'); R(c,cx+w-4,y,4,1,'#3c2618'); if((y+seed)%7===0) R(c,cx-w+3,y,w,1,'#46301f'); }
+  R(c,cx-16,H-5,32,5,'#5a3b28'); R(c,cx-16,H-5,5,2,'#7a563a'); R(c,cx+8,H-4,8,4,'#3c2618'); pline(c,cx-2,H-52,cx-26,H-84,'#5a3b28',5); pline(c,cx+2,H-56,cx+24,H-90,'#4a3020',5); pline(c,cx,H-58,cx+2,H-96,'#5a3b28',6);
+  // the canopy: many leaf clusters, dark below, lit and warm on the sun's side (upper left)
+  const blob=(x,y,r)=>{ ell(c,x+2,y+3,r,r*.82,L[0]); ell(c,x,y,r,r*.8,L[1]); ell(c,x-r*.18,y-r*.2,r*.8,r*.62,L[2]); ell(c,x-r*.34,y-r*.36,r*.52,r*.38,L[3]); ell(c,x-r*.46,y-r*.5,r*.24,r*.16,L[4]); ell(c,x-r*.62,y-r*.34,r*.1,r*.08,warm); };
+  const B=[[cx,62,30],[cx-30,72,22],[cx+30,70,23],[cx-18,42,22],[cx+18,40,22],[cx,30,20],[cx-40,56,15],[cx+42,54,15],[cx,84,22],[cx-22,92,14],[cx+24,90,14],[cx-8,54,18],[cx+10,66,16]];
+  B.sort((a,b)=>b[1]-a[1]).forEach(([x,y,r],i)=>blob(x+Math.round((hash(i,seed)-.5)*6),y+Math.round((hash(seed,i)-.5)*5),r));
+  for(let i=0;i<150;i++){ const x=Math.floor(hash(i,seed+40)*W), y=Math.floor(hash(seed+40,i)*100)+10; R(c,x,y,2,1,i%3?L[4]:L[0]); }
+  try{ removeOrphans(c,W,H); outlinePass(c,W,H,[10,16,14]); }catch(e){} return cv; }
+(function(){ const at=addTree; addTree=function(G,x,z,kind,s){ try{ if(VH.on&&G&&G.biome==='village'&&(kind==='oak'||kind==='blossom')){ const v=Math.floor(hash(x,z)*3), key=kind+v, cv=(VH.trees||(VH.trees={}))[key]||(VH.trees[key]=vhTreeSprite(kind,v));
+        const m=billboard(cv,cv.width/PPU,cv.height/PPU,{foot:.1}); m.position.set(x,groundY(x,z),z); if(s&&s<1) m.scale.setScalar(s/1.1+.1); G.root.add(m); return m; } }catch(e){ console.error('vh tree',e); } return at.apply(this,arguments); }; })();
+// ---------- lamp posts, the fountain, the stalls ----------
+(function(){ const al=addLantern; addLantern=function(G,x,z){ const r=al.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'&&!VH.low){ const y=groundY(x,z), I=vhMat('iron');
+        addBox(G,.36,.16,.36,vhMat('stone'),x,y,z); addBox(G,.2,.1,.2,I,x,y+.16,z,false); addBox(G,.18,.06,.18,I,x,y+2.3,z,false); addBox(G,.06,.3,.06,I,x+.2,y+1.98,z,false); addBox(G,.3,.05,.05,I,x+.33,y+2.08,z,false);
+        const cap=new THREE.Mesh(new THREE.ConeGeometry(.27,.2,4),I); cap.rotation.y=Math.PI/4; cap.position.set(x+.5,y+2.28,z); G.root.add(cap); addBox(G,.34,.04,.34,I,x+.5,y+1.8,z,false); addBox(G,.05,.08,.05,I,x+.5,y+2.38,z,false);
+        for(const [ox,oz] of [[-.13,-.13],[.13,-.13],[-.13,.13],[.13,.13]]) addBox(G,.03,.36,.03,I,x+.5+ox,y+1.82,z+oz,false); } }catch(e){ console.error('vh lantern',e); } return r; }; })();
+(function(){ const af=addFountain; addFountain=function(G,cx,cz){ const r=af.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'){ const st=vhMat('stone');
+        for(let i=0;i<14;i++){ const a=i/14*6.283, m=addBox(G,.78,.2,.3,st,cx+Math.cos(a)*1.86,.58,cz+Math.sin(a)*1.86,false); m.rotation.y=-a+Math.PI/2; }
+        const sh=new THREE.Mesh(new THREE.RingGeometry(.5,1.45,28),new THREE.MeshBasicMaterial({color:0xbfe4ff,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})); sh.rotation.x=-Math.PI/2; sh.position.set(cx,.565,cz); G.root.add(sh);
+        const top=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.34,8),st); top.position.set(cx,2.2,cz); G.root.add(top);
+        for(let i=0;i<4;i++){ const a=i*1.57+.5, pad=new THREE.Mesh(new THREE.CircleGeometry(.16,8),new THREE.MeshLambertMaterial({color:0x4f9a4a})); pad.rotation.x=-Math.PI/2; pad.position.set(cx+Math.cos(a)*1.05,.57,cz+Math.sin(a)*1.05); G.root.add(pad); }
+        G.anim.push(()=>{ sh.material.opacity=.16+.08*Math.sin(Game.time*2.2); sh.rotation.z=Game.time*.3; }); } }catch(e){ console.error('vh fountain',e); } return r; }; })();
+(function(){ const as=addStall; addStall=function(G,x,z,col){ const r=as.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'&&!VH.low){ const cm=new THREE.MeshLambertMaterial({color:col}), wm=new THREE.MeshLambertMaterial({color:0xf2ece0}), cr=tpMat('crate');
+        for(let i=0;i<8;i++){ const m=addBox(G,.36,.16,.03,i%2?wm:cm,x+.2+i*.4,1.5,z+1.02,false); m.rotation.x=.2; }                       /* the awning's fringe */
+        addBox(G,.5,.42,.46,cr,x-.42,0,z+.55); addBox(G,.4,.32,.4,cr,x-.4,.42,z+.55); addBox(G,.46,.4,.44,cr,x+3.42,0,z+.5);                     /* crates either side */
+        for(const [sx,sc] of [[x+3.4,0xd9c08a],[x+3.75,0xc8a870]]){ const s=new THREE.Mesh(new THREE.CylinderGeometry(.17,.21,.46,8),new THREE.MeshLambertMaterial({color:sc})); s.position.set(sx,.63+(sx>x+3.6?-.4:0),z+.5+(sx>x+3.6?.3:0)); s.castShadow=true; G.root.add(s); }
+        addBox(G,.05,.34,.05,vhMat('iron'),x+2.85,1.5,z+.75,false); addBox(G,.16,.2,.16,new THREE.MeshLambertMaterial({color:0x2a2420,emissive:0xffb24a,emissiveIntensity:2.2}),x+2.85,1.3,z+.75,false); } }catch(e){ console.error('vh stall',e); } return r; }; })();
+// ---------- props, contact shadows, the backdrop ----------
+function vhSoftTex(){ if(VH.soft) return VH.soft; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d'); try{ const g=c.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.55,'rgba(255,255,255,.5)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,S,S); }catch(e){} return VH.soft=new THREE.CanvasTexture(cv); } /* a smooth falloff: the stepped pixel glow, in black, drew hard dark blocks */
+function vhShade(G,x,z,w,dp,op,owner){ op*=.62; const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:vhSoftTex(),color:0x0a0614,transparent:true,opacity:op,depthWrite:false,fog:false})); m.rotation.x=-Math.PI/2; m.position.set(x,groundY(x,z)+.03,z); m.scale.set(w,dp,1); G.root.add(m); VH.decals.push({m,op,owner,ph:0}); return m; }
+function vhVillage2(G){ const blk=(x,z)=>{ if(x>=0&&z>=0&&x<G.w&&z<G.d) G.B[z][x]=true; };
+  try{ vhEdges(G); }catch(e){ console.error('vh edges',e); }
+  // contact shadows: houses, trees, stalls, the fountain, the lamp posts
+  [[3,5,6,4],[11,4,7,5],[23,5,6,4],[31,4,7,5]].forEach(([x,z,w,d])=>{ const o=vhOwner(G,'house',x+w/2,z+d/2); vhShade(G,x+w/2,z+d+.25,w+1.6,1.7,.5,o); });
+  [[2,3],[10,2.5],[19.5,2.8],[22,3],[30,2.6],[38,3],[1.5,8],[15.4,8.6],[25.2,8.8]].forEach(([x,z])=>vhShade(G,x,z+.2,3.4,2,.45,vhOwner(G,'tree',x,z)));
+  [[13.5,17.5],[26.5,17.5]].forEach(([x,z])=>vhShade(G,x,z+.3,4.6,2.4,.45,vhOwner(G,'stall',x,z))); vhShade(G,20,11.2,5.6,5,.42,vhOwner(G,'fountain',20,11.2));
+  [[7,10],[15.5,10.2],[24.5,10.2],[33,10],[10,15.2],[29,15.2],[37,14.6]].forEach(([x,z])=>vhShade(G,x,z,1.1,.9,.5,vhOwner(G,'lantern',x+.2,z)));
+  if(!VH.low){ const wood=vhMat('beam'), woodL=vhMat('sill'), I=vhMat('iron');
+    // a woodpile in the gap between the first two houses
+    for(let r=0;r<3;r++) for(let i=0;i<4-r;i++){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.1,8),(i+r)%2?wood:woodL); m.rotation.x=Math.PI/2; m.position.set(9.35+i*.34+r*.17,.16+r*.29,5.7); m.castShadow=true; G.root.add(m); } blk(9,5); blk(10,5); vhShade(G,9.9,5.9,2,1.5,.45,null);
+    // hay bales in the other gap
+    { const hay=new THREE.MeshLambertMaterial({color:0xd8b04a}), band=new THREE.MeshLambertMaterial({color:0x8a6a2a}); for(const [hx,hy,hz] of [[29.4,0,5.7],[30.25,0,5.75],[29.8,.56,5.7]]){ addBox(G,.8,.56,.6,hay,hx,hy,hz); addBox(G,.82,.05,.62,band,hx,hy+.14,hz,false); addBox(G,.82,.05,.62,band,hx,hy+.38,hz,false); } blk(29,5); blk(30,5); vhShade(G,29.85,5.9,2.2,1.5,.45,null); }
+    // a hand cart below the fountain
+    { const bx=20.6, bz=18.6; addBox(G,1.5,.12,.86,wood,bx,.46,bz); for(const sz of [-.43,.43]) addBox(G,1.5,.3,.06,woodL,bx,.58,bz+sz); addBox(G,.06,.3,.86,woodL,bx-.75,.58,bz); for(const sz of [-.3,.3]){ const hd=addBox(G,.9,.06,.06,wood,bx+1.1,.52,bz+sz,false); hd.rotation.z=-.18; }
+      for(const sz of [-.5,.5]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.08,12),wood); w.rotation.x=Math.PI/2; w.position.set(bx-.15,.34,bz+sz); w.castShadow=true; G.root.add(w); const hub=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.1,8),I); hub.rotation.x=Math.PI/2; hub.position.set(bx-.15,.34,bz+sz); G.root.add(hub); }
+      for(const [ox,oc] of [[-.35,0xe0a040],[0,0xd05a4a],[.35,0x9ac05a]]) addBox(G,.3,.22,.3,new THREE.MeshLambertMaterial({color:oc}),bx+ox,.58,bz,false); blk(19,18); blk(20,18); blk(21,18); vhShade(G,bx,bz+.2,2.6,1.8,.45,null); }
+    // a bench facing the fountain
+    { const bx=16.45, bz=11.3; addBox(G,.42,.07,1.5,woodL,bx,.42,bz); addBox(G,.07,.5,1.5,wood,bx-.2,.48,bz); for(const sz of [-.6,.6]){ addBox(G,.4,.42,.07,I,bx,0,bz+sz); } blk(16,10); blk(16,11); vhShade(G,bx,bz,1.3,2.1,.4,null); }
+    // washing on a line between the first two houses
+    { const y=2.5, z=9.15; addBox(G,2.1,.02,.02,I,10,y,z,false); const cl=[0xf2ece0,0xc8423a,0x8ad0ff,0xf2c14e,0xf2ece0]; for(let i=0;i<5;i++){ const h=.34+hash(i,3)*.3, m=addBox(G,.3,h,.02,new THREE.MeshLambertMaterial({color:cl[i],side:THREE.DoubleSide}),9.2+i*.4,y-h,z,false); G.anim.push(()=>{ m.rotation.x=Math.sin(Game.time*1.6+i)*.12; }); } }
+    // flower beds along the house fronts, and twice the grass everywhere
+    try{ [[3,5,6,4],[11,4,7,5],[23,5,6,4],[31,4,7,5]].forEach(([x,z,w,d])=>scatterTufts(G,0,[{kind:'flower',cols:['#f2c14e','#ec8fb0','#ffffff','#9fd0ff','#e85a5a'],n:26,s:1.15},{kind:'fern',cols:['#2a5a2a','#3a7036'],n:10,s:1}],[x,z+d,x+w,z+d+.75]));
+      scatterTufts(G,0,[{kind:'grass',cols:['#3f7a2a','#4e8c34','#5f9f3e'],n:620,s:.85},{kind:'fern',cols:['#2a5a2a','#3a7036'],n:70,s:1.1},{kind:'tall',cols:['#3a6e28','#4e8c34'],n:120,s:1.5}],[1,5,39,22]); }catch(e){ console.error('vh tufts',e); } }
+  // the backdrop: pines standing close behind the houses and round the edges
+  try{ for(let i=0;i<17;i++){ const x=1+i*2.35+hash(i,5)*.8, z=.7+hash(5,i)*1.5, m=addTree(G,x,z,'pine',1); if(m){ m.scale.setScalar(1.1+hash(i,9)*.5); } } }catch(e){ console.error('vh pines',e); } }
+(function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ if(VH.on) vhVillage2(G); }catch(e){ console.error('vh village 2',e); } return G; }; })();
