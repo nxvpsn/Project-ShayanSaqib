@@ -99,39 +99,41 @@ function vhVillage(G){ VH.decals.length=0;
 // woodpile, hay bales, a cart, a bench, a clothesline, flower beds along the houses), soft contact shadows under
 // everything that stands on the ground, a wall of pines behind the houses, twice the grass.
 // =====================================================================
-function vhTiles(T){ const P=PAL.village, S=128, put=(k,cv)=>{ const t=tex(cv,1); t.repeat.set(.5,.5); T[k]=t; };
+function vhTiles(T,P,fl){ P=P||PAL.village; const S=128, put=(k,cv)=>{ const t=tex(cv,1); t.repeat.set(.5,.5); T[k]=t; };
   // grass: broad tonal patches, blades in three tones, clover, the odd flower and pebble
-  { const [cv,c]=mkCanvas(S,S), g=['#4e8c34','#447e2e','#5f9f3e','#74b24a','#3a6e28','#8cc45a']; R(c,0,0,S,S,g[0]);
-    for(let by=0;by<S;by+=8) for(let bx=0;bx<S;bx+=8){ const k=hash(Math.floor(bx/16)+3,Math.floor(by/16)+9)*.6+hash(bx,by)*.4; R(c,bx,by,8,8,k>.72?g[2]:k<.3?g[1]:g[0]); }
+  { const [cv,c]=mkCanvas(S,S), g=P===PAL.village?['#4e8c34','#447e2e','#5f9f3e','#74b24a','#3a6e28','#8cc45a']:[P.g[0],P.g[1],P.g[2],P.g[3],cShade(P.g[1],-.22),cShade(P.g[3],.14)]; R(c,0,0,S,S,g[0]);
+    /* tonal clumps: small, ragged and only in the walk-through maps (in a boss arena, recoloured pale, 8 px blocks read as a checkerboard under the telegraphs) */
+    if(fl!=='arena') for(let by=0;by<S;by+=4) for(let bx=0;bx<S;bx+=4){ const k=hash(Math.floor(bx/24)+3,Math.floor(by/24)+9)*.5+hash(Math.floor(bx/8),Math.floor(by/8)+5)*.3+hash(bx,by)*.2; if(k>.66) R(c,bx,by,4,4,g[2]); else if(k<.3) R(c,bx,by,4,4,g[1]); }
     noiseFill(c,S,S,[g[1],g[2],g[0],g[4]],1500,31);
-    for(let i=0;i<420;i++){ const x=Math.floor(hash(i,61)*S), y=Math.floor(hash(61,i)*(S-5))+1, h=2+Math.floor(hash(i,62)*4), k=hash(i,63); R(c,x,y,1,h,k>.66?g[3]:k>.33?g[2]:g[5]); R(c,x,y+h,1,1,g[4]); if(i%5===0) R(c,(x+1)%S,y+h-1,1,2,g[4]); }
-    for(let i=0;i<14;i++){ const x=Math.floor(hash(i,71)*(S-8))+2, y=Math.floor(hash(71,i)*(S-8))+2; R(c,x,y,5,3,g[4]); R(c,x+1,y-1,3,1,g[4]); R(c,x+1,y,2,2,'#3f8a4a'); R(c,x+3,y+1,2,2,'#4a9a54'); }
-    for(let i=0;i<9;i++){ const x=Math.floor(hash(i,73)*(S-6))+2, y=Math.floor(hash(73,i)*(S-6))+2; R(c,x,y,2,2,P.flower[i%P.flower.length]); R(c,x,y+2,1,2,g[4]); R(c,x,y,1,1,'#fff6c8'); }
-    for(let i=0;i<5;i++){ const x=Math.floor(hash(i,77)*(S-6))+2, y=Math.floor(hash(77,i)*(S-6))+2; R(c,x,y,3,2,'#9a9486'); R(c,x,y,3,1,'#b8b2a4'); R(c,x,y+2,3,1,'rgba(0,0,0,.25)'); }
+    for(let i=0;i<(fl==='arena'?200:420);i++){ const x=Math.floor(hash(i,61)*S), y=Math.floor(hash(61,i)*(S-5))+1, h=2+Math.floor(hash(i,62)*4), k=hash(i,63); R(c,x,y,1,h,k>.66?g[3]:k>.33?g[2]:g[5]); R(c,x,y+h,1,1,g[4]); if(i%5===0) R(c,(x+1)%S,y+h-1,1,2,g[4]); }
+    for(let i=0;i<(fl==='arena'?0:14);i++){ const x=Math.floor(hash(i,71)*(S-8))+2, y=Math.floor(hash(71,i)*(S-8))+2; R(c,x,y,5,3,g[4]); R(c,x+1,y-1,3,1,g[4]); R(c,x+1,y,2,2,g[1]); R(c,x+3,y+1,2,2,g[2]); }
+    if(fl===true&&P!==PAL.keep) for(let i=0;i<9;i++){ const x=Math.floor(hash(i,73)*(S-6))+2, y=Math.floor(hash(73,i)*(S-6))+2; R(c,x,y,2,2,P.flower[i%P.flower.length]); R(c,x,y+2,1,2,g[4]); R(c,x,y,1,1,'#fff6c8'); }
+    for(let i=0;i<5;i++){ const x=Math.floor(hash(i,77)*(S-6))+2, y=Math.floor(hash(77,i)*(S-6))+2; R(c,x,y,3,2,P.stone[0]); R(c,x,y,3,1,P.stone[2]); R(c,x,y+2,3,1,'rgba(0,0,0,.25)'); }
     put('grass',cv); }
   // the path: packed earth, two wheel ruts, pebbles with a lit top and a shadow, cracks, grass seeding in
-  { const [cv,c]=mkCanvas(S,S), d=['#b39a74','#a58c66','#c2aa82','#927a58','#cdb890']; R(c,0,0,S,S,d[0]); noiseFill(c,S,S,[d[1],d[2],d[0],d[4]],1700,33);
-    for(const ry of [40,88]) for(let x=0;x<S;x++){ const y=ry+Math.round(Math.sin(x/S*6.283*2)*2); R(c,x,y,1,5,'rgba(110,86,56,.4)'); R(c,x,y+5,1,1,'rgba(255,240,210,.18)'); if(hash(x,ry)>.6) R(c,x,y+2,1,1,d[3]); }
-    for(let i=0;i<46;i++){ const x=Math.floor(hash(i,81)*(S-5)), y=Math.floor(hash(81,i)*(S-5)), w=2+Math.floor(hash(i,82)*3); R(c,x,y+w-1,w,2,'rgba(60,40,20,.3)'); R(c,x,y,w,w-1,['#8d8678','#a39b8c','#7a7366'][i%3]); R(c,x,y,w,1,'rgba(255,255,255,.35)'); }
-    for(let i=0;i<7;i++){ let x=Math.floor(hash(i,85)*(S-20))+6, y=Math.floor(hash(85,i)*(S-20))+6; for(let k=0;k<12;k++){ R(c,x,y,1,1,'rgba(80,56,30,.45)'); x+=hash(k,i+5)>.45?1:-1; y+=1; } }
-    for(let i=0;i<16;i++){ const x=Math.floor(hash(i,87)*(S-3)), y=Math.floor(hash(87,i)*(S-4)); R(c,x,y,1,3,'#5f9f3e'); R(c,x+1,y+1,1,2,'#447e2e'); }
+  { const [cv,c]=mkCanvas(S,S), d=[P.path[0],P.path[1],P.path[2],cShade(P.path[1],-.16),cShade(P.path[2],.08)]; R(c,0,0,S,S,d[0]); noiseFill(c,S,S,[d[1],d[2],d[0],d[4]],1700,33);
+    for(const ry of [40,88]) for(let x=0;x<S;x++){ const y=ry+Math.round(Math.sin(x/S*6.283*2)*2); R(c,x,y,1,5,'rgba(0,0,0,.16)'); R(c,x,y+5,1,1,'rgba(255,255,255,.12)'); if(hash(x,ry)>.6) R(c,x,y+2,1,1,d[3]); }
+    for(let i=0;i<46;i++){ const x=Math.floor(hash(i,81)*(S-5)), y=Math.floor(hash(81,i)*(S-5)), w=2+Math.floor(hash(i,82)*3); R(c,x,y+w-1,w,2,'rgba(60,40,20,.3)'); R(c,x,y,w,w-1,P.stone[i%3]); R(c,x,y,w,1,'rgba(255,255,255,.3)'); }
+    for(let i=0;i<7;i++){ let x=Math.floor(hash(i,85)*(S-20))+6, y=Math.floor(hash(85,i)*(S-20))+6; for(let k=0;k<12;k++){ R(c,x,y,1,1,'rgba(0,0,0,.3)'); x+=hash(k,i+5)>.45?1:-1; y+=1; } }
+    for(let i=0;i<16;i++){ const x=Math.floor(hash(i,87)*(S-3)), y=Math.floor(hash(87,i)*(S-4)); R(c,x,y,1,3,P.g[2]); R(c,x+1,y+1,1,2,P.g[1]); }
     put('path',cv); }
   // cobbles: rounded stones, each lit from the top with a dark foot, moss and dirt in the joints
-  { const [cv,c]=mkCanvas(S,S); R(c,0,0,S,S,'#352f2a'); const cols=['#8d8678','#7a7366','#a39b8c','#857c70','#978e80'];
+  { const [cv,c]=mkCanvas(S,S); R(c,0,0,S,S,cShade(P.stone[1],-.55)); const cols=[P.stone[0],P.stone[1],P.stone[2],cShade(P.stone[0],-.06),cShade(P.stone[2],-.06)];
     for(let r=0,y=0;y<S;r++){ const h=18+Math.floor(hash(r,91)*8); let x=-Math.floor(hash(r,92)*14); while(x<S){ const w=18+Math.floor(hash(x+200,r)*14), col=cols[Math.floor(hash(x,r+3)*cols.length)];
         R(c,x+2,y+1,w-3,h-1,col); R(c,x+1,y+2,w-1,h-3,col); R(c,x+2,y+1,w-3,2,'rgba(255,255,255,.2)'); R(c,x+3,y+3,Math.floor(w/3),1,'rgba(255,255,255,.22)'); R(c,x+2,y+h-3,w-3,3,'rgba(0,0,0,.22)'); R(c,x+w-2,y+3,1,h-6,'rgba(0,0,0,.14)');
-        if(hash(x,r)>.55){ R(c,x,y+Math.floor(h/2),2,3,'rgba(90,140,70,.85)'); R(c,x+Math.floor(w/2),y,3,1,'rgba(90,140,70,.8)'); } if(hash(r,x)>.8) R(c,x+5,y+6,3,2,'rgba(0,0,0,.12)'); x+=w; } y+=h; }
+        if(hash(x,r)>.55){ c.globalAlpha=.8; R(c,x,y+Math.floor(h/2),2,3,P.g[2]); R(c,x+Math.floor(w/2),y,3,1,P.g[2]); c.globalAlpha=1; } if(hash(r,x)>.8) R(c,x+5,y+6,3,2,'rgba(0,0,0,.12)'); x+=w; } y+=h; }
     put('cobble',cv); } }
-(function(){ const mt=makeTileTextures; makeTileTextures=function(biome){ const T=mt.apply(this,arguments); try{ if(VH.on&&biome==='village') vhTiles(T); }catch(e){ console.error('vh tiles',e); } return T; }; })();
+(function(){ const mt=makeTileTextures; makeTileTextures=function(biome){ const T=mt.apply(this,arguments); try{ if(VH.on&&PAL[biome]&&T.grass&&T.path&&T.cobble) vhTiles(T,PAL[biome],['keep','twins','flowers'].includes(biome)?'arena':true); }catch(e){ console.error('vh tiles',e); } return T; }; })();
 // grass hanging over the path and cobble edges: one merged strip of small ragged quads on the road side of every border
-function vhEdges(G){ const [cv,c]=mkCanvas(64,24), g=['#4e8c34','#5f9f3e','#447e2e','#74b24a']; for(let x=0;x<64;x++){ const h=5+Math.floor(hash(x,5)*13)+(x%7===0?5:0); R(c,x,24-Math.min(24,h),1,Math.min(24,h),g[Math.floor(hash(x,9)*4)]); if(hash(x,11)>.7) R(c,x,24-Math.min(24,h),1,2,'#8cc45a'); }
+function vhEdges(G){ const PG=(PAL[G.biome]||PAL.village).g, [cv,c]=mkCanvas(64,24), g=G.biome==='village'?['#4e8c34','#5f9f3e','#447e2e','#74b24a']:[PG[0],PG[2],PG[1],PG[3]]; for(let x=0;x<64;x++){ const h=5+Math.floor(hash(x,5)*13)+(x%7===0?5:0); R(c,x,24-Math.min(24,h),1,Math.min(24,h),g[Math.floor(hash(x,9)*4)]); if(hash(x,11)>.7) R(c,x,24-Math.min(24,h),1,2,G.biome==='village'?'#8cc45a':cShade(PG[3],.12)); }
   const t=tex(cv), p=[], uv=[], n=[], dp=.42, q=(a,b,cc,d,u0)=>{ for(const [v,w] of [[a,[u0,0]],[b,[u0+.5,0]],[cc,[u0+.5,1]],[a,[u0,0]],[cc,[u0+.5,1]],[d,[u0,1]]]){ p.push(...v); uv.push(...w); n.push(0,1,0); } };
   const road=(x,z)=>x>=0&&z>=0&&x<G.w&&z<G.d&&(G.T[z][x]==='path'||G.T[z][x]==='cobble');
-  for(let z=5;z<22;z++) for(let x=1;x<39;x++){ if(!road(x,z)) continue; const y=G.H[z][x]+.022, u0=hash(x,z)>.5?0:.5;
-    if(!road(x,z-1)&&G.T[z-1][x]==='grass') q([x,y,z+dp],[x+1,y,z+dp],[x+1,y,z],[x,y,z],u0);
-    if(!road(x,z+1)&&G.T[z+1][x]==='grass') q([x+1,y,z+1-dp],[x,y,z+1-dp],[x,y,z+1],[x+1,y,z+1],u0);
-    if(!road(x-1,z)&&G.T[z][x-1]==='grass') q([x+dp,y,z],[x+dp,y,z+1],[x,y,z+1],[x,y,z],u0);
-    if(!road(x+1,z)&&G.T[z][x+1]==='grass') q([x+1-dp,y,z+1],[x+1-dp,y,z],[x+1,y,z],[x+1,y,z+1],u0); }
+  const gr=(x,z,h)=>x>=0&&z>=0&&x<G.w&&z<G.d&&G.T[z][x]==='grass'&&Math.abs(G.H[z][x]-h)<.01;
+  for(let z=1;z<G.d-1;z++) for(let x=1;x<G.w-1;x++){ if(!road(x,z)||G.H[z][x]<-50||G.H[z][x]>500) continue; const y=G.H[z][x]+.022, u0=hash(x,z)>.5?0:.5, h=G.H[z][x];
+    if(gr(x,z-1,h)) q([x,y,z+dp],[x+1,y,z+dp],[x+1,y,z],[x,y,z],u0);
+    if(gr(x,z+1,h)) q([x+1,y,z+1-dp],[x,y,z+1-dp],[x,y,z+1],[x+1,y,z+1],u0);
+    if(gr(x-1,z,h)) q([x+dp,y,z],[x+dp,y,z+1],[x,y,z+1],[x,y,z],u0);
+    if(gr(x+1,z,h)) q([x+1-dp,y,z+1],[x+1-dp,y,z],[x+1,y,z],[x+1,y,z+1],u0); }
   if(!p.length) return; const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); geo.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));
   const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:t,alphaTest:.5,side:THREE.DoubleSide})); m.receiveShadow=true; G.root.add(m); }
 // ---------- trees ----------
@@ -145,10 +147,10 @@ function vhTreeSprite(kind,seed){ const W=128, H=152, [cv,c]=mkCanvas(W,H), cx=W
   B.sort((a,b)=>b[1]-a[1]).forEach(([x,y,r],i)=>blob(x+Math.round((hash(i,seed)-.5)*6),y+Math.round((hash(seed,i)-.5)*5),r));
   for(let i=0;i<150;i++){ const x=Math.floor(hash(i,seed+40)*W), y=Math.floor(hash(seed+40,i)*100)+10; R(c,x,y,2,1,i%3?L[4]:L[0]); }
   try{ removeOrphans(c,W,H); outlinePass(c,W,H,[10,16,14]); }catch(e){} return cv; }
-(function(){ const at=addTree; addTree=function(G,x,z,kind,s){ try{ if(VH.on&&G&&G.biome==='village'&&(kind==='oak'||kind==='blossom')){ const v=Math.floor(hash(x,z)*3), key=kind+v, cv=(VH.trees||(VH.trees={}))[key]||(VH.trees[key]=vhTreeSprite(kind,v));
-        const m=billboard(cv,cv.width/PPU,cv.height/PPU,{foot:.1}); m.position.set(x,groundY(x,z),z); if(s&&s<1) m.scale.setScalar(s/1.1+.1); G.root.add(m); return m; } }catch(e){ console.error('vh tree',e); } return at.apply(this,arguments); }; })();
+(function(){ const at=addTree; addTree=function(G,x,z,kind,s){ try{ if(VH.on&&G&&(kind==='oak'||kind==='blossom')){ const v=Math.floor(hash(x,z)*3), key=kind+v, cv=(VH.trees||(VH.trees={}))[key]||(VH.trees[key]=vhTreeSprite(kind,v));
+        const m=billboard(cv,cv.width/PPU,cv.height/PPU,{foot:.1}); m.position.set(x,groundY(x,z),z); if(s&&s<1) m.scale.setScalar(s/1.1+.1); G.root.add(m); try{ if(G.biome!=='village'){ G._vhT=(G._vhT||0)+1; if(G._vhT<=70){ const sd=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:vhSoftTex(),color:0x0a0614,transparent:true,opacity:.28,depthWrite:false,fog:false})); sd.rotation.x=-Math.PI/2; sd.position.set(x,groundY(x,z)+.03,z+.2); sd.scale.set(3.4,2,1); G.root.add(sd); } } }catch(e){} return m; } }catch(e){ console.error('vh tree',e); } return at.apply(this,arguments); }; })();
 // ---------- lamp posts, the fountain, the stalls ----------
-(function(){ const al=addLantern; addLantern=function(G,x,z){ const r=al.apply(this,arguments); try{ if(VH.on&&G&&G.biome==='village'&&!VH.low){ const y=groundY(x,z), I=vhMat('iron');
+(function(){ const al=addLantern; addLantern=function(G,x,z){ const r=al.apply(this,arguments); try{ if(VH.on&&G&&!VH.low){ const y=groundY(x,z), I=vhMat('iron');
         addBox(G,.36,.16,.36,vhMat('stone'),x,y,z); addBox(G,.2,.1,.2,I,x,y+.16,z,false); addBox(G,.18,.06,.18,I,x,y+2.3,z,false); addBox(G,.06,.3,.06,I,x+.2,y+1.98,z,false); addBox(G,.3,.05,.05,I,x+.33,y+2.08,z,false);
         const cap=new THREE.Mesh(new THREE.ConeGeometry(.27,.2,4),I); cap.rotation.y=Math.PI/4; cap.position.set(x+.5,y+2.28,z); G.root.add(cap); addBox(G,.34,.04,.34,I,x+.5,y+1.8,z,false); addBox(G,.05,.08,.05,I,x+.5,y+2.38,z,false);
         for(const [ox,oz] of [[-.13,-.13],[.13,-.13],[-.13,.13],[.13,.13]]) addBox(G,.03,.36,.03,I,x+.5+ox,y+1.82,z+oz,false); } }catch(e){ console.error('vh lantern',e); } return r; }; })();
@@ -196,3 +198,15 @@ function vhVillage2(G){ const RZ=VH.raise=[], blk=(x,z,h,o)=>{ if(x>=0&&z>=0&&x<
   for(const r of RZ){ if(r.o&&r.o.dead) continue; G.H[r.z][r.x]=Math.max(G.H[r.z][r.x],r.h0+r.h); r.on=1; }
   G.anim.push(()=>{ try{ for(const r of RZ) if(r.on&&r.o&&r.o.dead){ r.on=0; L.H[r.z][r.x]=r.h0; } }catch(e){} }); }
 (function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ if(VH.on) vhVillage2(G); }catch(e){ console.error('vh village 2',e); } return G; }; })();
+// =====================================================================
+// THE REST OF THE WORLD (v1.68). Every map gets what carries over safely: the ground textures in its own palette (same
+// average colours, so telegraphs keep their contrast), grass hanging over road edges, the new trees, the dressed lamp
+// posts. The maps you only walk through (the meadow, the ruins, the lake) also get more grass and a pool of light under
+// every light source. Boss arenas get no extra grass and no light pools: nothing new lies on the ground where telegraphs do.
+// =====================================================================
+function vhWorld(G,key){ if(key==='village') return; try{ vhEdges(G); }catch(e){ console.error('vh edges',e); }
+  if(!['meadow','ruins','lake'].includes(key)) return; const P=PAL[G.biome];
+  try{ if(P&&!VH.low){ const n=Math.min(900,Math.floor(G.w*G.d*.3)); scatterTufts(G,0,[{kind:'grass',cols:[P.g[1],P.g[0],P.g[2]],n,s:.85},{kind:'tall',cols:[cShade(P.g[1],-.15),P.g[0]],n:Math.floor(n*.2),s:1.5}],[1,1,G.w-1,G.d-1]); } }catch(e){ console.error('vh tufts',e); }
+  try{ const L0=G.lightSrc.slice(0,40), ds=[]; for(const s of L0){ const gy=groundY(s.x,s.z); if(gy>500||gy<-50||s.y-gy>5) continue; const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:GLOW,color:s.col,transparent:true,opacity:.26,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); m.rotation.x=-Math.PI/2; m.position.set(s.x,gy+.045,s.z); m.scale.set(s.r*.9,s.r*.9,1); m.renderOrder=1; G.root.add(m); ds.push({m,s,ph:Math.random()*6.28}); }
+    if(ds.length) G.anim.push(()=>{ try{ const t=Game.time; for(const d of ds){ const on=G.lightSrc.includes(d.s); d.m.visible=on; if(on) d.m.material.opacity=.26*(d.s.flick?.86+.14*Math.sin(t*9+d.ph):1); } }catch(e){} }); }catch(e){ console.error('vh pools',e); } }
+(function(){ for(const k of Object.keys(LEVELDEF)){ if(k==='village') continue; const f=LEVELDEF[k]; LEVELDEF[k]=function(){ const G=f.apply(this,arguments); try{ if(VH.on&&G) vhWorld(G,k); }catch(e){ console.error('vh world',e); } return G; }; } })();
