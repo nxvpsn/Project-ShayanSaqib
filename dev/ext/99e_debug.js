@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.60 (Nov 11): the duo has limit cuts at half of phases II and III (Twin Eclipse, Love and Death); new transition cutscenes for Nathan (the machine wakes up) and Hamza (he eats Hikari-chan, messily) with Omar-style titles; the slash tree in Judgement Cut colours; black holes visibly pull.";
-const DBG_NEW=['duo:mid','duo:omarlc','nathan:*','hamza:*'];
+const DBG_PATCH="v1.61 (Nov 11): Nathan rebuilt: phase II is the machine (missiles, buster beam, laser grid, funnel dives, boost tackle; limit cut Full Burst), phase III is on foot (gun kata, martial arts, point blank, iai, counter stance; limit cut Last Round). Less HP in every phase, a louder grab, a faster ultimate, one-hit kill works, sprites face the camera in cutscenes.";
+const DBG_NEW=['nathan:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -46,7 +46,7 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
   if(b==='nathan') return dbgNP1()?Object.keys(NP1M):uniq([1,2,3,4].flatMap(p=>NB_POOL[p]||[]));
   if(b==='mech') return TH_SPELLS[1].concat(TH_SPELLS[2]).map(s=>s[2]); return []; }
 // limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
-function dbgLCs(){ if(dbgNP1()) return [['Lunar Eclipse (limit cut)','eclipse',2],['Ten Thousand Suns (limit cut)','suns',3],['Phase change','kill',1],['Phase change','kill',2]]; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
+function dbgLCs(){ if(dbgNP1()) return [['Full Burst (limit cut)','eclipse',2],['Last Round (limit cut)','suns',3],['Phase change','kill',1],['Phase change','kill',2]]; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
   duo:[['Twin Eclipse (limit cut, 50%)','mid',2],['Love and Death (limit cut, 50%)','mid',3],['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
   hamza:[['Mukbang Live (limit cut)','buffet',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
   grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }

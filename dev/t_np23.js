@@ -11,7 +11,7 @@ const E0=()=>B.errs.length;
 function move(k){ R(`NP1.stunT=0; NB.stunned=0; np1Clear(); NP1.gen=NP1M.${k}(); NP1.wait=0;`); let n=0; for(;n<60&&R("!!NP1.gen||!!NP1.seq");n++) drive(.5,bot); drive(.5); out.push(k+' ph'+R('NP1.ph')+' '+(n/2)+'s objs='+R('NP1.objs.length')+' errs='+E0()); }
 // phase I -> II
 R("nbDamage(9999,'np1')"); for(let s=0;s<120&&!(R("NP1.ph===2&&Game.state==='play'&&!Game.script"));s++) drive(.5); out.push('after I: '+st());
-for(const k of ['railgun','twinfang','sweep','combo']) move(k);
+for(const k of ['missiles','buster','grid','funnelgrab','tackle','combo']) move(k);
 // the limit cut at half
 R("NP1.stunT=0; NB.stunned=0; nbDamage(NP1.hp-NP1.max/2+1,'np1')"); drive(.2); out.push('lc pend '+R('NP1.lcPend')+' gen '+R('!!NP1.gen'));
 for(let s=0;s<80&&R("NP1.cur==='lc'||!!NP1.seq");s++) drive(.25,bot); drive(1); out.push('after eclipse: '+st()+' errs='+E0());
@@ -19,9 +19,10 @@ for(let s=0;s<80&&R("NP1.cur==='lc'||!!NP1.seq");s++) drive(.25,bot); drive(1); 
 R("Player.hp=0; Game.onDeath();"); for(let s=0;s<40&&!(R("Game.state==='play'&&!Game.script&&np1On()"));s++) drive(.5); out.push('after death: '+st());
 // the ultimate (3D)
 R("NP1.stunT=0; NB.stunned=0; np1Clear(); Player.sp=20; hit.special=true;"); drive(.1); const hp0=R("NP1.hp"); for(let s=0;s<60&&R("!!Game.script");s++) drive(.25); out.push('ult: hp '+Math.round(hp0)+' -> '+Math.round(R("NP1.hp"))+' cam='+R('!!NP1.cam')+' zw='+R('Game.zw')+' cineFly='+R('Player.cineFly')+' errs='+E0());
+R("TW.otk=true; NP1.stunT=0; NB.stunned=0; nbDamage(1,'np1')"); out.push('one-hit kill: done='+R('NP1.done')+' pend/script '+R('!!NB.pend||!!Game.script')); R('TW.otk=false');
 // II -> III
-R("NP1.stunT=0; NB.stunned=0; NP1.lcDone=1; nbDamage(9999,'np1')"); for(let s=0;s<120&&!(R("NP1.ph===3&&Game.state==='play'&&!Game.script"));s++) drive(.5); out.push('after II: '+st());
-for(const k of ['blinkchain','starfall','twinfang','sweep']) move(k);
+for(let s=0;s<120&&!(R("NP1.ph===3&&Game.state==='play'&&!Game.script"));s++) drive(.5); out.push('after II: '+st());
+for(const k of ['gunkata','martial','pointblank','iai','stance','grab']) move(k);
 R("NP1.stunT=0; NB.stunned=0; nbDamage(NP1.hp-NP1.max/2+1,'np1')"); drive(.2); for(let s=0;s<120&&R("NP1.cur==='lc'||NP1.cur==='grab'||!!NP1.seq");s++) drive(.25,bot); drive(1); out.push('after suns: '+st()+' errs='+E0());
 // a while of the real AI in phase III
 drive(25,bot); out.push('ai 25s: '+st()+' errs='+E0());

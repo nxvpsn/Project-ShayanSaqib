@@ -199,7 +199,7 @@ const NP1M={
     const hops=2+(Math.random()<.5?1:0), side=Math.random()<.5?1:-1;
     for(let i=0;i<hops;i++){ const P=Player, [dx,dz,d]=np1Dir(), last=i===hops-1, dd=last?2:Math.max(3.4,d*(1-(i+1)/(hops+.5))), off=last?0:side*(i%2?-1:1)*rnd(2,3);
       nbBoost(P.x-dx*dd-dz*off,P.z-dz*dd+dx*off);
-      if(last){ np1Tell(false); if(typeof NBS!=='undefined') NBS.fixRow=4; /* the hand raised */ NP1.grabLand=Game.time+NP1_TELL; NP1.lunge=1; NP1.pdDone=0; try{ np1GrabTell(); }catch(e){ console.error('grab tell',e); } }
+      if(last){ np1Tell(false); if(typeof NBS!=='undefined') NBS.fixRow=4; /* the hand raised */ NP1.grabLand=Game.time+(typeof NP_BLUE!=='undefined'?NP_BLUE:NP1_TELL); /* the blue beat is longer than the red one (59zg) */ NP1.lunge=1; NP1.pdDone=0; try{ np1GrabTell(); }catch(e){ console.error('grab tell',e); } }
       else yield .22; }
     while(Game.time<NP1.grabLand&&!NP1.pdDone){ const [gx,gz]=np1Dir(), P4=Player; np1Fly(NP1.dt,P4.x-gx*1.9,P4.z-gz*1.9,20); yield NP1.dt; }
     if(NP1.pdDone){ NP1.lunge=0; NP1.pdDone=0; if(typeof NBS!=='undefined') NBS.fixRow=null; yield .5; return; } /* the perfect dodge carries him on past you */
