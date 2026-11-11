@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.62 (Nov 11): HD-2D graphics pass: filmic contrast with cool shadows and warm highlights, a tighter tilt-shift focus band, light shafts leaning along the sun or moon, low drifting mist while exploring. No boss mechanics changed.";
+const DBG_PATCH="v1.63 (Nov 11): fixed the broken colours of v1.62 (purple beams, blue grass, orange skin): the HD-2D grade no longer feeds a negative into the gamma step, its contrast works on brightness only, and the tilt-shift blur is gentler. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
