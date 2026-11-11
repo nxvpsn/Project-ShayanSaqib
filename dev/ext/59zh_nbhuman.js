@@ -59,3 +59,9 @@ function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; drawNathanCast(c,cx,by,
 // on foot there are no thrusters: no jets behind him, and his dash is a footstep rush, not a rocket
 (function(){ const vf=npVfxFrame; npVfxFrame=function(dt){ const r=vf.apply(this,arguments); try{ if(NP1.human&&NPV.jets) NPV.jets.forEach(j=>j.visible=false); }catch(e){} return r; }; })();
 (function(){ const q=TW_SFX.qbRoar; TW_SFX.qbRoar=function(){ if(typeof NP1!=='undefined'&&NP1.human){ Sound.hiss(2600,.12,.16,'bandpass'); Sound.tone('triangle',220,90,.1,.08); return; } return q.apply(this,arguments); }; })();
+// Excalibur's ravines: with Infinite HP a fall puts Ali back on the lip. Where two ravines cross, that lip could be inside the
+// other one: he fell again at once, for ever (falling, invulnerable, no control). After a fall he is pushed clear of every
+// ravine and they ignore him for a moment.
+function npxInRav(x,z){ for(const R of NPX.rav){ const rx=x-R.x0, rz=z-R.z0, al=rx*R.ux+rz*R.uz, sp=-rx*R.uz+rz*R.ux; if(al>0&&al<R.len&&Math.abs(sp)<R.half+.4) return {R,sp}; } return null; }
+(function(){ const fe=npxFallEnd; npxFallEnd=function(){ const had=!!NPX.fall, r=fe.apply(this,arguments); try{ if(had){ NPX.safeT=Game.time+1.5; if(typeof Game!=='undefined'&&Game.fxUpd) Game.fxUpd.push(()=>{ try{ const P=Player; if(Game.state==='play'&&!P.cineFly){ for(let i=0;i<8;i++){ const q=npxInRav(P.x,P.z); if(!q) break; const sg=q.sp>=0?1:-1, out=q.R.half+1.2-Math.abs(q.sp); P.x+=-q.R.uz*sg*out; P.z+=q.R.ux*sg*out; } P.y=groundY(P.x,P.z); } }catch(e){} return false; }); } }catch(e){ console.error('rav clear',e); } return r; }; })();
+(function(){ const ru=npxRavUpd; npxRavUpd=function(dt){ if(NPX.safeT>Game.time&&!NPX.fall){ const P=Player, og=P.onGround; P.onGround=false; try{ return ru.apply(this,arguments); } finally{ P.onGround=og; } } return ru.apply(this,arguments); }; })();

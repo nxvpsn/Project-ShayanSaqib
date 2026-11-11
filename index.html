@@ -5487,7 +5487,8 @@ function drawNathanCast(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fr=s.fros
   const dr=still?0:Math.sin(t*1.3), ar=still?0:Math.sin(t*1.1);
   const P={b:-6+Math.round(dr),lean:0,F:[[-3,-2+Math.round(dr*2)],[4,-4-Math.round(dr*2)]],ua:[-.9+ar*.3,1.1-ar*.3],el:[.5,.6+ar*.2],hd:0,hx:sh};
   if(tk){ P.ua[1]=.9+Math.sin(t*3.4)*.35; P.el[1]=1.3; }
-  const D={hip:14,torso:16,thigh:7,shin:8,uarm:6,farm:6,sep:2,ssep:5,neck:1}, J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy;
+  if(s.pose) Object.assign(P,s.pose); /* a fight pose (59zh: Nathan on foot) */
+  const D={hip:14,torso:16,thigh:7,shin:8,uarm:6,farm:6,sep:2,ssep:5,neck:1}, J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy; if(s.out) s.out.J=J;
   // scarf trailing
   if(SC>.05){ c.globalAlpha=SC; for(let i=0;i<7;i++) p(sx-6-i*3,sy+1+Math.round(Math.sin(t*2+i)*2)+i,4,2,i%2?C.scarfS:C.scarf); c.globalAlpha=1; }
   cArm(p,J.A[0],4,Jk>.5?C.jacD:C.suitD,Jk>.5?C.jacD:C.suitD,C.skinD);
@@ -12087,9 +12088,9 @@ function* d5CaoMix(C,ph,n){ const keys=Object.keys(D5CP).sort(()=>Math.random()-
 // =====================================================================
 // OMAR: scythe, Getsuga and black hole combos
 // =====================================================================
-function d5Portal(x,z,a,dur,col){ const g=new THREE.Group(), gy=groundY(x,z); const r1=new THREE.Mesh(new THREE.TorusGeometry(1.25,.13,6,32),new THREE.MeshBasicMaterial({color:col||0x9a4aff})), r2=new THREE.Mesh(new THREE.CircleGeometry(1.15,32),new THREE.MeshBasicMaterial({color:0x05010a,transparent:true,opacity:.85,side:THREE.DoubleSide}));
-  g.add(r1,r2); g.position.set(x,gy+1.4,z); g.rotation.y=-a+Math.PI/2; g.userData.tw=1; scene.add(g); const s={t:0};
-  twHz({upd(dt,play){ if(play) s.t+=dt; const k=Math.min(1,s.t*4)*Math.min(1,Math.max(0,(dur-s.t)*4)); g.scale.setScalar(Math.max(.01,k)); r1.rotation.z+=dt*3; if(Math.random()<.6){ const b=rnd(0,6.28); FX.spawn(x+Math.cos(b)*1.2*Math.sin(a),gy+1.4+Math.sin(b)*1.2,z-Math.cos(b)*1.2*Math.cos(a),0,0,0,.35,Math.random()<.5?0x9a4aff:0x1a0a2a,.25,0,true); } return s.t<dur; }, kill(){ scene.remove(g); }}); return g; }
+function d5Portal(x,z,a,dur,col){ /* the rift from Omar's own fight (23_tear: the jagged scar, violet edge, black heart), torn open and closed again */ const gy=groundY(x,z), m=twBB(texScar(),1.26,3.08); m.userData.tw=1; m.rotation.x=TILT; m.position.set(x,gy+1.5,z); m.scale.set(.01,1,1); if(!m.parent) scene.add(m);
+  const s={t:0}; Sound.sfx('tear'); FX.burst(x,gy+1.5,z,18,0x9a3aff,4,.35); FX.burst(x,gy+1.5,z,10,0x05010a,3,.35,false);
+  twHz({upd(dt,play){ if(play) s.t+=dt; const k=Math.min(1,s.t*5)*Math.min(1,Math.max(0,(dur-s.t)*5)); m.scale.set(Math.max(.01,k*(1+.06*Math.sin(s.t*14))),1,1); if(Math.random()<.5) FX.spawn(x+rnd(-.4,.4),gy+rnd(.2,2.8),z,rnd(-.6,.6),rnd(.4,1.6),0,.35,Math.random()<.5?0x9a4aff:0x1a0a2a,.22,0,true); return s.t<dur; }, kill(){ scene.remove(m); }}); return m; }
 const D5OC={
   // a ring of scythes closing in on you, one gap
   *ring(O,sp,ph){ const P=Player, n=ph>=3?16:12, R=7.5, gap=Math.floor(Math.random()*n); O.cast=.6; Sound.sfx('swing');
@@ -12248,22 +12249,41 @@ function d5SkyHole(x,y,z){ const V=twHoleVis(x,y,z,4,true), S={x,y,z,k:0,t:0,cra
 function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), saved=[], meshes=[], set=(ix,iz,h)=>{ if(ix<0||iz<0||ix>=L.w||iz>=L.d) return; saved.push([ix,iz,L.H[iz][ix],L.B[iz][ix]]); L.H[iz][ix]=h; L.B[iz][ix]=false; };
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
   // every step is a held-open cut: a flat spray of crossing slashes (red edge, dark heart, white core), not a slab
-  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w*2,d*2),new THREE.MeshBasicMaterial({map:d5SlashTex(),transparent:true,alphaTest:.08,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,y+.02,z); m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
-  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww,add] of [[0xb0182a,w*1.25,1],[0x08020a,w,0]]){ const b=beamMesh(col,ww); if(!add){ b.material.blending=THREE.NormalBlending; b.material.transparent=false; b.material.depthWrite=true; b.renderOrder=2; } else b.material.opacity=.55; /* a solid black cut inside a thin crimson glow (the beam helper is additive: black on it is invisible) */ b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
+  const tears=[], slab=(x,z,w,d,y)=>{ const n=w>3?5:3, a0=rnd(0,3.14); let first=null; for(let i=0;i<n;i++){ const len=w*(w>3?2.3:2.5), m=new THREE.Mesh(new THREE.PlaneGeometry(len,w>3?2.4:1.7),d5TearMat(len)); m.rotation.x=-Math.PI/2; m.rotation.z=a0+i*Math.PI/n+rnd(-.12,.12); m.position.set(x,y+.02+i*.012,z); m.renderOrder=2; m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); tears.push(m); first=first||m; } return first; }; /* a step is three Judgement Cut tears crossing (the platform five): the same tear the slash pass draws, held open in the world */
+  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ const len=Math.hypot(x1-x0,y1-y0,z1-z0), g=new THREE.Group(), mat=d5TearMat(len); for(let q=0;q<2;q++){ const ge=new THREE.PlaneGeometry(1,1); ge.rotateY(Math.PI/2); if(q) ge.rotateZ(Math.PI/2); ge.translate(0,0,.5); const m=new THREE.Mesh(ge,mat); m.renderOrder=2; g.add(m); } /* a long tear, two planes crossed so it reads from every side */ g.userData.tw=1; g.position.set(x0,y0,z0); g.lookAt(x1,y1,z1); g.scale.set(w*7,w*7,len); g.visible=false; scene.add(g); meshes.push(g); };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
   for(let k=0;k<9;k++){ const a=k*.7, lo=gy+(k%3)*H*.12, hi=H-(k%2)*H*.1; blade(ix0+Math.cos(a)*(.3+k%3*.25),lo,iz0+Math.sin(a)*(.3+k%3*.25),ix0+Math.cos(a+1.6)*(.25+k%2*.3),hi,iz0+Math.sin(a+1.6)*(.25+k%2*.3),k%3?.14:.3); } /* the trunk: nine long cuts crossing each other */
   const ring=[[-1,1],[-2,1],[-2,0],[-2,-1],[-2,-2],[-1,-2],[0,-2],[1,-2],[1,-1],[1,0],[1,1],[0,1]], steps=[];
   ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.8,iz0,sx+rnd(-.5,.5),h,sz+rnd(-.5,.5),.1); blade(ix0,h*.92,iz0,sx+rnd(-.6,.6),h,sz+rnd(-.6,.6),.07); });
   for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
-  return {ix0,iz0,H,meshes,steps,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
+  return {ix0,iz0,H,meshes,steps:tears,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
 // the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
-function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(7.5,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.8,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(7.1,7.5,48),new THREE.MeshBasicMaterial({color:0x9a4aff,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide}));
+function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(7.5,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.8,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(6.6,7.5,48),new THREE.MeshBasicMaterial({color:0x3a1466,transparent:true,opacity:.35,depthWrite:false,side:THREE.DoubleSide})); /* a soft dark lip, not a bright ring: it read as a telegraph */
   g.add(d); g.add(e); g.rotation.x=-Math.PI/2; g.userData.tw=1; scene.add(g); const V={y:gy-1,t:0,cd:0}; S.void=V;
-  twHz({upd(dt,play){ if(!F.d5||F.d5!==S||S.done||!S.tree) return false; if(d5OnPlatform(S)){ V.y=Math.min(V.y,T.H-1.2); } else if(play){ V.t+=dt; if(V.t>3) V.y=Math.min(T.H-1.6,V.y+dt*.4); }
-      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,7); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
+  twHz({upd(dt,play){ if(!F.d5||F.d5!==S||S.done||!S.tree) return false; const top=d5OnPlatform(S); V.a=lerp(V.a==null?1:V.a,top?0:1,Math.min(1,dt*3)); if(top){ V.y=Math.min(V.y,T.H-4); } else if(play){ V.t+=dt; if(V.t>3) V.y=Math.min(T.H-4,V.y+dt*.45); } d.material.opacity=.8*V.a; g.visible=V.a>.03;
+      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=(.3+.1*Math.sin(Game.time*5))*V.a; if(!top) for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,7); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
       V.cd-=dt; const P=Player; if(play&&V.cd<=0&&P.y<V.y-.25&&!P.cineFly&&!P.hidden){ V.cd=1.2; P.inv=0; hurtPlayer(1,P.x,P.z,true); P.vy=12; P.onGround=false; P.inv=1; FX.burst(P.x,P.y+1,P.z,30,0x9a4aff,6,.4); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'THE VOID',t:0,col:'#c08aff'}); }
       return true; }, kill(){ scene.remove(g); }}); }
+// the Judgement Cut tear as a material (the slash pass's own maths, in the plane's UV space: the jagged lens, the void with
+// its wine nebula, filaments and stars inside, the crimson edge going white, the red rim glow outside)
+function d5TearMat(len){ const U={t:{value:0},sd:{value:Math.random()},L:{value:Math.max(1,len)},op:{value:1}};
+  const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:`uniform float t,sd,L,op; varying vec2 vUv;
+  float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float nz(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+1.),f.x),f.y); }
+  float fbm(vec2 p){ return nz(p)*.55+nz(p*2.1+3.7)*.28+nz(p*4.3+9.1)*.17; }
+  void main(){ float tt=vUv.x, s=(vUv.y-.5)*2., prof=pow(max(0.,sin(3.14159*clamp(tt,0.,1.))),.5);
+    float jag=(nz(vec2(tt*L*6.+sd*40.,sd))-.5)*.7+(nz(vec2(tt*L*22.,sd*3.))-.5)*.35, w=.58*prof*(1.+jag), as=abs(s);
+    if(as<w){ float e=as/max(w,1e-5); vec2 vp=vec2(tt*L*1.8-t*1.6, s*1.4+t*.6);
+      float sw=fbm(vp*1.3), fil=pow(1.-abs(sin(e*7.*sign(s)+fbm(vp*2.)*6.+t*3.)),18.);
+      vec2 sc=floor(vec2(tt*L*14.,s*9.)+sd*17.); float st=step(.975,h21(sc))*(.55+.45*sin(t*7.+h21(sc+1.)*40.));
+      vec3 vc=mix(vec3(.012,0.,.03),vec3(.32,.02,.16),sw*sw*1.3)+vec3(.9,.25,.4)*fil*.55+vec3(st)*(1.-e);
+      vec3 ec=mix(vec3(1.,.1,.2),vec3(1.,.95,.92),smoothstep(.82,.99,e));
+      gl_FragColor=vec4(mix(vc,ec,smoothstep(.6,1.,e)),op); }
+    else { float rim=exp(-(as-w)/.14)*step(.02,prof); if(rim<.03) discard; gl_FragColor=vec4(vec3(1.,.16,.26)*rim*1.15+vec3(1.,.9,.9)*pow(rim,4.)*.9,rim*op); } }`});
+  m.userData.tear=1; return m; }
+function d5TearTick(T){ try{ const t=(performance.now()/1000)%100; for(const m of T.meshes||[]){ const ms=m.material?[m]:(m.children||[]); for(const q of ms){ const u=q.material&&q.material.uniforms; if(u&&u.t) u.t.value=t; } } }catch(e){} }
 function d5SlashTex(){ if(TW._slTex3) return TW._slTex3; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   try{ const lens=(ang,len,w,fill)=>{ c.save(); c.translate(S/2,S/2); c.rotate(ang); c.beginPath(); c.moveTo(-len,0); c.quadraticCurveTo(0,-w,len,0); c.quadraticCurveTo(0,w,-len,0); c.closePath(); c.fillStyle=fill; c.fill(); c.restore(); };
     for(const [a,l] of [[.12,62],[-.4,56],[.65,52],[-.95,48],[1.25,46],[1.9,40]]){ lens(a,l,11,'rgba(200,30,48,1)'); lens(a,l-2,8.6,'#06010a'); lens(a,l-12,2,'rgba(90,8,44,.95)'); } }catch(e){} /* the Judgement Cut tear: black heart, wine vein, crimson rim */
@@ -12325,8 +12345,8 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
   // D) the sky gate (a cutscene), then the climb
   S.stop=1; F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
   d5VoidRise(F,S); twBig('THE VOID IS RISING',{size:46,col:'#c08aff',y:UH*.3,dur:2,sub:'Climb. Do not look down.'}); twBark('omar',"The void rises. Climb, little heroes. It is patient. I am not.",true);
-  for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(t%1.8<.1){ twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,9,rnd(-.15,.15),{col:0x8a3aff,dmg:1,life:3.5}); Sound.sfx('swing'); }
-    if(t>2&&t%2.3<.1) twSkyScythe(P.x+P.vx*.3,P.z+P.vz*.3,1); yield .1; }
+  /* the climb: the void under you is the only threat (he used to snipe with scythes from off screen and drop sky scythes on your step: hits out of nowhere, and their circle sat on the tree) */ BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); for(const h of TW.hz.slice()) if(h&&h.hole){ try{ h.kill&&h.kill(); }catch(e){} h.kill=null; h.upd=()=>false; } /* and no hungry hole left over from before the gate */
+  for(let t=0;!d5OnPlatform(S);t+=.1){ if(t%4<.1&&t>1) twBark('omar',["Climb faster. It is hungry.","Do not look down. ...You looked down.","The void sends its regards. From below."][Math.floor(t/4)%3],false); yield .1; }
   S.cam=null; F.pend=()=>d5PlatformCine(F,C,O); while(!S.done) yield .1; }
 
 function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
@@ -12355,9 +12375,9 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
     try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+6.5,P2.z+20,P2.x,cam.sy+1.4,P2.z]; /* as far out as the fight, but flatter: the black gate in the sky stays above the frame instead of between the camera and you */ /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
       const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
-function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
-    const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
-    if(m.userData.slash){ mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } /* the cuts flicker */ else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
+function d5TreeFade(T,P,dt,reset){ if(!T) return; d5TearTick(T); for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
+    const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt._v!=null?mt._v:mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
+    if(m.userData.slash){ if(mt.uniforms&&mt.uniforms.op){ mt._v=v; mt.uniforms.op.value=v; } else mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
 
 function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree, H=T.H; F.miraHold=1; Game.letterTo=.5; P.vx=P.vz=0;
   if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
@@ -12907,6 +12927,20 @@ function bhSuction(col){ const g=new THREE.Group(); g.rotation.x=-Math.PI/2; g.u
         const g=TW._bhS.g; g.position.set(B.x,groundY(B.x,B.z)+1.5,B.z); g.scale.setScalar(1.9); } else if(S){ scene.remove(S.g); TW._bhS=null; } }catch(e){ console.error('bh suction 2',e); } return r; }; })();
 // Nathan's
 (function(){ const mk=nbMakeBH; nbMakeBH=function(){ const bh=mk.apply(this,arguments); try{ if(bh&&bh.add){ const g=bhSuction(); g.scale.setScalar(6); bh.add(g); } }catch(e){ console.error('bh suction 3',e); } return bh; }; })();
+
+// ----- 57i_duopass.js -----
+// =====================================================================
+// THE DUO, HARD PASS (v1.65)
+// A twin's move that is dropped (a Full Counter stun, a retry, a limit cut starting) never ran its `finally`: the Falling
+// Moon's landing disc stayed on the ground, the mega rain left TW.storming set, a mid limit cut never ended. In the duo
+// fight the move a twin was running last frame and is no longer running is closed here (return() runs its finally blocks).
+// Also in this pass (57d): the tree is built from the Judgement Cut tear itself (d5TearMat), the climb's only threat is the
+// void (no sniping scythes, no sky scythes, no leftover holes; the void is a soft tide that stays under the top), and
+// Omar's portals are the rifts from his own fight.
+// =====================================================================
+(function(){ const tu=twUpdate; twUpdate=function(dt){ const F=TW.fight, duo=F&&F.kind==='duo';
+    try{ if(duo) for(const T of TW.foes||[]){ if(T&&T._g&&T._g!==T.gen){ const g=T._g; T._g=null; try{ g.return(); }catch(e){} } } }catch(e){ console.error('duo drop',e); }
+    const r=tu.apply(this,arguments); try{ if(duo) for(const T of TW.foes||[]) if(T) T._g=T.gen; }catch(e){} return r; }; })();
 
 // ----- 58_aliassist.js -----
 // =====================================================================
@@ -14098,10 +14132,10 @@ function* np1Rend(){ const P=Player; if(Game.state!=='play') return; NP1.seq={k:
     // he dashes through to the other side and cuts on the way
     nbAfterimage(NB.x,NB.y,NB.z); side=-side; NB.x=P.x+px*side*1.7-dx*.3; NB.z=P.z+pz*side*1.7-dz*.3; NB.dsh=null; if(typeof nbsSlash==='function') nbsSlash(.26,.3);
     const a=rnd(0,6.283), ux=Math.cos(a), uz=Math.sin(a); twGash({life:last?.9:.5,rev:.05,fade:last?.3:.18,w:last?34:20,sparks:last?40:14,blue:1,pts:()=>twArcPts(P.x,P.y+1.3,P.z,ux,uz,last?3.2:2.2,-1.1,1.1,7)});
-    try{ const q=toScreen(P.x,P.y+1.3,P.z), L0=last?520:360, sa=rnd(0,Math.PI); JC.lines.push({x0:q[0]-Math.cos(sa)*L0/2,y0:q[1]-Math.sin(sa)*L0/2,x1:q[0]+Math.cos(sa)*L0/2,y1:q[1]+Math.sin(sa)*L0/2,t:0,ttl:last?.5:.3}); if(JC.lines.length>16) JC.lines.shift(); }catch(e){}
-    Sound.sfx('swing'); Sound.sfx(last?'crossboom':'hit'); FX.spark(P.x,P.y+1.2,P.z); FX.burst(P.x,P.y+1.3,P.z,last?40:14,0xff2a3a,last?8:4,.3); JC.flash=Math.max(JC.flash||0,last?.9:.35); shake(last?1.2:.35); FX.hitstop=Math.max(FX.hitstop,last?.2:.06);
-    Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:last?'METEOR REND':'×'+n,t:0,big:last,col:'#ff6a7a'}); hurtPlayer(.8,NB.x,NB.z); P.inv=99; P.hurt=0; P.cineFly=true; P.cineAnim='hurt'; if(Game.state!=='play') break;
-    if(last){ impactFrame([[1,2],[3,2],[2,1]]); grade.uniforms.flashCol.value.set(1,.2,.3); FX.flash=.7; }
+    try{ const q=toScreen(P.x,P.y+1.3,P.z), L0=last?520:360, sa=rnd(0,Math.PI); const X0=q[0]-Math.cos(sa)*L0/2, Y0=q[1]-Math.sin(sa)*L0/2, X1=q[0]+Math.cos(sa)*L0/2, Y1=q[1]+Math.sin(sa)*L0/2; twGash({life:last?.5:.3,rev:.04,fade:.15,w:last?16:11,blue:1,pts:()=>[[X0,Y0],[(X0+X1)/2,(Y0+Y1)/2],[X1,Y1]]}); /* his cuts are cyan: never the red Judgement Cut lines (those are Ali's) */ }catch(e){}
+    Sound.sfx('swing'); Sound.sfx(last?'crossboom':'hit'); FX.spark(P.x,P.y+1.2,P.z); FX.burst(P.x,P.y+1.3,P.z,last?40:14,0x3a8aff,last?8:4,.3); FX.burst(P.x,P.y+1.3,P.z,last?16:6,0xffffff,last?6:3,.25); if(last){ FX.flash=Math.max(FX.flash,.5); grade.uniforms.flashCol.value.set(.3,.6,1); } shake(last?1.2:.35); FX.hitstop=Math.max(FX.hitstop,last?.2:.06);
+    Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:last?'METEOR REND':'×'+n,t:0,big:last,col:'#8fc4ff'}); hurtPlayer(.8,NB.x,NB.z); P.inv=99; P.hurt=0; P.cineFly=true; P.cineAnim='hurt'; if(Game.state!=='play') break;
+    if(last){ impactFrame([[1,2],[2,2],[1,1]]); grade.uniforms.flashCol.value.set(.3,.6,1); FX.flash=.7; }
     yield NP1.dt; }
   // the 5th sends him flying: 6 units away from Nathan, the camera chasing
   if(Game.state==='play'&&NP1.seq&&NP1.seq.k==='rend'){ const [ex,ez]=np1Dir(), sx=P.x, sz=P.z; P.cineAnim='fall'; NB.x=sx-ex*1.6; NB.z=sz-ez*1.6;
@@ -14879,7 +14913,7 @@ function npAli(dt){ const P=Player, sp=Math.hypot(P.vx||0,P.vz||0), gy=groundY(P
 // ---------- 13. the grab's slam: a crater ring, a dust wall and a heavy camera dip when Ali hits the ground ----------
 function npGrabSlam(){ const S=NP1.seq; if(!S||S.k!=='grab'){ NPP.slamSeen=0; return; } if(!S.slam||NPP.slamSeen) return; NPP.slamSeen=1; const P=Player, gy=groundY(P.x,P.z);
   FX.ring(P.x,gy+.1,P.z,'#d8ccb0',4.5,.5); FX.ring(P.x,gy+.12,P.z,'#4a9aff',3,.4); for(let i=0;i<30;i++){ const a=i/30*6.283; FX.spawn(P.x+Math.cos(a)*.8,gy+.2,P.z+Math.sin(a)*.8,Math.cos(a)*rnd(3,7),rnd(1,3.5),Math.sin(a)*rnd(3,7),.7,0x9a8e78,.45,0,false); }
-  for(let i=0;i<6;i++) FX.line(P.x,P.z,i/6*6.283+rnd(-.2,.2),rnd(2,4),.14,0x4a9aff,.6); if(typeof TPS!=='undefined') TPS.kick=-.5; impactFrame([[3,2],[1,1]]); }
+  for(let i=0;i<6;i++) FX.line(P.x,P.z,i/6*6.283+rnd(-.2,.2),rnd(2,4),.14,0x4a9aff,.6); if(typeof TPS!=='undefined') TPS.kick=-.5; impactFrame([[2,1],[1,1]]); /* no red frame on his grab */ }
 // ---------- 14. his sword glows: a cyan light rides the blade through every slash (and burns brighter on the tell) ----------
 function npBladeGlow(dt){ if(!NPP.blade){ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x7ff4ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g); NPP.blade=g; }
   const g=NPP.blade, sl=typeof NBS!=='undefined'&&NBS.slashA!=null, tell=Game.time<(NP1.redEnd||0); if(!sl&&!tell){ g.visible=false; return; }
@@ -15295,20 +15329,26 @@ function twCineGlideEnd(){ if(TW.glide){ TW.glide.dead=1; TW.glide=null; } }
 // shows a billboard as a flat card), 6+ units back on a longer lens; a shot changes by pushing in, pulling out or sliding.
 const NP_CINE={pitch:.46,min:6,fov:42};
 function npCineLens(on){ try{ camera.fov=on?NP_CINE.fov:(typeof TPS!=='undefined'?TPS.FOV:55); camera.updateProjectionMatrix(); }catch(e){} }
-function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), gy=groundY(x,z), px=-uz, pz=ux; twCineGlide(x+ux*d+px*side,gy+ly+d*NP_CINE.pitch,z+uz*d+pz*side,x,gy+ly,z,4); }
-function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(); npShotAt(NB.x,NB.z,(ly||2.4),dist+2,side,dx,dz); } /* from Ali's side of him */
+// A shot far from the last one is a CUT (then a slow push-in), not a glide: gliding from Ali's close-up to Nathan's swept the
+// camera across the whole field and through both of them. Only a nearby reframing glides.
+function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), gy=groundY(x,z), px=-uz, pz=ux, T=[x+ux*d+px*side,gy+ly+d*NP_CINE.pitch,z+uz*d+pz*side,x,gy+ly,z], G=TW.glide, v=G&&!G.dead?G.v:null;
+  if(v&&Math.hypot(v[0]-T[0],v[1]-T[1],v[2]-T[2])<7&&Math.hypot(v[3]-T[3],v[4]-T[4],v[5]-T[5])<4){ twCineGlide(T[0],T[1],T[2],T[3],T[4],T[5],3); return; }
+  twCineGlideEnd(); const k=1.14; cineSet(T[3]+(T[0]-T[3])*k,T[4]+(T[1]-T[4])*k,T[5]+(T[2]-T[5])*k,T[3],T[4],T[5]); twCineGlide(T[0],T[1],T[2],T[3],T[4],T[5],1.1); }
+function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(), hu=!!NP1.human, h=hu?1.3:Math.max(0,NB.y-groundY(NB.x,NB.z))+2.3; npShotAt(NB.x,NB.z,h,dist+(hu?1.5:4+h*.35),side,dx,dz); } /* from Ali's side of him, aimed at his chest wherever he hovers (the old fixed height framed his feet once he rose) */
 function npShotAli(dist,side,up){ const [dx,dz]=np1Dir(); npShotAt(Player.x,Player.z,1.4,dist+3,side,-dx*.25+(-dz)*.97*(side<0?-1:1),-dz*.25+dx*.97*(side<0?-1:1)); } /* from his side, Nathan's direction across the frame */
-function npShotBoth(dist,side){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
+function npShotBoth(dist,side,ly){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,ly||1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
+// the two of them 9-13 units apart before a transition starts (wherever the phase ended), so every shot frames the same way
+function npStage(){ try{ const P=Player, [dx,dz,d]=np1Dir(); if(d<9||d>13){ const t=d<9?10:12; nbAfterimage(NB.x,NB.y,NB.z); NB.x=P.x-dx*t; NB.z=P.z-dz*t; NB.dsh=null; if(NB.mesh){ NB.mesh.position.x=NB.x; NB.mesh.position.z=NB.z; } } }catch(e){ console.error('np stage',e); } }
 // I -> II: MOONLESS SKY. The pilot is done holding back: the machine wakes up. He rises, eight funnels unfold round him,
 // the missile racks open, the sky goes dark behind him; the title rides a slow slide across both of them
-function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; const bits=[];
+function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; const bits=[]; npStage();
   try{
     npShotNB(5,1.4,1.4,2.2); NB.hov=.7; for(let i=0;i<4;i++){ FX.spark(NB.x+rnd(-.8,.8),NB.y+rnd(1,3),NB.z); Sound.sfx('hit'); yield wait(.12); }
     yield say('nathan',"...You cut the pilot, wanderer. Well done.",'angry');
     npShotAli(3.4,1,1.5); yield say('ali',"Get up.");
     npShotNB(4.2,-1.2,1.8,2.6); yield say('nathan',"The pilot was being polite. The machine has no manners.");
     // he rises; the camera pulls out with him
-    Sound.sfx('charge'); Sound.sfx('drone'); npShotBoth(13,1); yield tween(NB,{hov:4.2},1.1,twEIO);
+    Sound.sfx('charge'); Sound.sfx('drone'); npShotBoth(17,1,3.6); yield tween(NB,{hov:4.2},1.1,twEIO);
     yield say('nathan',"All systems. All weapons. Safety... off.",'angry');
     // the funnels unfold in a ring, one by one, each with a ping and a flare
     for(let i=0;i<8;i++){ const b=nbBit(NB.x,NB.y+2,NB.z); b.a=i*Math.PI/4; b.k=0; bits.push(b); Sound.tone('sine',700+i*90,900+i*90,.12,.06); FX.burst(NB.x,NB.y+2,NB.z,8,0x3ff4ff,4,.25); yield wait(.09); }
@@ -15321,14 +15361,14 @@ function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true
     npShotNB(5,-1,1.8,4.6); yield say('nathan',"Every toy. I counted. You should have brought more sword.");
     if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"Ali! He has a LOT of guns now! That's so many guns!",'surprised'); }
     // the title, Omar-style, over a slow slide past the two of them (no card, no cut)
-    npShotBoth(15,1); yield wait(.3); twZeldaCard('Phase II','Moonless Sky','All weapons free',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx-dz*13+dx*4,groundY(mx,mz)+7.5,mz+dx*13+dz*4,mx,groundY(mx,mz)+2.4,mz,.8); } yield wait(2.9);
+    npShotBoth(18,1,3.6); yield wait(.3); twZeldaCard('Phase II','Moonless Sky','All weapons free',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx-dz*16+dx*4,groundY(mx,mz)+10.5,mz+dx*16+dz*4,mx,groundY(mx,mz)+3.6,mz,.7); } yield wait(2.9);
     npShotNB(5,1,1.6,4.2); yield say('nathan',"Dance, Ali. The floor is about to be on fire.",'angry');
     npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
     spin.on=0; yield tween(NB,{hov:1.4},.4,twEIO);
   } finally { for(const b of bits){ try{ nbKillBit(b); }catch(e){} } }
   npBegin(2); }
 // II -> III: LAST LIGHT. Every plate blows off, the funnels fall dead; a pistol in one hand, the laser sword in the other, on foot
-function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
+function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; npStage();
   npShotNB(5,-1.2,1.3,2.2); NB.hov=.7; yield wait(.5);
   Sound.sfx('heartbeat'); yield say('nathan',"Warning. Reactor critical. Funnels offline. Armour integrity... zero.",'angry');
   npShotAli(3.4,1,1.5); yield say('ali',"Your machine is finished.");
@@ -15339,7 +15379,7 @@ function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true
   yield wait(.5); yield say('nathan',"Purge it. All of it.");
   // the plates blow off one by one
   npShotNB(5,0,1.6,2.6); NB.hov=1.2; for(let i=0;i<9;i++){ const h=rnd(.8,3.8); FX.burst(NB.x+rnd(-.8,.8),NB.y+h,NB.z,26,i%2?0xe8eef4:0xb8c4d0,9,.6,false); FX.burst(NB.x,NB.y+h,NB.z,14,0xff5a2a,6,.4); NB.flash=.25; Sound.sfx(i%2?'crash':'slam'); shake(.35+i*.04); if(i%3===2) impactFrame([[1,1]]); yield wait(.11); }
-  FX.flash=.9; grade.uniforms.flashCol.value.set(1,.5,.3); impactFrame([[3,2],[1,2],[2,2]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[3].tint); if(g.sat) g.sat.value=NP_LOOK[3].sat; }catch(e){} NB.red=1; if(NB.mat) NB.mat.color.setHex(0xffb4b0);
+  FX.flash=.9; grade.uniforms.flashCol.value.set(1,.5,.3); impactFrame([[3,2],[1,2],[2,2]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[3].tint); if(g.sat) g.sat.value=NP_LOOK[3].sat; }catch(e){} NB.red=1; if(NB.mat) NB.mat.color.setHex(0xffb4b0); NP1.human=1; /* the armour is off: the pilot himself from here (59zh) */
   yield tween(NB,{hov:.25},.5,twEIO); FX.ring(NB.x,groundY(NB.x,NB.z)+.1,NB.z,'#ffb07a',3,.4); Sound.sfx('slam'); shake(.5);
   npShotNB(4.5,1.2,1.5,2.2); yield say('nathan',"No armour. No funnels. One pistol. One sword. Two feet.");
   npShotAli(3.4,-1,1.4); yield say('ali',"That's more than you've had all fight.");
@@ -15479,7 +15519,7 @@ function nprTick(dt){ if(!(typeof npOn==='function'&&npOn())||NP1.done||!NB||!NB
 // =====================================================================
 // NATHAN, THE NEW PHASES II AND III (Ali's road; replaces 59zc's railgun/twinfang/sweep/blinkchain/starfall and both limit cuts)
 //   II  MOONLESS SKY, the machine (240): missiles (cut them down; the last, red one is parried back into him), buster
-//       (a thick beam down a marked lane that turns after you: run round it), grid (laser lanes with one gap, three
+//       (a thick beam down a marked lane that sweeps after you at 1.15 rad/s: blink through, jump, or get behind him), grid (laser lanes with one gap, three
 //       times, the gap moves), funnelgrab (two red funnel dives: parry = Ali throws it back), tackle (a straight boost
 //       charge, parry or sidestep, a burning trail left behind) + combo and grab. Limit cut at half: FULL BURST
 //       (missiles, grids, the buster with missiles), then OVERHEAT: 5s down.
@@ -15514,16 +15554,21 @@ function npLane(x,z,ang,L,W,warn,dur,o){ o=o||{}; const gy=groundY(x,z), ux=Math
 // a missile: homes on Ali; a sword swing or a Getsuga near it cuts it down. o.red: the parry one (np1HitRed), parried it flies back into him
 function npMissile(sx,sy,sz,o){ o=o||{}; const g=new THREE.Group(), body=new THREE.Mesh(new THREE.ConeGeometry(.17,.75,6),new THREE.MeshBasicMaterial({color:o.red?0xff2a3a:0xe8eef4})); body.rotation.x=Math.PI/2; g.add(body);
   const gl=npSprite(o.red?0xff2a3a:0xffb04a,o.red?1.8:1); gl.userData.temp=0; g.add(gl); g.userData.temp=1; scene.add(g); const M={x:sx,y:sy,z:sz,vx:rnd(-3,3),vy:rnd(7,10),vz:rnd(-3,3),t:0,back:0,told:0,dead:0};
-  const pop=(big)=>{ FX.burst(M.x,M.y,M.z,big?30:14,o.red?0xff2a3a:0xffb04a,big?7:5,.3); FX.burst(M.x,M.y,M.z,8,0xffffff,4,.25); Sound.sfx(big?'crossboom':'hit'); };
+  const pop=(big,cut)=>{ FX.burst(M.x,M.y,M.z,big?30:14,o.red?0xff2a3a:0xffb04a,big?7:5,.3); FX.burst(M.x,M.y,M.z,8,0xffffff,4,.25); Sound.sfx(big?'crossboom':'hit');
+    if(cut){ /* a cut missile goes off: a fireball, a ring, two halves spinning away, a short hit-stop and a camera kick; several in one swing count up */ const ch=NP1.cutT!=null&&Game.time-NP1.cutT<.5?(NP1.cutN=(NP1.cutN||1)+1):(NP1.cutN=1); NP1.cutT=Game.time;
+      FX.burst(M.x,M.y,M.z,34,0xff8a2a,9,.4); FX.burst(M.x,M.y,M.z,16,0x2a2a30,5,.6,false); try{ npStar(M.x,M.y,M.z,0xffe0a0,1.8,.28); FX.ring(M.x,groundY(M.x,M.z)+.1,M.z,'#ffb04a',3.2,.35); }catch(e){}
+      for(let h=0;h<2;h++){ const sg=h?1:-1; for(let k=0;k<6;k++) FX.spawn(M.x,M.y,M.z,M.vz*.25*sg+rnd(-1,1),rnd(2,5),-M.vx*.25*sg+rnd(-1,1),.6,k%2?0xe8eef4:0x8a8f98,.3,12,false); }
+      Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.tone('sawtooth',160,40,.25,.14); FX.hitstop=Math.max(FX.hitstop,.045); shake(.35+Math.min(.5,ch*.08)); if(typeof TPS!=='undefined') TPS.kick=Math.max(TPS.kick||0,.25); FX.flash=Math.max(FX.flash,.18); grade.uniforms.flashCol.value.set(1,.8,.5);
+      Game.dmgNums.push({x:M.x,y:M.y+.6,z:M.z,n:ch>1?'CUT ×'+ch:'CUT',t:0,big:ch>=3,col:'#ffd27a'}); try{ addSP(.5); if(ch===4) npPosture(8,'missiles'); }catch(e){} } };
   np1Obj({bit:1,upd(dt){ if(M.dead) return false; M.t+=dt; const P=Player, tx=M.back?NB.x:P.x, ty=M.back?NB.y+2:P.y+1.1, tz=M.back?NB.z:P.z, dx=tx-M.x, dy=ty-M.y, dz=tz-M.z, d=Math.hypot(dx,dy,dz)||1, sp=M.back?28:(o.sp||9.5)+M.t*1.8, k=Math.min(1,dt*(M.back?14:M.t<.45?1:4.4));
       M.vx=lerp(M.vx,dx/d*sp,k); M.vy=lerp(M.vy,dy/d*sp,k); M.vz=lerp(M.vz,dz/d*sp,k); M.x+=M.vx*dt; M.z+=M.vz*dt; M.y=Math.max(groundY(M.x,M.z)+.3,M.y+M.vy*dt); g.position.set(M.x,M.y,M.z); g.lookAt(M.x+M.vx,M.y+M.vy,M.z+M.vz);
       if(Math.random()<.8) FX.spawn(M.x,M.y,M.z,0,0,0,.3,o.red?0xff5a4a:0xffd27a,.16,0,true);
       if(M.back){ if(d<1.7){ pop(true); shake(.5); NB.flash=.3; nbDamage(o.back||12,'np1'); try{ npPosture(15,'REFLECT'); }catch(e){} return false; } return M.t<8; }
       if(o.red){ if(!M.told&&d<6.5){ M.told=1; np1Glint(M.x,M.y,M.z,0xff2a3a,3.4); } if(d<1.5){ const r=np1HitRed(2,M.x,M.z); if(r==='parry'){ M.back=1; M.t=0; Game.dmgNums.push({x:P.x,y:P.y+3,z:P.z,n:'RETURN TO SENDER',t:0,big:true,col:'#ffd45a'}); return true; } pop(true); return false; } return M.t<12; }
-      if(Math.hypot(P.x-M.x,P.z-M.z)<2.5&&Math.abs(P.y+1-M.y)<2.6&&Game.time-(P.swingT||-9)<.15){ pop(); Game.dmgNums.push({x:M.x,y:M.y+.6,z:M.z,n:'CUT',t:0,col:'#ffd27a'}); return false; }
-      for(const b of BEAMS){ if(b.ali&&b.life>0&&Math.hypot(b.x-M.x,b.z-M.z)<1.7&&Math.abs(b.y-M.y)<2.5){ pop(); return false; } }
+      if(Math.hypot(P.x-M.x,P.z-M.z)<2.5&&Math.abs(P.y+1-M.y)<2.6&&Game.time-(P.swingT||-9)<.15){ pop(false,true); return false; }
+      for(const b of BEAMS){ if(b.ali&&b.life>0&&Math.hypot(b.x-M.x,b.z-M.z)<1.7&&Math.abs(b.y-M.y)<2.5){ pop(false,true); return false; } }
       if(d<.9){ pop(); if(P.inv<=0&&P.dash<=0&&!P.cineFly) hurtPlayer(1,M.x,M.z); return false; } return M.t<12; }, kill(){ M.dead=1; scene.remove(g); }}); return M; }
-function* npVolley(n,red){ for(let i=0;i<n;i++){ const sd=i%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{red:red&&i===n-1,sp:9+((NP1.ph||1)>=3?1:0)}); Sound.sfx('mechshot'); FX.burst(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,8,0xffd27a,4,.25); NB.flash=.08; yield .13; } }
+function* npVolley(n,red){ for(let i=0;i<n;i++){ const sd=i%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{red:red&&i===n-1,sp:9+((NP1.ph||1)>=3?1:0)}); Sound.sfx('mechshot'); FX.burst(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,8,0xffd27a,4,.25); NB.flash=.08; yield .09; } }
 // the buster: a thick beam from him along the ground; the lane shows first and follows you, then the beam turns after you slowly
 function* npBuster(dur,rate){ const L=34, W=2.6, S={a:Math.atan2(Player.z-NB.z,Player.x-NB.x),t:0,on:0,cd:0,done:0}, gy=()=>groundY(NB.x,NB.z);
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0x04101c,transparent:true,opacity:.6,depthWrite:false})); m.rotation.x=-Math.PI/2; m.userData.temp=1; scene.add(m);
@@ -15541,9 +15586,9 @@ function* npGrid(n,warn){ for(let v=0;v<n;v++){ const P=Player, [dx,dz]=np1Dir()
     for(let i=0;i<lanes;i++){ if(i===gap) continue; const off=(i-(lanes-1)/2)*W; npLane(ox+px*off,oz+pz*off,ang,28,W-.25,warn,.5,{dmg:2}); } Sound.sfx('charge'); Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'FIND THE GAP',t:0,col:'#9ff8ff'}); yield warn+.55; } }
 // ---------- PHASE II MOVES ----------
 NP1M.missiles=function*(){ NP1.cur='missiles'; twBark('nathan',"Missiles away. Cut them, if your arm is fast enough.",true); np1Hint('miss','MISSILES: cut them out of the air with your sword. The RED one: parry it back into him');
-  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*11,P.z-dz*11); } NB.hov=Math.max(NB.hov||1.4,3); yield .4; yield* npVolley(8,true); yield 3.2; np1Open(1); yield .3; };
-NP1M.buster=function*(){ NP1.cur='buster'; twBark('nathan',"Buster cannon. Run in circles. It's funnier.",true); np1Hint('bust','BUSTER: the beam turns after you slowly. Run round him, or get behind him');
-  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*9,P.z-dz*9); } yield .4; yield* npBuster(2.6,.62); np1Open(1.6); yield .3; };
+  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*11,P.z-dz*11); } NB.hov=Math.max(NB.hov||1.4,3); yield .4; yield* npVolley(7,false); yield .7; yield* npVolley(7,false); yield .6; yield* npVolley(5,true); yield 3; np1Open(1); yield .3; };
+NP1M.buster=function*(){ NP1.cur='buster'; twBark('nathan',"Buster cannon. Run in circles. It's funnier.",true); np1Hint('bust','BUSTER: the beam sweeps after you. Blink through it, jump it, or get in close and behind him');
+  { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*9,P.z-dz*9); } yield .4; yield* npBuster(3.4,1.15); np1Open(1.6); yield .3; };
 NP1M.grid=function*(){ NP1.cur='grid'; twBark('nathan',"Funnel grid. One gap. Find it.",true); np1Hint('grid','GRID: dark lanes are about to burn. Stand in the one lane that is not marked');
   { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*12,P.z-dz*12); } yield .35; yield* npGrid(3,1.05); np1Open(1); yield .3; };
 NP1M.funnelgrab=function*(){ NP1.cur='funnelgrab'; twBark('nathan',"Funnels. Fetch.",true); np1Hint('fgrab','RED funnel dives: parry one and Ali throws it back');
@@ -15599,7 +15644,7 @@ NP1M.stance=function*(){ NP1.cur='stance'; twBark('nathan',"Come on, then. Hit m
 // ---------- LIMIT CUTS (no camera takeover) ----------
 npLCEclipse=function*(){ NP1.cur='lc'; NP1.lcInv=1; twCutin('nathan','FULL BURST','Limit Break  ·  every weapon at once','#1a8aff',1.8); twBark('nathan',"Full burst. Everything I have. Don't take it personally.",true); Sound.sfx('secret');
   try{ { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*12,P.z-dz*12); } NB.hov=4; yield 1.5; twBig('FULL BURST',{size:46,col:'#9ff8ff',y:UH*.24,dur:1.6,sub:'Cut the missiles · find the gap · run from the beam'});
-    yield* npVolley(10,true); yield 2.6; yield* npGrid(3,.85); yield* npVolley(5,false); yield .5; yield* npBuster(3,.7); yield .3; }
+    yield* npVolley(9,false); yield .5; yield* npVolley(9,true); yield 2.6; yield* npGrid(3,.85); yield* npVolley(8,false); yield .5; yield* npBuster(3.6,1.3); yield .3; }
   finally{ npLCEnd(); }
   twBark('nathan',"Heat... critical. Vent... venting...",true); for(let i=0;i<5;i++) FX.burst(NB.x,NB.y+rnd(1,3),NB.z,16,0xc8d4e0,5,.5,false); np1Stun(5,'OVERHEAT'); };
 npLCSuns=function*(){ NP1.cur='lc'; NP1.lcInv=1; twCutin('nathan','LAST ROUND','Limit Break  ·  eight beats and a blade','#ff3a1a',1.8); twBark('nathan',"Last magazine. Last round. Last dance, Ali.",true); Sound.sfx('secret');
@@ -15629,6 +15674,82 @@ nprTick=function(dt){ if(!(typeof npOn==='function'&&npOn())||NP1.done||!NB||!NB
       np1Obj({upd(){ if(NP1.lunge&&!NP1.pdDone&&Game.time<NP1.grabLand+.05) return true; try{ if(NB.mat) NB.mat.color.setHex(c0); }catch(e){} return false; }, kill(){ try{ if(NB&&NB.mat) NB.mat.color.setHex(c0); }catch(e){} }}); }catch(e){ console.error('grab tell 2',e); } return r; }; })();
 // in cutscenes on this field every sprite faces the camera (they only did during play: side shots showed them edge-on)
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const r=uc.apply(this,arguments); try{ if(typeof tpsFight==='function'&&tpsFight()&&Cam.cine&&!NP1.cam){ for(const s of SPRITES) if(s&&s.mesh) s.mesh.quaternion.copy(camera.quaternion); if(NB&&NB.mesh){ NB.mesh.quaternion.copy(camera.quaternion); NB.mesh.scale.x=1; } } }catch(e){ console.error('cine billboard',e); } return r; }; })();
+// ---------- v1.65 ----------
+// his blue tears never throw the pink Judgement Cut sparks (those are Ali's)
+(function(){ const tg=twGash; twGash=function(o){ const r=tg.apply(this,arguments); try{ if(o&&o.blue) o.sparked=1; }catch(e){} return r; }; })();
+// a red strike's parry window is never wider than the back half of its own tell: with a short tell (the funnels' 0.32-0.45s)
+// the 0.3s window covered nearly all of it, so swinging at Nathan through the move parried every shot by accident
+(function(){ const hr=np1HitRed; np1HitRed=function(dmg,fx,fz,onParry){ const P=Player, dx=fx-P.x, dz=fz-P.z, d=Math.hypot(dx,dz)||1, el=NP1.tellT!=null?Game.time-NP1.tellT:9, win=Math.max(.14,Math.min(NP1_WIN,el*.5));
+    return twHitP(dmg,P.x+dx/d*1.2,P.z+dz/d*1.2,{melee:true,win,onParry}); }; })();
+
+// ----- 59zh_nbhuman.js -----
+// =====================================================================
+// NATHAN ON FOOT (phase III of Ali's road): once the armour is purged he is the pilot himself, not the mech sheet. The
+// cast's Nathan (drawNathanCast, flight suit, no jacket, the scarf) is drawn with fight poses into his own canvas: standing
+// with the laser sword low and the pistol in the off hand, the slash (driven by the same nbsSlash clock as the mech's),
+// the pistol levelled (fixRow 13), the low iai/stance crouch (2), the sword raised (3), the open grabbing hand (4), the
+// run (boosts) and the stagger. He faces Ali left/right on screen. NP1.human switches it (set by the purge in npCine23
+// and by npSetPhase for phase III; off in phases I-II and on reset).
+// =====================================================================
+const NBH={cv:null,c:null,tex:null,geo:null,W:112,H:80,f:1,key:'',K:1.5};
+function nbhOn(){ return typeof nbsOn==='function'&&nbsOn()&&typeof NP1!=='undefined'&&!!NP1.human; }
+function nbhInit(){ NBH.cv=document.createElement('canvas'); NBH.cv.width=NBH.W; NBH.cv.height=NBH.H; NBH.c=NBH.cv.getContext('2d'); NBH.c.imageSmoothingEnabled=false;
+  const t=new THREE.CanvasTexture(NBH.cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; NBH.tex=t;
+  const u=PPU/NBH.K, w=NBH.W/u, h=NBH.H/u; NBH.geo=new THREE.PlaneGeometry(w,h); NBH.geo.translate(0,h/2-2/u,0); }
+// the pose for his state: {pose (cRig overrides), blade (angle: 0 down, + forward, PI up; null = no sword in hand), gun}
+function nbhPose(r,stun,fix){ const t=NBS.clock; /* fix: r is a held pose (NBS.fixRow), not a slash frame */
+  if(stun) return {pose:{F:[[-5,0],[2,0]],b:-2,lean:3,ua:[.5,.7],el:[.3,.4],hd:3,hx:1},blade:.25,gun:1};
+  if(!fix&&r>=1&&r<=12){ const u=(r-1)/11, e=u<.35?0:Math.min(1,(u-.35)/.4), A=2.9-2.7*e*e*(3-2*e); return {pose:{b:-5,lean:Math.round(1+e*4),F:[[-5,0],[5,-1]],ua:[-1,A],el:[.5,.15],hd:0,hx:Math.round(e*2)},blade:A+.2,gun:1,trail:e>0&&e<1}; }
+  if(fix&&r===13) return {pose:{b:-5,lean:1,F:[[-4,0],[4,0]],ua:[1.5,-.5],el:[.06,-.5],hd:0,hx:0},blade:-.9,gun:1,aim:1};
+  if(fix&&r===2) return {pose:{b:-2,lean:4,F:[[-7,0],[5,0]],ua:[.4,-1.1],el:[.9,-.7],hd:1,hx:2},blade:-.75,gun:1};
+  if(fix&&r===3) return {pose:{b:-6,lean:0,F:[[-3,0],[4,0]],ua:[-.6,2.95],el:[.5,.1],hd:-1,hx:0},blade:3.05,gun:1};
+  if(fix&&r===4) return {pose:{b:-5,lean:3,F:[[-5,0],[5,-1]],ua:[-.8,2.1],el:[.4,.35],hd:0,hx:1},blade:null,gun:0,hand:1};
+  if(!fix&&r>=13){ const k=Math.floor(t*14)%2; return {pose:{b:-4,lean:6,F:k?[[-8,-3],[5,0]]:[[-2,0],[8,-4]],ua:[-1.3,-1.1],el:[-.3,-.4],hd:1,hx:3},blade:-1.4,gun:1}; }
+  return {pose:{ua:[-.25,.55+Math.sin(t*1.1)*.06],el:[.95,.75]},blade:2.25,gun:1}; }
+function nbhDraw(){ if(!NBH.cv) nbhInit(); const P=Player, c=NBH.c, r=nbsRow();
+  try{ const rt=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion), boost=(NBS.boostT>0||NB.dsh)&&NBS.bdir!=null, dx=boost?Math.cos(NBS.bdir):P.x-NB.x, dz=boost?Math.sin(NBS.bdir):P.z-NB.z, sd=rt.x*dx+rt.z*dz; if(Math.abs(sd)>.25) NBH.f=sd>0?1:-1; }catch(e){}
+  if(NB.mat.map!==NBH.tex){ NB.mat.map=NBH.tex; NB.mat.needsUpdate=true; } if(NB.mesh.geometry!==NBH.geo) NB.mesh.geometry=NBH.geo; NB.mesh.scale.x=1; if(NB.glow) NB.glow.visible=false; NBS.key='';
+  try{ if(NB.mat.color.getHex()===0xffb4b0) NB.mat.color.setHex(0xffffff); }catch(e){} /* phase III tints the mech pink: the pilot keeps his own colours */
+  try{ const gy=groundY(NB.x,NB.z); if(NP1.alt==null&&NB.y-gy<1) NB.mesh.position.y=gy; if(NB.sh) NB.sh.scale.set(.5,.5,1); }catch(e){} /* feet on the ground, no hover bob */
+  if(NB.stunned){ NB.mesh.position.x+=rnd(-.03,.03); }
+  const idle=r===0&&!NB.stunned, key=NBH.f+','+r+(NBS.fixRow!=null?'f':'')+','+(NB.stunned?1:0)+','+(idle||r>=13?Math.floor(NBS.clock*10):0)+','+(NB.flash>0?1:0); if(key===NBH.key) return; NBH.key=key;
+  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-2,NBH.f,nbhPose(r,NB.stunned,NBS.fixRow!=null),!idle,NB.flash>0);
+  if(NB.flash>0){ c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(0,0,NBH.W,NBH.H); c.globalCompositeOperation='source-over'; }
+  NBH.tex.needsUpdate=true; }
+function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; drawNathanCast(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still});
+  const J=out.J; if(!J) return; const p=SH(c,cx,by,f), g=J.A[0], h=J.A[1];
+  if(S.gun){ const gx=Math.round(g.ex), gyy=Math.round(g.ey); if(S.aim){ p(gx,gyy-2,7,2,'#20222e'); p(gx,gyy,2,3,'#20222e'); p(gx+6,gyy-2,1,1,'#ffd27a'); if(fire){ p(gx+7,gyy-3,4,4,'#fff2c0'); p(gx+11,gyy-2,3,2,'#ffb04a'); } } else { p(gx-1,gyy,2,6,'#20222e'); p(gx-1,gyy,4,2,'#20222e'); } }
+  if(S.blade!=null){ const hx=h.ex, hy=h.ey, sa=Math.sin(S.blade), ca=Math.cos(S.blade); p(Math.round(hx)-1,Math.round(hy)-1,3,3,'#c8d4e0');
+    if(S.trail){ for(let k=1;k<=3;k++){ const a2=S.blade+k*.22, s2=Math.sin(a2), c2=Math.cos(a2); c.globalAlpha=.34-k*.08; for(let i=4;i<=19;i+=1) p(Math.round(hx+s2*i)-1,Math.round(hy+c2*i)-1,3,3,'#3ff4ff'); } c.globalAlpha=1; }
+    for(let i=2;i<=19;i++) p(Math.round(hx+sa*i)-1,Math.round(hy+ca*i)-1,3,3,'#3ff4ff'); for(let i=2;i<=18;i++) p(Math.round(hx+sa*i),Math.round(hy+ca*i),1,1,'#ffffff'); }
+  if(S.hand){ const x=Math.round(h.ex), y=Math.round(h.ey); p(x-1,y-3,4,4,'#d9a272'); p(x+2,y-4,1,2,'#d9a272'); p(x,y-5,1,2,'#d9a272'); } }
+(function(){ const nd=nbsDraw; nbsDraw=function(dt){ if(nbhOn()){ NBS.boostT=Math.max(0,NBS.boostT-dt); if(NB.dsh) NBS.bdir=Math.atan2(NB.dsh.tz-NB.dsh.fz,NB.dsh.tx-NB.dsh.fx); nbhDraw(); return; } if(NB&&NB.sh&&NB.sh.scale.x!==1) NB.sh.scale.set(1,1,1); return nd.apply(this,arguments); }; })();
+// afterimages: a still of the pilot, not of the mech
+(function(){ const na=nbAfterimage; nbAfterimage=function(){ if(!(nbhOn()&&NBH.cv)) return na.apply(this,arguments); const cv=NBS.cv, w=NBS.CW, h=NBS.CH; NBS.cv=NBH.cv; NBS.CW=NBH.W; NBS.CH=NBH.H; try{ return na.apply(this,arguments); } finally{ NBS.cv=cv; NBS.CW=w; NBS.CH=h; } }; })();
+(function(){ const sp=npSetPhase; npSetPhase=function(n){ const r=sp.apply(this,arguments); try{ NP1.human=n>=3?1:0; NBS.key=''; NBH.key=''; }catch(e){} return r; }; })();
+(function(){ const nr=np1Reset; np1Reset=function(){ NP1.human=0; return nr.apply(this,arguments); }; })();
+// ---------- a dropped move still cleans up ----------
+// np1Stun, the Full Counter, a phase change and the ultimate drop his move by nulling NP1.gen. A generator dropped that way
+// never runs its `finally`, so whatever the move had set stayed: the iai's grey screen, the stance's gold ring, a held pose
+// (the sprite frozen with the pistol up), a limit cut's invulnerability. The move that was running last frame and is no
+// longer the current one is closed here (return() runs its finally blocks; on a finished generator it does nothing).
+(function(){ const nu=np1Update; np1Update=function(dt){ try{ const g=NP1._g; if(g&&g!==NP1.gen){ NP1._g=null; try{ g.return(); }catch(e){} if(!NP1.gen&&typeof NBS!=='undefined'&&NBS.fixRow!=null&&!NP1.seq&&!NP1.ex) NBS.fixRow=null; } }catch(e){ console.error('np drop',e); }
+    const r=nu.apply(this,arguments); NP1._g=NP1.gen; return r; }; })();
+(function(){ const nc=np1Clear; np1Clear=function(){ const g=NP1._g; NP1._g=null; if(g&&g!==NP1.gen){ try{ g.return(); }catch(e){} } return nc.apply(this,arguments); }; })();
+// a held pose never outlives its move (some paths left the grabbing hand or the pistol up between moves)
+(function(){ const nu=np1Update; np1Update=function(dt){ const r=nu.apply(this,arguments); try{ if(!NP1.gen&&!NP1.seq&&!NP1.ex&&typeof NBS!=='undefined'&&NBS.fixRow!=null) NBS.fixRow=null; }catch(e){} return r; }; })();
+// the Full Counter and the ultimate keep for after a limit cut: firing either inside one dropped the whole limit cut
+(function(){ const mj=twMiniJC; twMiniJC=function(){ try{ if(typeof np1On==='function'&&np1On()&&NB&&NB.alive&&!NP1.done&&(NP1.lcInv||NP1.cur==='lc')){ if(Game.time-(NP1.fcNoT||-9)>1.2){ NP1.fcNoT=Game.time; Game.dmgNums.push({x:Player.x,y:Player.y+2.6,z:Player.z,n:'NOT DURING A LIMIT CUT',t:0,col:'#ffd45a'}); } return; } }catch(e){} return mj.apply(this,arguments); }; })();
+(function(){ const ok=npUltOk; npUltOk=function(){ return ok.apply(this,arguments)&&!(NP1.lcInv||NP1.cur==='lc'); }; })();
+// on foot there are no thrusters: no jets behind him, and his dash is a footstep rush, not a rocket
+(function(){ const vf=npVfxFrame; npVfxFrame=function(dt){ const r=vf.apply(this,arguments); try{ if(NP1.human&&NPV.jets) NPV.jets.forEach(j=>j.visible=false); }catch(e){} return r; }; })();
+(function(){ const q=TW_SFX.qbRoar; TW_SFX.qbRoar=function(){ if(typeof NP1!=='undefined'&&NP1.human){ Sound.hiss(2600,.12,.16,'bandpass'); Sound.tone('triangle',220,90,.1,.08); return; } return q.apply(this,arguments); }; })();
+// Excalibur's ravines: with Infinite HP a fall puts Ali back on the lip. Where two ravines cross, that lip could be inside the
+// other one: he fell again at once, for ever (falling, invulnerable, no control). After a fall he is pushed clear of every
+// ravine and they ignore him for a moment.
+function npxInRav(x,z){ for(const R of NPX.rav){ const rx=x-R.x0, rz=z-R.z0, al=rx*R.ux+rz*R.uz, sp=-rx*R.uz+rz*R.ux; if(al>0&&al<R.len&&Math.abs(sp)<R.half+.4) return {R,sp}; } return null; }
+(function(){ const fe=npxFallEnd; npxFallEnd=function(){ const had=!!NPX.fall, r=fe.apply(this,arguments); try{ if(had){ NPX.safeT=Game.time+1.5; if(typeof Game!=='undefined'&&Game.fxUpd) Game.fxUpd.push(()=>{ try{ const P=Player; if(Game.state==='play'&&!P.cineFly){ for(let i=0;i<8;i++){ const q=npxInRav(P.x,P.z); if(!q) break; const sg=q.sp>=0?1:-1, out=q.R.half+1.2-Math.abs(q.sp); P.x+=-q.R.uz*sg*out; P.z+=q.R.ux*sg*out; } P.y=groundY(P.x,P.z); } }catch(e){} return false; }); } }catch(e){ console.error('rav clear',e); } return r; }; })();
+(function(){ const ru=npxRavUpd; npxRavUpd=function(dt){ if(NPX.safeT>Game.time&&!NPX.fall){ const P=Player, og=P.onGround; P.onGround=false; try{ return ru.apply(this,arguments); } finally{ P.onGround=og; } } return ru.apply(this,arguments); }; })();
 
 // ----- 60_coop.js -----
 // =====================================================================
@@ -18774,8 +18895,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.64 (Nov 11): black holes: the suction rings and spiral are gone; small motes of light now fall into every hole on inward spirals, with a few faint wisps. No boss mechanics changed.";
-const DBG_NEW=[];
+const DBG_PATCH="v1.65 (Nov 11): Nathan: funnel shots no longer parry themselves when you mash, more missiles that explode when cut, a faster buster sweep, the human pilot in phase III, blue cuts on his rend and grab, a re-shot phase II transition, interrupted moves clean up (no grey screen or frozen pose), no Full Counter inside a limit cut. Duo: the tree is made of Judgement Cut tears, the climb only has the void, portals are Omar's rifts.";
+const DBG_NEW=['nathan:bits','nathan:cage','nathan:missiles','nathan:buster','nathan:gunkata','nathan:martial','nathan:pointblank','nathan:iai','nathan:stance','duo:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -19264,7 +19385,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.64';
+const GAME_VERSION='v1.65';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

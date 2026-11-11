@@ -228,9 +228,9 @@ function* d5CaoMix(C,ph,n){ const keys=Object.keys(D5CP).sort(()=>Math.random()-
 // =====================================================================
 // OMAR: scythe, Getsuga and black hole combos
 // =====================================================================
-function d5Portal(x,z,a,dur,col){ const g=new THREE.Group(), gy=groundY(x,z); const r1=new THREE.Mesh(new THREE.TorusGeometry(1.25,.13,6,32),new THREE.MeshBasicMaterial({color:col||0x9a4aff})), r2=new THREE.Mesh(new THREE.CircleGeometry(1.15,32),new THREE.MeshBasicMaterial({color:0x05010a,transparent:true,opacity:.85,side:THREE.DoubleSide}));
-  g.add(r1,r2); g.position.set(x,gy+1.4,z); g.rotation.y=-a+Math.PI/2; g.userData.tw=1; scene.add(g); const s={t:0};
-  twHz({upd(dt,play){ if(play) s.t+=dt; const k=Math.min(1,s.t*4)*Math.min(1,Math.max(0,(dur-s.t)*4)); g.scale.setScalar(Math.max(.01,k)); r1.rotation.z+=dt*3; if(Math.random()<.6){ const b=rnd(0,6.28); FX.spawn(x+Math.cos(b)*1.2*Math.sin(a),gy+1.4+Math.sin(b)*1.2,z-Math.cos(b)*1.2*Math.cos(a),0,0,0,.35,Math.random()<.5?0x9a4aff:0x1a0a2a,.25,0,true); } return s.t<dur; }, kill(){ scene.remove(g); }}); return g; }
+function d5Portal(x,z,a,dur,col){ /* the rift from Omar's own fight (23_tear: the jagged scar, violet edge, black heart), torn open and closed again */ const gy=groundY(x,z), m=twBB(texScar(),1.26,3.08); m.userData.tw=1; m.rotation.x=TILT; m.position.set(x,gy+1.5,z); m.scale.set(.01,1,1); if(!m.parent) scene.add(m);
+  const s={t:0}; Sound.sfx('tear'); FX.burst(x,gy+1.5,z,18,0x9a3aff,4,.35); FX.burst(x,gy+1.5,z,10,0x05010a,3,.35,false);
+  twHz({upd(dt,play){ if(play) s.t+=dt; const k=Math.min(1,s.t*5)*Math.min(1,Math.max(0,(dur-s.t)*5)); m.scale.set(Math.max(.01,k*(1+.06*Math.sin(s.t*14))),1,1); if(Math.random()<.5) FX.spawn(x+rnd(-.4,.4),gy+rnd(.2,2.8),z,rnd(-.6,.6),rnd(.4,1.6),0,.35,Math.random()<.5?0x9a4aff:0x1a0a2a,.22,0,true); return s.t<dur; }, kill(){ scene.remove(m); }}); return m; }
 const D5OC={
   // a ring of scythes closing in on you, one gap
   *ring(O,sp,ph){ const P=Player, n=ph>=3?16:12, R=7.5, gap=Math.floor(Math.random()*n); O.cast=.6; Sound.sfx('swing');
@@ -389,22 +389,41 @@ function d5SkyHole(x,y,z){ const V=twHoleVis(x,y,z,4,true), S={x,y,z,k:0,t:0,cra
 function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), saved=[], meshes=[], set=(ix,iz,h)=>{ if(ix<0||iz<0||ix>=L.w||iz>=L.d) return; saved.push([ix,iz,L.H[iz][ix],L.B[iz][ix]]); L.H[iz][ix]=h; L.B[iz][ix]=false; };
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
   // every step is a held-open cut: a flat spray of crossing slashes (red edge, dark heart, white core), not a slab
-  const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w*2,d*2),new THREE.MeshBasicMaterial({map:d5SlashTex(),transparent:true,alphaTest:.08,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,y+.02,z); m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
-  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww,add] of [[0xb0182a,w*1.25,1],[0x08020a,w,0]]){ const b=beamMesh(col,ww); if(!add){ b.material.blending=THREE.NormalBlending; b.material.transparent=false; b.material.depthWrite=true; b.renderOrder=2; } else b.material.opacity=.55; /* a solid black cut inside a thin crimson glow (the beam helper is additive: black on it is invisible) */ b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
+  const tears=[], slab=(x,z,w,d,y)=>{ const n=w>3?5:3, a0=rnd(0,3.14); let first=null; for(let i=0;i<n;i++){ const len=w*(w>3?2.3:2.5), m=new THREE.Mesh(new THREE.PlaneGeometry(len,w>3?2.4:1.7),d5TearMat(len)); m.rotation.x=-Math.PI/2; m.rotation.z=a0+i*Math.PI/n+rnd(-.12,.12); m.position.set(x,y+.02+i*.012,z); m.renderOrder=2; m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); tears.push(m); first=first||m; } return first; }; /* a step is three Judgement Cut tears crossing (the platform five): the same tear the slash pass draws, held open in the world */
+  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ const len=Math.hypot(x1-x0,y1-y0,z1-z0), g=new THREE.Group(), mat=d5TearMat(len); for(let q=0;q<2;q++){ const ge=new THREE.PlaneGeometry(1,1); ge.rotateY(Math.PI/2); if(q) ge.rotateZ(Math.PI/2); ge.translate(0,0,.5); const m=new THREE.Mesh(ge,mat); m.renderOrder=2; g.add(m); } /* a long tear, two planes crossed so it reads from every side */ g.userData.tw=1; g.position.set(x0,y0,z0); g.lookAt(x1,y1,z1); g.scale.set(w*7,w*7,len); g.visible=false; scene.add(g); meshes.push(g); };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
   for(let k=0;k<9;k++){ const a=k*.7, lo=gy+(k%3)*H*.12, hi=H-(k%2)*H*.1; blade(ix0+Math.cos(a)*(.3+k%3*.25),lo,iz0+Math.sin(a)*(.3+k%3*.25),ix0+Math.cos(a+1.6)*(.25+k%2*.3),hi,iz0+Math.sin(a+1.6)*(.25+k%2*.3),k%3?.14:.3); } /* the trunk: nine long cuts crossing each other */
   const ring=[[-1,1],[-2,1],[-2,0],[-2,-1],[-2,-2],[-1,-2],[0,-2],[1,-2],[1,-1],[1,0],[1,1],[0,1]], steps=[];
   ring.forEach(([bx,bz],k)=>{ const h=H*(k+1)/13; for(let a=0;a<2;a++) for(let b=0;b<2;b++) set(ix0+bx*2+a,iz0+bz*2+b,h); const sx=ix0+bx*2+1, sz=iz0+bz*2+1; steps.push(slab(sx,sz,2,2,h)); blade(ix0,h*.8,iz0,sx+rnd(-.5,.5),h,sz+rnd(-.5,.5),.1); blade(ix0,h*.92,iz0,sx+rnd(-.6,.6),h,sz+rnd(-.6,.6),.07); });
   for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
-  return {ix0,iz0,H,meshes,steps,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
+  return {ix0,iz0,H,meshes,steps:tears,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
 // the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
-function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(7.5,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.8,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(7.1,7.5,48),new THREE.MeshBasicMaterial({color:0x9a4aff,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide}));
+function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(7.5,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.8,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(6.6,7.5,48),new THREE.MeshBasicMaterial({color:0x3a1466,transparent:true,opacity:.35,depthWrite:false,side:THREE.DoubleSide})); /* a soft dark lip, not a bright ring: it read as a telegraph */
   g.add(d); g.add(e); g.rotation.x=-Math.PI/2; g.userData.tw=1; scene.add(g); const V={y:gy-1,t:0,cd:0}; S.void=V;
-  twHz({upd(dt,play){ if(!F.d5||F.d5!==S||S.done||!S.tree) return false; if(d5OnPlatform(S)){ V.y=Math.min(V.y,T.H-1.2); } else if(play){ V.t+=dt; if(V.t>3) V.y=Math.min(T.H-1.6,V.y+dt*.4); }
-      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,7); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
+  twHz({upd(dt,play){ if(!F.d5||F.d5!==S||S.done||!S.tree) return false; const top=d5OnPlatform(S); V.a=lerp(V.a==null?1:V.a,top?0:1,Math.min(1,dt*3)); if(top){ V.y=Math.min(V.y,T.H-4); } else if(play){ V.t+=dt; if(V.t>3) V.y=Math.min(T.H-4,V.y+dt*.45); } d.material.opacity=.8*V.a; g.visible=V.a>.03;
+      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=(.3+.1*Math.sin(Game.time*5))*V.a; if(!top) for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,7); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
       V.cd-=dt; const P=Player; if(play&&V.cd<=0&&P.y<V.y-.25&&!P.cineFly&&!P.hidden){ V.cd=1.2; P.inv=0; hurtPlayer(1,P.x,P.z,true); P.vy=12; P.onGround=false; P.inv=1; FX.burst(P.x,P.y+1,P.z,30,0x9a4aff,6,.4); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'THE VOID',t:0,col:'#c08aff'}); }
       return true; }, kill(){ scene.remove(g); }}); }
+// the Judgement Cut tear as a material (the slash pass's own maths, in the plane's UV space: the jagged lens, the void with
+// its wine nebula, filaments and stars inside, the crimson edge going white, the red rim glow outside)
+function d5TearMat(len){ const U={t:{value:0},sd:{value:Math.random()},L:{value:Math.max(1,len)},op:{value:1}};
+  const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:`uniform float t,sd,L,op; varying vec2 vUv;
+  float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float nz(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+1.),f.x),f.y); }
+  float fbm(vec2 p){ return nz(p)*.55+nz(p*2.1+3.7)*.28+nz(p*4.3+9.1)*.17; }
+  void main(){ float tt=vUv.x, s=(vUv.y-.5)*2., prof=pow(max(0.,sin(3.14159*clamp(tt,0.,1.))),.5);
+    float jag=(nz(vec2(tt*L*6.+sd*40.,sd))-.5)*.7+(nz(vec2(tt*L*22.,sd*3.))-.5)*.35, w=.58*prof*(1.+jag), as=abs(s);
+    if(as<w){ float e=as/max(w,1e-5); vec2 vp=vec2(tt*L*1.8-t*1.6, s*1.4+t*.6);
+      float sw=fbm(vp*1.3), fil=pow(1.-abs(sin(e*7.*sign(s)+fbm(vp*2.)*6.+t*3.)),18.);
+      vec2 sc=floor(vec2(tt*L*14.,s*9.)+sd*17.); float st=step(.975,h21(sc))*(.55+.45*sin(t*7.+h21(sc+1.)*40.));
+      vec3 vc=mix(vec3(.012,0.,.03),vec3(.32,.02,.16),sw*sw*1.3)+vec3(.9,.25,.4)*fil*.55+vec3(st)*(1.-e);
+      vec3 ec=mix(vec3(1.,.1,.2),vec3(1.,.95,.92),smoothstep(.82,.99,e));
+      gl_FragColor=vec4(mix(vc,ec,smoothstep(.6,1.,e)),op); }
+    else { float rim=exp(-(as-w)/.14)*step(.02,prof); if(rim<.03) discard; gl_FragColor=vec4(vec3(1.,.16,.26)*rim*1.15+vec3(1.,.9,.9)*pow(rim,4.)*.9,rim*op); } }`});
+  m.userData.tear=1; return m; }
+function d5TearTick(T){ try{ const t=(performance.now()/1000)%100; for(const m of T.meshes||[]){ const ms=m.material?[m]:(m.children||[]); for(const q of ms){ const u=q.material&&q.material.uniforms; if(u&&u.t) u.t.value=t; } } }catch(e){} }
 function d5SlashTex(){ if(TW._slTex3) return TW._slTex3; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   try{ const lens=(ang,len,w,fill)=>{ c.save(); c.translate(S/2,S/2); c.rotate(ang); c.beginPath(); c.moveTo(-len,0); c.quadraticCurveTo(0,-w,len,0); c.quadraticCurveTo(0,w,-len,0); c.closePath(); c.fillStyle=fill; c.fill(); c.restore(); };
     for(const [a,l] of [[.12,62],[-.4,56],[.65,52],[-.95,48],[1.25,46],[1.9,40]]){ lens(a,l,11,'rgba(200,30,48,1)'); lens(a,l-2,8.6,'#06010a'); lens(a,l-12,2,'rgba(90,8,44,.95)'); } }catch(e){} /* the Judgement Cut tear: black heart, wine vein, crimson rim */
@@ -466,8 +485,8 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
   // D) the sky gate (a cutscene), then the climb
   S.stop=1; F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
   d5VoidRise(F,S); twBig('THE VOID IS RISING',{size:46,col:'#c08aff',y:UH*.3,dur:2,sub:'Climb. Do not look down.'}); twBark('omar',"The void rises. Climb, little heroes. It is patient. I am not.",true);
-  for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(t%1.8<.1){ twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,9,rnd(-.15,.15),{col:0x8a3aff,dmg:1,life:3.5}); Sound.sfx('swing'); }
-    if(t>2&&t%2.3<.1) twSkyScythe(P.x+P.vx*.3,P.z+P.vz*.3,1); yield .1; }
+  /* the climb: the void under you is the only threat (he used to snipe with scythes from off screen and drop sky scythes on your step: hits out of nowhere, and their circle sat on the tree) */ BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); for(const h of TW.hz.slice()) if(h&&h.hole){ try{ h.kill&&h.kill(); }catch(e){} h.kill=null; h.upd=()=>false; } /* and no hungry hole left over from before the gate */
+  for(let t=0;!d5OnPlatform(S);t+=.1){ if(t%4<.1&&t>1) twBark('omar',["Climb faster. It is hungry.","Do not look down. ...You looked down.","The void sends its regards. From below."][Math.floor(t/4)%3],false); yield .1; }
   S.cam=null; F.pend=()=>d5PlatformCine(F,C,O); while(!S.done) yield .1; }
 
 function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
@@ -496,9 +515,9 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
     try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+6.5,P2.z+20,P2.x,cam.sy+1.4,P2.z]; /* as far out as the fight, but flatter: the black gate in the sky stays above the frame instead of between the camera and you */ /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
       const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
-function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
-    const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
-    if(m.userData.slash){ mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } /* the cuts flicker */ else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
+function d5TreeFade(T,P,dt,reset){ if(!T) return; d5TearTick(T); for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
+    const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt._v!=null?mt._v:mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
+    if(m.userData.slash){ if(mt.uniforms&&mt.uniforms.op){ mt._v=v; mt.uniforms.op.value=v; } else mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
 
 function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree, H=T.H; F.miraHold=1; Game.letterTo=.5; P.vx=P.vz=0;
   if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
