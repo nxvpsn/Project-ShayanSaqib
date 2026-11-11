@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.61 (Nov 11): Nathan rebuilt: phase II is the machine (missiles, buster beam, laser grid, funnel dives, boost tackle; limit cut Full Burst), phase III is on foot (gun kata, martial arts, point blank, iai, counter stance; limit cut Last Round). Less HP in every phase, a louder grab, a faster ultimate, one-hit kill works, sprites face the camera in cutscenes.";
-const DBG_NEW=['nathan:*'];
+const DBG_PATCH="v1.62 (Nov 11): HD-2D graphics pass: filmic contrast with cool shadows and warm highlights, a tighter tilt-shift focus band, light shafts leaning along the sun or moon, low drifting mist while exploring. No boss mechanics changed.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

@@ -15,7 +15,7 @@ const HD={grade:1,tilt:1,shafts:1,mist:1,rays:0, /* rays off: with a low warm su
     let f=grade.material.fragmentShader, ok=true; const sw=(a,b)=>{ if(f.indexOf(a)<0){ ok=false; return; } f=f.replace(a,b); };
     sw("uniform float exposure,sat,vig,flash,ab,t,red,imp;","uniform float exposure,sat,vig,flash,ab,t,red,imp,hd,rays;uniform vec2 sunUV;uniform vec3 rayCol;");
     sw("c=aces(c*exposure)*tint;","if(rays>.001){ vec2 dv=(sunUV-vUv)/18.; vec2 p=vUv; float w=1.; vec3 acc=vec3(0.); for(int i=0;i<18;i++){ p+=dv; acc+=max(texture2D(tDiffuse,p).rgb-vec3(.85),0.)*w; w*=.9; } c+=min(acc*rays*.02,vec3(.12))*rayCol*smoothstep(.8,0.,length(vUv-sunUV)); }\n    c=aces(c*exposure)*tint;");
-    sw("c=pow(c,vec3(1./2.2));","c=pow(c,vec3(1./2.2)); if(hd>.001){ vec3 sc=c*c*(3.-2.*c); c=mix(c,sc,.38*hd); float l2=dot(c,vec3(.299,.587,.114)); c+=hd*(vec3(-.016,0.,.028)*(1.-l2)+vec3(.028,.012,-.018)*l2); }");
+    sw("c=pow(c,vec3(1./2.2));","c=pow(c,vec3(1./2.2)); if(hd>.001){ c=clamp(c,0.,1.); /* the curve folds back above 1: an unclamped flash or bright sky went red */ vec3 sc=c*c*(3.-2.*c); c=mix(c,sc,.38*hd); float l2=dot(c,vec3(.299,.587,.114)); c+=hd*(vec3(-.016,0.,.028)*(1.-l2)+vec3(.028,.012,-.018)*l2); }");
     if(ok){ grade.material.fragmentShader=f; grade.material.needsUpdate=true; HD.shader=1; } }catch(e){ console.error('hd2d shader',e); } })();
 function hdShaftTex(){ if(HD._st) return HD._st; const W=64, H=256, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
   try{ const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(255,255,255,.9)'); g.addColorStop(.55,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);

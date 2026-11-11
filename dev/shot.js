@@ -46,6 +46,7 @@ const ROOT=path.resolve(__dirname,'..'), MIME={'.html':'text/html','.js':'text/j
   if(evalJs){ try{ await ev(evalJs); }catch(e){ console.log('eval failed:',e.message); } }
   await waitGame(waitS);
   const base=out.replace(/\.png$/,''); fs.mkdirSync(path.dirname(out),{recursive:true});
+  if(opt('print','')){ try{ console.log('print',JSON.stringify(await ev(opt('print','')))); }catch(e){ console.log('print failed:',e.message); } } /* --print <js>: log a value from the page before the shot */
   for(let i=1;i<=shots;i++){ const f=shots>1?`${base}-${i}.png`:out; await snap(f); console.log('shot',f,'game time',(await ev('Game.time')).toFixed(2),'state',await ev('Game.state')); if(i<shots) await waitGame(every); }
   if(has('keep')) await page.waitForTimeout(20000);
   console.log('page errors',errs.length,errs.slice(0,5)); await browser.close(); srv.close(); process.exit(0);

@@ -6155,7 +6155,7 @@ const HD={grade:1,tilt:1,shafts:1,mist:1,rays:0, /* rays off: with a low warm su
     let f=grade.material.fragmentShader, ok=true; const sw=(a,b)=>{ if(f.indexOf(a)<0){ ok=false; return; } f=f.replace(a,b); };
     sw("uniform float exposure,sat,vig,flash,ab,t,red,imp;","uniform float exposure,sat,vig,flash,ab,t,red,imp,hd,rays;uniform vec2 sunUV;uniform vec3 rayCol;");
     sw("c=aces(c*exposure)*tint;","if(rays>.001){ vec2 dv=(sunUV-vUv)/18.; vec2 p=vUv; float w=1.; vec3 acc=vec3(0.); for(int i=0;i<18;i++){ p+=dv; acc+=max(texture2D(tDiffuse,p).rgb-vec3(.85),0.)*w; w*=.9; } c+=min(acc*rays*.02,vec3(.12))*rayCol*smoothstep(.8,0.,length(vUv-sunUV)); }\n    c=aces(c*exposure)*tint;");
-    sw("c=pow(c,vec3(1./2.2));","c=pow(c,vec3(1./2.2)); if(hd>.001){ vec3 sc=c*c*(3.-2.*c); c=mix(c,sc,.38*hd); float l2=dot(c,vec3(.299,.587,.114)); c+=hd*(vec3(-.016,0.,.028)*(1.-l2)+vec3(.028,.012,-.018)*l2); }");
+    sw("c=pow(c,vec3(1./2.2));","c=pow(c,vec3(1./2.2)); if(hd>.001){ c=clamp(c,0.,1.); /* the curve folds back above 1: an unclamped flash or bright sky went red */ vec3 sc=c*c*(3.-2.*c); c=mix(c,sc,.38*hd); float l2=dot(c,vec3(.299,.587,.114)); c+=hd*(vec3(-.016,0.,.028)*(1.-l2)+vec3(.028,.012,-.018)*l2); }");
     if(ok){ grade.material.fragmentShader=f; grade.material.needsUpdate=true; HD.shader=1; } }catch(e){ console.error('hd2d shader',e); } })();
 function hdShaftTex(){ if(HD._st) return HD._st; const W=64, H=256, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
   try{ const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(255,255,255,.9)'); g.addColorStop(.55,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
@@ -18771,8 +18771,8 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.61 (Nov 11): Nathan rebuilt: phase II is the machine (missiles, buster beam, laser grid, funnel dives, boost tackle; limit cut Full Burst), phase III is on foot (gun kata, martial arts, point blank, iai, counter stance; limit cut Last Round). Less HP in every phase, a louder grab, a faster ultimate, one-hit kill works, sprites face the camera in cutscenes.";
-const DBG_NEW=['nathan:*'];
+const DBG_PATCH="v1.62 (Nov 11): HD-2D graphics pass: filmic contrast with cool shadows and warm highlights, a tighter tilt-shift focus band, light shafts leaning along the sun or moon, low drifting mist while exploring. No boss mechanics changed.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
@@ -19261,7 +19261,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.61';
+const GAME_VERSION='v1.62';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 
