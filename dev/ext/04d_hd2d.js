@@ -8,13 +8,13 @@
 //   HD.rays   screen-space rays from the sun when it is in frame (cutscenes, the third-person fight)
 // localStorage 'msb_hd' = '0' turns the whole pass off.
 // =====================================================================
-const HD={grade:1,tilt:1,shafts:1,mist:1,rays:1,on:1,cards:null,fog:null,t:0};
+const HD={grade:1,tilt:1,shafts:1,mist:1,rays:0, /* rays off: with a low warm sun in frame they washed the whole screen in its colour */ on:1,cards:null,fog:null,t:0};
 (function(){ try{ if(typeof localStorage!=='undefined'&&localStorage.getItem('msb_hd')==='0') HD.on=0; }catch(e){} })();
 (function(){ try{ const u=grade.uniforms; if(!u||!grade.material||typeof grade.material.fragmentShader!=='string') return;
     u.hd={value:0}; u.rays={value:0}; u.sunUV={value:new THREE.Vector2(.5,1.2)}; u.rayCol={value:new THREE.Vector3(1,.9,.7)};
     let f=grade.material.fragmentShader, ok=true; const sw=(a,b)=>{ if(f.indexOf(a)<0){ ok=false; return; } f=f.replace(a,b); };
     sw("uniform float exposure,sat,vig,flash,ab,t,red,imp;","uniform float exposure,sat,vig,flash,ab,t,red,imp,hd,rays;uniform vec2 sunUV;uniform vec3 rayCol;");
-    sw("c=aces(c*exposure)*tint;","if(rays>.001){ vec2 dv=(sunUV-vUv)/18.; vec2 p=vUv; float w=1.; vec3 acc=vec3(0.); for(int i=0;i<18;i++){ p+=dv; acc+=max(texture2D(tDiffuse,p).rgb-vec3(.6),0.)*w; w*=.93; } c+=acc*rayCol*rays*.06; }\n    c=aces(c*exposure)*tint;");
+    sw("c=aces(c*exposure)*tint;","if(rays>.001){ vec2 dv=(sunUV-vUv)/18.; vec2 p=vUv; float w=1.; vec3 acc=vec3(0.); for(int i=0;i<18;i++){ p+=dv; acc+=max(texture2D(tDiffuse,p).rgb-vec3(.85),0.)*w; w*=.9; } c+=min(acc*rays*.02,vec3(.12))*rayCol*smoothstep(.8,0.,length(vUv-sunUV)); }\n    c=aces(c*exposure)*tint;");
     sw("c=pow(c,vec3(1./2.2));","c=pow(c,vec3(1./2.2)); if(hd>.001){ vec3 sc=c*c*(3.-2.*c); c=mix(c,sc,.38*hd); float l2=dot(c,vec3(.299,.587,.114)); c+=hd*(vec3(-.016,0.,.028)*(1.-l2)+vec3(.028,.012,-.018)*l2); }");
     if(ok){ grade.material.fragmentShader=f; grade.material.needsUpdate=true; HD.shader=1; } }catch(e){ console.error('hd2d shader',e); } })();
 function hdShaftTex(){ if(HD._st) return HD._st; const W=64, H=256, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d');
@@ -36,7 +36,7 @@ function hdFrame(dt){ HD.t+=dt; const u=grade.uniforms, place=hdPlace(), tps=typ
   // shafts
   const wantS=place&&HD.shafts&&!tps, fight=hdFighting();
   if(wantS&&!HD.cards){ HD.cards=[]; for(let i=0;i<7;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:hdShaftTex(),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,side:THREE.DoubleSide})); m.renderOrder=3; scene.add(m); HD.cards.push({m,x:0,z:0,ph:rnd(0,6.28),w:rnd(1.6,3.4),h:rnd(11,16),a:0,live:0}); } }
-  if(HD.cards){ if(HD.cards.length&&!HD.cards[0].m.parent) HD.cards.forEach(o=>scene.add(o.m)); const d=wantS?LOOK.sunDir:[0,1,0], lean=Math.max(-.6,Math.min(.6,-d[0]*.55)), col=wantS?new THREE.Color(LOOK.sunCol||'#ffffff'):null, base=fight?.05:.11;
+  if(HD.cards){ if(HD.cards.length&&!HD.cards[0].m.parent) HD.cards.forEach(o=>scene.add(o.m)); const d=wantS?LOOK.sunDir:[0,1,0], lean=Math.max(-.6,Math.min(.6,-d[0]*.55)), col=wantS?new THREE.Color(LOOK.sunCol||'#ffffff').lerp(new THREE.Color(0xffffff),.55):null, base=fight?.035:.075;
     for(const o of HD.cards){ if(wantS&&(!o.live||Math.abs(o.x-P.x)>17||Math.abs(o.z-P.z)>12)){ o.live=1; o.x=P.x+rnd(-15,15); o.z=P.z+rnd(-10,8); o.a=0; }
       o.a=lerp(o.a,wantS?base*(.6+.4*Math.sin(HD.t*.7+o.ph)):0,Math.min(1,dt*1.5)); o.m.visible=o.a>.004; if(!o.m.visible) continue;
       const gy=groundY(o.x,o.z); o.m.position.set(o.x+lean*o.h*.5,gy+o.h*.5,o.z); o.m.scale.set(o.w,o.h,1); o.m.rotation.set(-.35,0,-lean); o.m.material.opacity=o.a; if(col) o.m.material.color.copy(col); } }
@@ -45,5 +45,5 @@ function hdFrame(dt){ HD.t+=dt; const u=grade.uniforms, place=hdPlace(), tps=typ
   if(wantM&&!HD.fog){ HD.fog=[]; for(let i=0;i<5;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:hdMistTex(),transparent:true,opacity:0,depthWrite:false,fog:false})); m.rotation.x=-Math.PI/2; m.renderOrder=1; scene.add(m); HD.fog.push({m,x:0,z:0,vx:rnd(-.3,.3),vz:rnd(-.15,.15),s:rnd(9,15),a:0,live:0}); } }
   if(HD.fog){ if(HD.fog.length&&!HD.fog[0].m.parent) HD.fog.forEach(o=>scene.add(o.m)); const fc=wantM?new THREE.Color(LOOK.fog[0]).lerp(new THREE.Color(0xffffff),.55):null;
     for(const o of HD.fog){ if(wantM&&(!o.live||Math.abs(o.x-P.x)>20||Math.abs(o.z-P.z)>15)){ o.live=1; o.x=P.x+rnd(-16,16); o.z=P.z+rnd(-11,11); o.a=0; } o.x+=o.vx*dt; o.z+=o.vz*dt;
-      o.a=lerp(o.a,wantM?.16:0,Math.min(1,dt*1.2)); o.m.visible=o.a>.004; if(!o.m.visible) continue; o.m.position.set(o.x,groundY(o.x,o.z)+.45,o.z); o.m.scale.set(o.s,o.s,1); o.m.material.opacity=o.a; if(fc) o.m.material.color.copy(fc); } } }
+      o.a=lerp(o.a,wantM?.085:0,Math.min(1,dt*1.2)); o.m.visible=o.a>.004; if(!o.m.visible) continue; o.m.position.set(o.x,groundY(o.x,o.z)+.45,o.z); o.m.scale.set(o.s,o.s,1); o.m.material.opacity=o.a; if(fc) o.m.material.color.copy(fc); } } }
 (function(){ const uc=updateCamera; updateCamera=function(dt){ const r=uc.apply(this,arguments); try{ hdFrame(Math.max(0,Math.min(.05,dt||1/60))); }catch(e){ console.error('hd2d',e); } return r; }; })();
