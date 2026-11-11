@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.65 (Nov 11): Nathan: funnel shots no longer parry themselves when you mash, more missiles that explode when cut, a faster buster sweep, the human pilot in phase III, blue cuts on his rend and grab, a re-shot phase II transition, interrupted moves clean up (no grey screen or frozen pose), no Full Counter inside a limit cut. Duo: the tree is made of Judgement Cut tears, the climb only has the void, portals are Omar's rifts.";
-const DBG_NEW=['nathan:bits','nathan:cage','nathan:missiles','nathan:buster','nathan:gunkata','nathan:martial','nathan:pointblank','nathan:iai','nathan:stance','duo:*'];
+const DBG_PATCH="v1.66 (Nov 11): Lanternbrook rebuilt as the HD-2D proof: new wall and roof textures at twice the detail, real timber, stone, shutters, porches and signs on the houses, warm light pooling on the ground from lanterns and windows, foreground grass, a cooler dusk. No boss mechanics changed.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
