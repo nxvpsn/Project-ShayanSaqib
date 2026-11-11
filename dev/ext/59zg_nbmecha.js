@@ -56,8 +56,8 @@ function* npBuster(dur,rate){ const L=34, W=2.6, S={a:Math.atan2(Player.z-NB.z,P
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0x04101c,transparent:true,opacity:.6,depthWrite:false})); m.rotation.x=-Math.PI/2; m.userData.temp=1; scene.add(m);
   const bm=[beamMesh(0x3ff4ff,1.1),beamMesh(0xffffff,.5)]; for(const b of bm){ b.userData.temp=1; b.visible=false; }
   np1Obj({bit:1,upd(dt){ if(S.done) return false; S.t+=dt; S.cd-=dt; const P=Player, want=Math.atan2(P.z-NB.z,P.x-NB.x); let da=want-S.a; da=Math.atan2(Math.sin(da),Math.cos(da)); S.a+=S.on?clamp(da,-rate*dt,rate*dt):da*Math.min(1,dt*8);
-      const ux=Math.cos(S.a), uz=Math.sin(S.a), y=gy(); m.position.set(NB.x+ux*L/2,y+.06,NB.z+uz*L/2); m.rotation.z=-S.a; m.scale.set(L,S.on?W:W*(.3+.3*(Math.floor(S.t*12)%2)),1); m.material.color.setHex(S.on?0x3ff4ff:0x04101c); m.material.opacity=S.on?.35:.6;
-      for(const b of bm){ b.visible=!!S.on; b.position.set(NB.x,NB.y+1.6,NB.z); b.lookAt(NB.x+ux*L,y+1.2,NB.z+uz*L); const j=1+Math.sin(S.t*50)*.08; b.scale.set(j,j,L); }
+      const ux=Math.cos(S.a), uz=Math.sin(S.a), y=gy(); m.position.set(NB.x+ux*L/2,y+.06,NB.z+uz*L/2); m.rotation.z=-S.a; m.visible=false; /* no strip on the ground (v1.68): the warning is the laser sight below */
+      bm.forEach((b,bi)=>{ b.visible=!!S.on||bi===1; b.position.set(NB.x,NB.y+1.6,NB.z); b.lookAt(NB.x+ux*L,y+1.2,NB.z+uz*L); const j=S.on?1+Math.sin(S.t*50)*.08:.1+.05*Math.sin(S.t*40); b.scale.set(j,j,L); }); if(!S.on&&Math.random()<.7) FX.spawn(NB.x+ux*1.2+rnd(-1.5,1.5),NB.y+1.6+rnd(-1.5,1.5),NB.z+uz*1.2+rnd(-1.5,1.5),0,0,0,.25,0x9ff8ff,.2,0,true);
       if(S.on){ for(let k=0;k<4;k++){ const u=rnd(1,L); FX.spawn(NB.x+ux*u,y+rnd(.3,2),NB.z+uz*u,rnd(-1,1),rnd(1,4),rnd(-1,1),.3,k%2?0x3ff4ff:0xffffff,.26,0,true); } FX.shake=Math.max(FX.shake||0,.12);
         const rx=P.x-NB.x, rz=P.z-NB.z, al=rx*ux+rz*uz, pe=Math.abs(rx*uz-rz*ux); if(S.cd<=0&&al>.5&&al<L&&pe<W/2+.1&&P.y<groundY(P.x,P.z)+2.8&&P.inv<=0&&P.dash<=0&&!P.cineFly){ S.cd=.6; hurtPlayer(2,NB.x,NB.z); } }
       return true; }, kill(){ S.done=1; scene.remove(m); bm.forEach(b=>scene.remove(b)); }});

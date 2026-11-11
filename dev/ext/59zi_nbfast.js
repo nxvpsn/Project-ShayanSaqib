@@ -57,4 +57,3 @@ NP1M.buster=function*(){ NP1.cur='buster'; twBark('nathan',"Buster cannon. With 
   { const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*9,P.z-dz*9); } yield .3;
   const M={t:0,n:0}; np1Obj({bit:1,upd(dt){ M.t+=dt; if(M.n<7&&M.t>1.3+M.n*.24){ M.n++; const sd=M.n%2?1:-1, [dx,dz]=np1Dir(); npMissile(NB.x-dz*sd*1.1,NB.y+3.1,NB.z+dx*sd*1.1,{sp:11}); Sound.sfx('mechshot'); } return M.n<7; }});
   yield* npBuster(3.2,1.5); np1Open(1.6); yield .2; };
-NP1M.funnelgrab=(function(){ const old=NP1M.funnelgrab; return function*(){ yield* old.call(this); if(NP1.gen&&!NB.stunned&&!(NP1.stunT>0)){ NP1.cur='funnelgrab'; const P=Player, [dx,dz]=np1Dir(); nbBoost(P.x-dx*8-dz*5,P.z-dz*8+dx*5); yield .15; yield* npVolley(5,false); } }; })();

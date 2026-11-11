@@ -10,7 +10,7 @@ NAMES.trainer='Kenji, VR Enthusiast';
 const TUT_LOOK={cloth:'#2a2f4a',clothS:'#1c2036',skin:'#d8a882',hair:'#1a1410',hat:'#3ff4ff'};
 // ---------- the trainer and his sign, by the first house ----------
 (function(){ const lv=LEVELDEF.village; LEVELDEF.village=function(){ const G=lv.apply(this,arguments);
-    G.ents.push({type:'npc',who:'trainer',x:9.9,z:10.3,f:-1,look:TUT_LOOK});
+    G.ents.push({type:'npc',who:'trainer',x:11.4,z:19.3,f:1,look:TUT_LOOK}); /* on the grass below the first stall (the owner's spot) */
     const [cv,c]=mkCanvas(96,56); R(c,46,30,4,26,'#5a3a20'); R(c,4,4,88,30,'#7a4e2c'); R(c,6,6,84,26,'#a8743e'); c.font='bold 11px monospace'; c.textAlign='center'; c.fillStyle='#1a0e06';
     c.fillText('PRACTICE PARRY',48,17); c.fillText('WITH ME',48,29); const m=billboard(cv,1.7,1,{foot:0}); m.position.set(10.35,groundY(10.35,10.3)+1.6,10.35); G.root.add(m); G.trainerSign=m;
     // the sign is in his hands: it follows him, and goes when he does

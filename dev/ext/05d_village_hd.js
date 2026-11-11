@@ -166,7 +166,7 @@ function vhTreeSprite(kind,seed){ const W=128, H=152, [cv,c]=mkCanvas(W,H), cx=W
 // ---------- props, contact shadows, the backdrop ----------
 function vhSoftTex(){ if(VH.soft) return VH.soft; const S=64, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d'); try{ const g=c.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.55,'rgba(255,255,255,.5)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,S,S); }catch(e){} return VH.soft=new THREE.CanvasTexture(cv); } /* a smooth falloff: the stepped pixel glow, in black, drew hard dark blocks */
 function vhShade(G,x,z,w,dp,op,owner){ op*=.62; const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:vhSoftTex(),color:0x0a0614,transparent:true,opacity:op,depthWrite:false,fog:false})); m.rotation.x=-Math.PI/2; m.position.set(x,groundY(x,z)+.03,z); m.scale.set(w,dp,1); G.root.add(m); VH.decals.push({m,op,owner,ph:0}); return m; }
-function vhVillage2(G){ const blk=(x,z)=>{ if(x>=0&&z>=0&&x<G.w&&z<G.d) G.B[z][x]=true; };
+function vhVillage2(G){ const RZ=VH.raise=[], blk=(x,z,h,o)=>{ if(x>=0&&z>=0&&x<G.w&&z<G.d) RZ.push({x,z,h,o:o||null,h0:G.H[z][x],on:0}); }; /* a prop is a raised cell, not a wall: you can mantle onto it like onto the stalls and the roofs (the raise is applied last, after the grass and the shadows are laid on the flat ground) */
   try{ vhEdges(G); }catch(e){ console.error('vh edges',e); }
   // contact shadows: houses, trees, stalls, the fountain, the lamp posts
   [[3,5,6,4],[11,4,7,5],[23,5,6,4],[31,4,7,5]].forEach(([x,z,w,d])=>{ const o=vhOwner(G,'house',x+w/2,z+d/2); vhShade(G,x+w/2,z+d+.25,w+1.6,1.7,.5,o); });
@@ -175,20 +175,24 @@ function vhVillage2(G){ const blk=(x,z)=>{ if(x>=0&&z>=0&&x<G.w&&z<G.d) G.B[z][x
   [[7,10],[15.5,10.2],[24.5,10.2],[33,10],[10,15.2],[29,15.2],[37,14.6]].forEach(([x,z])=>vhShade(G,x,z,1.1,.9,.5,vhOwner(G,'lantern',x+.2,z)));
   if(!VH.low){ const wood=vhMat('beam'), woodL=vhMat('sill'), I=vhMat('iron');
     // a woodpile in the gap between the first two houses
-    for(let r=0;r<3;r++) for(let i=0;i<4-r;i++){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.1,8),(i+r)%2?wood:woodL); m.rotation.x=Math.PI/2; m.position.set(9.35+i*.34+r*.17,.16+r*.29,5.7); m.castShadow=true; G.root.add(m); } blk(9,5); blk(10,5); vhShade(G,9.9,5.9,2,1.5,.45,null);
+    for(let r=0;r<3;r++) for(let i=0;i<4-r;i++){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.1,8),(i+r)%2?wood:woodL); m.rotation.x=Math.PI/2; m.position.set(9.35+i*.34+r*.17,.16+r*.29,5.7); m.castShadow=true; G.root.add(m); } blk(9,5,.78); blk(10,5,.78); vhShade(G,9.9,5.9,2,1.5,.45,null);
     // hay bales in the other gap
-    { const hay=new THREE.MeshLambertMaterial({color:0xd8b04a}), band=new THREE.MeshLambertMaterial({color:0x8a6a2a}); for(const [hx,hy,hz] of [[29.4,0,5.7],[30.25,0,5.75],[29.8,.56,5.7]]){ addBox(G,.8,.56,.6,hay,hx,hy,hz); addBox(G,.82,.05,.62,band,hx,hy+.14,hz,false); addBox(G,.82,.05,.62,band,hx,hy+.38,hz,false); } blk(29,5); blk(30,5); vhShade(G,29.85,5.9,2.2,1.5,.45,null); }
+    { const hay=new THREE.MeshLambertMaterial({color:0xd8b04a}), band=new THREE.MeshLambertMaterial({color:0x8a6a2a}); for(const [hx,hy,hz] of [[29.4,0,5.7],[30.25,0,5.75],[29.8,.56,5.7]]){ addBox(G,.8,.56,.6,hay,hx,hy,hz); addBox(G,.82,.05,.62,band,hx,hy+.14,hz,false); addBox(G,.82,.05,.62,band,hx,hy+.38,hz,false); } blk(29,5,1.12); blk(30,5,.56); vhShade(G,29.85,5.9,2.2,1.5,.45,null); }
     // a hand cart below the fountain
     { const bx=20.6, bz=18.6; addBox(G,1.5,.12,.86,wood,bx,.46,bz); for(const sz of [-.43,.43]) addBox(G,1.5,.3,.06,woodL,bx,.58,bz+sz); addBox(G,.06,.3,.86,woodL,bx-.75,.58,bz); for(const sz of [-.3,.3]){ const hd=addBox(G,.9,.06,.06,wood,bx+1.1,.52,bz+sz,false); hd.rotation.z=-.18; }
       for(const sz of [-.5,.5]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.08,12),wood); w.rotation.x=Math.PI/2; w.position.set(bx-.15,.34,bz+sz); w.castShadow=true; G.root.add(w); const hub=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.1,8),I); hub.rotation.x=Math.PI/2; hub.position.set(bx-.15,.34,bz+sz); G.root.add(hub); }
-      for(const [ox,oc] of [[-.35,0xe0a040],[0,0xd05a4a],[.35,0x9ac05a]]) addBox(G,.3,.22,.3,new THREE.MeshLambertMaterial({color:oc}),bx+ox,.58,bz,false); blk(19,18); blk(20,18); blk(21,18); vhShade(G,bx,bz+.2,2.6,1.8,.45,null); }
+      for(const [ox,oc] of [[-.35,0xe0a040],[0,0xd05a4a],[.35,0x9ac05a]]) addBox(G,.3,.22,.3,new THREE.MeshLambertMaterial({color:oc}),bx+ox,.58,bz,false); blk(19,18,.8); blk(20,18,.8); blk(21,18,.6); vhShade(G,bx,bz+.2,2.6,1.8,.45,null); }
     // a bench facing the fountain
-    { const bx=16.45, bz=11.3; addBox(G,.42,.07,1.5,woodL,bx,.42,bz); addBox(G,.07,.5,1.5,wood,bx-.2,.48,bz); for(const sz of [-.6,.6]){ addBox(G,.4,.42,.07,I,bx,0,bz+sz); } blk(16,10); blk(16,11); vhShade(G,bx,bz,1.3,2.1,.4,null); }
+    { const bx=16.45, bz=11.3; addBox(G,.42,.07,1.5,woodL,bx,.42,bz); addBox(G,.07,.5,1.5,wood,bx-.2,.48,bz); for(const sz of [-.6,.6]){ addBox(G,.4,.42,.07,I,bx,0,bz+sz); } blk(16,10,.5); blk(16,11,.5); vhShade(G,bx,bz,1.3,2.1,.4,null); }
     // washing on a line between the first two houses
     { const y=2.5, z=9.15; addBox(G,2.1,.02,.02,I,10,y,z,false); const cl=[0xf2ece0,0xc8423a,0x8ad0ff,0xf2c14e,0xf2ece0]; for(let i=0;i<5;i++){ const h=.34+hash(i,3)*.3, m=addBox(G,.3,h,.02,new THREE.MeshLambertMaterial({color:cl[i],side:THREE.DoubleSide}),9.2+i*.4,y-h,z,false); G.anim.push(()=>{ m.rotation.x=Math.sin(Game.time*1.6+i)*.12; }); } }
     // flower beds along the house fronts, and twice the grass everywhere
     try{ [[3,5,6,4],[11,4,7,5],[23,5,6,4],[31,4,7,5]].forEach(([x,z,w,d])=>scatterTufts(G,0,[{kind:'flower',cols:['#f2c14e','#ec8fb0','#ffffff','#9fd0ff','#e85a5a'],n:26,s:1.15},{kind:'fern',cols:['#2a5a2a','#3a7036'],n:10,s:1}],[x,z+d,x+w,z+d+.75]));
       scatterTufts(G,0,[{kind:'grass',cols:['#3f7a2a','#4e8c34','#5f9f3e'],n:620,s:.85},{kind:'fern',cols:['#2a5a2a','#3a7036'],n:70,s:1.1},{kind:'tall',cols:['#3a6e28','#4e8c34'],n:120,s:1.5}],[1,5,39,22]); }catch(e){ console.error('vh tufts',e); } }
   // the backdrop: pines standing close behind the houses and round the edges
-  try{ for(let i=0;i<17;i++){ const x=1+i*2.35+hash(i,5)*.8, z=.7+hash(5,i)*1.5, m=addTree(G,x,z,'pine',1); if(m){ m.scale.setScalar(1.1+hash(i,9)*.5); } } }catch(e){ console.error('vh pines',e); } }
+  try{ for(let i=0;i<17;i++){ const x=1+i*2.35+hash(i,5)*.8, z=.7+hash(5,i)*1.5, m=addTree(G,x,z,'pine',1); if(m){ m.scale.setScalar(1.1+hash(i,9)*.5); } } }catch(e){ console.error('vh pines',e); }
+  // the crates and sacks beside each stall stand on the ground too (they go when the stall is smashed)
+  if(!VH.low) for(const sx of [12,25]){ const o=vhOwner(G,'stall',sx+1.5,17.5); blk(sx-1,17,.74,o); blk(sx+3,17,.5,o); }
+  for(const r of RZ){ if(r.o&&r.o.dead) continue; G.H[r.z][r.x]=Math.max(G.H[r.z][r.x],r.h0+r.h); r.on=1; }
+  G.anim.push(()=>{ try{ for(const r of RZ) if(r.on&&r.o&&r.o.dead){ r.on=0; L.H[r.z][r.x]=r.h0; } }catch(e){} }); }
 (function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ if(VH.on) vhVillage2(G); }catch(e){ console.error('vh village 2',e); } return G; }; })();
