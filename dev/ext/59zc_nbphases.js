@@ -198,27 +198,34 @@ function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), g
 function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(); npShotAt(NB.x,NB.z,(ly||2.4),dist+2,side,dx,dz); } /* from Ali's side of him */
 function npShotAli(dist,side,up){ const [dx,dz]=np1Dir(); npShotAt(Player.x,Player.z,1.4,dist+3,side,-dx*.25+(-dz)*.97*(side<0?-1:1),-dz*.25+dx*.97*(side<0?-1:1)); } /* from his side, Nathan's direction across the frame */
 function npShotBoth(dist,side){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
-// I -> II: MOONLESS SKY. He purges his armour; the sky goes dark
-function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
-  npShotNB(5,1.4,1.4,2.2); NB.hov=.7; yield wait(.5);
-  yield say('nathan',"...Not bad, wanderer. Not bad at all.",'angry');
-  npShotAli(3.4,1,1.5); yield say('ali',"Get up. We're not done.");
-  npShotNB(4.2,-1.2,1.8,2.6); yield say('nathan',"I held back. The moon was watching. I have an image to maintain.");
-  npShotAli(3.4,-1,1.4); yield say('ali',"The moon is broken.");
-  npShotNB(4.6,1,1.6,2.6); yield say('nathan',"...Exactly. Nobody's watching now.",'angry');
-  // the purge: plates burst off him, the sky goes out
-  Sound.sfx('charge'); NB.hov=1.4; yield tween(NB,{hov:3.2},.8,twEIO); yield say('nathan',"Armour purge.");
-  for(let i=0;i<6;i++){ FX.burst(NB.x,NB.y+rnd(1,3.5),NB.z,30,i%2?0xffffff:0xc8d4e0,8,.5,false); FX.burst(NB.x,NB.y+2.2,NB.z,20,0x3ff4ff,6,.4); Sound.sfx(i%2?'crash':'slam'); shake(.4); yield wait(.09); }
-  FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[2,2],[1,2],[3,1]]); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[2].tint); if(g.sat) g.sat.value=NP_LOOK[2].sat; }catch(e){} if(NB.mat) NB.mat.color.setHex(0xdfe8ff);
-  npShotAli(3.6,1.2,1.3); yield say('ali',"You took your armour off to go faster.");
-  npShotNB(4,-1,1.8,3.4); yield say('nathan',"I took it off to look cooler. Going faster is a side effect.");
-  if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+1.4,mi.z+3.4,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"He's... kind of glowing. Is that allowed?!",'surprised'); }
-  npShotBoth(13,1); twCutin('nathan','MOONLESS SKY','Phase II  ·  the first seal breaks','#1a4aff',1.8); yield wait(1.2);
-  evaCard(['PHASE II','MOONLESS SKY'],1.8,1); Sound.sfx('slam'); yield wait(1.8);
-  npShotNB(5,1,1.6,3); yield say('nathan',"Let's dance in the dark, Ali.");
-  npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
-  npShotNB(5,-1,1.6,3); yield say('nathan',"Everyone dances when the floor is on fire.",'angry');
-  yield tween(NB,{hov:1.4},.4,twEIO); npBegin(2); }
+// I -> II: MOONLESS SKY. The pilot is done holding back: the machine wakes up. He rises, eight funnels unfold round him,
+// the missile racks open, the sky goes dark behind him; the title rides a slow slide across both of them
+function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; const bits=[];
+  try{
+    npShotNB(5,1.4,1.4,2.2); NB.hov=.7; for(let i=0;i<4;i++){ FX.spark(NB.x+rnd(-.8,.8),NB.y+rnd(1,3),NB.z); Sound.sfx('hit'); yield wait(.12); }
+    yield say('nathan',"...You cut the pilot, wanderer. Well done.",'angry');
+    npShotAli(3.4,1,1.5); yield say('ali',"Get up.");
+    npShotNB(4.2,-1.2,1.8,2.6); yield say('nathan',"The pilot was being polite. The machine has no manners.");
+    // he rises; the camera pulls out with him
+    Sound.sfx('charge'); Sound.sfx('drone'); npShotBoth(13,1); yield tween(NB,{hov:4.2},1.1,twEIO);
+    yield say('nathan',"All systems. All weapons. Safety... off.",'angry');
+    // the funnels unfold in a ring, one by one, each with a ping and a flare
+    for(let i=0;i<8;i++){ const b=nbBit(NB.x,NB.y+2,NB.z); b.a=i*Math.PI/4; b.k=0; bits.push(b); Sound.tone('sine',700+i*90,900+i*90,.12,.06); FX.burst(NB.x,NB.y+2,NB.z,8,0x3ff4ff,4,.25); yield wait(.09); }
+    const spin={on:1,t:0}; Game.fxUpd.push(dt=>{ if(!spin.on) return false; spin.t+=dt||1/60; for(const b of bits){ b.k=Math.min(1,b.k+(dt||1/60)*2.2); const a=b.a+spin.t*1.4, r=3.6*b.k; b.x=NB.x+Math.cos(a)*r; b.z=NB.z+Math.sin(a)*r; b.y=NB.y+2+Math.sin(a*2+spin.t)*.6; b.m.position.set(b.x,b.y,b.z); b.m.lookAt(P.x,P.y+1,P.z); } return true; });
+    npShotNB(6,0,1.6,4.6); yield wait(.7);
+    // the racks open: four bursts off his shoulders, the sky goes out
+    for(let i=0;i<4;i++){ const sd=i%2?1:-1; FX.burst(NB.x+sd*1.1,NB.y+3.2,NB.z,22,0xffd27a,7,.4); FX.burst(NB.x+sd*1.1,NB.y+3.2,NB.z,12,0xffffff,5,.3,false); Sound.sfx(i%2?'crash':'slam'); shake(.4); NB.flash=.2; yield wait(.14); }
+    FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[2,2],[1,2],[3,1]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[2].tint); if(g.sat) g.sat.value=NP_LOOK[2].sat; }catch(e){} if(NB.mat) NB.mat.color.setHex(0xdfe8ff);
+    npShotAli(3.6,1.2,1.3); yield say('ali',"More toys.");
+    npShotNB(5,-1,1.8,4.6); yield say('nathan',"Every toy. I counted. You should have brought more sword.");
+    if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"Ali! He has a LOT of guns now! That's so many guns!",'surprised'); }
+    // the title, Omar-style, over a slow slide past the two of them (no card, no cut)
+    npShotBoth(15,1); yield wait(.3); twZeldaCard('Phase II','Moonless Sky','All weapons free',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx-dz*13+dx*4,groundY(mx,mz)+7.5,mz+dx*13+dz*4,mx,groundY(mx,mz)+2.4,mz,.8); } yield wait(2.9);
+    npShotNB(5,1,1.6,4.2); yield say('nathan',"Dance, Ali. The floor is about to be on fire.",'angry');
+    npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
+    spin.on=0; yield tween(NB,{hov:1.4},.4,twEIO);
+  } finally { for(const b of bits){ try{ nbKillBit(b); }catch(e){} } }
+  npBegin(2); }
 // II -> III: LAST LIGHT. Every plate blows off, the funnels fall dead; a pistol in one hand, the laser sword in the other, on foot
 function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
   npShotNB(5,-1.2,1.3,2.2); NB.hov=.7; yield wait(.5);
@@ -236,8 +243,7 @@ function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true
   npShotNB(4.5,1.2,1.5,2.2); yield say('nathan',"No armour. No funnels. One pistol. One sword. Two feet.");
   npShotAli(3.4,-1,1.4); yield say('ali',"That's more than you've had all fight.");
   if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"He took his robot OFF?! Ali, he's just a guy! A very angry guy!",'surprised'); }
-  npShotBoth(12,-1); twCutin('nathan','LAST LIGHT','Phase III  ·  gun, blade and bare hands','#ff2a1a',1.8); yield wait(1.2);
-  evaCard(['PHASE III','LAST LIGHT'],1.8,1); Sound.sfx('slam'); yield wait(1.8);
+  npShotBoth(14,-1); yield wait(.3); twZeldaCard('Phase III','Last Light','Gun, blade and bare hands',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx+dz*12+dx*4,groundY(mx,mz)+7,mz-dx*12+dz*4,mx,groundY(mx,mz)+1.8,mz,.8); } yield wait(2.9);
   npShotNB(5,1,1.6,2.2); yield say('nathan',"I learned to fight before I learned to fly, Ali. Come here.",'angry');
   npShotAli(3,1,1.5); yield say('ali',"Finally. Someone I can reach.");
   npBegin(3); NB.hov=.25; }

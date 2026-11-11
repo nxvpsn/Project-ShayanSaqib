@@ -18,24 +18,30 @@ HZG_POOL[2]=['bounce','flop','stampede','babies','meteor','babyRain','laneRolls'
 // ---------- I -> II: KAWAII BULK ----------
 hzgPhase2=function*(){ const G=TW.giant, P=Player, C=hzgAlly('caotan'), O=hzgAlly('omar'); if(!G) return; const gy=groundY(G.x,G.z);
   hzgClearBabies(); twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); Sound.stop(); Game.letterTo=1; P.inv=99; G.inv=true; G.gen=null; G.roll=0; G.air=0; G.mouth=.3; for(const A of [C,O]) if(A){ A.hold=1; A.air=0; }
-  hzGl(G.x+2,gy+2,G.z+9,G.x,gy+2.6,G.z); yield wait(.4); yield say('hamza',"Oink... Hamza is... not... full...");
-  if(C&&O){ C.x=G.x-4.5; C.z=G.z+2.5; O.x=G.x+4.5; O.z=G.z+2.5; hzGl(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
-    yield say('caotan',"Senpai, I'll pin him! HIKARI-CHAN, BODY PILLOW SLAM!",'angry');
-    // the pillow flies... into his mouth
-    const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,1.6,.25),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0};
-    Game.fxUpd.push(()=>{ if(fl.done){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,G.x,u),lerp(gy+1.6,gy+2.6,u)+Math.sin(u*Math.PI)*2.5,lerp(C.z,G.z+.6,u)); pil.rotation.z=u*12; pil.rotation.x=u*5; return true; });
-    hzGl(G.x-3,gy+2,G.z+8,G.x-1,gy+2.6,G.z); Sound.sfx('whoosh'); yield tween(fl,{u:1},.7,t=>t); fl.done=1;
-    G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.7); FX.burst(G.x,gy+2.6,G.z+.8,40,0xffb0d8,6,.4); yield wait(.3); Sound.sfx('chomp'); yield wait(.25); Sound.sfx('chomp');
-    hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...He ate Hikari-chan.",'sad');
-    hzGl(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"Rest in pillow."); }
-  hzGl(G.x+1.5,gy+2.2,G.z+7,G.x,gy+2.8,G.z); yield say('hamza',"Soft. Tastes like anime. Hamza feels... KAWAII.");
-  // he goes pink and bigger
-  Sound.sfx('choir'); const gl={on:1}; Game.fxUpd.push(()=>{ if(!gl.on||!TW.giant) return false; G.flash=.12+.12*Math.sin(Game.time*24); for(let i=0;i<5;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(G.x+Math.cos(a)*r,G.y+rnd(.5,5),G.z+Math.sin(a)*r,0,rnd(1,3),0,.7,i%2?0xff6ab0:0xffffff,.32,0,true); } return true; });
-  hzGl(G.x,gy+.5,G.z+11,G.x,gy+5,G.z); yield tween(G,{gs:(G.gs||.55)*1.25},1.1,t=>1-Math.pow(1-t,3)); gl.on=0; G.flash=0; Sound.sfx('pigroar'); shake(1); impactFrame([[3,2],[1,2]]);
-  try{ grade.uniforms.tint.value.set(1.08,.94,1.04); }catch(e){}
-  evaCard(['PHASE II','KAWAII BULK'],1.8,1); yield wait(1.8);
-  hzGl(P.x+1.2,P.y+1.8,P.z+6.2,P.x,P.y+1.05,P.z); yield say('shayan',"Hamza, buddy. Spit out the waifu.",'angry');
-  if(C){ hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"I'LL AVENGE YOU, HIKARI-CHAN!!",'angry'); }
+  hzGl(G.x+2,gy+2,G.z+9,G.x,gy+2.6,G.z); yield wait(.5); yield say('hamza',"Oink... Hamza is... not... full...");
+  if(C&&O){ C.x=G.x-5; C.z=G.z+2.5; O.x=G.x+5; O.z=G.z+2.5; hzGl(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
+    yield say('caotan',"He's down! Senpai, watch this! HIKARI-CHAN... FINAL BODY PILLOW SLAM!!",'angry');
+    // the pillow spins across the field in slow motion... and he catches it in his teeth
+    const pil=new THREE.Mesh(new THREE.BoxGeometry(.6,1.9,.3),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0,sh:0,on:1};
+    Game.fxUpd.push(()=>{ if(!fl.on){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,G.x-.3,u)+rnd(-1,1)*fl.sh,lerp(gy+1.6,gy+2.7,u)+Math.sin(u*Math.PI)*3+rnd(-1,1)*fl.sh,lerp(C.z,G.z+.9,u)); pil.rotation.z=u*14+fl.sh*Math.sin(Game.time*40)*1.2; pil.rotation.x=u*5; if(u<1&&Math.random()<.5) FX.spawn(pil.position.x,pil.position.y,pil.position.z,0,.5,0,.4,0xffd0ec,.2,0,true); return true; });
+    hzGl((C.x+G.x)/2,gy+3,G.z+12,(C.x+G.x)/2,gy+2.6,G.z); Sound.sfx('whoosh'); Game.slowT=Math.max(Game.slowT||0,.6); yield tween(fl,{u:1},1,t=>t*t*(3-2*t));
+    G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.8); FX.hitstop=.1; hzGl(G.x-1.5,gy+2.6,G.z+7,G.x-.3,gy+2.7,G.z);
+    yield wait(.35); yield say('caotan',"...Hamza? Hamza, that's not food. That's my WIFE.",'surprised');
+    // he shakes her like a dog with a toy: feathers, then red
+    fl.sh=.35; for(let i=0;i<7;i++){ Sound.sfx('chomp'); shake(.35); FX.burst(G.x-.3,gy+2.7,G.z+.9,14,0xffffff,5,.5,false); if(i>=2){ FX.burst(G.x-.3,gy+2.6,G.z+.9,18,i%2?0xb0101a:0x7a000c,6,.5,false); for(let k=0;k<6;k++) FX.spawn(G.x-.3+rnd(-.4,.4),gy+2.4,G.z+1,rnd(-2,2),rnd(-1,3),rnd(1,4),rnd(.5,1),0xb0101a,.3,14,false); } if(i===4){ impactFrame([[3,2],[1,1]]); FX.flash=.4; grade.uniforms.flashCol.value.set(.8,.05,.1); Sound.sfx('gore'); } yield wait(.16); }
+    fl.on=0; Game.pigDrip=1; G.mouth=.2; Sound.sfx('gore'); yield wait(.3);
+    hzGl(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"...Caotan. The pillow is bleeding. Pillows do not bleed. What was IN that pillow?");
+    hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...Love.",'sad'); Sound.sfx('heartbeat'); yield wait(.4); yield say('caotan',"HIKARI-CHAAAAAN!!",'angry'); }
+  // gulp. The pink takes him: he rises, swells, and the roar throws the twins back
+  hzGl(G.x+1.5,gy+2.2,G.z+7,G.x,gy+2.8,G.z); Sound.sfx('squelch'); G.mouth=0; yield wait(.4); yield say('hamza',"Soft. Tastes like anime. Hamza feels... KAWAII.");
+  Sound.sfx('choir'); const gl={on:1}; Game.fxUpd.push(()=>{ if(!gl.on||!TW.giant) return false; G.flash=.12+.12*Math.sin(Game.time*24); for(let i=0;i<5;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(G.x+Math.cos(a)*r,G.y+rnd(.5,5),G.z+Math.sin(a)*r,-Math.cos(a)*r*.8,rnd(1,3),-Math.sin(a)*r*.8,.7,i%2?0xff6ab0:0xffffff,.32,0,true); } return true; });
+  hzGl(G.x,gy+3,G.z+15,G.x,gy+4,G.z); G.air=0; yield tween(G,{air:2.2,gs:(G.gs||.55)*1.25},1.3,t=>1-Math.pow(1-t,3)); gl.on=0; G.flash=0;
+  Sound.sfx('pigroar'); shake(1.2); impactFrame([[3,2],[1,2],[2,1]]); FX.flash=.7; grade.uniforms.flashCol.value.set(1,.5,.8); for(let i=0;i<3;i++) FX.ring(G.x,gy+.1,G.z,i%2?'#ffffff':'#ff6ab0',5+i*4,.5+i*.12); twHeartBurst(G.x,G.z,30);
+  if(C&&O){ twAnim(C,{x:C.x-3.5},.4,twEOut3); twAnim(O,{x:O.x+3.5},.4,twEOut3); } try{ grade.uniforms.tint.value.set(1.08,.94,1.04); }catch(e){} yield tween(G,{air:0},.35,t=>t*t); Sound.sfx('slam'); shake(1); FX.burst(G.x,gy+.4,G.z,60,0xff6ab0,9,.5);
+  // the title rides a slow pull back from him
+  twZeldaCard('Phase II','Kawaii Bulk','He ate the waifu',3); twCineGlide(G.x-5,gy+9,G.z+19,G.x,gy+3,G.z,.7); yield wait(3); Game.pigDrip=0;
+  twCineGlide(P.x+1.2,P.y+5.5,P.z+9,P.x,P.y+1.05,P.z); yield say('shayan',"Hamza, buddy. Spit out the waifu.",'angry');
+  if(C){ hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"I'LL AVENGE YOU, HIKARI-CHAN!! ...Senpai, hold me back. No. Don't. HOLD ME FORWARD.",'angry'); }
   G.phase=2; G.hp=G.maxHp=HZG_HP[2]; G.inv=false; G.pend=null; G.bag=[]; G.cd=1.2; G.mouth=0; G.lcDone=0; G.air=0; Sound.play('diva'); for(const A of [C,O]) if(A){ A.hold=0; A.air=0; }
   twCineGlideEnd(); yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); Cam.cine=null; Game.letterTo=0; P.inv=1; };
 

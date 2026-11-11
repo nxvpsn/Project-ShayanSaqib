@@ -12197,7 +12197,7 @@ function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), sav
   const dark=new THREE.MeshBasicMaterial({color:0x12040a}), edge=new THREE.LineBasicMaterial({color:0xff3a4a,transparent:true,opacity:.95}), red=0xff2a3a;
   // every step is a held-open cut: a flat spray of crossing slashes (red edge, dark heart, white core), not a slab
   const slab=(x,z,w,d,y)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w*1.7,d*1.7),new THREE.MeshBasicMaterial({map:d5SlashTex(),transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false})); m.rotation.x=-Math.PI/2; m.rotation.z=rnd(0,6.28); m.position.set(x,y+.02,z); m.userData.tw=1; m.userData.slash=1; m.visible=false; scene.add(m); meshes.push(m); return m; };
-  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww] of [[red,w],[0xffffff,w*.35]]){ const b=beamMesh(col,ww); b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
+  const blade=(x0,y0,z0,x1,y1,z1,w)=>{ for(const [col,ww] of [[0xb0182a,w],[0x08020a,w*.72]]){ const b=beamMesh(col,ww); /* a dark cut with a crimson rim */ b.userData.tw=1; b.position.set(x0,y0,z0); b.lookAt(x1,y1,z1); b.scale.set(1,1,Math.hypot(x1-x0,y1-y0,z1-z0)); b.visible=false; meshes.push(b); } };
   const gy=groundY(cx,cz);
   // the trunk: three blades twisting up to the platform
   for(let k=0;k<9;k++){ const a=k*.7, lo=gy+(k%3)*H*.12, hi=H-(k%2)*H*.1; blade(ix0+Math.cos(a)*(.3+k%3*.25),lo,iz0+Math.sin(a)*(.3+k%3*.25),ix0+Math.cos(a+1.6)*(.25+k%2*.3),hi,iz0+Math.sin(a+1.6)*(.25+k%2*.3),k%3?.14:.3); } /* the trunk: nine long cuts crossing each other */
@@ -12206,16 +12206,16 @@ function d5TreeBuild(cx,cz,H){ const ix0=Math.floor(cx), iz0=Math.floor(cz), sav
   for(let a=-2;a<2;a++) for(let b=-2;b<2;b++) set(ix0+a,iz0+b,H); const plat=slab(ix0,iz0,4,4,H);
   return {ix0,iz0,H,meshes,steps,plat,saved,kill(){ for(let i=this.saved.length-1;i>=0;i--){ const [ix,iz,h,bl]=this.saved[i]; L.H[iz][ix]=h; L.B[iz][ix]=bl; } this.saved=[]; this.meshes.forEach(m=>scene.remove(m)); this.meshes=[]; }}; }
 // the void rises under the climb: a black tide with a violet rim that eats the lower steps; in it you are hurt and thrown up
-function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(18,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.86,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(17.4,18,48),new THREE.MeshBasicMaterial({color:0x9a4aff,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide}));
+function d5VoidRise(F,S){ const T=S.tree, gy=groundY(T.ix0,T.iz0), g=new THREE.Group(), d=new THREE.Mesh(new THREE.CircleGeometry(7.5,48),new THREE.MeshBasicMaterial({color:0x06010c,transparent:true,opacity:.8,depthWrite:false})), e=new THREE.Mesh(new THREE.RingGeometry(7.1,7.5,48),new THREE.MeshBasicMaterial({color:0x9a4aff,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide}));
   g.add(d); g.add(e); g.rotation.x=-Math.PI/2; g.userData.tw=1; scene.add(g); const V={y:gy-1,t:0,cd:0}; S.void=V;
   twHz({upd(dt,play){ if(!F.d5||F.d5!==S||S.done||!S.tree) return false; if(d5OnPlatform(S)){ V.y=Math.min(V.y,T.H-1.2); } else if(play){ V.t+=dt; if(V.t>3) V.y=Math.min(T.H-1.6,V.y+dt*.4); }
-      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,16); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
+      g.position.set(T.ix0,V.y,T.iz0); e.material.opacity=.6+.3*Math.sin(Game.time*5); for(let i=0;i<2;i++){ const a=rnd(0,6.28), r=rnd(1,7); FX.spawn(T.ix0+Math.cos(a)*r,V.y+.1,T.iz0+Math.sin(a)*r,0,rnd(1,3),0,.6,i?0x9a4aff:0x1a0626,.3,0,i===1); }
       V.cd-=dt; const P=Player; if(play&&V.cd<=0&&P.y<V.y-.25&&!P.cineFly&&!P.hidden){ V.cd=1.2; P.inv=0; hurtPlayer(1,P.x,P.z,true); P.vy=12; P.onGround=false; P.inv=1; FX.burst(P.x,P.y+1,P.z,30,0x9a4aff,6,.4); Sound.sfx('void'); Game.dmgNums.push({x:P.x,y:P.y+2.6,z:P.z,n:'THE VOID',t:0,col:'#c08aff'}); }
       return true; }, kill(){ scene.remove(g); }}); }
-function d5SlashTex(){ if(TW._slTex) return TW._slTex; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+function d5SlashTex(){ if(TW._slTex2) return TW._slTex2; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
   try{ const lens=(ang,len,w,fill)=>{ c.save(); c.translate(S/2,S/2); c.rotate(ang); c.beginPath(); c.moveTo(-len,0); c.quadraticCurveTo(0,-w,len,0); c.quadraticCurveTo(0,w,-len,0); c.closePath(); c.fillStyle=fill; c.fill(); c.restore(); };
-    for(const [a,l] of [[.12,62],[-.4,56],[.65,52],[-.95,48],[1.25,46],[1.9,40]]){ lens(a,l,9.5,'rgba(255,42,58,.95)'); lens(a,l-3,6,'#12040a'); lens(a,l-2,1.5,'#ffffff'); } }catch(e){}
-  const t=new THREE.CanvasTexture(cv); TW._slTex=t; return t; }
+    for(const [a,l] of [[.12,62],[-.4,56],[.65,52],[-.95,48],[1.25,46],[1.9,40]]){ lens(a,l,8,'rgba(176,24,42,.95)'); lens(a,l-2,6.2,'#08020a'); lens(a,l-10,1.6,'rgba(82,6,40,.9)'); } }catch(e){} /* the Judgement Cut tear: black heart, wine vein, crimson rim */
+  const t=new THREE.CanvasTexture(cv); TW._slTex2=t; return t; }
 function d5OnPlatform(S){ const P=Player, T=S.tree; return T&&P.y>T.H-.5&&Math.abs(P.x-T.ix0)<2&&Math.abs(P.z-T.iz0)<2; }
 function d5OmarLCClean(F){ const S=F.d5; if(!S) return; S.stop=1; (S.tombs||[]).forEach(d5TombBreak); TW.d5tombs=null; if(S.sky) S.sky.dead=true; if(S.tree) S.tree.kill(); if(S.drill){ S.drill.dead=1; scene.remove(S.drill.g); } if(S.rig) S.rig.dead=1; TW._mantle=0; if(TW.mash&&TW.mash.d5) TW.mash=null; S.cam=null; F.d5=null; F.drillReady=0; }
 
@@ -12301,7 +12301,7 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   // during the climb keeps its own shots; a step or the platform between the camera and you (higher and nearer the camera)
   // fades to its red outline, so the steps on the near side never hide you on the far ones
   const cam=S.cam={}; Game.fxUpd.push(dt=>{ if(S.cam!==cam||!F.d5){ d5TreeFade(S.tree,null,dt,true); return false; } if(Game.script) return true;
-    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+8.2*1.45,P2.z+15*1.45,P2.x,cam.sy+.4,P2.z]; /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
+    try{ const P2=Player; if(P2.onGround||cam.gy==null) cam.gy=P2.y; cam.sy=lerp(cam.sy==null?cam.gy:cam.sy,Math.max(cam.gy,P2.y-2.5),1-Math.exp(-Math.max(0,dt||1/60)*3)); const W=[P2.x,cam.sy+6.5,P2.z+20,P2.x,cam.sy+1.4,P2.z]; /* as far out as the fight, but flatter: the black gate in the sky stays above the frame instead of between the camera and you */ /* the gameplay camera's own angle, as far out as the fight is */ if(!cam.v){ const c0=Cam.cine; cam.v=c0?[c0.px,c0.py,c0.pz,c0.lx,c0.ly,c0.lz]:W.slice(); }
       const q=1-Math.exp(-Math.max(0,dt||1/60)*7); for(let i=0;i<6;i++) cam.v[i]=lerp(cam.v[i],W[i],q); cineSet(...cam.v); d5TreeFade(S.tree,P2,dt,false); }catch(e){ console.error('d5 climb cam',e); } return true; }); }
 function d5TreeFade(T,P,dt,reset){ if(!T) return; for(const m of [...(T.steps||[]),T.plat]){ if(!m||!m.material) continue; const mt=m.material;
     const occ=!reset&&P&&m.position.y>P.y+.6&&m.position.z>P.z+.8, want=occ?.22:1, cur=mt.opacity==null?1:mt.opacity, v=reset?1:lerp(cur,want,1-Math.exp(-Math.max(0,dt||1/60)*10));
@@ -12761,6 +12761,98 @@ function dchTick(F,dt){ if(!F||F.kind!=='duo'||F.lc||F.pend||!F.director||Game.s
   else if(k==='blue'){ const a=rnd(0,Math.PI); twBlue(P.x,P.z,a,{warn:.8,dmg:2}); if(ph>=3) twBlue(P.x,P.z,a+Math.PI/2,{warn:1.1,dmg:2}); }
   else { const e=twEdgePt(9); twPink(e.x,e.z,Math.atan2(P.z-e.z,P.x-e.x),{warn:.85,dmg:2}); if(ph>=2){ const e2=twEdgePt(9); twPink(e2.x,e2.z,Math.atan2(P.z-e2.z,P.x-e2.x),{warn:1.15,dmg:2}); } } }
 (function(){ const tu=twUpdate; twUpdate=function(dt){ const r=tu.apply(this,arguments); try{ dchTick(TW.fight,dt); }catch(e){ console.error('duo crossfire',e); } return r; }; })();
+
+// ----- 57g_duomid.js -----
+// =====================================================================
+// THE DUO'S MID-PHASE LIMIT CUTS (the LIMIT mark at half of phases II and III had nothing behind it since v5):
+//   II   TWIN ECLIPSE: back to back in the middle. Caotan's two blue beams turn like a jump rope while Omar throws Getsuga
+//        pinwheels through them; then CROSS EXECUTION: columns of light and dark fall in turn (stand in the other set);
+//        then three crossed strikes at once (a pink line and a Getsuga). They end winded: 4s stunned
+//   III  LOVE AND DEATH: Omar's black hole in the middle pulls you while Caotan's heart bombs land where you stand; rings
+//        of scythes close in from the sky with a blue line to jump; the hole bursts into three rings to jump. Winded: 4s
+// The intro is a script (gliding camera, Omar-style title); the play is Caotan's generator (seconds), Omar waits on it.
+// A death inside one restarts it (d5Restart wrapper). Started from the update at half HP, never from inside twHurt.
+// =====================================================================
+function dmEnd(F){ const C=F.C, O=F.O; TW.lcCleanup=null; F.busy=0; F.lc=0; F.d5lc=null; F.director=1; F.dcd=1.6; for(const T of [C,O]){ T.inv=false; T.lockF=0; T.cast=0; if(T.state==='lc') T.state='idle'; } try{ twCamFree(1.3); }catch(e){} Game.letterTo=0; }
+function* dmLC(F,C,O,retry){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), ph=F.phase, three=ph>=3; F.d5lc='mid'; F.lc=1; F.director=0; F.busy=1; F.miraHold=1; F.lcDone[ph]=1;
+  twLCPrep(C); twLCPrep(O); C.down=O.down=0; C.inv=O.inv=true; C.x=c.x-1.3; C.z=c.z-2; O.x=c.x+1.3; O.z=c.z-2; O.hy=1.3; C.f=-1; O.f=1; C.lockF=O.lockF=1;
+  if(!retry){ Game.letterTo=1; P.inv=99; P.vx=P.vz=0; if(A) A.hold=1;
+    twCineGlide(c.x,gy+9,c.z+15,c.x,gy+1.6,c.z-2,3.5); Sound.sfx('gong'); yield wait(.7);
+    if(three){ twCineGlide(O.x+2.5,gy+5.5,O.z+8,O.x,gy+1.8,O.z); yield say('omar',"Caotan. The forbidden one. The one we promised Mother we would never do.");
+      twCineGlide(C.x-2.5,gy+5.5,C.z+8,C.x,gy+1.7,C.z); yield say('caotan',"The one where I do the love and you do the death?! I've been WAITING, onii-chan!",'happy');
+      twCineGlide(P.x,P.y+6,P.z+9,P.x,P.y+1.2,P.z); yield say('shayan',"Please don't call it that.",'angry'); }
+    else { twCineGlide(C.x-2.5,gy+5.5,C.z+8,C.x,gy+1.7,C.z); yield say('caotan',"Omar! Back to back! Like the poster in my room!",'happy');
+      twCineGlide(O.x+2.5,gy+5.5,O.z+8,O.x,gy+1.8,O.z); yield say('omar',"You made a poster of us. Of course you did.");
+      twCineGlide(P.x,P.y+6,P.z+9,P.x,P.y+1.2,P.z); yield say('shayan',"They're doing a team attack. Ali, we don't HAVE a team attack!",'surprised'); if(A) yield say('ali',"We have me."); }
+    // the title over a slow slide across the two of them
+    C.cast=3; O.cast=3; O.scythe=1; Sound.sfx('charge'); FX.ring(c.x,gy+.1,c.z-2,three?'#ff6ab0':'#9a4aff',6,.8); impactFrame([[2,1],[1,2]]); shake(.6);
+    twCineGlide(c.x-4,gy+7,c.z+11,c.x-1,gy+1.8,c.z-2,6); yield wait(.25); twZeldaCard(three?'Limit Break':'Limit Break',three?'Love and Death':'Twin Eclipse',three?'One hole. Many hearts.':'Back to back',2.8); twCineGlide(c.x+4,gy+7,c.z+11,c.x+1,gy+1.8,c.z-2,.9); yield wait(2.7);
+    if(A) A.hold=0; }
+  twCineGlideEnd(); yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; Game.letterTo=0; P.inv=1; F.miraHold=0;
+  C.gen=(three?dmPlay3:dmPlay2)(F,C,O); C.wait=0; C.state='lc'; O.gen=twWaitFor(C)(); O.wait=0; O.state='lc'; try{ Sound.play('diva'); }catch(e){} }
+function* dmPlay2(F,C,O){ const c=F.center, gy=groundY(c.x,c.z); TW.lcCleanup=()=>dmEnd(F); try{ twCamTrack(.35,1.5); }catch(e){}
+  try{
+    // 1. the jump rope and the pinwheel
+    twBig('JUMP THE BLUE · SIDESTEP THE CRESCENTS',{size:38,col:'#c08aff',y:UH*.24,dur:2}); twBark('caotan',"Jump rope, senpai! Double dutch!",true);
+    const a0=rnd(0,6.28), dir=Math.random()<.5?1:-1; for(const k of [0,Math.PI]) twBeam({x:c.x,z:c.z-2,ang:t=>a0+k+dir*Math.max(0,t-1)*1.05,len:22,w:1.1,warn:1,dur:7.5,dmg:2,col:0x9fd8ff,jump:true,y:.45}); C.cast=8;
+    yield 1.4; for(let v=0;v<4;v++){ O.swing=1; O.cast=.5; const b=rnd(0,6.28); for(let i=0;i<4;i++) twGetsuga(O,b+i*Math.PI/2,{x:c.x,z:c.z-2,warn:.65,sp:12,len:21}); Sound.sfx('void'); if(v===1) twBark('omar',"Round and round. Like my thoughts at three in the morning.",true); yield 1.65; }
+    yield .8;
+    // 2. cross execution: odd columns, then even
+    twBig('CROSS EXECUTION',{size:44,col:'#ffd45a',y:UH*.24,dur:1.6,sub:'Stand where the next set is not'}); const P=Player, x0=P.x-9, z0=P.z-6;
+    for(let w=0;w<4;w++){ for(let ix=0;ix<7;ix++){ if(ix%2!==w%2) continue; for(let iz=0;iz<5;iz++){ const p=twClampXZ(x0+ix*3,z0+iz*3,.8); twBlast(p.x,p.z,1.45,1.05,{col:w%2?0x9a4aff:0xff6ab0,dmg:2,shake:.15}); } } Sound.sfx('charge'); yield 1.15; }
+    yield .9;
+    // 3. three crossed strikes
+    twBark('omar',"Together.",true); for(let k=0;k<3;k++){ const P2=Player, e=twEdgePt(9), e2=twEdgePt(9); twPink(e.x,e.z,Math.atan2(P2.z-e.z,P2.x-e.x),{warn:.8,dmg:2}); twGetsuga(O,Math.atan2(P2.z-e2.z,P2.x-e2.x),{x:e2.x,z:e2.z,warn:.8,sp:15,len:22}); yield 1.05; }
+    yield .8;
+  } finally { dmEnd(F); }
+  twBig('WINDED',{size:56,col:'#ffd45a',sub:'They overdid it: go!'}); twBark('caotan',"...I'm fine. I do cardio. In my room.",true); C.stun=O.stun=4; C.state=O.state='stun'; yield 4; }
+function* dmPlay3(F,C,O){ const c=F.center, gy=groundY(c.x,c.z); TW.lcCleanup=()=>dmEnd(F); try{ twCamTrack(.35,1.5); }catch(e){}
+  try{
+    // 1. the hole pulls, the hearts fall where you stand
+    twBig('RUN FROM THE HOLE · LEAVE THE HEARTS',{size:38,col:'#ff8ac8',y:UH*.24,dur:2}); twBark('omar',"The void is hungry. It gets that from me.",true); O.cast=9; C.cast=9; Sound.sfx('void');
+    twMiniHole(c.x,c.z-1,{r:1.3,pull:5.2,range:16,dur:9,eat:1.25,dmg:4});
+    for(let t=0;t<8.4;t+=.7){ const P=Player; twBlast(P.x+P.vx*.25,P.z+P.vz*.25,1.9,.95,{col:0xff6ab0,dmg:2,shake:.2}); if(Math.round(t/.7)%3===2){ const a=rnd(0,6.28); twBlast(P.x+Math.cos(a)*3,P.z+Math.sin(a)*3,1.9,1.1,{col:0xff6ab0,dmg:2}); } Sound.sfx('doki'); yield .7; }
+    yield 1;
+    // 2. rings of scythes close in, a blue line through each
+    twBig('THE RINGS CLOSE',{size:44,col:'#c08aff',y:UH*.24,dur:1.6,sub:'Step in as each ring lands · jump the blue'}); twBark('caotan',"Ring around the senpai~!",true);
+    for(let w=0;w<2;w++){ const P=Player, px=P.x, pz=P.z; [7,4.6,2.2].forEach((r,i)=>{ const n=Math.round(r*2.4); for(let k=0;k<n;k++){ const a=k/n*6.283+i*.3; twSkyScythe(px+Math.cos(a)*r,pz+Math.sin(a)*r,.9+i*.75); } });
+      twBlue(px,pz,rnd(0,Math.PI),{warn:1.6,dmg:2}); Sound.sfx('charge'); yield 3.2; }
+    // 3. the hole bursts: three rings to jump
+    twBark('omar',"And then... nothing. As always.",true); Sound.sfx('crossboom'); shake(1); impactFrame([[2,1],[1,1]]); FX.burst(c.x,gy+1.5,c.z-1,80,0x8a2aff,10,.5);
+    for(let k=0;k<3;k++){ twWave(c.x,c.z-1,{sp:8+k*1.5,max:17,col:k%2?0xff6ab0:0x9a4aff,dmg:2}); yield .75; }
+    yield 1.4;
+  } finally { dmEnd(F); }
+  twBig('WINDED',{size:56,col:'#ffd45a',sub:'They overdid it: go!'}); twBark('omar',"...I need to lie down. In the dark. So, nothing changes.",true); C.stun=O.stun=4; C.state=O.state='stun'; yield 4; }
+// the trigger: half HP in phase II or III, from the update
+(function(){ const tu=twUpdate; twUpdate=function(dt){ const r=tu.apply(this,arguments); try{ const F=TW.fight; if(F&&F.kind==='duo'&&F.v5!==0&&F.phase>=2&&F.lcDone&&!F.lcDone[F.phase]&&!F.lc&&!F.pend&&!Game.script&&Game.state==='play'&&twPlay()){ const C=F.C, O=F.O; if(C&&O&&C.hp>0&&(C.hp+O.hp)<=(C.maxHp+O.maxHp)/2){ F.lcDone[F.phase]=1; F.pend=()=>dmLC(F,C,O,false); } } }catch(e){ console.error('duo mid lc',e); } return r; }; })();
+// a death inside one restarts it
+(function(){ const dr=d5Restart; d5Restart=function(F){ if(F&&F.d5lc==='mid'){ const C=F.C, O=F.O; d5MiraOn(); F.miraHold=0; F.director=0; C.inv=O.inv=true; F.pend=()=>dmLC(F,C,O,true); return; } return dr.apply(this,arguments); }; })();
+
+// ----- 57h_bhsuck.js -----
+// =====================================================================
+// BLACK HOLES PULL (added on top of their look, nothing replaced): every hole gets a suction dressing that animates itself:
+// three thin rings that keep contracting into it (fading in at the rim, gone at the core) and a spiral of arms turning
+// under them. Mini holes and the duo's/Hamza's holes (twHoleVis), Omar's solo Collapse (TW.bh), Nathan's (nbMakeBH).
+// The meshes drive themselves from onBeforeRender, so no update hook can be left running.
+// =====================================================================
+function bhSpiralTex(){ if(TW._bhSp) return TW._bhSp; const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S; const c=cv.getContext('2d');
+  try{ c.lineCap='round'; for(let arm=0;arm<3;arm++){ for(let i=0;i<60;i++){ const u=i/60, a=arm*2.094+u*5.2, r=4+u*58, a2=arm*2.094+(u+1/60)*5.2, r2=4+(u+1/60)*58; c.strokeStyle='rgba(255,255,255,'+(.75*(1-u)).toFixed(2)+')'; c.lineWidth=1+3.5*(1-u);
+        c.beginPath(); c.moveTo(S/2+Math.cos(a)*r,S/2+Math.sin(a)*r); c.lineTo(S/2+Math.cos(a2)*r2,S/2+Math.sin(a2)*r2); c.stroke(); } } }catch(e){}
+  const t=new THREE.CanvasTexture(cv); TW._bhSp=t; return t; }
+function bhSuction(col){ const g=new THREE.Group(); g.rotation.x=-Math.PI/2; g.userData.bhs=1;
+  for(let i=0;i<3;i++){ const m=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:i%2?0xffffff:(col||0xb06aff),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+    m.onBeforeRender=function(){ const u=((performance.now()/1000)*.9+i/3)%1, e=u*u; this.scale.setScalar(Math.max(.05,5.2-4.2*e)); this.material.opacity=Math.max(0,Math.min(1,u*4)*(1-e)*.7); }; g.add(m); }
+  const sp=new THREE.Mesh(new THREE.PlaneGeometry(9,9),new THREE.MeshBasicMaterial({map:bhSpiralTex(),color:col||0xb06aff,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+  sp.position.z=-.05; sp.onBeforeRender=function(){ this.rotation.z=-(performance.now()/1000)*3.2; const p=1+.06*Math.sin(performance.now()/90); this.scale.setScalar(p); }; g.add(sp); return g; }
+// twHoleVis: the dressing rides the hole's own scale
+(function(){ const hv=twHoleVis; twHoleVis=function(x,y,z,r){ const V=hv.apply(this,arguments); try{ if(V&&V.set&&!V.bhs){ const g=bhSuction(); g.userData.tw=1; g.visible=false; scene.add(g); V.bhs=g; const st=V.set, kl=V.kill;
+        V.set=function(k){ const q=st.apply(this,arguments); try{ const s=Math.max(.01,this.r*k); g.visible=k>.08; g.position.set(this.x,this.y,this.z); g.scale.setScalar(s); }catch(e){} return q; };
+        V.kill=function(){ try{ scene.remove(g); }catch(e){} return kl.apply(this,arguments); }; } }catch(e){ console.error('bh suction',e); } return V; }; })();
+// Omar's solo Collapse
+(function(){ const tu=twUpdate; twUpdate=function(dt){ const r=tu.apply(this,arguments); try{ const B=TW.bh, S=TW._bhS; if(B&&B.live){ if(!S||S.b!==B){ if(S) scene.remove(S.g); const g=bhSuction(); g.userData.tw=1; scene.add(g); TW._bhS={b:B,g}; }
+        const g=TW._bhS.g; g.position.set(B.x,groundY(B.x,B.z)+1.5,B.z); g.scale.setScalar(1.9); } else if(S){ scene.remove(S.g); TW._bhS=null; } }catch(e){ console.error('bh suction 2',e); } return r; }; })();
+// Nathan's
+(function(){ const mk=nbMakeBH; nbMakeBH=function(){ const bh=mk.apply(this,arguments); try{ if(bh&&bh.add){ const g=bhSuction(); g.scale.setScalar(6); bh.add(g); } }catch(e){ console.error('bh suction 3',e); } return bh; }; })();
 
 // ----- 58_aliassist.js -----
 // =====================================================================
@@ -13380,24 +13472,30 @@ HZG_POOL[2]=['bounce','flop','stampede','babies','meteor','babyRain','laneRolls'
 // ---------- I -> II: KAWAII BULK ----------
 hzgPhase2=function*(){ const G=TW.giant, P=Player, C=hzgAlly('caotan'), O=hzgAlly('omar'); if(!G) return; const gy=groundY(G.x,G.z);
   hzgClearBabies(); twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); Sound.stop(); Game.letterTo=1; P.inv=99; G.inv=true; G.gen=null; G.roll=0; G.air=0; G.mouth=.3; for(const A of [C,O]) if(A){ A.hold=1; A.air=0; }
-  hzGl(G.x+2,gy+2,G.z+9,G.x,gy+2.6,G.z); yield wait(.4); yield say('hamza',"Oink... Hamza is... not... full...");
-  if(C&&O){ C.x=G.x-4.5; C.z=G.z+2.5; O.x=G.x+4.5; O.z=G.z+2.5; hzGl(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
-    yield say('caotan',"Senpai, I'll pin him! HIKARI-CHAN, BODY PILLOW SLAM!",'angry');
-    // the pillow flies... into his mouth
-    const pil=new THREE.Mesh(new THREE.BoxGeometry(.5,1.6,.25),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0};
-    Game.fxUpd.push(()=>{ if(fl.done){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,G.x,u),lerp(gy+1.6,gy+2.6,u)+Math.sin(u*Math.PI)*2.5,lerp(C.z,G.z+.6,u)); pil.rotation.z=u*12; pil.rotation.x=u*5; return true; });
-    hzGl(G.x-3,gy+2,G.z+8,G.x-1,gy+2.6,G.z); Sound.sfx('whoosh'); yield tween(fl,{u:1},.7,t=>t); fl.done=1;
-    G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.7); FX.burst(G.x,gy+2.6,G.z+.8,40,0xffb0d8,6,.4); yield wait(.3); Sound.sfx('chomp'); yield wait(.25); Sound.sfx('chomp');
-    hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...He ate Hikari-chan.",'sad');
-    hzGl(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"Rest in pillow."); }
-  hzGl(G.x+1.5,gy+2.2,G.z+7,G.x,gy+2.8,G.z); yield say('hamza',"Soft. Tastes like anime. Hamza feels... KAWAII.");
-  // he goes pink and bigger
-  Sound.sfx('choir'); const gl={on:1}; Game.fxUpd.push(()=>{ if(!gl.on||!TW.giant) return false; G.flash=.12+.12*Math.sin(Game.time*24); for(let i=0;i<5;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(G.x+Math.cos(a)*r,G.y+rnd(.5,5),G.z+Math.sin(a)*r,0,rnd(1,3),0,.7,i%2?0xff6ab0:0xffffff,.32,0,true); } return true; });
-  hzGl(G.x,gy+.5,G.z+11,G.x,gy+5,G.z); yield tween(G,{gs:(G.gs||.55)*1.25},1.1,t=>1-Math.pow(1-t,3)); gl.on=0; G.flash=0; Sound.sfx('pigroar'); shake(1); impactFrame([[3,2],[1,2]]);
-  try{ grade.uniforms.tint.value.set(1.08,.94,1.04); }catch(e){}
-  evaCard(['PHASE II','KAWAII BULK'],1.8,1); yield wait(1.8);
-  hzGl(P.x+1.2,P.y+1.8,P.z+6.2,P.x,P.y+1.05,P.z); yield say('shayan',"Hamza, buddy. Spit out the waifu.",'angry');
-  if(C){ hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"I'LL AVENGE YOU, HIKARI-CHAN!!",'angry'); }
+  hzGl(G.x+2,gy+2,G.z+9,G.x,gy+2.6,G.z); yield wait(.5); yield say('hamza',"Oink... Hamza is... not... full...");
+  if(C&&O){ C.x=G.x-5; C.z=G.z+2.5; O.x=G.x+5; O.z=G.z+2.5; hzGl(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
+    yield say('caotan',"He's down! Senpai, watch this! HIKARI-CHAN... FINAL BODY PILLOW SLAM!!",'angry');
+    // the pillow spins across the field in slow motion... and he catches it in his teeth
+    const pil=new THREE.Mesh(new THREE.BoxGeometry(.6,1.9,.3),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0,sh:0,on:1};
+    Game.fxUpd.push(()=>{ if(!fl.on){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,G.x-.3,u)+rnd(-1,1)*fl.sh,lerp(gy+1.6,gy+2.7,u)+Math.sin(u*Math.PI)*3+rnd(-1,1)*fl.sh,lerp(C.z,G.z+.9,u)); pil.rotation.z=u*14+fl.sh*Math.sin(Game.time*40)*1.2; pil.rotation.x=u*5; if(u<1&&Math.random()<.5) FX.spawn(pil.position.x,pil.position.y,pil.position.z,0,.5,0,.4,0xffd0ec,.2,0,true); return true; });
+    hzGl((C.x+G.x)/2,gy+3,G.z+12,(C.x+G.x)/2,gy+2.6,G.z); Sound.sfx('whoosh'); Game.slowT=Math.max(Game.slowT||0,.6); yield tween(fl,{u:1},1,t=>t*t*(3-2*t));
+    G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.8); FX.hitstop=.1; hzGl(G.x-1.5,gy+2.6,G.z+7,G.x-.3,gy+2.7,G.z);
+    yield wait(.35); yield say('caotan',"...Hamza? Hamza, that's not food. That's my WIFE.",'surprised');
+    // he shakes her like a dog with a toy: feathers, then red
+    fl.sh=.35; for(let i=0;i<7;i++){ Sound.sfx('chomp'); shake(.35); FX.burst(G.x-.3,gy+2.7,G.z+.9,14,0xffffff,5,.5,false); if(i>=2){ FX.burst(G.x-.3,gy+2.6,G.z+.9,18,i%2?0xb0101a:0x7a000c,6,.5,false); for(let k=0;k<6;k++) FX.spawn(G.x-.3+rnd(-.4,.4),gy+2.4,G.z+1,rnd(-2,2),rnd(-1,3),rnd(1,4),rnd(.5,1),0xb0101a,.3,14,false); } if(i===4){ impactFrame([[3,2],[1,1]]); FX.flash=.4; grade.uniforms.flashCol.value.set(.8,.05,.1); Sound.sfx('gore'); } yield wait(.16); }
+    fl.on=0; Game.pigDrip=1; G.mouth=.2; Sound.sfx('gore'); yield wait(.3);
+    hzGl(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"...Caotan. The pillow is bleeding. Pillows do not bleed. What was IN that pillow?");
+    hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...Love.",'sad'); Sound.sfx('heartbeat'); yield wait(.4); yield say('caotan',"HIKARI-CHAAAAAN!!",'angry'); }
+  // gulp. The pink takes him: he rises, swells, and the roar throws the twins back
+  hzGl(G.x+1.5,gy+2.2,G.z+7,G.x,gy+2.8,G.z); Sound.sfx('squelch'); G.mouth=0; yield wait(.4); yield say('hamza',"Soft. Tastes like anime. Hamza feels... KAWAII.");
+  Sound.sfx('choir'); const gl={on:1}; Game.fxUpd.push(()=>{ if(!gl.on||!TW.giant) return false; G.flash=.12+.12*Math.sin(Game.time*24); for(let i=0;i<5;i++){ const a=rnd(0,6.28), r=rnd(2,6); FX.spawn(G.x+Math.cos(a)*r,G.y+rnd(.5,5),G.z+Math.sin(a)*r,-Math.cos(a)*r*.8,rnd(1,3),-Math.sin(a)*r*.8,.7,i%2?0xff6ab0:0xffffff,.32,0,true); } return true; });
+  hzGl(G.x,gy+3,G.z+15,G.x,gy+4,G.z); G.air=0; yield tween(G,{air:2.2,gs:(G.gs||.55)*1.25},1.3,t=>1-Math.pow(1-t,3)); gl.on=0; G.flash=0;
+  Sound.sfx('pigroar'); shake(1.2); impactFrame([[3,2],[1,2],[2,1]]); FX.flash=.7; grade.uniforms.flashCol.value.set(1,.5,.8); for(let i=0;i<3;i++) FX.ring(G.x,gy+.1,G.z,i%2?'#ffffff':'#ff6ab0',5+i*4,.5+i*.12); twHeartBurst(G.x,G.z,30);
+  if(C&&O){ twAnim(C,{x:C.x-3.5},.4,twEOut3); twAnim(O,{x:O.x+3.5},.4,twEOut3); } try{ grade.uniforms.tint.value.set(1.08,.94,1.04); }catch(e){} yield tween(G,{air:0},.35,t=>t*t); Sound.sfx('slam'); shake(1); FX.burst(G.x,gy+.4,G.z,60,0xff6ab0,9,.5);
+  // the title rides a slow pull back from him
+  twZeldaCard('Phase II','Kawaii Bulk','He ate the waifu',3); twCineGlide(G.x-5,gy+9,G.z+19,G.x,gy+3,G.z,.7); yield wait(3); Game.pigDrip=0;
+  twCineGlide(P.x+1.2,P.y+5.5,P.z+9,P.x,P.y+1.05,P.z); yield say('shayan',"Hamza, buddy. Spit out the waifu.",'angry');
+  if(C){ hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"I'LL AVENGE YOU, HIKARI-CHAN!! ...Senpai, hold me back. No. Don't. HOLD ME FORWARD.",'angry'); }
   G.phase=2; G.hp=G.maxHp=HZG_HP[2]; G.inv=false; G.pend=null; G.bag=[]; G.cd=1.2; G.mouth=0; G.lcDone=0; G.air=0; Sound.play('diva'); for(const A of [C,O]) if(A){ A.hold=0; A.air=0; }
   twCineGlideEnd(); yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); Cam.cine=null; Game.letterTo=0; P.inv=1; };
 
@@ -15147,27 +15245,34 @@ function npShotAt(x,z,ly,dist,side,ux,uz){ const d=Math.max(NP_CINE.min,dist), g
 function npShotNB(dist,side,up,ly){ const [dx,dz]=np1Dir(); npShotAt(NB.x,NB.z,(ly||2.4),dist+2,side,dx,dz); } /* from Ali's side of him */
 function npShotAli(dist,side,up){ const [dx,dz]=np1Dir(); npShotAt(Player.x,Player.z,1.4,dist+3,side,-dx*.25+(-dz)*.97*(side<0?-1:1),-dz*.25+dx*.97*(side<0?-1:1)); } /* from his side, Nathan's direction across the frame */
 function npShotBoth(dist,side){ const P=Player, [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2, sg=side<0?-1:1; npShotAt(mx,mz,1.8,dist,0,-dz*sg,dx*sg); } /* side on: both in frame, one left, one right */
-// I -> II: MOONLESS SKY. He purges his armour; the sky goes dark
-function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
-  npShotNB(5,1.4,1.4,2.2); NB.hov=.7; yield wait(.5);
-  yield say('nathan',"...Not bad, wanderer. Not bad at all.",'angry');
-  npShotAli(3.4,1,1.5); yield say('ali',"Get up. We're not done.");
-  npShotNB(4.2,-1.2,1.8,2.6); yield say('nathan',"I held back. The moon was watching. I have an image to maintain.");
-  npShotAli(3.4,-1,1.4); yield say('ali',"The moon is broken.");
-  npShotNB(4.6,1,1.6,2.6); yield say('nathan',"...Exactly. Nobody's watching now.",'angry');
-  // the purge: plates burst off him, the sky goes out
-  Sound.sfx('charge'); NB.hov=1.4; yield tween(NB,{hov:3.2},.8,twEIO); yield say('nathan',"Armour purge.");
-  for(let i=0;i<6;i++){ FX.burst(NB.x,NB.y+rnd(1,3.5),NB.z,30,i%2?0xffffff:0xc8d4e0,8,.5,false); FX.burst(NB.x,NB.y+2.2,NB.z,20,0x3ff4ff,6,.4); Sound.sfx(i%2?'crash':'slam'); shake(.4); yield wait(.09); }
-  FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[2,2],[1,2],[3,1]]); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[2].tint); if(g.sat) g.sat.value=NP_LOOK[2].sat; }catch(e){} if(NB.mat) NB.mat.color.setHex(0xdfe8ff);
-  npShotAli(3.6,1.2,1.3); yield say('ali',"You took your armour off to go faster.");
-  npShotNB(4,-1,1.8,3.4); yield say('nathan',"I took it off to look cooler. Going faster is a side effect.");
-  if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+1.4,mi.z+3.4,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"He's... kind of glowing. Is that allowed?!",'surprised'); }
-  npShotBoth(13,1); twCutin('nathan','MOONLESS SKY','Phase II  ·  the first seal breaks','#1a4aff',1.8); yield wait(1.2);
-  evaCard(['PHASE II','MOONLESS SKY'],1.8,1); Sound.sfx('slam'); yield wait(1.8);
-  npShotNB(5,1,1.6,3); yield say('nathan',"Let's dance in the dark, Ali.");
-  npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
-  npShotNB(5,-1,1.6,3); yield say('nathan',"Everyone dances when the floor is on fire.",'angry');
-  yield tween(NB,{hov:1.4},.4,twEIO); npBegin(2); }
+// I -> II: MOONLESS SKY. The pilot is done holding back: the machine wakes up. He rises, eight funnels unfold round him,
+// the missile racks open, the sky goes dark behind him; the title rides a slow slide across both of them
+function* npCine12(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0; const bits=[];
+  try{
+    npShotNB(5,1.4,1.4,2.2); NB.hov=.7; for(let i=0;i<4;i++){ FX.spark(NB.x+rnd(-.8,.8),NB.y+rnd(1,3),NB.z); Sound.sfx('hit'); yield wait(.12); }
+    yield say('nathan',"...You cut the pilot, wanderer. Well done.",'angry');
+    npShotAli(3.4,1,1.5); yield say('ali',"Get up.");
+    npShotNB(4.2,-1.2,1.8,2.6); yield say('nathan',"The pilot was being polite. The machine has no manners.");
+    // he rises; the camera pulls out with him
+    Sound.sfx('charge'); Sound.sfx('drone'); npShotBoth(13,1); yield tween(NB,{hov:4.2},1.1,twEIO);
+    yield say('nathan',"All systems. All weapons. Safety... off.",'angry');
+    // the funnels unfold in a ring, one by one, each with a ping and a flare
+    for(let i=0;i<8;i++){ const b=nbBit(NB.x,NB.y+2,NB.z); b.a=i*Math.PI/4; b.k=0; bits.push(b); Sound.tone('sine',700+i*90,900+i*90,.12,.06); FX.burst(NB.x,NB.y+2,NB.z,8,0x3ff4ff,4,.25); yield wait(.09); }
+    const spin={on:1,t:0}; Game.fxUpd.push(dt=>{ if(!spin.on) return false; spin.t+=dt||1/60; for(const b of bits){ b.k=Math.min(1,b.k+(dt||1/60)*2.2); const a=b.a+spin.t*1.4, r=3.6*b.k; b.x=NB.x+Math.cos(a)*r; b.z=NB.z+Math.sin(a)*r; b.y=NB.y+2+Math.sin(a*2+spin.t)*.6; b.m.position.set(b.x,b.y,b.z); b.m.lookAt(P.x,P.y+1,P.z); } return true; });
+    npShotNB(6,0,1.6,4.6); yield wait(.7);
+    // the racks open: four bursts off his shoulders, the sky goes out
+    for(let i=0;i<4;i++){ const sd=i%2?1:-1; FX.burst(NB.x+sd*1.1,NB.y+3.2,NB.z,22,0xffd27a,7,.4); FX.burst(NB.x+sd*1.1,NB.y+3.2,NB.z,12,0xffffff,5,.3,false); Sound.sfx(i%2?'crash':'slam'); shake(.4); NB.flash=.2; yield wait(.14); }
+    FX.flash=.8; grade.uniforms.flashCol.value.set(.6,.8,1); impactFrame([[2,2],[1,2],[3,1]]); Sound.sfx('crossboom'); try{ const g=grade.uniforms; g.tint.value.set(...NP_LOOK[2].tint); if(g.sat) g.sat.value=NP_LOOK[2].sat; }catch(e){} if(NB.mat) NB.mat.color.setHex(0xdfe8ff);
+    npShotAli(3.6,1.2,1.3); yield say('ali',"More toys.");
+    npShotNB(5,-1,1.8,4.6); yield say('nathan',"Every toy. I counted. You should have brought more sword.");
+    if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"Ali! He has a LOT of guns now! That's so many guns!",'surprised'); }
+    // the title, Omar-style, over a slow slide past the two of them (no card, no cut)
+    npShotBoth(15,1); yield wait(.3); twZeldaCard('Phase II','Moonless Sky','All weapons free',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx-dz*13+dx*4,groundY(mx,mz)+7.5,mz+dx*13+dz*4,mx,groundY(mx,mz)+2.4,mz,.8); } yield wait(2.9);
+    npShotNB(5,1,1.6,4.2); yield say('nathan',"Dance, Ali. The floor is about to be on fire.",'angry');
+    npShotAli(3,-1,1.5); yield say('ali',"I don't dance.");
+    spin.on=0; yield tween(NB,{hov:1.4},.4,twEIO);
+  } finally { for(const b of bits){ try{ nbKillBit(b); }catch(e){} } }
+  npBegin(2); }
 // II -> III: LAST LIGHT. Every plate blows off, the funnels fall dead; a pistol in one hand, the laser sword in the other, on foot
 function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true); Game.letterTo=1; P.inv=99; P.cineFly=false; P.cineAnim=null; NP1.cam=null; P.vx=P.vz=0;
   npShotNB(5,-1.2,1.3,2.2); NB.hov=.7; yield wait(.5);
@@ -15185,8 +15290,7 @@ function* npCine23(){ const P=Player, mi=Game.mira; NB.inv=true; npCineLens(true
   npShotNB(4.5,1.2,1.5,2.2); yield say('nathan',"No armour. No funnels. One pistol. One sword. Two feet.");
   npShotAli(3.4,-1,1.4); yield say('ali',"That's more than you've had all fight.");
   if(mi){ twCineGlide(mi.x+1,groundY(mi.x,mi.z)+4,mi.z+6.5,mi.x,groundY(mi.x,mi.z)+1.2,mi.z); yield say('mira',"He took his robot OFF?! Ali, he's just a guy! A very angry guy!",'surprised'); }
-  npShotBoth(12,-1); twCutin('nathan','LAST LIGHT','Phase III  ·  gun, blade and bare hands','#ff2a1a',1.8); yield wait(1.2);
-  evaCard(['PHASE III','LAST LIGHT'],1.8,1); Sound.sfx('slam'); yield wait(1.8);
+  npShotBoth(14,-1); yield wait(.3); twZeldaCard('Phase III','Last Light','Gun, blade and bare hands',3); { const [dx,dz]=np1Dir(), mx=(P.x+NB.x)/2, mz=(P.z+NB.z)/2; twCineGlide(mx+dz*12+dx*4,groundY(mx,mz)+7,mz-dx*12+dz*4,mx,groundY(mx,mz)+1.8,mz,.8); } yield wait(2.9);
   npShotNB(5,1,1.6,2.2); yield say('nathan',"I learned to fight before I learned to fly, Ali. Come here.",'angry');
   npShotAli(3,1,1.5); yield say('ali',"Finally. Someone I can reach.");
   npBegin(3); NB.hov=.25; }
@@ -18497,7 +18601,7 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
   if(b==='mech') return TH_SPELLS[1].concat(TH_SPELLS[2]).map(s=>s[2]); return []; }
 // limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
 function dbgLCs(){ if(dbgNP1()) return [['Lunar Eclipse (limit cut)','eclipse',2],['Ten Thousand Suns (limit cut)','suns',3],['Phase change','kill',1],['Phase change','kill',2]]; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
-  duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
+  duo:[['Twin Eclipse (limit cut, 50%)','mid',2],['Love and Death (limit cut, 50%)','mid',3],['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
   hamza:[['Mukbang Live (limit cut)','buffet',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
   grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
@@ -18573,7 +18677,8 @@ function dbgLC(kind,ph){ const b=DBG.boss; DBG.cq=null; DBG.last={a:'lc',k:kind,
   if(dbgPhase()!==ph&&kind!=='frenzy'&&kind!=='over') dbgSetPhase(ph); twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; T.hp=T.maxHp/2; T.state='lc'; T.lcDone[ph]=1; T.gen=TWK[b]['lc'+(ph-1)](T); T.wait=0; }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; const C=F.C, O=F.O; if(F.d5) d5OmarLCClean(F); if(F.d5c) d5CaoLCClean(F); TW.lcCleanup=null; F.director=0; F.busy=1; C.gen=O.gen=null;
-    if(kind==='omarlc') run(function*(){ yield* d5OmarLCIntro(F,C,O,true); });
+    if(kind==='mid'){ F.director=1; TW.lcCleanup=null; run(function*(){ yield* dmLC(F,C,O,false); }); }
+    else if(kind==='omarlc') run(function*(){ yield* d5OmarLCIntro(F,C,O,true); });
     else if(kind==='caolc'){ F.caoLC=0; run(function*(){ yield* d5CaoLCIntro(F,C,O,true); }); }
     else if(kind==='burnout'){ F.caoLC=1; F.burned=0; C.hp=O.hp=0; twBurnoutGo(F,C,O); } }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; if(kind==='buffet'){ G.lcDone=1; G.inv=true; G.mv=null; G.gen=hzgBuffet(G); G.wait=0; } else { G.frenzied=1; G.gen=null; run(function*(){ yield* hzgFrenzy(G); if(TW.giant===G){ G.inv=false; G.hp=Math.max(G.hp,G.maxHp*.2); Game.state='play'; Game.letterTo=0; Cam.cine=null; } }); } }

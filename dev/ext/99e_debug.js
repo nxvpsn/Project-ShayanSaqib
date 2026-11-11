@@ -47,7 +47,7 @@ function dbgMoves(){ const b=DBG.boss, uniq=a=>[...new Set(a)]; if(b==='grimmaw'
   if(b==='mech') return TH_SPELLS[1].concat(TH_SPELLS[2]).map(s=>s[2]); return []; }
 // limit cuts, phase changes and finales, by the phase they belong to: [label, kind, phase]
 function dbgLCs(){ if(dbgNP1()) return [['Lunar Eclipse (limit cut)','eclipse',2],['Ten Thousand Suns (limit cut)','suns',3],['Phase change','kill',1],['Phase change','kill',2]]; return {caotan:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],omar:[['Limit cut (at 50%)','lc',2],['Limit cut (at 50%)','lc',3]],
-  duo:[['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
+  duo:[['Twin Eclipse (limit cut, 50%)','mid',2],['Love and Death (limit cut, 50%)','mid',3],['Phase change I → II (Getsuga clash)','kill',1],['Omar LC: Kuroi Kaimon','omarlc',2],['Caotan LC: Hikari Supernova','caolc',3],['Burnout → ending','burnout',3]],
   hamza:[['Mukbang Live (limit cut)','buffet',2]],nathan:[['Storm (limit cut)','storm',2],['Heaven (limit cut)','heaven',3],['Overdrive (finale)','over',4]],mech:[],
   grimmaw:[['Airdrop → Crimson Moon (I → II)','kjsp',1],['Hydra clash → Garden of Stars (II → III)','kjsp',2],['Box hunt (III, 50%)','kjdome',3],['Frenzy (finale)','kjsp',3]]}[DBG.boss]||[]; }
 
@@ -123,7 +123,8 @@ function dbgLC(kind,ph){ const b=DBG.boss; DBG.cq=null; DBG.last={a:'lc',k:kind,
   if(dbgPhase()!==ph&&kind!=='frenzy'&&kind!=='over') dbgSetPhase(ph); twClearHz(); BOLTS.forEach(x=>{ if(!x.friendly) x.dead=1; });
   if(b==='caotan'||b==='omar'){ const T=dbgSolo(); if(!T) return; T.hp=T.maxHp/2; T.state='lc'; T.lcDone[ph]=1; T.gen=TWK[b]['lc'+(ph-1)](T); T.wait=0; }
   else if(b==='duo'){ const F=dbgDuo(); if(!F) return; const C=F.C, O=F.O; if(F.d5) d5OmarLCClean(F); if(F.d5c) d5CaoLCClean(F); TW.lcCleanup=null; F.director=0; F.busy=1; C.gen=O.gen=null;
-    if(kind==='omarlc') run(function*(){ yield* d5OmarLCIntro(F,C,O,true); });
+    if(kind==='mid'){ F.director=1; TW.lcCleanup=null; run(function*(){ yield* dmLC(F,C,O,false); }); }
+    else if(kind==='omarlc') run(function*(){ yield* d5OmarLCIntro(F,C,O,true); });
     else if(kind==='caolc'){ F.caoLC=0; run(function*(){ yield* d5CaoLCIntro(F,C,O,true); }); }
     else if(kind==='burnout'){ F.caoLC=1; F.burned=0; C.hp=O.hp=0; twBurnoutGo(F,C,O); } }
   else if(b==='hamza'){ const G=TW.giant; if(!G) return; if(kind==='buffet'){ G.lcDone=1; G.inv=true; G.mv=null; G.gen=hzgBuffet(G); G.wait=0; } else { G.frenzied=1; G.gen=null; run(function*(){ yield* hzgFrenzy(G); if(TW.giant===G){ G.inv=false; G.hp=Math.max(G.hp,G.maxHp*.2); Game.state='play'; Game.letterTo=0; Cam.cine=null; } }); } }
