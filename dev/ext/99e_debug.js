@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.58 (Nov 10): gliding cutscene cameras (Nathan's transitions, Hamza's cutscenes), Ali's ultimate on Nathan as one continuous shot, Kuroi Kaimon: a crane shot for the tree, a steadier climb camera and a rising void; Nathan keeps his move when he kicks Ali away.";
+const DBG_PATCH="v1.59 (Nov 11): Ali's ultimate ends in a dash through Nathan with a chase camera that whips to his front; it also ran at half speed in the browser (fixed). The slash tree is made of slashes, the climb stays at gameplay zoom. Phase transitions re-angled for sprites; Nathan strips his armour before phase III.";
 const DBG_NEW=['duo:omarlc','nathan:*','hamza:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

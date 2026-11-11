@@ -252,8 +252,9 @@ function* npUlt(){ const P=Player; P.sp=0; P.inv=99; P.hp=P.maxHp; Game.dmgNums.
   // one camera for the whole thing: W is where it wants to be, it eases there every frame (no cuts); time is stopped, so the script drives it
   const cp=camera.position, L0=(typeof TPS!=='undefined'&&TPS.l)||[cx,cy,cz], V=[+cp.x||ox,+cp.y||oy+3,+cp.z||oz,L0[0],L0[1],L0[2]]; let W=V.slice(), K=5;
   const orb=(a,r,h,lx,ly,lz)=>{ W=[cx+Math.cos(a)*r,g0+h,cz+Math.sin(a)*r,lx!=null?lx:cx,ly!=null?ly:cy,lz!=null?lz:cz]; };
-  const tick=()=>{ const e=1-Math.exp(-K/60); for(let i=0;i<6;i++) V[i]=lerp(V[i],W[i],e); NP1.cam={x:V[0],y:V[1],z:V[2],lx:V[3],ly:V[4],lz:V[5]}; };
-  const hold=function*(sec,fn){ for(let t=0;t<sec;t+=1/60){ if(fn) fn(Math.min(1,(t+1/60)/sec)); tick(); yield wait(1/60); } };
+  const tick=dt=>{ const e=1-Math.exp(-K*dt); for(let i=0;i<6;i++) V[i]=lerp(V[i],W[i],e); NP1.cam={x:V[0],y:V[1],z:V[2],lx:V[3],ly:V[4],lz:V[5]}; };
+  // on the game clock, one step a frame (a wait(1/60) a frame took two frames in the browser: the whole thing ran at half speed)
+  const hold=function*(sec,fn){ const t0=Game.time; let tl=t0; for(let n=0;n<2000;n++){ const now=Game.time, u=Math.min(1,(now-t0)/Math.max(.001,sec)); if(fn) fn(u); tick(Math.min(.05,Math.max(1/240,now-tl))); tl=now; if(u>=1) break; yield wait(.001); } };
   const fov=v=>{ try{ camera.fov=v; camera.updateProjectionMatrix(); }catch(e){} }, F0=typeof TPS!=='undefined'?TPS.FOV:55;
   try{
     // 1. THE WORLD: the colour drains, a slow push in on Ali's face from his sword side
