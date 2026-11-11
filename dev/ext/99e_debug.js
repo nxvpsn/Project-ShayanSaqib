@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.69 (Nov 11): the HD-2D overhaul is reverted: the original look is back on every map (ground, houses, trees, props, colour grade, tilt-shift) and on every character. No boss mechanics changed.";
+const DBG_PATCH="v1.70 (Nov 11): Omar redrawn (cowl, coat, feathered wings, a real scythe; horns in phase II, a bitten-moon halo and a starry void face in phase III). His phase III transition is rebuilt: chains pull the real moon out of the sky and he bites it apart. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

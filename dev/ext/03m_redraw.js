@@ -42,23 +42,32 @@ function drawOmarV2(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flash>0,
   for(let i=0;i<8;i++){ const k=i/7, x=J.hx-10+k*18, y=hy-9+Math.round(Math.sin(k*3.14)*4+sway*(.5-Math.abs(k-.5))); p(Math.round(x),y,2,2,i%2?C.chain:C.chainS); p(Math.round(x),y,1,1,'#ffffff'); }
   // ---- the cowl: the face is down inside it
   const hx=Math.round(J.headX), h0=Math.round(J.headY), ep=Math.sin(t*4)>0?'#ff2a3a':'#ff5a6a', dark=form>=3?'#000000':'#0c0812';
+  if(form>=3){ /* what is left of the moon hangs behind his head: a bitten crescent */ for(let i=0;i<44;i++){ const a=-2.2+i/43*4.6, r=19+Math.sin(t*3+i)*.4, w=Math.max(1,Math.round(4*Math.sin(i/43*3.14)+1)); p(hx+Math.round(Math.sin(a)*r)-1,h0-9-Math.round(Math.cos(a)*r)-1,w,w,i%7===3?'#9aa6d0':'#eef2ff'); } }
+  if(form>=2){ /* horns of hardened shadow, violet at the tips */ for(const d of [-1,1]){ cSeg(p,hx+d*6,h0-18,hx+d*12,h0-24,3,C.k0); cSeg(p,hx+d*12,h0-24,hx+d*13,h0-31,2,C.k0); cSeg(p,hx+d*6,h0-18,hx+d*12,h0-24,1,C.k3); p(hx+d*13-1,h0-33,2,3,C.trim); p(hx+d*13-1,h0-33,1,1,C.trimH); } }
   cPoly(p,[[hx-11,h0+2],[hx-11,h0-11],[hx-7,h0-18],[hx-1,h0-23],[hx+3,h0-22],[hx+7,h0-17],[hx+11,h0-11],[hx+10,h0+2]],C.k1);
   cPoly(p,[[hx-11,h0+2],[hx-11,h0-11],[hx-7,h0-18],[hx-4,h0-20],[hx-7,h0-11],[hx-8,h0+2]],C.k3); p(hx-10,h0-10,1,10,C.k4); p(hx-2,h0-23,4,1,C.k4);     /* the lit rim */
   cPoly(p,[[hx+6,h0-17],[hx+11,h0-11],[hx+10,h0+2],[hx+7,h0+2],[hx+8,h0-10]],C.k0); cSeg(p,hx+1,h0-22,hx+5,h0-12,1,C.k0); cSeg(p,hx-4,h0-20,hx-6,h0-12,1,C.k2);
   cPoly(p,[[hx-7,h0-1],[hx-7,h0-11],[hx-3,h0-15],[hx+3,h0-15],[hx+7,h0-11],[hx+7,h0-1]],dark);                                    /* the opening */
   if(form<3){ p(hx-5,h0-5,10,4,C.skinS); p(hx-4,h0-5,7,3,C.skin); p(hx-5,h0-2,10,1,C.skinD); p(hx+3,h0-5,2,3,C.skinD); p(hx-2,h0-3,4,1,tk===2?'#3a1018':C.skinD); if(tk===2) p(hx-1,h0-2,3,1,'#3a1018'); p(hx-6,h0-6,12,1,'#1a1220'); }
+  if(form>=3){ for(let i=0;i<7;i++){ const x=hx-6+Math.floor(hash(i,3)*12), y=h0-14+Math.floor(hash(3,i)*12); if(Math.sin(t*5+i*2)>-.3) p(x,y,1,1,i%3?'#b06aff':'#ffffff'); } } /* stars in the void where his face was */
   const eye=form>=3?'#ffffff':ep, bl=cBlink(t,2.2)&&form<3;
   if(!bl){ for(const ex of [hx-5,hx+2]){ p(ex-1,h0-11,6,4,form>=3?'rgba(255,255,255,.25)':'rgba(255,40,60,.28)'); p(ex,h0-10,4,2,eye); p(ex+(ex<hx?0:2),h0-10,2,1,'#ffffff'); p(ex+1,h0-8,1,2+(Math.floor(t*3+ex)%2),form>=3?'rgba(255,255,255,.5)':'rgba(255,60,80,.55)'); } }
   else { p(hx-5,h0-9,4,1,'#5a1018'); p(hx+2,h0-9,4,1,'#5a1018'); }
   if(form>=3) for(let i=0;i<4;i++){ const a=t*2+i*1.57; p(Math.round(Math.cos(a)*20),h0-3+Math.round(Math.sin(a)*20),3,3,'#b06aff'); }
   // ---- near arm and the scythe
   const A=J.A[1];
-  if(sc){ const sa=-2.7+sw*3.8, len=32, ex=A.ex+Math.sin(sa)*len*.8, ey=A.ey+Math.cos(sa)*len*.8, bx=A.ex-Math.sin(sa)*len*.25, byy=A.ey-Math.cos(sa)*len*.25;
-    cSeg(p,bx,byy,ex,ey,3,C.k0); cSeg(p,bx,byy,ex,ey,1,C.k4); for(let i=1;i<6;i++){ const k=i/6; p(Math.round(bx+(ex-bx)*k)-1,Math.round(byy+(ey-byy)*k)-1,3,2,i%2?C.lin:C.chainS); } p(Math.round(bx)-2,Math.round(byy)-2,4,4,C.chainS); p(Math.round(bx)-1,Math.round(byy)-1,2,2,C.trim);
+  if(sc){ const sa=-2.7+sw*3.8, len=50, ex=A.ex+Math.sin(sa)*len*.66, ey=A.ey+Math.cos(sa)*len*.66, bx=A.ex-Math.sin(sa)*len*.34, byy=A.ey-Math.cos(sa)*len*.34; /* a staff: as long as he is tall, held a third of the way up */
+    cSeg(p,bx,byy,ex,ey,3,C.k0); cSeg(p,bx,byy,ex,ey,1,C.k4); for(let i=1;i<9;i++){ const k=i/9; p(Math.round(bx+(ex-bx)*k)-1,Math.round(byy+(ey-byy)*k)-1,3,2,i%2?C.lin:C.chainS); } p(Math.round(bx)-2,Math.round(byy)-2,4,4,C.chainS); p(Math.round(bx)-1,Math.round(byy)-1,2,2,C.trim);
     p(Math.round(ex)-3,Math.round(ey)-3,6,6,C.steel); p(Math.round(ex)-2,Math.round(ey)-2,4,4,C.trim); p(Math.round(ex)-1,Math.round(ey)-1,2,2,C.trimH);
-    const ba=sa+1.75, N=26; for(let i=0;i<N;i++){ const k=i/N, a=ba-k*1.15, r=k*27, w=Math.max(1,Math.round(6*(1-k*k)+.5)); for(let q=0;q<w;q++){ const rr=r, ox=Math.sin(a+1.57)*q*-1, oy=Math.cos(a+1.57)*q*-1; p(Math.round(ex+Math.sin(a)*rr+ox),Math.round(ey+Math.cos(a)*rr+oy),2,2,q===0?C.edge:q===1?C.trimH:q<3?C.lin:C.steel); } }
-    for(let i=3;i<N;i+=5){ const k=i/N, a=ba-k*1.15; p(Math.round(ex+Math.sin(a)*(k*27+2)),Math.round(ey+Math.cos(a)*(k*27+2)),1,1,'#ffffff'); }
+    /* a real scythe: the blade leaves the top of the shaft at a right angle, long, widest at the heel, curving in to a point; the spine is dark steel, the inside edge is the sharp one (violet to white) */
+    const ux=Math.sin(sa), uy=Math.cos(sa), nx=Math.sin(sa+1.5708), ny=Math.cos(sa+1.5708), N=30;
+    for(let i=0;i<N;i++){ const k=i/(N-1), along=k*31, dip=k*k*13, w=Math.max(1,Math.round(8*(1-k)*(1-k*.35)+1)), bx0=ex+nx*along-ux*dip, by0=ey+ny*along-uy*dip;
+      for(let q=0;q<w;q++){ p(Math.round(bx0-ux*q)-1,Math.round(by0-uy*q)-1,2,2,q===w-1?C.edge:q===w-2&&w>2?C.trimH:q===0?C.k4:q<w*.45?C.steel:C.lin); } }
+    for(let i=4;i<N;i+=6){ const k=i/(N-1), w=Math.max(1,Math.round(8*(1-k)*(1-k*.35)+1)); p(Math.round(ex+nx*k*31-ux*(k*k*13+w)),Math.round(ey+ny*k*31-uy*(k*k*13+w)),1,1,'#ffffff'); }
+    p(Math.round(ex-nx*3)-2,Math.round(ey-ny*3)-2,5,5,C.steel); p(Math.round(ex-nx*3)-1,Math.round(ey-ny*3)-1,3,3,C.chainS); /* the heel's counterweight */
     if(sw>.15&&sw<.95) for(let i=0;i<14;i++){ const k=i/14, a0=-2.4+sw*3.6-k*1.2, a1=a0-.1; cSeg(p,A.x+Math.sin(a0)*36,A.y+Math.cos(a0)*36,A.x+Math.sin(a1)*36,A.y+Math.cos(a1)*36,k<.3?3:2,'rgba(200,140,255,'+(.75*(1-k)).toFixed(2)+')'); cSeg(p,A.x+Math.sin(a0)*38,A.y+Math.cos(a0)*38,A.x+Math.sin(a1)*38,A.y+Math.cos(a1)*38,1,'rgba(255,255,255,'+(.6*(1-k)).toFixed(2)+')'); } }
   cSeg(p,A.x,A.y,A.kx,A.ky,5,C.k2,C.k3); cSeg(p,A.kx,A.ky,A.ex,A.ey,6,C.k2,C.k3); { const x=Math.round(A.ex), y=Math.round(A.ey); p(x-3,y-2,7,3,C.k1); p(x-3,y-2,7,1,C.k4); p(x-2,y+1,4,3,C.skin); p(x+1,y+1,1,3,C.skinS); p(x-2,y+4,1,2,C.skin); p(x,y+4,1,2,C.skinS); p(x-3,y,1,1,C.lin); }
   if(cast&&!sc){ const x=Math.round(A.ex), y=Math.round(A.ey); for(let r=6;r>0;r-=2) p(x-r,y-4-r,r*2+1,r,'rgba(170,80,255,'+(.25+.1*(6-r)).toFixed(2)+')'); p(x-2,y-8,5,3,'rgba(230,200,255,.9)'); p(x-1,y-7,2,1,'#ffffff'); for(let i=0;i<3;i++){ const a=t*8+i*2.1; p(x+Math.round(Math.cos(a)*7),y-6+Math.round(Math.sin(a)*4),1,1,'#ffffff'); } }
   if(dn) cStars(p,h0-28,t,'#c08aff'); else if(st) cStars(p,h0-28,t,'#c08aff',8); }
+// approved by the owner (v1.70): Omar is this painter everywhere he is drawn (solo, duo, the fusion's Omar half, afterimages, portraits that reuse it)
+drawOmarCast=drawOmarV2; drawOmarHD=drawOmarV2; drawOmarBoss=drawOmarV2;
