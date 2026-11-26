@@ -13,6 +13,12 @@ function kjEyeWorld(B){ const f=B.f||1, E=B._eyes||[[3,-90],[15,-90]], y0=B.y+(B
   return E.map(([dx,dy])=>({x:B.x+(dx+2)*f/28, y:y0-(dy-1)/28, z:B.z+.06})); }
 // Whoever fights beside you lands ahead of you and off to the sides when the arena changes (seen in the playtest rig: they
 // landed between you and the low cutscene camera, and an ally's back filled a third of the reveal).
+// Kojima's intro shots (v1.82, seen in the playtest rig: the base game's shots were aimed at the old wolf's height, so the baby's
+// "Come then!" and his title card played over Mira's cage, and the hero stood under the text box while he walked up).
+// wide: the walk-up, hero and baby both above the text box; close: the baby from a low three-quarter angle. The lens takes
+// the side away from an ally.
+function kjIntroCam(wide){ const B=Game.boss; if(!B) return; let s=1; try{ const a=(TW.allies||[]).find(q=>q&&!q.gone&&!q.hidden); if(a&&a.x>Player.x) s=-1; }catch(e){}
+  if(wide) cineSet(B.x+s*4.4,1.5,B.z+8.8,B.x-s*.4,.55,B.z+1.3); else cineSet(B.x+s*3.4,1.2,B.z+6.6,B.x-s*.3,1.0,B.z); }
 function kjAlliesAside(){ try{ const P=Player; let i=0; for(const A of (TW.allies||[])){ if(!A||A.gone) continue; const s=i%2?1:-1, k=Math.floor(i/2); i++; A.x=P.x+s*(3.6+k*1.5); A.z=P.z-4.5; A.y=groundY(A.x,A.z); A.vx=A.vz=0; A.f=-s; A.hold=1; A._kjHold=1; } /* held there until the cutscene is over: left alone they walked straight back to their slot behind you, 2 units from the lens */ Game.fxUpd.push(()=>{ if(Game.script){ /* the fairy pig hovers off to the far side too (he drifted across the lens and over Kojima) */ const H=Game.hamza; if(H&&H.mode==='follow'){ H.x=P.x+4.4; H.z=P.z-5.2; } return true; } for(const A of (TW.allies||[])) if(A&&A._kjHold){ A._kjHold=0; A.hold=0; } return false; }); }catch(e){ console.error('kj allies',e); } }
 function* kjToLake(){ const B=Game.boss; if(!B){ enterArena('lake',2); return; }
   B.redEye=1; Sound.sfx('heartbeat'); const eyes=kjEyeWorld(B), gl=[];

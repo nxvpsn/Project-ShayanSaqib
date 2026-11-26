@@ -333,12 +333,19 @@ function twSpeakerClear(who){ const c=Cam.cine; if(!c||!Game.script||!who) retur
 // on film in most scenes), the shot is re-aimed so the head sits in the clear band above the box.
 function twHeadFix(who){ const c=Cam.cine; if(!c||!Game.script||!who) return; let o=null; if(who==='mira'){ const m=Game.mira; o=m&&m.vis?m:null; } else if(who===HERO()) o=Player.hidden?null:Player; else if(who==='ali'||who==='shayan') o=TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden)||null;
   if(!o) return; const oy=o.y!=null?o.y:groundY(o.x,o.z), dS=Math.hypot(c.px-o.x,c.pz-o.z), dL=Math.hypot(c.px-c.lx,c.pz-c.lz)||1; if(dS<1.5||dS>7.5||Math.hypot(c.lx-o.x,c.lz-o.z)>1.6) return;
-  const lineY=c.py+(c.ly-c.py)*(dS/dL), head=oy+1.15; if(lineY-head<.22) return; /* the head is already at or above the centre line */
-  const k=Math.max(dS,4.4)/dS; c.px=o.x+(c.px-o.x)*k; c.pz=o.z+(c.pz-o.z)*k; c.py=Math.max(c.py,oy+1.65); c.lx=o.x+(c.lx-o.x)*.5; c.lz=o.z; c.ly=oy+1.0; }
+  /* v1.82: measured on the sprites, a face is 1.2 up (Shayan, Ali) or .92 (Mira, whose ears reach 1.44), and the lens is a 27 degree telephoto, so a close shot only shows about 1.6 units: the chin has to clear the text box (its top edge is ~16% below the centre), which the old fixed .22 margin missed for Mira and for every shot nearer than ~5 (seen on film: her eyes level with the box edge) */
+  const hd=who==='mira'?.92:1.2, visH=2*dS*Math.tan((camera.fov||27)*Math.PI/360), lineY=c.py+(c.ly-c.py)*(dS/dL), head=oy+hd; if(lineY-head<.12*visH-.2) return; /* the chin is already clear of the box */
+  const k=Math.max(dS,4.4)/dS; c.px=o.x+(c.px-o.x)*k; c.pz=o.z+(c.pz-o.z)*k; c.py=Math.max(c.py,oy+hd+.45); c.lx=o.x+(c.lx-o.x)*.5; c.lz=o.z; c.ly=oy+hd-.15; }
 function twFaceFix(who){ if(who!=='caotan'&&who!=='omar') return; const c=Cam.cine; if(!c||!Game.script) return; const o=TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide)||TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden); if(!o) return;
   if(Math.hypot(c.lx-o.x,c.lz-o.z)>1.7) return; const sc=o.scale||1, head=o.y+2.15*sc, need=5*sc; let ux=c.px-o.x, uz=c.pz-o.z; const d=Math.hypot(ux,uz)||1; if(d>need*1.5) return; ux/=d; uz/=d; const D=Math.max(d,need);
   c.px=o.x+ux*D; c.pz=o.z+uz*D; c.py=head-.3; c.lx=o.x; c.lz=o.z; c.ly=head-.55; }
-(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'){ twSpeakerClear(d.who); twFaceFix(d.who); twHeadFix(d.who); } last=d; }catch(e){ console.error('face',e); } return r; }; })();
+// The fairy pig never hovers across the lens (v1.82, seen on film: he drifted between the camera and Shayan in a close shot and
+// covered his head). While a cutscene shot is up, a following pig that sits on the line from the lens to the subject is
+// slid sideways off it, every frame (his follow pulls him back a little each frame, this wins).
+function twPigClear(){ const c=Cam.cine, H=Game.hamza; if(!c||!Game.script||!H||H.mode!=='follow') return; const vx=c.lx-c.px, vz=c.lz-c.pz, L2=vx*vx+vz*vz; if(L2<1) return;
+  const t=((H.x-c.px)*vx+(H.z-c.pz)*vz)/L2; if(t<.03||t>.8) return; /* level with the subject he is company, not an obstacle (and he may be the subject) */ const qx=c.px+vx*t, qz=c.pz+vz*t, L=Math.sqrt(L2); let dx=H.x-qx, dz=H.z-qz; const d=Math.hypot(dx,dz), need=1.25; if(d>=need) return;
+  if(d<.05){ dx=-vz/L; dz=vx/L; } else { dx/=d; dz/=d; } H.x=qx+dx*need; H.z=qz+dz*need; }
+(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'){ twSpeakerClear(d.who); twFaceFix(d.who); twHeadFix(d.who); } last=d; twPigClear(); }catch(e){ console.error('face',e); } return r; }; })();
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2, mx=(cx+ox)/2, mz=(cz+oz)/2, gy=P.y;
   // a crane shot down from the eclipse onto the two of them
@@ -595,9 +602,9 @@ function* d5Drill(F){ const P=Player, A=twAliAny(), S=F.d5, O=F.O, C=F.C, sky=S.
   // the tree comes apart; everyone falls
   JC.flash=.5; Sound.sfx('shatter'); S.tree.meshes.forEach(m=>{ FX.burst(m.position.x,m.position.y,m.position.z,6,0xff3a4a,4,.3); }); S.tree.kill(); TW._mantle=0;
   const gy=groundY(P.x,P.z), A2=twAliAny(); P.cineAnim='fall'; twAnim(P,{y:gy},1,twEIn2); if(A2){ A2.hold=1; twAnim(A2,{y:groundY(A2.x,A2.z)},1,twEIn2); }
-  const og=groundY(O.x,O.z); cineSet(O.x+3,og+5,O.z+12,O.x,og+H*.6,O.z); twAnim(O,{hy:H*.55},.6,twEIn2); yield d5Say('omarLC',24,'surprised'); yield d5Say('omarLC',25,'surprised');
+  const og=groundY(O.x,O.z); cineSet(O.x+3,og+5,O.z+12,O.x,og+H*.6,O.z); twAnim(O,{hy:H*.55,y:og+H*.55},.6,twEIn2); /* y too: only the hover value was animated, so he stayed up out of the shot and 'Catch me, brother!' played over empty sky (seen in the rig) */ yield d5Say('omarLC',24,'surprised'); yield d5Say('omarLC',25,'surprised');
   cineSet(C.x+1,groundY(C.x,C.z)+1.4,C.z+3.4,C.x,groundY(C.x,C.z)+1.5,C.z); yield d5Say('omarLC',26);
-  twAnim(O,{hy:.3,x:C.x+1.4,z:C.z},.35,twEIn2); yield wait(.35); Sound.sfx('crash'); Sound.sfx('punch'); shake(1); FX.burst(O.x,og+.3,O.z,40,0x6a5a40,6,.4,false); cineSet(C.x+2,og+1.4,C.z+5,C.x+.7,og+.6,C.z); yield wait(.5); O.hy=1.3;
+  twAnim(O,{hy:.3,y:groundY(C.x+1.4,C.z)+.3,x:C.x+1.4,z:C.z},.35,twEIn2); yield wait(.35); Sound.sfx('crash'); Sound.sfx('punch'); shake(1); FX.burst(O.x,og+.3,O.z,40,0x6a5a40,6,.4,false); cineSet(C.x+2,og+1.4,C.z+5,C.x+.7,og+.6,C.z); yield wait(.5); O.hy=1.3;
   P.y=groundY(P.x,P.z); P.cineFly=false; P.cineAnim=null; if(A2){ A2.hold=0; A2.y=groundY(A2.x,A2.z); }
   // on the ground
   twCamP(6.4,1); yield d5Say('omarLC',27,'happy'); if(A2) yield d5Say('omarLC',28); if(Game.mira){ const mi=Game.mira; cineSet(mi.x+1,mi.y+1.3,mi.z+3.2,mi.x,mi.y+1.2,mi.z); yield d5Say('omarLC',29,'happy'); }
@@ -754,7 +761,7 @@ twBurnoutIntro=function*(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=gr
   const aura={on:1}; Game.fxUpd.push(()=>{ try{ if(!aura.on) return false; for(const T of [C,O]){ for(let i=0;i<4;i++){ const a=rnd(0,6.28), r=rnd(.6,1.6); FX.spawn(T.x+Math.cos(a)*r,T.y+rnd(0,3),T.z+Math.sin(a)*r,0,rnd(2,5),0,.6,T===C?(i%2?0xff3a8a:0xffffff):(i%2?0x8a3aff:0x050208),.35,0,T===C); } } }catch(e){ return false; } return true; });
   Sound.sfx('fuse'); Sound.sfx('howl'); twAnim(C,{hy:3},1.2,twEIO); twAnim(O,{hy:3},1.2,twEIO); yield cineTo([mx,gy+.4,mz+9],[mx,gy+3.6,mz],1.3,twEIO);
   impactFrame([[3,2],[1,2],[2,2]]); shake(1.2); Sound.sfx('slam'); FX.flash=.5; grade.uniforms.flashCol.value.set(1,.4,.7);
-  cineSet(P.x+1,P.y+.7,P.z+3,P.x,P.y+2,P.z-2); yield d5Say('burnIntro',2,'surprised'); if(A){ cineSet(A.x-1,A.y+1.2,A.z+3,A.x,A.y+1.5,A.z); yield d5Say('burnIntro',3); }
+  twCamP(5.2,1.2); /* was a low shot aimed over his head at the sky: on film only the top of his hair showed above the text box */ yield d5Say('burnIntro',2,'surprised'); if(A){ cineSet(A.x-1,A.y+1.2,A.z+3,A.x,A.y+1.5,A.z); yield d5Say('burnIntro',3); }
   if(mi){ cineSet(mi.x+1,mi.y+1.2,mi.z+3,mi.x,mi.y+1.2,mi.z); mi.anim='jump'; yield d5Say('burnIntro',4,'happy'); mi.anim='idle'; }
   aura.on=0; twAnim(C,{hy:1.3},.4); twAnim(O,{hy:1.3},.4); yield* d5Title(4,C,O,["Final Phase","Caotan & Omar","Burnout"]);
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.6); Cam.cine=null; Game.letterTo=0; P.inv=1; F.miraHold=0; if(A){ A.hold=0; A.face=null; }

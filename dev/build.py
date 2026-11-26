@@ -45,6 +45,14 @@ s = patch(s, "yield cineTo([Player.x,6,Player.z+16],[Player.x,6,Player.z-20],3);
 # Nathan's arrival: his talking shots stand back when he is the big 8-direction mech of Ali's road (seen in the playtest rig: at 6-8 units he was a blurry wall of pixels behind the text box)
 s = patch(s, "cineSet(ax-4,2.6,az+8,ax,2.8,az); Sound.play('requiem');", "nbTalkCam(0); Sound.play('requiem');")
 s = patch(s, "cineSet(ax-3,2.2,az+6,ax,3,az);", "nbTalkCam(1);", 2)
+# cutscene review (v1.82, seen in the playtest rig): Kojima's intro shots were still aimed at the old wolf's height, so the
+# baby's "Come then!" and his title card played over Mira's cage, and the hero stood under the text box in the walk-up shot;
+# Nathan's mech stood behind the text box in the soul-burn talking shots.
+s = patch(s, "cineSet(B.x+1.4,1.6,B.z+3.4,B.x,3.4,B.z); B.anim='howl';", "kjIntroCam(0); B.anim='howl';", 2)
+s = patch(s, "cineSet(st.x+.5,4.5,st.z+7,st.x,1.2,st.z-2); yield walkP(st.x,st.z,2.4);", "kjIntroCam(1); yield walkP(st.x,st.z,2.4);", 2)
+s = patch(s, "cineSet(N.x+4,N.y+.6,10,N.x+.3,N.y+1,0);", "cineSet(N.x+4,N.y-.9,10,N.x+.3,N.y-.5,0);")
+s = patch(s, "cineSet(N.x+2.6,N.y+1.4,7,N.x+.4,N.y+1.6,0);", "cineSet(N.x+2.6,N.y+.3,7,N.x+.4,N.y+.5,0);")
+s = patch(s, "cineSet(N.x+3,N.y+.8,8,N.x+.3,N.y+1.2,0);", "cineSet(N.x+3,N.y-.5,8,N.x+.3,N.y-.1,0);")
 s = patch(s, "function* nbFinale(){ const P=Player, mi=Game.mira;", "function* nbFinale(){ const P=Player, mi=Game.mira; twAllyLeave();")
 
 # ---- combat rework hooks (round 2) ----

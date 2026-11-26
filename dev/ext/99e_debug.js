@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.81 (Nov 26): the giant Hikari scene (duo, end of Caotan's limit cut) fixed: she has a detailed print at that size instead of six blurry rectangles, the camera climbs her from skirt to face on \"LOOK AT HER\", the twins stand in front of her instead of inside her, and Omar is in frame for his line. No boss mechanics changed.";
+const DBG_PATCH="v1.82 (Nov 26): cutscene review finished (Kojima's intro shots are on him instead of the cage, speakers clear the text box, two-shots hold still, the fairy pig stays off the lens) and redraws: Mira, the villagers, the fairy pig and Big Back Hamza. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗']];

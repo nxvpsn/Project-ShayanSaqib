@@ -80,3 +80,5 @@ npLCEclipse=function*(){ NP1.cur='lc'; NP1.lcInv=1; twCutin('nathan','FULL BURST
     yield* npCircus(4,4); yield .4; yield* npsLattice(.8,-1.15,2.8); NB.hov=1.4; yield .4; yield* npsFall(2,.45); yield .15; yield* npsFall(3,.42); yield .7; NB.hov=1.4; { const [dx,dz]=np1Dir(), P=Player; nbBoost(P.x-dx*9,P.z-dz*9); } yield .3; yield* npBuster(3.4,1.6); yield .3; }
   finally{ npLCEnd(); }
   twBark('nathan',"Heat... critical. Vent... venting...",true); for(let i=0;i<5;i++) FX.burst(NB.x,NB.y+rnd(1,3),NB.z,16,0xc8d4e0,5,.5,false); np1Stun(5,'OVERHEAT'); };
+// a limit-cut banner clears a move tip that is still up (seen in the rig: the ringfall tip sat under FULL BURST's cut-in)
+(function(){ const f=twCutin; twCutin=function(){ try{ if(typeof NP1!=='undefined'&&NP1) NP1.hint=null; }catch(e){} return f.apply(this,arguments); }; })();

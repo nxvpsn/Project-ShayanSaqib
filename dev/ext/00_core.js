@@ -284,7 +284,7 @@ function twCamT(T,dist,side){ dist=dist||7.5; side=side==null?1.2:side; const y=
 // the hero's talking shot. If a foe or an ally stands in the line between the lens and the hero (seen in the playtest rig:
 // Omar's coat hanging across Shayan's reaction shots), the camera swings round to the first clear side.
 function twCamPick(tx,tz,side,dist,obs){ const s1=side||1;
-  const blocked=(sx,d)=>obs.some(o=>{ const ax=tx+sx, az=tz+d, vx=tx-ax, vz=tz-az, L2=vx*vx+vz*vz||1, tr=((o.x-ax)*vx+(o.z-az)*vz)/L2, t=Math.max(0,Math.min(1,tr)); if(tr>.97) return false; /* level with or behind the subject: background, not in the way */ return Math.hypot(o.x-(ax+vx*t),o.z-(az+vz*t))<1.25*(o.scale||1); });
+  const blocked=(sx,d)=>obs.some(o=>{ const ax=tx+sx, az=tz+d, vx=tx-ax, vz=tz-az, L2=vx*vx+vz*vz||1, tr=((o.x-ax)*vx+(o.z-az)*vz)/L2, t=Math.max(0,Math.min(1,tr)); if(tr>.97) return false; /* level with or behind the subject: background, not in the way */ return Math.hypot(o.x-(ax+vx*t),o.z-(az+vz*t))<(o.who==='caotan'||o.who==='omar'||(o.scale||1)>1.2?1.25*(o.scale||1):.8); /* the twins are wide; the hero, Ali and Mira are not: at 1.25 a two-shot counted the partner as 'in the way' and the lens swung round on every line (seen in the rig, duo platform) */ });
   for(const c of [[side,dist],[-s1,dist],[s1*3.4,dist*.9],[-s1*3.4,dist*.9],[s1*5.5,dist*.6],[-s1*5.5,dist*.6]]) if(!blocked(c[0],c[1])) return c; return [side,dist]; }
 function twCamP(dist,side){ const P=Player; dist=dist||6.2; side=side==null?1:side; let pick=[side,dist];
   try{ pick=twCamPick(P.x,P.z,side,dist,[...(TW.foes||[]),...(TW.allies||[])].filter(o=>o&&!o.hide&&!o.gone&&!o.hidden&&Math.hypot(o.x-P.x,o.z-P.z)>.9)); }catch(e){}
