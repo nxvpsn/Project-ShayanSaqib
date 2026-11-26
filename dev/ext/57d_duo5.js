@@ -697,14 +697,19 @@ function* d5CaoLCPlay(F,C,O){ const S=F.d5c, H=S.hik, keys=Object.keys(D5CP).fil
 // she's too big for the screen: Omar blinks into the air in front of her, opens a black hole, eats her, throws it; Ali halves it
 function* d5CollapseCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5c, H=S.hik, gy=groundY(H.x,H.z), mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=1; P.vx=P.vz=0; P.inv=99;
   { /* clear the attacks, NOT her: twClearHz takes every mesh tagged tw off the scene, and that included Hikari (seen on film: the whole scene about her played to an empty sky) */ const hm=H.m, was=hm.userData.tw; hm.userData.tw=0; twClearHz(); hm.userData.tw=was; if(!hm.parent&&!H.gone) scene.add(hm); }
-  d5HikSize(H,Math.max(H.s,12)); C.heartEyes=1; try{ H.m.material.color.setHex(0x8a7c92); H.m.renderOrder=-2; }catch(e){} /* dimmed: at full white a pillow this size bloomed into a blank wall that hid the speakers (seen on film) */
+  d5HikSize(H,Math.max(H.s,12)); C.heartEyes=1; try{ H.m.material.color.setHex(0xa094a4); H.m.renderOrder=-2; }catch(e){}
+  { /* she leans back like every sprite, about her middle, so at this size her foot swings metres forward: the twins stood (and their close-ups were shot) inside her (seen on film: "She's PERFECT!" over a wall of fabric). They step out in front of her foot. */ let zf=H.z+8; try{ H.m.updateMatrixWorld(true); const bb=new THREE.Box3().setFromObject(H.m); if(isFinite(bb.max.z)&&bb.max.z>H.z) zf=Math.min(bb.max.z,H.z+12); }catch(e){}
+    const put=(T,x)=>{ const q=twClampXZ(x,zf+2.6,.8); FX.burst(T.x,T.y+1.4,T.z,18,T===O?0x140a1a:0xff8ac8,4,.4,T!==O); T.x=q.x; T.z=q.z; T.hy=1.3; T.y=groundY(q.x,q.z)+1.3; T.mv=null; FX.burst(T.x,T.y+1.4,T.z,18,T===O?0x8a3aff:0xffffff,4,.4); }; put(C,H.x-4.4); put(O,H.x+4.6); C.f=1; O.f=-1; Sound.sfx('dash'); } /* dimmed: at full white a pillow this size bloomed into a blank wall that hid the speakers (seen on film) */
   // low and wide: you only see the bottom half of her
   cineSet(H.x+2,gy+.8,H.z+15,H.x,gy+H.s*.9,H.z); yield cineTo([H.x-2,gy+1.2,H.z+13],[H.x,gy+H.s*1.1,H.z],1.6,twEIO);
   cineSet(O.x+.8,groundY(O.x,O.z)+1.5,O.z+3,O.x,groundY(O.x,O.z)+1.8,O.z); yield d5Say('caoLC',11);
   cineSet(C.x-.8,gy+1.2,C.z+3,C.x,gy+2.2,C.z); yield d5Say('caoLC',12,'happy');
-  // the pan: across her, up to where Omar appears
+  // "LOOK AT HER": the camera climbs her, skirt to face, and holds on the face for a beat (on film the scene never showed it)
+  { let fp=null; try{ H.m.updateMatrixWorld(true); const v=H.m.localToWorld(new THREE.Vector3(0,H.s0*2.6*(.5-54/224),0)); if(isFinite(v.x+v.y+v.z)) fp=v; }catch(e){} if(!fp) fp={x:H.x,y:gy+H.s*1.95,z:H.z};
+    cineSet(H.x-1.5,gy+2.2,fp.z+19,H.x,gy+5,H.z+3); yield cineTo([fp.x+1.2,fp.y-2.5,fp.z+15.5],[fp.x,fp.y+.2,fp.z],1.5,twEIO); Sound.sfx('kyun'); Sound.sfx('sparkle'); for(let k=0;k<26;k++) FX.spawn(fp.x+rnd(-5,5),fp.y+rnd(-4,4),fp.z+1.5,rnd(-.5,.5),rnd(.5,2),0,rnd(.5,1),k%2?0xff8ac8:0xffffff,.4,0,true); yield wait(.9); }
+  // the pan: across her, down to where Omar appears
   const my=H.s*1.25; yield cineTo([H.x+5,gy+my-1,H.z+12],[H.x,gy+my,H.z],1.2,twEIO);
-  twBlink(O,H.x-2.2,H.z+1.6); O.x=H.x-2.2; O.z=H.z+1.6; O.hy=my; O.f=1; O.lockF=1; Sound.sfx('void'); FX.burst(O.x,gy+my+1.4,O.z,30,0x8a3aff,5,.4);
+  twBlink(O,H.x-2.2,H.z+1.6); O.x=H.x-2.2; O.z=H.z+1.6; O.hy=my; O.y=groundY(O.x,O.z)+my; d5Lift(O); /* he is AT that height for his line (on film he was still below the shot, his head behind the text box) */ O.f=1; O.lockF=1; Sound.sfx('void'); FX.burst(O.x,gy+my+1.4,O.z,30,0x8a3aff,5,.4);
   cineSet(O.x+4.4,gy+my+1.6,O.z+7,O.x+1.6,gy+my+1.6,O.z); yield wait(.5); yield d5Say('caoLC',13);
   // a hand out; a small black ball
   O.cast=3; const hx=H.x+.2, hy=gy+my+1.4, hz=H.z+.9, V=twHoleVis(hx,hy,hz,3,true); S.v.push(V); V.t=0; Sound.sfx('charge');

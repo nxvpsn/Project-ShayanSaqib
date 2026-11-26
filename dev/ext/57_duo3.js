@@ -77,7 +77,38 @@ function twMiniHole(x,z,o){ o=Object.assign({r:.7,pull:4.5,range:5.5,dur:6,eat:.
   h._x=x; h._z=z; h.hole=s; return h; }
 
 // ---------- Hikari-chan (a body pillow, any size) ----------
-function twHikari(x,z,s){ const m=twBB(texPillow(),.95*s,2.6*s); const H={x,z,y:groundY(x,z)+1.3*s,s,m,spin:0,gone:false,
+// Hikari-chan's own print, four times the detail of the thrown pillows' (texPillow): she grows to twelve times her size in
+// the duo's limit cut, and at that size the 20x56 print was six coloured rectangles (seen on film). Same girl, same colours.
+function texPillowHD(){ return twTex('pillowHD',80,224,c=>{ const P=(x,y,w,h,k)=>R(c,x,y,w,h,k), E=(x,y,rx,ry,k)=>ell(c,x,y,rx,ry,k), poly=(pts,k)=>{ c.fillStyle=k; c.beginPath(); pts.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1])); c.closePath(); c.fill(); };
+  const PK='#ff8ac8', PKD='#e0609e', PKL='#ffc4e4', SK='#ffe2d0', SKD='#f0c0aa', NV='#3a3a8a', NVD='#2a2a6a', NVL='#5050a8';
+  // the pillow: soft corners, shaded sides, a stitched seam
+  P(10,2,60,220,'#fbf6f8'); P(8,6,64,212,'#fbf6f8'); P(8,6,5,212,'#e8dce4'); P(67,6,5,212,'#efe4ec'); P(10,2,60,3,'#e8dce4'); P(10,219,60,3,'#e0d2dc'); for(let y=10;y<214;y+=8){ P(14,y,1,4,'#d8c8d4'); P(65,y,1,4,'#d8c8d4'); }
+  // hair behind the head, long side locks
+  E(40,42,27,25,PK); P(12,40,10,74,PK); P(58,40,10,74,PK); P(12,40,3,74,PKD); P(65,40,3,74,PKD); P(17,48,2,60,PKL); P(61,48,2,60,PKL); poly([[12,114],[22,114],[17,126]],PK); poly([[58,114],[68,114],[63,126]],PK);
+  // face
+  E(40,54,20,19,SK); P(24,68,32,4,SKD); E(40,56,19,16,SK);
+  // fringe: zigzag, a shine across it, an ahoge, a ribbon
+  P(19,28,42,16,PK); for(let i=0;i<6;i++) poly([[20+i*7,44],[27+i*7,44],[23.5+i*7,52-(i%2)*3]],PK); P(24,24,30,3,PKL); P(28,21,20,2,'#ffe0f2'); poly([[40,18],[46,6],[43,18]],PK); poly([[40,18],[36,9],[38,18]],PKD);
+  poly([[54,26],[66,20],[64,32]],'#ff3a5a'); poly([[54,26],[66,34],[58,36]],'#d02a48'); P(52,24,5,5,'#ff7a90');
+  // eyes: big, lashes, two highlights
+  for(const ex of [30,50]){ P(ex-7,46,14,2,'#3a2a3a'); P(ex-8,47,2,3,'#3a2a3a'); E(ex,55,6,7,'#243070'); E(ex,56,5,5,'#3a6aff'); E(ex,58,3,2,'#7ab0ff'); P(ex-4,51,4,4,'#ffffff'); P(ex+2,58,2,2,'#dff0ff'); P(ex-1,54,2,3,'#101838'); }
+  P(22,41,10,2,PKD); P(48,41,10,2,PKD);
+  // blush, a small cat smile
+  E(22,63,5,2,'#ff9aa8'); E(58,63,5,2,'#ff9aa8'); for(let i=0;i<3;i++){ P(19+i*3,62,1,2,'#ff7a90'); P(55+i*3,62,1,2,'#ff7a90'); }
+  P(36,65,3,1,'#c0405a'); P(41,65,3,1,'#c0405a'); P(38,66,4,2,'#c0405a'); P(39,67,2,1,'#ff8a9a');
+  // neck, sailor top, collar with two stripes, the bow
+  P(35,71,10,7,SKD); P(20,78,40,52,'#ffffff'); P(20,78,4,52,'#e4e4ee'); P(56,78,4,52,'#eeeef6'); for(let y=104;y<128;y+=9) P(26,y,28,1,'#e4e4ee');
+  poly([[18,76],[62,76],[54,98],[40,108],[26,98]],NV); poly([[26,78],[54,78],[48,94],[40,100],[32,94]],SK); poly([[20,80],[24,80],[40,104],[38,106]],'#ffffff'); poly([[60,80],[56,80],[40,104],[42,106]],'#ffffff');
+  poly([[40,104],[26,98],[28,112]],'#ff3a5a'); poly([[40,104],[54,98],[52,112]],'#ff3a5a'); poly([[40,104],[34,122],[40,116]],'#d02a48'); poly([[40,104],[46,122],[40,116]],'#d02a48'); P(37,101,6,6,'#ff7a90');
+  // sleeves and hands
+  P(12,82,9,36,'#ffffff'); P(59,82,9,36,'#ffffff'); P(12,82,2,36,'#e4e4ee'); P(12,114,9,5,NV); P(59,114,9,5,NV); P(13,119,7,7,SK); P(60,119,7,7,SK);
+  // pleated skirt
+  poly([[20,128],[60,128],[66,172],[14,172]],NV); for(let i=0;i<8;i++){ poly([[22+i*5,128],[24+i*5,128],[19+i*6.4,172],[16+i*6.4,172]],NVD); poly([[24+i*5,128],[25+i*5,128],[21+i*6.4,172],[19+i*6.4,172]],NVL); } P(14,169,52,3,NVD); P(20,128,40,3,'#ffffff');
+  // legs, knee socks, shoes
+  P(24,172,12,38,SK); P(44,172,12,38,SK); P(24,172,3,38,SKD); P(44,172,3,38,SKD); P(24,190,12,20,'#ffffff'); P(44,190,12,20,'#ffffff'); P(24,190,12,2,NV); P(44,190,12,2,NV); P(22,208,16,7,'#5a3a2a'); P(42,208,16,7,'#5a3a2a'); P(22,208,16,2,'#7a5238'); P(42,208,16,2,'#7a5238');
+  // a heart in the corner, like every good pillow
+  E(63,205,3,3,'#ff6ab0'); E(68,205,3,3,'#ff6ab0'); poly([[59,206],[72,206],[65.5,215]],'#ff6ab0'); }); }
+function twHikari(x,z,s){ const m=twBB(texPillowHD(),.95*s,2.6*s); const H={x,z,y:groundY(x,z)+1.3*s,s,m,spin:0,gone:false,
     put(){ m.position.set(this.x,this.y,this.z); m.rotation.z=this.spin; },
     kill(){ if(!this.gone){ this.gone=true; scene.remove(m); } }}; H.put(); return H; }
 function twHikariBurst(x,y,z){ for(let i=0;i<3;i++) FX.burst(x,y,z,24,i%2?0xff8ac8:0xffffff,5,.35); twHeartBurst(x,z,24); Sound.sfx('kyun'); }
