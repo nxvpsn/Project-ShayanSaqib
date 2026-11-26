@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.79 (Nov 26): Nathan phase II on Ali's road rebuilt around movement, so it no longer plays like phase III. New: RINGFALL (leave the mark, jump three shockwaves), LATTICE (three beams turn like spokes, then reverse: walk with them or blink through), MIRAGE (four take aim: reach the real one and cut him before they fire). Kept: circus, buster, tackle. Removed from II: strafe, funnel grab, grab, sword combo. The 50% limit cut uses the new moves.";
-const DBG_NEW=['nathan:ringfall','nathan:lattice','nathan:mirage'];
+const DBG_PATCH="v1.80 (Nov 26): cutscene review. Duo: giant Hikari was missing from her own death scene (now there, dimmed so she does not white out the shot); Ali's and the platform shots reframed; the burnout orbit rises with the twins; last pans end on the moon. Everywhere: close-ups aimed over the hero's, Mira's or Ali's head are re-aimed so the speaker is not behind the text box. No boss mechanics changed.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

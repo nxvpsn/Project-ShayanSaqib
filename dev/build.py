@@ -40,6 +40,8 @@ s = patch(s, """yield say('ali',"...GG.");""", """yield say('ali',"...GG."); if(
 # 4) allies bow out before Nathan's finale
 # Kojima's last line: the low shot was framed for the old tall boss and looked over the baby's head at an empty sky (seen on film)
 s = patch(s, "cineSet(b.x+1.4,.7,b.z+3.2,b.x,3.2,b.z); b.anim='howl';", "cineSet(b.x+1.4,(b.y||0)+1.1,b.z+5.2,b.x,(b.y||0)+1.7+(b.hover||0),b.z); b.anim='howl';", 2)
+# the confession scene ends on "you watched the moon come back": the pan up now ends ON the moon (on film it ended on empty sky)
+s = patch(s, "yield cineTo([Player.x,6,Player.z+16],[Player.x,6,Player.z-20],3);", "yield cineTo([Player.x,6,Player.z+16],twMoonLook(),3);", 1)
 # Nathan's arrival: his talking shots stand back when he is the big 8-direction mech of Ali's road (seen in the playtest rig: at 6-8 units he was a blurry wall of pixels behind the text box)
 s = patch(s, "cineSet(ax-4,2.6,az+8,ax,2.8,az); Sound.play('requiem');", "nbTalkCam(0); Sound.play('requiem');")
 s = patch(s, "cineSet(ax-3,2.2,az+6,ax,3,az);", "nbTalkCam(1);", 2)

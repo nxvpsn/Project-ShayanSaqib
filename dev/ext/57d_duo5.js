@@ -328,10 +328,17 @@ function d5Face(who,side,dist){ const o=TW.foes.find(T=>T.who===who&&!T.gone)||T
 function twSpeakerClear(who){ const c=Cam.cine; if(!c||!Game.script||!who) return; let o=null; if(who==='mira'){ const m=Game.mira; o=m&&m.vis?m:null; } else if(who===HERO()) o=Player; else o=TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden)||TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide);
   if(!o||Math.hypot(c.lx-o.x,c.lz-o.z)>1.4) return; const side=c.px-o.x, dist=c.pz-o.z; if(dist<1.5) return; const all=[...(TW.foes||[]),...(TW.allies||[]),Player]; if(Game.mira&&Game.mira.vis) all.push(Game.mira);
   const pick=twCamPick(o.x,o.z,side,dist,all.filter(q=>q&&q!==o&&!q.hide&&!q.gone&&!q.hidden&&Math.hypot(q.x-o.x,q.z-o.z)>.6)); if(pick[0]!==side||pick[1]!==dist){ c.px=o.x+pick[0]; c.pz=o.z+pick[1]; } }
+// Every line the hero, Mira or Ali speaks in a close shot on them: if the camera is aimed over their head (the old close-ups
+// look at 1.6 up; these sprites' heads are at about 1.15, so the speaker sat at the bottom edge behind the text box: seen
+// on film in most scenes), the shot is re-aimed so the head sits in the clear band above the box.
+function twHeadFix(who){ const c=Cam.cine; if(!c||!Game.script||!who) return; let o=null; if(who==='mira'){ const m=Game.mira; o=m&&m.vis?m:null; } else if(who===HERO()) o=Player.hidden?null:Player; else if(who==='ali'||who==='shayan') o=TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden)||null;
+  if(!o) return; const oy=o.y!=null?o.y:groundY(o.x,o.z), dS=Math.hypot(c.px-o.x,c.pz-o.z), dL=Math.hypot(c.px-c.lx,c.pz-c.lz)||1; if(dS<1.5||dS>7.5||Math.hypot(c.lx-o.x,c.lz-o.z)>1.6) return;
+  const lineY=c.py+(c.ly-c.py)*(dS/dL), head=oy+1.15; if(lineY-head<.22) return; /* the head is already at or above the centre line */
+  const k=Math.max(dS,4.4)/dS; c.px=o.x+(c.px-o.x)*k; c.pz=o.z+(c.pz-o.z)*k; c.py=Math.max(c.py,oy+1.65); c.lx=o.x+(c.lx-o.x)*.5; c.lz=o.z; c.ly=oy+1.0; }
 function twFaceFix(who){ if(who!=='caotan'&&who!=='omar') return; const c=Cam.cine; if(!c||!Game.script) return; const o=TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide)||TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden); if(!o) return;
   if(Math.hypot(c.lx-o.x,c.lz-o.z)>1.7) return; const sc=o.scale||1, head=o.y+2.15*sc, need=5*sc; let ux=c.px-o.x, uz=c.pz-o.z; const d=Math.hypot(ux,uz)||1; if(d>need*1.5) return; ux/=d; uz/=d; const D=Math.max(d,need);
   c.px=o.x+ux*D; c.pz=o.z+uz*D; c.py=head-.3; c.lx=o.x; c.lz=o.z; c.ly=head-.55; }
-(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'){ twSpeakerClear(d.who); twFaceFix(d.who); } last=d; }catch(e){ console.error('face',e); } return r; }; })();
+(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'){ twSpeakerClear(d.who); twFaceFix(d.who); twHeadFix(d.who); } last=d; }catch(e){ console.error('face',e); } return r; }; })();
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2, mx=(cx+ox)/2, mz=(cz+oz)/2, gy=P.y;
   // a crane shot down from the eclipse onto the two of them
@@ -520,7 +527,7 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   /* the standard talking shots (seen on film: the old ones aimed over their heads, two lines spoken to an empty sky) */ twCamP(6.2,1.2); yield d5Say('omarLC',9,'surprised');
   if(mi){ cineSet(mi.x+1,mi.y+1.8,mi.z+6,mi.x,mi.y+1.05,mi.z); yield d5Say('omarLC',10,'surprised'); }
   // Ali: a path up
-  const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; cineSet(A.x+1.2,A.y+.7,A.z+3,A.x,A.y+1.8,A.z); yield wait(.3); yield d5Say('omarLC',11); }
+  const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; twCamOn(A,4.2,1.2,1.5,1.25); /* on film the old low shot showed the top of his hat at the bottom edge and Caotan in front */ yield wait(.3); yield d5Say('omarLC',11); }
   // THE TREE IS CUT INTO BEING. Nothing of it exists until a cut is made: every piece (a step's tears, a trunk blade) is
   // one Judgement Cut that draws itself along its length with a white-hot tip and then stays open. Bottom to top, Ali
   // blinking from cut to cut, one steady wide shot from the front rising with the work (no orbit).
@@ -549,7 +556,7 @@ function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree,
   if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
   // eye level: Omar across the gap, the void above him
   cineSet(P.x-1.2,H+1.8,P.z+4,O.x,O.y+3,O.z); yield wait(.4); cineSet(O.x+1.4,O.y+1.6,O.z+5,O.x,O.y+2,O.z); yield d5Say('omarLC',14);
-  cineSet(P.x+1.5,H+1.6,P.z+3.2,P.x,H+1.5,P.z); if(A) yield d5Say('omarLC',15); yield d5Say('omarLC',16,'surprised'); if(A) yield d5Say('omarLC',17);
+  { /* a two-shot of Shayan and Ali, framed above the text box (on film: two heads at the bottom edge) */ const mx2=A?(P.x+A.x)/2:P.x, mz2=A?(P.z+A.z)/2:P.z; cineSet(mx2+1.4,H+1.9,mz2+5.6,mx2,H+.95,mz2); } if(A) yield d5Say('omarLC',15); yield d5Say('omarLC',16,'surprised'); if(A) yield d5Say('omarLC',17);
   P.sp=Math.max(P.sp,100); Sound.sfx('ready'); FX.burst(P.x,P.y+1,P.z,40,0xff6a3a,5,.35); F.drillReady=1;
   cineSet(P.x,H+2.4,P.z+6,O.x,O.y+4,O.z); Game.letterTo=0; P.inv=1; if(A){ A.hold=0; A.face=null; }
   twBig(K('special')+'  ·  HEAVENLY DRILL',{size:52,col:'#ffb04a',y:UH*.24,dur:3,sub:'Your gauge is full'}); }
@@ -688,8 +695,9 @@ function* d5CaoLCPlay(F,C,O){ const S=F.d5c, H=S.hik, keys=Object.keys(D5CP).fil
   yield 1.4; S.stop=1; BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); F.pend=()=>d5CollapseCine(F,C,O); while(!S.done) yield .1; }
 
 // she's too big for the screen: Omar blinks into the air in front of her, opens a black hole, eats her, throws it; Ali halves it
-function* d5CollapseCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5c, H=S.hik, gy=groundY(H.x,H.z), mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=1; P.vx=P.vz=0; P.inv=99; twClearHz();
-  d5HikSize(H,Math.max(H.s,12)); C.heartEyes=1;
+function* d5CollapseCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5c, H=S.hik, gy=groundY(H.x,H.z), mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=1; P.vx=P.vz=0; P.inv=99;
+  { /* clear the attacks, NOT her: twClearHz takes every mesh tagged tw off the scene, and that included Hikari (seen on film: the whole scene about her played to an empty sky) */ const hm=H.m, was=hm.userData.tw; hm.userData.tw=0; twClearHz(); hm.userData.tw=was; if(!hm.parent&&!H.gone) scene.add(hm); }
+  d5HikSize(H,Math.max(H.s,12)); C.heartEyes=1; try{ H.m.material.color.setHex(0x8a7c92); H.m.renderOrder=-2; }catch(e){} /* dimmed: at full white a pillow this size bloomed into a blank wall that hid the speakers (seen on film) */
   // low and wide: you only see the bottom half of her
   cineSet(H.x+2,gy+.8,H.z+15,H.x,gy+H.s*.9,H.z); yield cineTo([H.x-2,gy+1.2,H.z+13],[H.x,gy+H.s*1.1,H.z],1.6,twEIO);
   cineSet(O.x+.8,groundY(O.x,O.z)+1.5,O.z+3,O.x,groundY(O.x,O.z)+1.8,O.z); yield d5Say('caoLC',11);
@@ -801,5 +809,5 @@ twDuoEnding=function*(F,C,O){ const P=Player, A=twAliAny(), mi=Game.mira; if(!(F
     cineSet(A.x+.6,A.y+1.5,A.z+2.6,A.x,A.y+1.5,A.z); yield d5Say('ending',2); Sound.sfx('dash'); aliGhost(A.x,A.y,A.z); twClearAllies(); yield wait(.6); twCamP(5.6,.4); yield d5Say('ending',3,'surprised'); }
   if(mi){ mi.vis=true; mi.x=P.x+1.2; mi.z=P.z+.3; mi.y=P.y; mi.f=-1; mi.anim='idle'; Sound.play('ending'); cineSet((P.x+mi.x)/2,P.y+1.2,P.z+4.2,(P.x+mi.x)/2,P.y+1.2,P.z);
     yield d5Say('ending',4,'happy'); yield d5Say('ending',5,'blush'); yield d5Say('ending',6,'happy'); yield d5Say('ending',7,'happy'); }
-  Game.ending=5; yield cineTo([P.x,6,P.z+16],[P.x,6,P.z-20],3); yield wait(.4);
+  Game.ending=5; yield cineTo([P.x,6,P.z+16],twMoonLook(),3); /* the last pan ends on the moon, not with it half off the left edge */ yield wait(.4);
   twZeldaCard('Route Clear','The Gatekeeper Twins','The Other Way',3.2); yield wait(3.4); evaCard(['GG.'],2,3); yield wait(2.2); yield fadeOut(); Game.state='end'; Game.endT=0; Game.script=null; };

@@ -319,7 +319,7 @@ function* twBurnoutIntro(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=gr
   yield say('caotan',"We're at zero percent... but we still have the power of SPITE! And an energy drink!",'angry'); C.down=O.down=0;
   yield say('omar',"Spite. My oldest friend. My only friend.",'angry');
   const aura={on:1}; Game.fxUpd.push(()=>{ if(!aura.on) return false; for(const T of [C,O]){ for(let i=0;i<3;i++){ const a=rnd(0,6.28), r=rnd(.6,1.4); FX.spawn(T.x+Math.cos(a)*r,T.y+rnd(0,3),T.z+Math.sin(a)*r,0,rnd(2,4),0,.6,T===C?(i%2?0xff3a8a:0xffffff):(i%2?0x8a3aff:0x050208),.35,0,T===C); } } return true; });
-  Sound.sfx('fuse'); Sound.sfx('howl'); twAnim(C,{hy:2.8},1.2); twAnim(O,{hy:2.8},1.2); const orb=twOrbit({x:mx,y:gy,z:mz},9,1.6,-1,1,2.6,2.6); yield wait(1.4);
+  Sound.sfx('fuse'); Sound.sfx('howl'); twAnim(C,{hy:2.8},1.2); twAnim(O,{hy:2.8},1.2); const orb=twOrbit({x:mx,get y(){ return gy+Math.max(0,(C.hy||1.3)-1.3); },z:mz},11,2.2,-1,1,2.6,3); /* the orbit rises with them (on film it stayed at knee height while they floated up: two seconds of legs and coat hems) */ yield wait(1.4);
   evaCard(['BURNOUT','20 SECONDS OF PURE SPITE'],1.8,1); impactFrame([[3,2],[1,2],[2,2]]); shake(1.2); Sound.sfx('slam'); yield wait(1.8); orb.dead=1;
   twCamP(6.2,1.2); yield say('shayan',"They're out of HP! How are they STILL going?!",'surprised');
   if(A) yield say('ali',"Spite. Survive twenty seconds. They'll burn out.");

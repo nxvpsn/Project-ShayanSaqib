@@ -214,3 +214,6 @@ function twArenaRestore(){ TWT.circle=null; TWT.snow=false; const M=TWT.mural; i
   const I=TWT.ice; if(I){ if(I.im.parent) I.im.parent.remove(I.im); const w=new THREE.Color(1,1,1); for(const C of I.cols){ for(let i=0;i<C.ps.length;i++) C.m.setColorAt(i,w); if(C.m.instanceColor) C.m.instanceColor.needsUpdate=true; if(C.lily) C.m.material.emissiveIntensity=C.e0; C.m.material.transparent=C.tr; C.m.material.depthWrite=C.dw; C.m.renderOrder=C.ro; C.m.material.needsUpdate=true; } for(const q of I.inks){ q.m.blending=THREE.AdditiveBlending; q.m.color.setHex(q.c); delete q.m.userData.iceInk; q.m.needsUpdate=true; } TWT.ice=null; } }
 (function(){ const ef=twEndFight; twEndFight=function(){ try{ twArenaRestore(); }catch(e){} return ef.apply(this,arguments); };
   const cc=twClearCine; twClearCine=function(){ TWT.p5=TWT.zc=TWT.dom=TWT.spl=null; return cc.apply(this,arguments); }; })();
+
+// where a "look up at the moon" pan should end: the sky's moon when the level has one in front of the camera, else straight ahead
+function twMoonLook(){ const P=Player; try{ const m=L.skyMoon; if(m&&m.visible!==false&&m.position.z<P.z-20){ const dx=m.position.x-P.x, dy=m.position.y-6, dz=m.position.z-(P.z+16), k=36/(Math.hypot(dx,dz)||1); return [P.x+dx*k,6+dy*k,P.z+16+dz*k]; } }catch(e){} return [P.x,6,P.z-20]; }
