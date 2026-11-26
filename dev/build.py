@@ -53,6 +53,11 @@ s = patch(s, "cineSet(st.x+.5,4.5,st.z+7,st.x,1.2,st.z-2); yield walkP(st.x,st.z
 s = patch(s, "cineSet(N.x+4,N.y+.6,10,N.x+.3,N.y+1,0);", "cineSet(N.x+4,N.y-.9,10,N.x+.3,N.y-.5,0);")
 s = patch(s, "cineSet(N.x+2.6,N.y+1.4,7,N.x+.4,N.y+1.6,0);", "cineSet(N.x+2.6,N.y+.3,7,N.x+.4,N.y+.5,0);")
 s = patch(s, "cineSet(N.x+3,N.y+.8,8,N.x+.3,N.y+1.2,0);", "cineSet(N.x+3,N.y-.5,8,N.x+.3,N.y-.1,0);")
+# v1.84: Shayan's finisher on Kojima raises a dark crescent moon and leaves it in the sky. When a twin is about to betray
+# you in that same field, it read as Omar's eclipse turning up before his own Bankai (owner: "it shouldn't be there"), so
+# on those routes the finisher skips it and holds on Kojima instead of panning up to it.
+s = patch(s, "const moon=darkCrescent(b.x,b.y+2.4,b.z-1.5);\n  cineSet(b.x,1.2,b.z+15,b.x,4,b.z-6); yield tween(moon,{y:b.y+9.5,s:1},1.6,t=>1-Math.pow(1-t,3));\n  yield cineTo([b.x,2.2,b.z+24],[b.x,8.2,b.z-6],1.4); yield wait(1.6);",
+          "if(twBetrayalPending()){ cineSet(b.x+1.4,1.5,b.z+9.5,b.x,1.7,b.z); yield wait(1.3); } else { const moon=darkCrescent(b.x,b.y+2.4,b.z-1.5);\n  cineSet(b.x,1.2,b.z+15,b.x,4,b.z-6); yield tween(moon,{y:b.y+9.5,s:1},1.6,t=>1-Math.pow(1-t,3));\n  yield cineTo([b.x,2.2,b.z+24],[b.x,8.2,b.z-6],1.4); yield wait(1.6); }")
 s = patch(s, "function* nbFinale(){ const P=Player, mi=Game.mira;", "function* nbFinale(){ const P=Player, mi=Game.mira; twAllyLeave();")
 
 # ---- combat rework hooks (round 2) ----

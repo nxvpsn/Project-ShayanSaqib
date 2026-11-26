@@ -6,11 +6,11 @@
 // run (boosts) and the stagger. He faces Ali left/right on screen. NP1.human switches it (set by the purge in npCine23
 // and by npSetPhase for phase III; off in phases I-II and on reset).
 // =====================================================================
-const NBH={cv:null,c:null,tex:null,geo:null,W:112,H:80,f:1,key:'',K:1.5};
+const NBH={cv:null,c:null,tex:null,geo:null,W:168,H:120,f:1,key:'',K:1}; /* v1.84: 168x120 at 32 px per unit (was 112x80 at 21): the redrawn pilot (03n nathanV2Paint), same size in the world */
 function nbhOn(){ return typeof nbsOn==='function'&&nbsOn()&&typeof NP1!=='undefined'&&!!NP1.human; }
 function nbhInit(){ NBH.cv=document.createElement('canvas'); NBH.cv.width=NBH.W; NBH.cv.height=NBH.H; NBH.c=NBH.cv.getContext('2d'); NBH.c.imageSmoothingEnabled=false;
   const t=new THREE.CanvasTexture(NBH.cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; t.encoding=THREE.sRGBEncoding; NBH.tex=t;
-  const u=PPU/NBH.K, w=NBH.W/u, h=NBH.H/u; NBH.geo=new THREE.PlaneGeometry(w,h); NBH.geo.translate(0,h/2-2/u,0); }
+  const u=PPU/NBH.K, w=NBH.W/u, h=NBH.H/u; NBH.geo=new THREE.PlaneGeometry(w,h); NBH.geo.translate(0,h/2-3/u,0); }
 // the pose for his state: {pose (cRig overrides), blade (angle: 0 down, + forward, PI up; null = no sword in hand), gun}
 function nbhPose(r,stun,fix){ const t=NBS.clock; /* fix: r is a held pose (NBS.fixRow), not a slash frame */
   if(stun) return {pose:{F:[[-5,0],[2,0]],b:-2,lean:3,ua:[.5,.7],el:[.3,.4],hd:3,hx:1},blade:.25,gun:1};
@@ -28,16 +28,16 @@ function nbhDraw(){ if(!NBH.cv) nbhInit(); const P=Player, c=NBH.c, r=nbsRow();
   try{ const gy=groundY(NB.x,NB.z); if(NP1.alt==null&&NB.y-gy<1) NB.mesh.position.y=gy; if(NB.sh) NB.sh.scale.set(.5,.5,1); }catch(e){} /* feet on the ground, no hover bob */
   if(NB.stunned){ NB.mesh.position.x+=rnd(-.03,.03); }
   const idle=r===0&&!NB.stunned, key=NBH.f+','+r+(NBS.fixRow!=null?'f':'')+','+(NB.stunned?1:0)+','+(idle||r>=13?Math.floor(NBS.clock*10):0)+','+(NB.flash>0?1:0); if(key===NBH.key) return; NBH.key=key;
-  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-2,NBH.f,nbhPose(r,NB.stunned,NBS.fixRow!=null),!idle,NB.flash>0);
+  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-3,NBH.f,nbhPose(r,NB.stunned,NBS.fixRow!=null),!idle,NB.flash>0);
   if(NB.flash>0){ c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(0,0,NBH.W,NBH.H); c.globalCompositeOperation='source-over'; }
   NBH.tex.needsUpdate=true; }
-function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; drawNathanCast(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still});
-  const J=out.J; if(!J) return; const p=SH(c,cx,by,f), g=J.A[0], h=J.A[1];
-  if(S.gun){ const gx=Math.round(g.ex), gyy=Math.round(g.ey); if(S.aim){ p(gx,gyy-2,7,2,'#20222e'); p(gx,gyy,2,3,'#20222e'); p(gx+6,gyy-2,1,1,'#ffd27a'); if(fire){ p(gx+7,gyy-3,4,4,'#fff2c0'); p(gx+11,gyy-2,3,2,'#ffb04a'); } } else { p(gx-1,gyy,2,6,'#20222e'); p(gx-1,gyy,4,2,'#20222e'); } }
-  if(S.blade!=null){ const hx=h.ex, hy=h.ey, sa=Math.sin(S.blade), ca=Math.cos(S.blade); p(Math.round(hx)-1,Math.round(hy)-1,3,3,'#c8d4e0');
-    if(S.trail){ for(let k=1;k<=3;k++){ const a2=S.blade+k*.22, s2=Math.sin(a2), c2=Math.cos(a2); c.globalAlpha=.34-k*.08; for(let i=4;i<=19;i+=1) p(Math.round(hx+s2*i)-1,Math.round(hy+c2*i)-1,3,3,'#3ff4ff'); } c.globalAlpha=1; }
-    for(let i=2;i<=19;i++) p(Math.round(hx+sa*i)-1,Math.round(hy+ca*i)-1,3,3,'#3ff4ff'); for(let i=2;i<=18;i++) p(Math.round(hx+sa*i),Math.round(hy+ca*i),1,1,'#ffffff'); }
-  if(S.hand){ const x=Math.round(h.ex), y=Math.round(h.ey); p(x-1,y-3,4,4,'#d9a272'); p(x+2,y-4,1,2,'#d9a272'); p(x,y-5,1,2,'#d9a272'); } }
+function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; nathanV2Paint(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still});
+  const J=out.J; if(!J) return; const p=SH(c,cx,by,f), g=J.A[0], h=J.A[1], R=Math.round;
+  if(S.gun){ const gx=R(g.ex), gyy=R(g.ey); if(S.aim){ p(gx,gyy-3,11,3,'#20222e'); p(gx,gyy-3,11,1,'#3a3e50'); p(gx,gyy,3,5,'#20222e'); p(gx+3,gyy,2,2,'#14161e'); p(gx+9,gyy-4,2,1,'#ffd27a'); if(fire){ p(gx+11,gyy-5,6,6,'#fff2c0'); p(gx+17,gyy-4,5,4,'#ffb04a'); p(gx+12,gyy-3,4,2,'#ffffff'); } } else { p(gx-2,gyy,3,9,'#20222e'); p(gx-2,gyy,6,3,'#20222e'); p(gx-2,gyy,6,1,'#3a3e50'); } }
+  if(S.blade!=null){ const hx=h.ex, hy=h.ey, sa=Math.sin(S.blade), ca=Math.cos(S.blade), L=29; p(R(hx)-2,R(hy)-2,5,5,'#c8d4e0'); p(R(hx)-1,R(hy)-1,3,3,'#eef4fa');
+    if(S.trail){ for(let k=1;k<=3;k++){ const a2=S.blade+k*.22, s2=Math.sin(a2), c2=Math.cos(a2); c.globalAlpha=.34-k*.08; for(let i=6;i<=L;i++) p(R(hx+s2*i)-2,R(hy+c2*i)-2,4,4,'#3ff4ff'); } c.globalAlpha=1; }
+    for(let i=3;i<=L;i++) p(R(hx+sa*i)-2,R(hy+ca*i)-2,4,4,'#3ff4ff'); for(let i=3;i<=L-1;i++) p(R(hx+sa*i)-1,R(hy+ca*i)-1,2,2,'#ffffff'); p(R(hx+sa*(L+1))-1,R(hy+ca*(L+1))-1,2,2,'#bffcff'); }
+  if(S.hand){ const x=R(h.ex), y=R(h.ey); p(x-2,y-5,6,6,'#d9a272'); p(x+3,y-6,2,3,'#d9a272'); p(x,y-8,2,3,'#d9a272'); p(x-2,y-5,6,1,'#ecc09a'); } }
 (function(){ const nd=nbsDraw; nbsDraw=function(dt){ if(nbhOn()){ NBS.boostT=Math.max(0,NBS.boostT-dt); if(NB.dsh) NBS.bdir=Math.atan2(NB.dsh.tz-NB.dsh.fz,NB.dsh.tx-NB.dsh.fx); nbhDraw(); return; } if(NB&&NB.sh&&NB.sh.scale.x!==1) NB.sh.scale.set(1,1,1); return nd.apply(this,arguments); }; })();
 // afterimages: a still of the pilot, not of the mech
 (function(){ const na=nbAfterimage; nbAfterimage=function(){ if(!(nbhOn()&&NBH.cv)) return na.apply(this,arguments); const cv=NBS.cv, w=NBS.CW, h=NBS.CH; NBS.cv=NBH.cv; NBS.CW=NBH.W; NBS.CH=NBH.H; try{ return na.apply(this,arguments); } finally{ NBS.cv=cv; NBS.CW=w; NBS.CH=h; } }; })();

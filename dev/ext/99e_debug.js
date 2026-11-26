@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.83 (Nov 26): the owner's new voice clips (Chatterbox) are in: every voiced line re-recorded, and the 53 lines that had no voice now play. No boss mechanics changed.";
+const DBG_PATCH="v1.84 (Nov 26): the Kill ending redrawn at three times the resolution (the real Ali sprite, a repainted Nathan, new backgrounds and first-person face); the dark crescent no longer hangs over the field when a twin is about to betray you; redraws of human Nathan, Kojima's film crew, the dummy, Ali's kids and the giant pig's front view. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗']];
