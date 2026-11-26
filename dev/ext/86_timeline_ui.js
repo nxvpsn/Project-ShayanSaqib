@@ -1,7 +1,7 @@
 // ---------- the timeline menu (drawn on the UI canvas, mouse + keyboard + touch) ----------
-const TL_TABS=["Shayan's Road","Ali's Road","Oddities & Paul"];
+const TL_TABS=["Shayan's Road","Ali's Road","Oddities"];
 const TLM={open:false,tab:0,sel:null,hover:null,t:0,rects:[]};
-function twTimelineMenu(){ const w={type:'tlmenu'}; TLM.open=true; TLM.t=0; TLM.tab=(twAllDone()&&!TWS.paulDone&&!TLM.esc)?2:ALI()?1:0; /* the Esc menu opens on your route's tab; Paul's own menu still opens on his */ const first=TL.filter(n=>n.tab===TLM.tab&&twNodeOpen(n)&&!n.root).pop(); TLM.sel=first?first.id:TL.find(n=>n.tab===TLM.tab).id; Sound.sfx('secret'); return w; }
+function twTimelineMenu(){ const w={type:'tlmenu'}; TLM.open=true; TLM.t=0; TLM.tab=ALI()?1:0; /* the Esc menu opens on your route's tab; Paul's own menu still opens on his */ const first=TL.filter(n=>n.tab===TLM.tab&&twNodeOpen(n)&&!n.root).pop(); TLM.sel=first?first.id:TL.find(n=>n.tab===TLM.tab).id; Sound.sfx('secret'); return w; }
 function twTimelineClose(id){ if(!TLM.open) return; TLM.open=false; Sound.sfx(id?'select':'blip'); if(Game.wait&&Game.wait.type==='tlmenu'){ Game.wait=null; Game.sv=id||null; step(); } }
 function tlCardPos(n){ const x0=338, span=(1170-338-108)/6, y=110+n.row*150; return {x:x0+n.col*span,y,w:108,h:82}; }
 let TL_PAPER=null;
@@ -73,24 +73,14 @@ ui.addEventListener('pointermove',e=>{ if(!TLM.open) return; const [x,y]=tlPt(e)
 
 // ---------- Paul, rewritten: the man with the timeline ----------
 function* paulTalk2(){ const all=twAllDone();
-  if(all&&!TWS.paulDone){ yield say('paul',"...Huh.");
-    yield say('paul',"You did it. All of it. Every road. Every branch. Every twin. Every pig. Both protagonists.");
-    yield say('paul',"Do you know how long it took to make all of that? Do you have ANY idea how many times I had to rewrite Caotan's glasses?");
-    yield say('paul',"There is nothing left. You have done everything in this game.");
-    yield say('paul',"...Except one last thing.");
-    const c=yield choose([{t:"What last thing?"},{t:"Just show me the timeline."},{t:"I'm good, thanks."}]);
-    if(c===1){ yield say('paul',"Fine. It's on the last tab when you're ready. I'll be waiting. Menacingly."); const id=yield twTimelineMenu(); if(id) yield* twWarp(id); return; }
-    if(c===2){ yield say('paul',"No you're not. Come back when you're ready. I'll be here. Forever. Unfortunately."); return; }
-    yield say('paul',"Hold still. This will only hurt everyone.");
-    yield* twPaulIntro(); return; }
+  /* the raid Paul used to offer here once everything was cleared is gone (owner, Nov 26 2026) */
   yield say('paul',"Psst. Over here. Don't mind the hood.");
   if(!TWS.met){ TWS.met=1; twSave(); yield say('paul',"I keep a timeline of every road you walk. Every branch, every dumb decision. Clear a checkpoint once, and I can drop you right back at it.");
     yield say('paul',"Everything you haven't seen yet is a question mark. Go make them not question marks."); }
-  else if(TWS.paulDone) yield say('paul',"Oh. It's you. The one who beat me. I'm fine. I'm totally fine. Here's your stupid timeline.");
   else yield say('paul',"Back for the timeline? Of course you are.");
   const id=yield twTimelineMenu();
   if(!id){ yield say('paul',"Suit yourself. I'll be around. Probably."); return; }
-  const n=TL_BY[id]; if(id==='paul'){ yield* twWarp('paul'); return; }
+  const n=TL_BY[id];
   if(n.name==='THE DECISION') yield say('paul',"The big decision. Choose wisely. Or don't. I have all of them saved.");
   else if(id.startsWith('al_')) yield say('paul',"Ali's road. Try not to cut the moon on the way.");
   else yield say('paul',"Shayan's road. Mind the forge sparks.");

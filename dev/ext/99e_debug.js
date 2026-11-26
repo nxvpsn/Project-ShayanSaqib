@@ -11,12 +11,12 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.77 (Nov 26): a second, closer pass. The Kill ending now works on touch (tap the left or right half), pauses properly, and has its own end screen (The Replacement). Cutscenes: a speaker is never hidden behind someone else, Mira steps clear of Ali in the duo intro, the twins are shown whole while they charge, allies stand to the sides. No boss mechanics changed.";
+const DBG_PATCH="v1.78 (Nov 26): Caotan redrawn (approved): more detail everywhere, a bow, sailor collar and heart brooch in phase II, torn hem, broken shackles and pink hair tips in phase III. Lanternbrook has a new colossus on its horizon: a rotting cat carcass the size of a mountain. Paul's raid is removed from the game (Paul still keeps the timeline). No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
-const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
+const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
-const DBG_ROUTE={shayan:['caotan','omar','duo','hamza','mech','grimmaw','nathan','paul'],ali:['grimmaw','nathan']};
+const DBG_ROUTE={shayan:['caotan','omar','duo','hamza','mech','grimmaw','nathan'],ali:['grimmaw','nathan']};
 function dbgBossList(){ const ok=DBG_ROUTE[DBG.ali?'ali':'shayan']; return (DBG.ali?ok.map(id=>DBG_BOSSES.find(q=>q[0]===id)):DBG_BOSSES.filter(q=>ok.includes(q[0]))).map(q=>DBG.ali&&q[0]==='nathan'?[q[0],'Nathan (phase I)']:q); } /* Ali's in route order */
 function dbgNP1(){ return DBG.boss==='nathan'&&DBG.ali&&typeof NP1!=='undefined'; }
 function dbgNew(b,k){ return DBG_NEW.includes(b+':*')||(k?DBG_NEW.includes(b+':'+k):DBG_NEW.some(x=>x.startsWith(b+':'))); }

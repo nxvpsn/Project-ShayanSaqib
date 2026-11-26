@@ -125,7 +125,6 @@ function hubRail(){ const R=RAIL; uPanel(R.x,R.y,R.w,R.h,UIC.panel,UIC.line,12);
   const tot=TL_CHECKS.length, done=TL_CHECKS.filter(id=>TWS.done[id]).length; y+=30; uText(done+' / '+tot,R.x+20,y,`800 24px ${FB}`,UIC.text); uText('checkpoints cleared',R.x+20+D.measureText(done+' / '+tot).width+8,y,`500 13px ${FB}`,UIC.mut);
   y+=12; uRR(R.x+20,y,bw,6,3); D.fillStyle='rgba(255,255,255,.08)'; D.fill(); if(done){ uRR(R.x+20,y,Math.max(6,bw*done/tot),6,3); D.fillStyle=UIC.acc; D.fill(); }
   y+=28; for(const [lab,tab] of [["Shayan's Road",0],["Ali's Road",1]]){ const ids=TL.filter(n=>n.tab===tab&&!n.root).map(n=>n.id), d=ids.filter(id=>TWS.done[id]).length; uText(lab,R.x+20,y,`600 13px ${FB}`,UIC.mut); uText(d+' / '+ids.length,R.x+R.w-20,y,`700 13px ${FB}`,UIC.text,'right'); y+=22; }
-  uText('Paul',R.x+20,y,`600 13px ${FB}`,UIC.mut); uText(TWS.paulDone?'Defeated':twAllDone()?'Waiting':'Locked',R.x+R.w-20,y,`700 13px ${FB}`,TWS.paulDone?UIC.good:UIC.text,'right');
   // key hints
   const P2=twPadOn(), hints=IS_TOUCH()?[['Tap','Select'],['Tap twice','Warp']]:P2?[[twPadName(4)+' '+twPadName(5),'Switch tab'],['D-pad','Move'],[twPadName(0),'Select'],[twPadName(1),'Resume']]:[['Q / Tab','Switch tab'],['Arrows','Move'],['Enter','Select'],['Esc','Resume']];
   let hy=R.y+R.h-20-(hints.length-1)*28; for(const [k,l] of hints){ uKey(k,R.x+20,hy-4,false); uText(l,R.x+R.w-20,hy+1,`600 13px ${FB}`,UIC.mut,'right'); hy+=28; } }

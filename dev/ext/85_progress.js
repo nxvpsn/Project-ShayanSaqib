@@ -35,8 +35,7 @@ const TL=[
   {id:'al_kj',tab:1,col:2,row:1,par:['al_twins'],name:'Ten Seconds, Infant',desc:"Ali walks into Day Old Keep alone. The baby got a ten-second head start and a Hydra of Solid Snacks. Neither helped."},
   {id:'al_nathan',tab:1,col:3,row:1,par:['al_kj'],name:'Your Tragic Arc Was Mid',desc:"Nathan the Nasty crosses timelines to save the world from the pig. Ali already cut the pig in half. So Nathan fights Ali instead."},
   // oddities
-  {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Turn',desc:"Paul's shortcut drops Shayan in front of Nathan's mech. This was never supposed to happen. Paul loves it."},
-  {id:'paul',tab:2,col:4,row:1,par:[],final:1,name:'Paul Extreme: Code Review',desc:"Paul's own raid. Everyone loses their powers. Opens once every other checkpoint is cleared, or with the timeline cheat."}];
+  {id:'sh_nathan',tab:2,col:1,row:1,root:0,par:[],name:'Wrong Turn',desc:"Paul's shortcut drops Shayan in front of Nathan's mech. This was never supposed to happen. Paul loves it."}];
 const TL_BY={}; TL.forEach(n=>TL_BY[n.id]=n);
 const TL_CHECKS=TL.filter(n=>!n.root&&!n.final).map(n=>n.id);
 function twAllDone(){ return TL_CHECKS.every(twDone); }
@@ -69,7 +68,6 @@ function* twWarpFlowers(o){ o=o||{}; yield fadeOut(); const fl=Game.flags, aff=G
 function twSetParty(k){ Game.flags.twinsDone=1; if(k==='both'){ Game.flags.twinAlly='both'; Game.flags.twinPact=1; twAddAlly('caotan'); twAddAlly('omar'); } else { Game.flags.twinAlly=k==='cao'?'caotan':'omar'; Game.flags.twinPact=0; twAddAlly(Game.flags.twinAlly); } }
 function* twWarp(id){ const n=TL_BY[id]; if(!n&&!/_g$/.test(id)) return; /* '_g' (straight to Grimmaw) has no panel, Debug Mode still uses it */ const ali=id.startsWith('al_'); const parts=id.split('_'); twWarpReset(ali); const P=Player;
   if(id==='sh_nathan'){ yield* paulWarp(false,'nathan'); return; }
-  if(id==='paul'){ yield* twPaulIntro(); return; }
   const step=parts[1], k=parts[1], tail=parts[2];
   if(id==='al_root'){ yield fadeOut(); Game.state='cut'; yield* aliLanding(Game.flags,Game.aff,Game.kills||0,Game.hamza); return; } // Ali's road: he falls from the moon and takes over
   if(step==='root'){ yield fadeOut(); newGame(); run(twIntroSkipped); return; } // Shayan's road: the village, right after the talk with Hamza and Elder Hamid

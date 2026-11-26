@@ -69,7 +69,7 @@ function drawOmarV2(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flash>0,
   cSeg(p,A.x,A.y,A.kx,A.ky,5,C.k2,C.k3); cSeg(p,A.kx,A.ky,A.ex,A.ey,6,C.k2,C.k3); { const x=Math.round(A.ex), y=Math.round(A.ey); p(x-3,y-2,7,3,C.k1); p(x-3,y-2,7,1,C.k4); p(x-2,y+1,4,3,C.skin); p(x+1,y+1,1,3,C.skinS); p(x-2,y+4,1,2,C.skin); p(x,y+4,1,2,C.skinS); p(x-3,y,1,1,C.lin); }
   if(cast&&!sc){ const x=Math.round(A.ex), y=Math.round(A.ey); for(let r=6;r>0;r-=2) p(x-r,y-4-r,r*2+1,r,'rgba(170,80,255,'+(.25+.1*(6-r)).toFixed(2)+')'); p(x-2,y-8,5,3,'rgba(230,200,255,.9)'); p(x-1,y-7,2,1,'#ffffff'); for(let i=0;i<3;i++){ const a=t*8+i*2.1; p(x+Math.round(Math.cos(a)*7),y-6+Math.round(Math.sin(a)*4),1,1,'#ffffff'); } }
   if(dn) cStars(p,h0-28,t,'#c08aff'); else if(st) cStars(p,h0-28,t,'#c08aff',8); }
-// ================= CAOTAN, REDRAWN (not wired in until the owner approves the preview) =================
+// ================= CAOTAN, REDRAWN (approved by the owner, v1.78) =================
 // Same rig, poses and flags as drawCaotanCast (flash, down, stun, fire, push, state 'atk', heartEyes, noGlasses, cracked, glintT, nose,
 // maid, form null/1/2/3). More in every part: four skin tones with a shoulder cap, biceps and knuckles; a scooped tank with armholes
 // and folds; jeans with seams, knee fades and rolled cuffs; trainers with soles and laces; six-spike hair in three tones; a knotted
@@ -144,3 +144,5 @@ function drawCaotanV2(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flash>
   if(dn) cStars(p,h0-26,t,'#ffe066'); else if(st) cStars(p,h0-26,t,'#ffe066',8); }
 // approved by the owner (v1.70): Omar is this painter everywhere he is drawn (solo, duo, the fusion's Omar half, afterimages, portraits that reuse it)
 drawOmarCast=drawOmarV2; drawOmarHD=drawOmarV2; drawOmarBoss=drawOmarV2;
+// approved by the owner (v1.78): Caotan too
+drawCaotanCast=drawCaotanV2; drawCaotanHD=drawCaotanV2; drawCaotanBoss=drawCaotanV2;
