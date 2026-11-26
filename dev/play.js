@@ -33,6 +33,7 @@ const ROOT=path.resolve(__dirname,'..'), MIME={'.html':'text/html','.js':'text/j
   await page.evaluate(()=>{ window.__raf=window.requestAnimationFrame.bind(window); window.requestAnimationFrame=()=>0;
     window.__step=function(n,auto,probe,every){ const cr=composer.render, rows=[]; composer.render=()=>{}; let pf=null; if(probe) pf=new Function('return ('+probe+');');
       try{ for(let i=0;i<n;i++){ if(auto&&Game.dlg&&Game.dlg.t>.35){ if(Game.dlg.type==='choice') Game.dlg.sel=(Game.dlg.opts.some(o=>/friends/.test(o.t))?1:0); hit.confirm=true; }
+          if(auto&&i%4===0){ try{ if(Game.clash||(TW&&TW.mash)||(typeof NBC!=='undefined'&&NBC&&!NBC.res)) hit.attack=true; }catch(e){} } /* clashes need mashing to end */
           loop(last+1000/60); if(pf&&i%every===0){ let v; try{ v=pf(); }catch(e){ v='ERR '+e.message; } rows.push([+Game.time.toFixed(2),v]); } } } finally{ composer.render=cr; }
       return rows; };
     window.__frame=function(){ return new Promise(res=>window.__raf(()=>{ loop(last+1000/60); window.__raf(()=>res(Game.time)); })); }; });

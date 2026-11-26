@@ -37,7 +37,7 @@ function* twPhaseCine(F,T){ const P=Player, who=T.who, H=HERO(), hz=!!Game.hamza
     yield say('caotan',"...MAGICAL.");
     Sound.sfx('sparkle'); Sound.sfx('choir'); const orb=twOrbit(T,8.5,2.6,-.9,.9,3.4,1.8);
     const rib={on:1}; Game.fxUpd.push(()=>{ if(!rib.on) return false; for(let i=0;i<6;i++){ const a=performance.now()/200+i*1.05, r=1.2+Math.sin(performance.now()/300+i)*.3; FX.spawn(T.x+Math.cos(a)*r,T.y+rnd(0,3.4),T.z+Math.sin(a)*r,0,2.2,0,.6,i%2?0xff6ab0:0xffd0ec,.35,0,true); } return true; });
-    yield wait(1.2); twCutin('caotan','MAGICAL SENPAI','Phase II  ·  Caotan ☆ Transformation','#ff6ab0',2.6); impactFrame([[1,2],[3,2],[2,2]]); yield wait(2.6);
+    orb.dead=1; yield* caoMagical(T); twCutin('caotan','MAGICAL SENPAI','Phase II  ·  Caotan ☆ Transformation','#ff6ab0',2.6); impactFrame([[1,2],[3,2],[2,2]]); yield wait(2.6);
     T.form=2; T.tint=0xffe8f4; for(let i=0;i<3;i++){ yield* twGlint(T,1,.18,1); } grade.uniforms.tint.value.set(1.1,.95,1.08); grade.uniforms.sat.value=1.2; rib.on=0; orb.dead=1;
     twHeartBurst(T.x,T.z,60); FX.ring(T.x,groundY(T.x,T.z),T.z,'#ff6ab0',10,.8); Sound.sfx('kyun');
     yield say('caotan',"Kira kira~! Magical Senpai Caotan, here to punish you in the name of the MOON! ...And also me.",'happy');
@@ -51,7 +51,7 @@ function* twPhaseCine(F,T){ const P=Player, who=T.who, H=HERO(), hz=!!Game.hamza
     T.down=0; cineSet(T.x,.8,T.z+10,T.x,4,T.z); Sound.sfx('drone');
     yield say('caotan',"I've been holding back. This whole time. My true power... my FINAL FORM...");
     const heart=twBB(texHeart('#ff3a8a'),14,14,{add:true,op:.0}); heart.position.set(T.x,T.y+9,T.z-8); const hk={k:0}; Game.fxUpd.push(dt=>{ if(hk.dead) return false; hk.k=Math.min(1,hk.k+dt*.6); heart.material.opacity=hk.k*.55*(1+.15*Math.sin(performance.now()/120)); heart.scale.setScalar(1+.05*Math.sin(performance.now()/120)); return true; });
-    Sound.sfx('doki'); yield tween(T,{hy:2.8},1.4,t=>t*(2-t)); yield* twGlint(T,3,.12,1); T.form=3; T.tint=0xffd8f0;
+    yield* caoUnchained(T);
     twCutin('caotan','SENPAI UNCHAINED','Phase III  ·  He is no longer pretending to be normal','#ff3a8a',2.6); impactFrame([[3,2],[1,2],[2,2],[1,1]]); shake(1); grade.uniforms.tint.value.set(1.18,.9,1.1); yield wait(2.6);
     yield say('caotan',"No more holding back. No more 'just friends'. Senpai... I am going to love you TO DEATH. Literally. With lasers.",'angry');
     hk.dead=1; scene.remove(heart); T.hy=1.3;
@@ -64,7 +64,7 @@ function* twPhaseCine(F,T){ const P=Player, who=T.who, H=HERO(), hz=!!Game.hamza
     T.down=0; cineSet(T.x,1,T.z+10,T.x,3.2,T.z); Sound.sfx('void'); Sound.sfx('howl'); const orb=twOrbit(T,9,2,.8,-.8,3.2,2);
     const dk={k:0}; Game.fxUpd.push(dt=>{ if(dk.dead) return false; dk.k=Math.min(1,dk.k+dt*.5); grade.uniforms.tint.value.set(1-dk.k*.18,1-dk.k*.22,1+dk.k*.05); grade.uniforms.sat.value=1.1-dk.k*.3;
       for(let i=0;i<5;i++) FX.spawn(T.x+rnd(-8,8),groundY(T.x,T.z)+.1,T.z+rnd(-6,6),0,rnd(1,3),0,1,0x0a0410,.35,-.5,false); return dk.k<1; });
-    yield wait(1.4); T.form=2; FX.burst(T.x,T.y+2,T.z,80,0x140a1a,8,.5,false); FX.burst(T.x,T.y+2,T.z,40,0x8a3aff,6,.35); Sound.sfx('crossboom'); shake(.8);
+    orb.dead=1; yield* omDarkness(T);
     impactFrame([[2,2],[3,2],[1,2]]); twZeldaCard('Omar the Edge, Unsheathed','Darkness Form','Phase II',2.4); yield* twZeldaPan(T,2.3); orb.dead=1;
     yield say('omar',"Behold. My wings. I made them myself. From my old coats. And my feelings.");
     twCamP(6.5,1.4);

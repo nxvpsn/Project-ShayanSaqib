@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.72 (Nov 26): after Nathan's phase III on Ali's road you choose SAVE (the old ending) or KILL (a new ending film with a first-person beating: attack = left fist, block = right fist, LT/RT on a pad). Cutscene fixes from filming them: Kojima's crimson moon reveal, the twins' face shots, allies out of the lens, Hikari into Hamza's mouth, Nathan's arrival, Omar's title pan. No boss mechanics changed.";
+const DBG_PATCH="v1.73 (Nov 26): new transformation cutscenes for the solo twins: Caotan I-II (a magical-girl sequence), Caotan II-III (four chains snap, a pillar of light), Omar I-II (a cocoon of shadow cracks open against the moon). Use the Phase change buttons to watch them. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
