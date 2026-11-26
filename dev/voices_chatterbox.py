@@ -27,7 +27,14 @@ def main():
         n = 0
         for f in os.listdir(NEW):
             if f.endswith('.mp3'): shutil.copyfile(os.path.join(NEW, f), os.path.join(V, f)); n += 1
-        print(f'copied {n} clips into audio/v. Now: git add audio/v && git commit -m "new voices" && git push'); return
+        # lines that never had a clip (new dialogue) are added to the list of clips the game knows about; the page picks
+        # that list up the next time it is built (tell Claude you pushed, or run: python build.py --write)
+        mf = os.path.join(V, 'manifest.json'); man = json.load(open(mf)) if os.path.exists(mf) else {}; added = 0
+        for f in os.listdir(V):
+            if f.endswith('.mp3') and f[:-4] not in man: man[f[:-4]] = 1; added += 1
+        json.dump(man, open(mf, 'w'), separators=(',', ':'), sort_keys=True)
+        print(f'copied {n} clips into audio/v ({added} of them are lines that had no voice before).')
+        print('Now: git pull origin main, then git add audio/v, commit and push. Then tell Claude, so the page is rebuilt and the new lines play.'); return
     todo = [l for l in LINES if l['w'] in REFS]          # speakers without a reference clip keep their Kokoro voice
     if arg('--who'): todo = [l for l in todo if l['w'] in arg('--who').split(',')]
     if '--sample' in sys.argv:

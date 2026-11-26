@@ -142,26 +142,28 @@ const NKS={
   card(c,t,p){ nkPx(c,0,0,384,216,'#000000'); c.textAlign='center'; c.fillStyle='rgba(255,255,255,'+Math.min(1,t*1.5)+')'; c.font='700 16px Georgia,serif'; c.fillText(p.a||'',192,104); c.font='italic 9px Georgia,serif'; c.fillStyle='rgba(216,180,106,'+Math.min(1,Math.max(0,t-.5)*1.5)+')'; c.fillText(p.b||'',192,124); c.textAlign='left'; },
   black(c){ nkPx(c,0,0,384,216,'#000000'); } };
 // ---------- drawing it over the game ----------
-(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); if(!NK.on) return; try{ if(!NK.cv){ NK.cv=document.createElement('canvas'); NK.cv.width=384; NK.cv.height=216; NK.c=NK.cv.getContext('2d'); } const c=NK.c, dt=1/60; NK.t+=dt; NK.shake=Math.max(0,NK.shake-dt*4); NK.flash=Math.max(0,NK.flash-dt*3);
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); if(!NK.on) return; try{ if(!NK.cv){ NK.cv=document.createElement('canvas'); NK.cv.width=384; NK.cv.height=216; NK.c=NK.cv.getContext('2d'); } const c=NK.c, paused=Game.state==='paused', dt=paused?0:1/60; NK.t+=dt; NK.shake=Math.max(0,NK.shake-dt*4); NK.flash=Math.max(0,NK.flash-dt*3);
       c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.textAlign='left'; c.fillStyle='#000'; c.fillRect(0,0,384,216); { /* the film's own camera: zoom about a point of the scene */ const z=Math.max(.2,NK.p.zoom||1), zx=NK.p.zx==null?192:NK.p.zx, zy=NK.p.zy==null?108:NK.p.zy, hx=192/z, hy=108/z, cx=Math.max(hx,Math.min(384-hx,zx)), cy=Math.max(hy,Math.min(216-hy,zy)); c.translate(192,108); c.scale(z,z); c.translate(-cx,-cy); } const f=NKS[NK.scene]||NKS.black; f(c,NK.t,NK.p); c.restore();
       if(NK.bars){ nkPx(c,0,0,384,14,'#000000'); nkPx(c,0,202,384,14,'#000000'); }
       D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.imageSmoothingEnabled=false; const sx=NK.shake>0?(Math.random()-.5)*NK.shake*18:0, sy=NK.shake>0?(Math.random()-.5)*NK.shake*18:0; D.fillStyle='#000'; D.fillRect(0,0,UW,UH); D.drawImage(NK.cv,sx,sy,UW,UH);
       if(NK.flash>0){ D.fillStyle='rgba(255,255,255,'+Math.min(1,NK.flash)+')'; D.fillRect(0,0,UW,UH); } if(NK.fade>0){ D.fillStyle='rgba(0,0,0,'+Math.min(1,NK.fade)+')'; D.fillRect(0,0,UW,UH); }
-      const F=NK.fp; if(F&&NK.scene==='fpv'&&!F.done){ D.textAlign='center'; D.font=`800 ${IS_TOUCH()?22:24}px ${FB}`; D.lineWidth=5; D.strokeStyle='#08040a'; const a=.75+.25*Math.sin(NK.t*8), G6=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[6]):K('attack'), G7=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[7]):K('block'), tx=G6+':  LEFT          '+G7+':  RIGHT'; D.globalAlpha=a; D.strokeText(tx,UW/2,UH-64); D.fillStyle='#ffffff'; D.fillText(tx,UW/2,UH-64); D.globalAlpha=1;
+      const F=NK.fp; if(F&&NK.scene==='fpv'&&!F.done){ D.textAlign='center'; D.font=`800 ${IS_TOUCH()?22:24}px ${FB}`; D.lineWidth=5; D.strokeStyle='#08040a'; const a=.75+.25*Math.sin(NK.t*8), G6=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[6]):K('attack'), G7=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[7]):K('block'), tx=IS_TOUCH()&&!nkPadOn()?'TAP LEFT SIDE          TAP RIGHT SIDE':G6+':  LEFT          '+G7+':  RIGHT'; D.globalAlpha=a; D.strokeText(tx,UW/2,UH-64); D.fillStyle='#ffffff'; D.fillText(tx,UW/2,UH-64); D.globalAlpha=1;
         const w=320, x=UW/2-w/2, y=UH-44; D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(x-2,y-2,w+4,14); D.fillStyle='#a8141e'; D.fillRect(x,y,w*Math.min(1,F.n/F.need),10); D.textAlign='left'; }
       const S=NK.sub; if(S){ S.t+=dt; if(S.t>S.dur) NK.sub=null; else { const al=Math.min(1,S.t*6,(S.dur-S.t)*4); D.globalAlpha=al; D.textAlign='center'; D.font=`700 22px ${FB}`; const tx=(NAMES[S.who]?NAMES[S.who]+':  ':'')+S.text, w=D.measureText(tx).width+28; D.fillStyle='rgba(8,8,16,.82)'; D.fillRect(UW/2-w/2,UH*.16-22,w,34); D.fillStyle='#f0e8d8'; D.fillText(tx,UW/2,UH*.16+2); D.globalAlpha=1; D.textAlign='left'; } }
-      D.restore(); if(Game.dlg) drawDialog(); }catch(e){ console.error('nk draw',e); } }; })();
+      D.restore(); if(Game.dlg) drawDialog(); if(paused){ try{ drawPause(); }catch(e){} } /* the base UI drew its pause screen under the film */ }catch(e){ console.error('nk draw',e); } }; })();
 function nkPadOn(){ try{ return typeof PAD!=='undefined'&&PAD.mode!=='kbm'&&!!twPadGet(); }catch(e){ return false; } }
+// touch: a tap on the left half is the left fist, on the right half the right fist (the on-screen buttons are hidden in cutscenes)
+try{ ui.addEventListener('pointerdown',e=>{ try{ const F=NK.fp; if(!NK.on||NK.scene!=='fpv'||!F||F.done||e.pointerType==='mouse') return; const r=ui.getBoundingClientRect(); F.tap=(e.clientX-r.left)<r.width/2?-1:1; e.preventDefault(); e.stopImmediatePropagation(); }catch(err){} },true); }catch(e){}
 // ---------- the playable beat ----------
 function* nkPunchOut(){ const F=NK.fp={n:0,need:28,l:9,r:9,st:0,hitT:9,side:1,done:0,idle:0}; const lines=[[3,"Wait. WAIT. Who ARE you?!"],[7,"I didn't even WRITE the game! I just PLAY it!"],[11,"I have WORK tomorrow!"],[15,"Is this about the mech? You can HAVE the mech!"],[19,"...ow."],[23,"...save... file..."]];
   hit.attack=false; hit.block=false;
-  while(F.n<F.need){ F.l+=1/60; F.r+=1/60; F.hitT+=1/60; F.idle+=1/60; let s=0; const pad=nkPadOn(); if(pad){ /* a controller: LT is the left fist, RT the right (read straight from the triggers, whatever they are bound to) */ let bl=false, br=false; try{ const gp=twPadGet(), b=gp&&gp.buttons; bl=!!(b&&b[6]&&(b[6].pressed||b[6].value>.4)); br=!!(b&&b[7]&&(b[7].pressed||b[7].value>.4)); }catch(e){} if(bl&&!F.pl&&F.l>.14) s=-1; else if(br&&!F.pr&&F.r>.14) s=1; F.pl=bl; F.pr=br; consume('attack'); consume('block'); } else if(consume('attack')&&F.l>.14) s=-1; else if(consume('block')&&F.r>.14) s=1; hit.confirm=false;
+  while(F.n<F.need){ F.l+=1/60; F.r+=1/60; F.hitT+=1/60; F.idle+=1/60; let s=0; const pad=nkPadOn(); if(F.tap){ if(F.tap<0&&F.l>.14) s=-1; else if(F.tap>0&&F.r>.14) s=1; F.tap=0; } if(pad){ /* a controller: LT is the left fist, RT the right (read straight from the triggers, whatever they are bound to) */ let bl=false, br=false; try{ const gp=twPadGet(), b=gp&&gp.buttons; bl=!!(b&&b[6]&&(b[6].pressed||b[6].value>.4)); br=!!(b&&b[7]&&(b[7].pressed||b[7].value>.4)); }catch(e){} if(bl&&!F.pl&&F.l>.14) s=-1; else if(br&&!F.pr&&F.r>.14) s=1; F.pl=bl; F.pr=br; consume('attack'); consume('block'); } else if(!s){ if(consume('attack')&&F.l>.14) s=-1; else if(consume('block')&&F.r>.14) s=1; } hit.confirm=false;
     if(s){ if(s<0) F.l=0; else F.r=0; F.n++; F.side=s; F.hitT=0; F.idle=0; F.st=Math.min(6,Math.floor(F.n/4)); NK.shake=Math.min(1,.35+F.st*.08); Sound.sfx(F.n%3?'hit':'slam'); if(F.st>=2&&F.n%2===0) Sound.sfx('gore'); const L=lines.find(q=>q[0]===F.n); if(L) nkSub('nathanirl',L[1],1.8); try{ const DR=F.drops||(F.drops=[]), nd=4+F.n*1.4; for(let k=0;k<nd;k++) DR.push({x:192+rnd(-22,22),y:96+rnd(-20,26),vx:-s*rnd(20,260)+rnd(-90,90),vy:rnd(-300,-30),r:1+Math.floor(Math.random()*(2+F.st*.6)),k:k%2}); if(F.n>=6&&F.n%2===0){ const LS=F.lens||(F.lens=[]), b=[], d=[], r=8+F.st*4; for(let k=0;k<8;k++){ const a=rnd(0,6.28), q=rnd(0,r); b.push([Math.cos(a)*q,Math.sin(a)*q,rnd(.2,.55)*r]); } for(let k=0;k<3;k++) d.push([rnd(-r*.6,r*.6),rnd(20,90),rnd(14,40)]); LS.push({x:rnd(30,354),y:rnd(20,180),b,d,t:0}); if(LS.length>16) LS.shift(); } }catch(e){} }
     yield wait(0); }
   F.done=1; yield wait(.5); }
 // ---------- the film ----------
 function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCine(); }catch(e){} NK.on=1; NK.fade=0; NK.bars=1; NK.fp=null; Game.letterTo=0; P.inv=999; Cam.cine=Cam.cine||null;
-  nkScene('field',{zoom:2.3,zx:218,zy:152}); yield wait(.8);
+  nkScene('field',{zoom:2.3,zx:218,zy:152}); try{ NP1.hint=null; nbRemove(); Game.arena=null; Cam.zoom=1; }catch(e){ console.error('nk cleanup',e); } /* the fight is over for good: without this his HP bar stayed on screen, over the end screen too (seen in the playtest rig) */ yield wait(.8);
   yield say('nathanraw',"...Do it, then. Finish the arc. At least make it MEAN something.");
   yield say('ali',"It doesn't.");
   yield say('nathanraw',"...What?");
@@ -235,12 +237,21 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   yield say('shayan',"Fair. You're on creep. Don't feed.");
   yield say('nathanraw',"I have never fed anyone in my life. I only take.");
   yield wait(.8); yield tween(NK,{fade:1},1.6); nkScene('card',{a:'ENDING: THE REPLACEMENT',b:'Somewhere, a samurai walks on. He does not play StarCraft.'}); NK.fade=0; yield wait(4.2); yield tween(NK,{fade:1},1.2);
-  Game.aliOld=0; Game.ending=3; Game.fade=1; Game.fadeTo=1; NK.on=0; NK.fade=0; Game.state='end'; Game.endT=0; Game.script=null; }
+  Game.aliOld=0; Game.ending=7; Game.fade=1; Game.fadeTo=1; NK.on=0; NK.fade=0; Game.state='end'; Game.endT=0; Game.script=null; }
 // the choice: after phase III on Ali's road, before the finale
 (function(){ const nf=nbFinale; nbFinale=function*(){ let kill=false; try{ kill=ALI()&&typeof NP1!=='undefined'&&(NP1.ph||1)>=3; }catch(e){}
     if(kill){ Game.letterTo=1; try{ if(NB) cineSet(NB.x-2.5,NB.y+1.2,NB.z+7,NB.x,NB.y+1,NB.z); }catch(e){} yield wait(.6);
       yield say('nathanraw',"...It's over. The pig's gone. The arc's gone. I've got nothing left to burn.");
       yield say('ali',"Hm.");
-      const c=yield choose([{t:"Save him. (Sheathe the sword.)",aff:0},{t:"Kill him. (He asked for an ending.)",aff:0}]);
+      const c=yield choose([{t:"Sheathe the sword. Save him.",aff:0},{t:"He asked for an ending. Kill him.",aff:0}]); /* spoken aloud by the hero when picked: no stage directions in brackets */
       if(c===1){ yield* nkEnding(); return; } }
     yield* nf.apply(this,arguments); }; })();
+
+// the Kill ending's own end screen (ending 7)
+(function(){ const de=drawEnd; drawEnd=function(){ if(Game.ending!==7) return de();
+  Game.endT+=1/60; const a=Math.min(1,Game.endT/2); D.fillStyle='#070102'; D.fillRect(0,0,UW,UH);
+  for(const [x,y,b] of STARS2){ D.fillStyle=`rgba(255,120,110,${(.2+.4*b)*a})`; D.fillRect(x,y,2,2); } D.fillStyle=`rgba(210,40,30,${a})`; D.beginPath(); D.arc(UW/2,150,46,0,7); D.fill(); D.fillStyle=`rgba(120,0,0,${a*.6})`; D.beginPath(); D.arc(UW/2+10,160,12,0,7); D.fill(); D.beginPath(); D.arc(UW/2-14,138,8,0,7); D.fill();
+  D.globalAlpha=a; const mins=Math.floor(Game.time/60), secs=Math.floor(Game.time%60);
+  cText([['Secret Ending',`italic 500 22px ${FB}`,'#b89088',260],['The Replacement',`900 50px ${FD}`,'#ff8a7a',318],["Nathans at the start  2   ·   Nathans now  1   ·   Dailies done  yes",`700 21px ${FB}`,'#ff9a8a',380],
+    [`Time  ${mins}:${String(secs).padStart(2,'0')}    ·    Falls  ${Game.deaths}`,`500 20px ${FB}`,'#cfc6b0',414],['Thank you for playing The Moonsinger\'s Bell.',`italic 500 22px ${FB}`,'#e9e2cf',480]]);
+  if(Game.endT>3){ D.globalAlpha=.6+.4*Math.sin(performance.now()/300); cText([[IS_TOUCH()?'Tap to return to the title':'Click or press E to return to the title',`700 22px ${FB}`,'#fff4d6',560]]); } D.globalAlpha=1; }; })();

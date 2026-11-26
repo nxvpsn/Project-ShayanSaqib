@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.76 (Nov 26): Kojima's last line (\"The catgirl was MINE\") now shows him; the camera used to look over his head at an empty wall. No boss mechanics changed.";
+const DBG_PATCH="v1.77 (Nov 26): a second, closer pass. The Kill ending now works on touch (tap the left or right half), pauses properly, and has its own end screen (The Replacement). Cutscenes: a speaker is never hidden behind someone else, Mira steps clear of Ali in the duo intro, the twins are shown whole while they charge, allies stand to the sides. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

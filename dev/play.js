@@ -25,7 +25,7 @@ const ROOT=path.resolve(__dirname,'..'), MIME={'.html':'text/html','.js':'text/j
   await page.route(/^https?:\/\/(?!127\.0\.0\.1)/,async route=>{ const u=route.request().url(); if(/fonts\.(googleapis|gstatic)\.com/.test(u)){ return route.fulfill({status:200,contentType:'text/css',body:''}); }
     const m=u.match(/\/npm\/three@0\.147\.0\/(.+)$/), f=m&&fs.existsSync(path.join(CACHE,'three/package',m[1]))?path.join(CACHE,'three/package',m[1]):path.join(CACHE,u.replace(/[^a-zA-Z0-9.@-]+/g,'_')); if(!fs.existsSync(f)||!fs.statSync(f).size){ try{ cp.execFileSync('curl',['-sS','-L','--max-time','60','-o',f,u]); }catch(e){ console.log('cdn miss',u); return route.abort(); } }
     route.fulfill({status:200,contentType:u.endsWith('.js')?'text/javascript':'application/octet-stream',body:fs.readFileSync(f)}); });
-  page.on('pageerror',e=>errs.push(String(e))); page.on('console',m=>{ if(m.type()==='error') errs.push(m.text()); });
+  page.on('pageerror',e=>errs.push(String(e))); page.on('response',r=>{ try{ if(r.status()>=400) errs.push('HTTP '+r.status()+' '+r.url().replace(/^https?:\/\/127\.0\.0\.1:\d+/,'')); }catch(e){} }); page.on('console',m=>{ if(m.type()==='error') errs.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`,{waitUntil:'domcontentloaded',timeout:120000});
   await page.waitForFunction(()=>typeof Game!=='undefined'&&typeof loop==='function',null,{timeout:120000});
   const g={auto:true,errs}; g.ev=js=>page.evaluate(js); g.log=(...a)=>console.log(...a);

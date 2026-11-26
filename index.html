@@ -5129,11 +5129,16 @@ function twEndFight(keepFoes){ TW.fight=null; twClearHz(); if(!keepFoes) twClear
 function twCamT(T,dist,side){ dist=dist||7.5; side=side==null?1.2:side; const y=T.y!=null?T.y:groundY(T.x,T.z); cineSet(T.x+side,y+2.2,T.z+dist,T.x,y+1.6,T.z); }
 // the hero's talking shot. If a foe or an ally stands in the line between the lens and the hero (seen in the playtest rig:
 // Omar's coat hanging across Shayan's reaction shots), the camera swings round to the first clear side.
-function twCamP(dist,side){ const P=Player; dist=dist||6.2; side=side==null?1:side; const s1=side||1; let pick=[side,dist];
-  try{ const obs=[...(TW.foes||[]),...(TW.allies||[])].filter(o=>o&&!o.hide&&!o.gone&&!o.hidden&&Math.hypot(o.x-P.x,o.z-P.z)>.9);
-    const blocked=(sx,d)=>obs.some(o=>{ const ax=P.x+sx, az=P.z+d, vx=P.x-ax, vz=P.z-az, L2=vx*vx+vz*vz||1, t=Math.max(0,Math.min(1,((o.x-ax)*vx+(o.z-az)*vz)/L2)); return Math.hypot(o.x-(ax+vx*t),o.z-(az+vz*t))<1.25*(o.scale||1); });
-    for(const c of [[side,dist],[-s1,dist],[s1*3.4,dist*.9],[-s1*3.4,dist*.9],[s1*5.5,dist*.6],[-s1*5.5,dist*.6]]) if(!blocked(c[0],c[1])){ pick=c; break; } }catch(e){}
+function twCamPick(tx,tz,side,dist,obs){ const s1=side||1;
+  const blocked=(sx,d)=>obs.some(o=>{ const ax=tx+sx, az=tz+d, vx=tx-ax, vz=tz-az, L2=vx*vx+vz*vz||1, tr=((o.x-ax)*vx+(o.z-az)*vz)/L2, t=Math.max(0,Math.min(1,tr)); if(tr>.97) return false; /* level with or behind the subject: background, not in the way */ return Math.hypot(o.x-(ax+vx*t),o.z-(az+vz*t))<1.25*(o.scale||1); });
+  for(const c of [[side,dist],[-s1,dist],[s1*3.4,dist*.9],[-s1*3.4,dist*.9],[s1*5.5,dist*.6],[-s1*5.5,dist*.6]]) if(!blocked(c[0],c[1])) return c; return [side,dist]; }
+function twCamP(dist,side){ const P=Player; dist=dist||6.2; side=side==null?1:side; let pick=[side,dist];
+  try{ pick=twCamPick(P.x,P.z,side,dist,[...(TW.foes||[]),...(TW.allies||[])].filter(o=>o&&!o.hide&&!o.gone&&!o.hidden&&Math.hypot(o.x-P.x,o.z-P.z)>.9)); }catch(e){}
   cineSet(P.x+pick[0],P.y+1.8,P.z+pick[1],P.x,P.y+1.05,P.z); }
+// the same for anyone else (Mira, an NPC): a talking shot on `o` that swings clear of whoever stands in front of them (the hero included)
+function twCamOn(o,dist,side,yc,yl){ dist=dist||3.4; side=side==null?1:side; let pick=[side,dist];
+  try{ const all=[...(TW.foes||[]),...(TW.allies||[]),Player]; if(Game.mira&&Game.mira.vis) all.push(Game.mira); pick=twCamPick(o.x,o.z,side,dist,all.filter(q=>q&&q!==o&&!q.hide&&!q.gone&&!q.hidden&&Math.hypot(q.x-o.x,q.z-o.z)>.6)); }catch(e){}
+  const y=o.y!=null?o.y:groundY(o.x,o.z); cineSet(o.x+pick[0],y+(yc==null?1.3:yc),o.z+pick[1],o.x,y+(yl==null?1.2:yl),o.z); }
 function twCam2(a,b,dist,side){ dist=dist||10.5; side=side||0; const mx=(a.x+b.x)/2, mz=(a.z+b.z)/2, my=((a.y!=null?a.y:0)+(b.y!=null?b.y:0))/2; cineSet(mx+side,my+2.4,mz+dist,mx,my+1.4,mz); }
 
 // ----- 00a_voices.js -----
@@ -6050,6 +6055,79 @@ function drawOmarV2(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flash>0,
   cSeg(p,A.x,A.y,A.kx,A.ky,5,C.k2,C.k3); cSeg(p,A.kx,A.ky,A.ex,A.ey,6,C.k2,C.k3); { const x=Math.round(A.ex), y=Math.round(A.ey); p(x-3,y-2,7,3,C.k1); p(x-3,y-2,7,1,C.k4); p(x-2,y+1,4,3,C.skin); p(x+1,y+1,1,3,C.skinS); p(x-2,y+4,1,2,C.skin); p(x,y+4,1,2,C.skinS); p(x-3,y,1,1,C.lin); }
   if(cast&&!sc){ const x=Math.round(A.ex), y=Math.round(A.ey); for(let r=6;r>0;r-=2) p(x-r,y-4-r,r*2+1,r,'rgba(170,80,255,'+(.25+.1*(6-r)).toFixed(2)+')'); p(x-2,y-8,5,3,'rgba(230,200,255,.9)'); p(x-1,y-7,2,1,'#ffffff'); for(let i=0;i<3;i++){ const a=t*8+i*2.1; p(x+Math.round(Math.cos(a)*7),y-6+Math.round(Math.sin(a)*4),1,1,'#ffffff'); } }
   if(dn) cStars(p,h0-28,t,'#c08aff'); else if(st) cStars(p,h0-28,t,'#c08aff',8); }
+// ================= CAOTAN, REDRAWN (not wired in until the owner approves the preview) =================
+// Same rig, poses and flags as drawCaotanCast (flash, down, stun, fire, push, state 'atk', heartEyes, noGlasses, cracked, glintT, nose,
+// maid, form null/1/2/3). More in every part: four skin tones with a shoulder cap, biceps and knuckles; a scooped tank with armholes
+// and folds; jeans with seams, knee fades and rolled cuffs; trainers with soles and laces; six-spike hair in three tones; a knotted
+// headband with two tails in the wind; framed glasses with a lit lower lens. Form II adds what the transformation promises (a big
+// bow, a sailor collar, a heart brooch, pink wrist cuffs); form III what the chains left (torn hem, broken shackles, pink hair tips).
+function drawCaotanV2(c,cx,by,f,s){ const p=SH(c,cx,by,f), t=s.t||0, fl=s.flash>0, dn=s.down>0, tk=cTalk('caotan'), base=s.form==null, form=s.form||0;
+  const C=cFlash({skin:'#c98a5e',skinS:'#a46a44',skinH:'#e3ab7e',skinD:'#7e4c2c',skinL:'#f2c89e',tank:'#f6f3ec',tankS:'#d6cfc2',tankD:'#a8a094',jean:'#4a6fa8',jeanS:'#34558a',jeanD:'#26406c',jeanH:'#7399d2',hair:'#22160f',hairH:'#4a3220',hairL:'#73512f',shoe:'#eeeef4',shoeS:'#9aa0b0',sole:'#cfd2de',belt:'#3a2a20',beltH:'#5e4634',buckle:'#e0c870',band:'#ffffff',bandS:'#c4c8d6',pink:'#ff6ab0',pinkS:'#c83a82',pinkL:'#ffc4e2',steel:'#b8bcc8',steelS:'#7c808e'},fl);
+  const st=s.stun>0, fire=s.fire>0, push=s.push>0, atk=s.state==='atk', hv=dn?0:Math.sin(t*3)*2;
+  const P={b:Math.round(hv),lean:0,F:[[-3,-6+Math.round(Math.sin(t*5)*2)],[3,-6-Math.round(Math.sin(t*5)*2)]],ua:[-.55,1.75+Math.sin(t*2.2)*.12],el:[1.7,1.35+Math.sin(t*2.2)*.25],hd:0,hx:0};
+  if(dn){ P.b=10; P.lean=6; P.hd=5; P.hx=2; P.F=[[-9,0],[6,0]]; P.ua=[.4,.8]; P.el=[.2,.3]; }
+  else if(st){ const w=Math.sin(t*5); P.lean=Math.round(w*3); P.hd=2; P.ua=[.3+w*.2,.4-w*.2]; P.el=[.3,.3]; }
+  else if(fire){ P.lean=-5; P.F=[[2,-8],[7,-7]]; P.ua=[-1.3,-1.1]; P.el=[.4,.3]; }
+  else if(push){ P.ua[1]=.5; P.el[1]=2.55; }
+  else if(s.heartEyes){ P.ua=[.7,.75]; P.el=[1.9,1.9]; P.hd=Math.round(Math.sin(t*6)); }
+  else if(tk){ P.ua[1]=1.2+Math.sin(t*3.6)*.4; P.el[1]=.6; }
+  else if(atk){ P.ua[1]=1.55; P.el[1]=.05; P.lean=2; }
+  if(s.noGlasses&&!dn){ P.ua[1]=.25; P.el[1]=.9; }
+  const D={hip:30,torso:24,thigh:12,shin:12,uarm:11,farm:10,sep:4,ssep:11,neck:2}, J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy, R=Math.round, lp=(a,b,k)=>a+(b-a)*k;
+  const cuff=(A,far)=>{ const x=R(A.ex), y=R(A.ey), ax=R(lp(A.kx,A.ex,.72)), ay=R(lp(A.ky,A.ey,.72)); if(form===2){ p(ax-3,ay-1,7,3,far?C.pinkS:C.pink); p(ax-3,ay-1,7,1,far?C.pink:C.pinkL); }
+    else if(form>=3){ p(ax-3,ay-1,7,3,far?C.steelS:C.steel); p(ax-3,ay-1,7,1,far?C.steel:'#eef0f6'); const sw=R(Math.sin(t*4+(far?1:0))*1.5); p(ax-1+sw,ay+2,2,3,C.steelS); p(ax+sw*2,ay+5,2,3,C.steel); } return [x,y]; };
+  // far arm: darker, behind the body
+  { const A=J.A[0]; cArm(p,A,7,C.skinD,C.skinS,C.skinS,C.skinD); p(R(A.x)-3,R(A.y)-3,6,4,C.skinS); cuff(A,1); }
+  // legs: jeans with a side seam, a faded knee, a rolled cuff; trainers with a sole, a toe cap and laces
+  const leg=(L,near)=>{ const a=near?C.jeanS:C.jeanD, b=near?C.jean:C.jeanS; cSeg(p,L.x,L.y,L.kx,L.ky,8,a,b); cSeg(p,L.kx,L.ky,L.ex,L.ey-3,7,a,b);
+    if(near){ cSeg(p,L.x+2,L.y+1,L.kx+2,L.ky,1,C.jeanH); cSeg(p,L.kx+2,L.ky,L.ex+2,L.ey-5,1,C.jeanH); p(R(L.kx)-2,R(L.ky)-2,5,3,C.jeanH); p(R(L.kx)-1,R(L.ky)-1,3,1,'#9ab8e6'); p(R(L.x)-2,R(L.y)+2,4,1,C.jeanD); p(R(L.x)-2,R(L.y)+3,1,2,C.jeanD); }
+    const x=R(L.ex), y=R(L.ey); p(x-4,y-6,9,2,near?C.jeanH:C.jean); p(x-4,y-5,9,1,near?C.jeanS:C.jeanD);
+    p(x-4,y-4,11,4,near?C.shoe:C.shoeS); p(x+4,y-4,3,3,near?'#ffffff':C.shoe); p(x-5,y,13,2,near?C.sole:'#8a8e9c'); p(x-5,y+1,13,1,'#6c707e'); p(x-2,y-3,4,1,near?C.pink:C.pinkS); if(near){ p(x,y-5,3,1,'#ffffff'); p(x+1,y-4,1,1,C.shoeS); p(x-4,y-4,2,4,C.shoeS); } };
+  leg(J.L[0],0); leg(J.L[1],1);
+  // belt + buckle (the volleys come out of it)
+  p(J.hx-11,hy-4,22,5,C.belt); p(J.hx-11,hy-4,22,1,C.beltH); p(J.hx-8,hy-5,2,6,C.beltH); p(J.hx+7,hy-5,2,6,C.beltH); p(J.hx-3,hy-4,7,5,fire?'#ffffff':C.buckle); p(J.hx-2,hy-3,5,3,fire?'#ffffff':'#b89a48'); p(J.hx-2,hy-3,2,1,'#fff8d0');
+  if(fire){ p(J.hx-5,hy-6,11,9,'rgba(255,255,255,.55)'); p(J.hx+4,hy-3,8,2,'rgba(255,255,255,.35)'); }
+  // tank top: shoulders, scooped neck, armholes, the pecs' shadow, folds down to the belt
+  cPoly(p,[[sx-13,sy],[sx+13,sy],[J.hx+11,hy-4],[J.hx-11,hy-4]],C.tank);
+  cPoly(p,[[sx-13,sy],[sx-8,sy],[J.hx-7,hy-4],[J.hx-11,hy-4]],C.tankS); cPoly(p,[[sx+9,sy],[sx+13,sy],[J.hx+11,hy-4],[J.hx+8,hy-4]],C.tankS);
+  p(sx-13,sy,3,7,C.skinS); p(sx+11,sy,3,6,C.skin); p(sx-10,sy+1,1,7,C.tankD); p(sx+10,sy+1,1,6,C.tankS);
+  p(sx-5,sy,11,3,C.skin); p(sx-4,sy+3,9,1,C.skin); p(sx-3,sy+4,7,1,C.skin); p(sx-4,sy+1,9,1,C.skinS); p(sx-1,sy+2,3,2,C.skinH); p(sx-5,sy+3,1,1,C.tankD); p(sx+5,sy+3,1,1,C.tankD);
+  p(sx-8,sy+9,7,1,C.tankD); p(sx+1,sy+9,7,1,C.tankD); p(sx,sy+6,1,4,C.tankD); p(sx-7,sy+8,5,1,C.tankS); p(sx+2,sy+8,5,1,C.tankS);
+  for(let i=0;i<3;i++){ const k=(i+1)/4, yy=R(lp(sy+11,hy-6,i/2)), xx=R(lp(sx,J.hx,k)); p(xx-2,yy,5,1,C.tankS); p(xx-10,yy+1,3,1,C.tankD); p(xx+7,yy,3,1,C.tankS); }
+  if(form>=3){ p(J.hx-9,hy-8,4,4,C.skin); p(J.hx-8,hy-9,2,1,C.skin); p(J.hx-9,hy-5,4,1,C.skinS); p(J.hx+3,hy-7,5,3,C.skin); p(J.hx+4,hy-8,2,1,C.skin); p(J.hx+3,hy-5,5,1,C.skinS); p(J.hx-4,hy-6,2,2,C.tankD); }
+  if(form>=2){ cPoly(p,[[sx-12,sy-1],[sx+12,sy-1],[sx+6,sy+7],[sx,sy+11],[sx-6,sy+7]],C.pink); cPoly(p,[[sx-10,sy],[sx+10,sy],[sx+5,sy+6],[sx,sy+9],[sx-5,sy+6]],C.pinkL); cPoly(p,[[sx-8,sy],[sx+8,sy],[sx+4,sy+5],[sx,sy+8],[sx-4,sy+5]],C.pink);
+    cPoly(p,[[sx-5,sy],[sx+5,sy],[sx,sy+6]],C.skin); p(sx-3,sy+1,7,1,C.skinS); p(sx-2,sy+10,2,2,'#ff3a7a'); p(sx+1,sy+10,2,2,'#ff3a7a'); p(sx-2,sy+11,5,2,'#ff3a7a'); p(sx-1,sy+13,3,1,'#ff3a7a'); p(sx,sy+14,1,1,'#ff3a7a'); p(sx-2,sy+10,1,1,'#ffffff'); }
+  if(s.maid){ cPoly(p,[[J.hx-10,hy-18],[J.hx+10,hy-18],[J.hx+12,hy+4],[J.hx-12,hy+4]],'#ffffff'); p(J.hx-10,hy-18,20,2,'#ff8ac8'); p(J.hx-3,hy-22,6,4,'#ff3a7a'); p(J.hx-12,hy+3,24,1,'#ff8ac8'); for(let i=0;i<6;i++) p(J.hx-11+i*4,hy+4,3,2,'#ffffff'); p(J.hx-8,hy-10,16,1,'#e8e2ee'); }
+  // head: jaw and ear in shadow, a lit cheek and nose
+  const hx=R(J.headX), h0=R(J.headY);
+  p(hx-7,h0-15,15,15,C.skin); p(hx+4,h0-14,3,11,C.skinH); p(hx+5,h0-12,2,5,C.skinL); p(hx-7,h0-3,15,3,C.skinS); p(hx-6,h0-1,13,1,C.skinD); p(hx-7,h0-15,2,12,C.skinS); p(hx-9,h0-10,2,4,C.skinS); p(hx-9,h0-9,1,2,C.skinD); p(hx+8,h0-9,1,3,C.skinH); p(hx+8,h0-6,1,1,C.skinS); p(hx-4,h0+0,7,2,C.skinS);
+  // hair: six spikes, three tones, a sideburn; pink tips once he is unchained
+  p(hx-8,h0-18,17,5,C.hair); p(hx-9,h0-16,4,7,C.hair); p(hx-8,h0-12,2,4,C.hair); p(hx+5,h0-21,4,4,C.hair); p(hx-3,h0-22,4,5,C.hair); p(hx+1,h0-20,3,3,C.hair); p(hx-7,h0-20,3,3,C.hair); p(hx-6,h0-23,2,3,C.hair); p(hx+3,h0-23,2,3,C.hair); p(hx+8,h0-19,2,3,C.hair); p(hx-1,h0-24,2,2,C.hair);
+  p(hx-2,h0-21,2,2,C.hairH); p(hx+6,h0-20,2,2,C.hairH); p(hx-6,h0-19,2,1,C.hairH); p(hx+2,h0-19,2,1,C.hairH); p(hx-5,h0-17,9,1,C.hairH); p(hx+1,h0-17,5,1,C.hairL); p(hx-1,h0-23,1,1,C.hairL); p(hx+4,h0-22,1,1,C.hairL);
+  if(form>=3){ p(hx-3,h0-22,3,1,C.pink); p(hx+5,h0-21,3,1,C.pink); p(hx-6,h0-23,2,1,C.pink); p(hx+3,h0-23,2,1,C.pinkL); p(hx-1,h0-24,2,1,C.pinkL); p(hx+8,h0-19,2,1,C.pink); }
+  // headband: knotted at the back, two tails in the wind
+  { const bd=form>=3?C.pinkL:C.band, bs=form>=3?C.pink:C.bandS, n=form>=3?5:3; p(hx-8,h0-13,17,2,bd); p(hx-8,h0-12,17,1,bs); p(hx-11,h0-14,3,4,bd); p(hx-11,h0-11,3,1,bs);
+    for(let i=0;i<n+1;i++){ /* two thin ribbons trailing down and back (two-pixel blocks read as a white hand) */ p(hx-13-i*2,h0-12+i+R(Math.sin(t*7+i*.9)*1.2),3,1,bd); p(hx-12-i*2,h0-8+i*2+R(Math.sin(t*7+1.3+i*.9)*1.2),2,2,i%2?bs:bd); } }
+  // face: brows, framed glasses with a lit lower lens (or the base shades), the grin
+  const g=h0-(push?2:0), ln=s.glintT>0?'#ffffff':(form>=2?'#ffc8ec':'#bfe4ff'), lnL=s.glintT>0?'#ffffff':(form>=2?'#ffe6f6':'#e6f6ff'), fr='#14141e';
+  if(s.noGlasses){ for(const ex of [-6,2]){ p(hx+ex-1,h0-12,6,1,fr); p(hx+ex,h0-11,4,3,fr); p(hx+ex+1,h0-10,2,2,'#ff8ac8'); p(hx+ex+1,h0-11,1,1,'#ffffff'); } }
+  else if(base){ p(hx-7,h0-11,16,4,'#0e0e16'); p(hx-6,h0-11,14,1,'#2a2a3a'); p(hx+3,h0-10,4,1,'#7ab0ff'); p(hx-4,h0-9,2,1,'#4a6a9a'); p(hx-9,h0-10,2,1,'#0e0e16'); }
+  else { p(hx-6,g-15,5,1,C.hair); p(hx+3,g-15,5,1,C.hair); p(hx-8,g-13,7,6,fr); p(hx+1,g-13,7,6,fr); p(hx-8,g-13,7,1,'#34344a'); p(hx+1,g-13,7,1,'#34344a'); p(hx-7,g-12,5,4,ln); p(hx+2,g-12,5,4,ln); p(hx-7,g-10,5,2,lnL); p(hx+2,g-10,5,2,lnL); p(hx-1,g-11,2,1,fr); p(hx-10,g-11,2,1,fr); p(hx-6,g-12,2,1,'#ffffff'); p(hx+3,g-12,2,1,'#ffffff');
+    if(s.cracked){ p(hx+3,g-12,1,4,fr); p(hx+4,g-10,2,1,fr); p(hx+5,g-9,1,1,fr); } }
+  if(s.heartEyes){ for(const ex of [-7,2]){ p(hx+ex,h0-12,2,2,'#ff3a7a'); p(hx+ex+3,h0-12,2,2,'#ff3a7a'); p(hx+ex,h0-11,5,2,'#ff3a7a'); p(hx+ex+1,h0-9,3,1,'#ff3a7a'); p(hx+ex+2,h0-8,1,1,'#ff3a7a'); p(hx+ex,h0-12,1,1,'#ffffff'); } }
+  if(tk===2||st){ p(hx-2,h0-5,8,3,'#3a1010'); p(hx-1,h0-5,6,1,'#ffffff'); p(hx,h0-3,4,1,'#c84a5a'); } else { p(hx-2,h0-5,8,1,'#7a3a2a'); p(hx+5,h0-6,1,1,'#7a3a2a'); p(hx-1,h0-4,6,1,'#ffffff'); p(hx+2,h0-4,1,1,'#d8d8e0'); }
+  if(s.nose){ p(hx-1,h0-7,2,6+R(Math.sin(t*20)*2),'#d0102a'); }
+  if(s.glintT>0&&!s.noGlasses){ const k=R(s.glintT*10); p(hx+4-k,g-11,8+2*k,1,'#ffffff'); p(hx+4,g-15-k,1,9+2*k,'#ffffff'); }
+  if(s.glintT>0&&s.noGlasses){ const k=R(s.glintT*10); for(const ex of [-5,3]){ p(hx+ex-k,h0-10,2+2*k,1,'#ffffff'); p(hx+ex,h0-14-k,1,7+2*k,'#ffffff'); } }
+  if(form>=2){ cPoly(p,[[hx,h0-26],[hx-9,h0-31],[hx-10,h0-22]],C.pink); cPoly(p,[[hx,h0-26],[hx+9,h0-31],[hx+10,h0-22]],C.pink); p(hx-8,h0-29,3,1,C.pinkL); p(hx+6,h0-29,3,1,C.pinkL); p(hx-8,h0-24,4,1,C.pinkS); p(hx+5,h0-24,4,1,C.pinkS); p(hx-2,h0-28,4,4,C.pinkS); p(hx-1,h0-28,2,1,C.pinkL); p(hx-3,h0-24,2,3,C.pinkS); p(hx+2,h0-24,2,3,C.pinkS); }
+  if(s.maid){ p(hx-8,h0-21,17,3,'#ffffff'); p(hx-6,h0-23,3,2,'#ffffff'); p(hx+1,h0-23,3,2,'#ffffff'); p(hx-8,h0-19,17,1,'#ff8ac8'); }
+  // near arm: shoulder cap, biceps, a real fist; pointing, pushing the glasses or holding them
+  const A=J.A[1]; cArm(p,A,7,C.skinS,C.skin,C.skin,C.skinS); p(R(A.x)-3,R(A.y)-3,7,4,C.skin); p(R(A.x)-2,R(A.y)-3,4,1,C.skinH); cSeg(p,A.x+1,A.y,A.kx+1,A.ky,1,C.skinH);
+  if(!fire&&!dn&&!st&&!push&&!atk&&!tk&&!s.heartEyes){ const mx=R((A.x+A.kx)/2), my=R((A.y+A.ky)/2)-3; p(mx-2,my,5,3,C.skinH); p(mx-1,my,3,1,C.skinL); }
+  { const [x,y]=cuff(A,0); p(x-2,y-2,5,5,C.skin); p(x-2,y+2,5,1,C.skinS); p(x-1,y-2,3,1,C.skinH); p(x+2,y-1,1,3,C.skinS); }
+  if(s.noGlasses){ const x=R(A.ex), y=R(A.ey); p(x-1,y+1,7,3,fr); p(x,y+2,2,1,ln); p(x+3,y+2,2,1,ln); }
+  if(form>=3) for(let i=0;i<3;i++){ const a=t*3+i*2.1, ox=R(Math.cos(a)*16), oy=h0-18+R(Math.sin(a)*6); p(ox-2,oy,2,2,'#ff4aa0'); p(ox+1,oy,2,2,'#ff4aa0'); p(ox-2,oy+1,5,2,'#ff4aa0'); p(ox-1,oy+3,3,1,'#ff4aa0'); p(ox,oy+4,1,1,'#ff4aa0'); p(ox-2,oy,1,1,'#ffd0e8'); }
+  if(dn) cStars(p,h0-26,t,'#ffe066'); else if(st) cStars(p,h0-26,t,'#ffe066',8); }
 // approved by the owner (v1.70): Omar is this painter everywhere he is drawn (solo, duo, the fusion's Omar half, afterimages, portraits that reuse it)
 drawOmarCast=drawOmarV2; drawOmarHD=drawOmarV2; drawOmarBoss=drawOmarV2;
 
@@ -7062,7 +7140,7 @@ function twUpdateAlly(A,dt,play){ const P=Player; A.t+=dt; A.flash=Math.max(0,A.
     else { tx=o.x+Math.cos(da)*4.5; tz=o.z+Math.sin(da)*3.5; }
     // don't crowd the player
     const pd=Math.hypot(tx-P.x,tz-P.z); if(pd<2.2){ tx+=(tx-P.x)/(pd||1)*2; tz+=(tz-P.z)/(pd||1)*2; } }
-  else { const side=A.who==='caotan'?-1:A.who==='omar'?1:0; const cut=!!(Game.script&&Cam.cine); /* in a cutscene they stand BEHIND you and wider: their normal slot is between you and the camera, and a tall ally's coat filled the foreground of every shot (seen in the playtest rig) */ tx=P.x-Math.cos(P.ang||0)*(cut?0:3)+side*(cut?2.3:1.6); tz=P.z+(cut?-1.3:1.4)+side*.4; }
+  else { const side=A.who==='caotan'?-1:A.who==='omar'?1:0; const cut=!!(Game.script&&Cam.cine), sd=side||-.6; /* in a cutscene they stand level with you and well out to the sides: their fight slot is between you and the camera (a tall ally's coat filled the foreground), and behind you they crowded the boss's shots (both seen in the playtest rig) */ if(cut){ tx=P.x+sd*3.8; tz=P.z+.3; } else { tx=P.x-Math.cos(P.ang||0)*3+side*1.6; tz=P.z+1.4+side*.4; } }
   // dodge incoming projectiles by side-stepping
   if(play&&A.who!=='ali') for(const b of BOLTS){ if(b.dead||b.friendly) continue; const d=Math.hypot(b.x-A.x,b.z-A.z); if(d<2.6){ const sx=-b.vz, sz=b.vx, sl=Math.hypot(sx,sz)||1; tx=A.x+sx/sl*2.4; tz=A.z+sz/sl*2.4; break; } }
   const c=twClampXZ(tx,tz,.8); tx=c.x; tz=c.z; const dx=tx-A.x, dz=tz-A.z, d=Math.hypot(dx,dz), spd=A.who==='ali'?5.4:A.who==='omar'?4.6:3.8;
@@ -12318,10 +12396,15 @@ function d5Face(who,side,dist){ const o=TW.foes.find(T=>T.who===who&&!T.gone)||T
   cineSet(o.x+side*.9,o.y+h-.3,o.z+d,o.x,o.y+h-.55,o.z); return true; }
 // Every line a twin speaks: if the shot is ON him (the cine camera looks at his spot) and it is a close one, it is re-aimed at
 // his face from far enough to hold his head and shoulders. One rule for every script instead of fixing fifty hand-set shots.
+// Every spoken line: if the shot is ON the speaker and somebody stands between the lens and them, the camera swings to the
+// first clear side (same heights, same subject). Seen on film: Mira delivering a line from behind Ali.
+function twSpeakerClear(who){ const c=Cam.cine; if(!c||!Game.script||!who) return; let o=null; if(who==='mira'){ const m=Game.mira; o=m&&m.vis?m:null; } else if(who===HERO()) o=Player; else o=TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden)||TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide);
+  if(!o||Math.hypot(c.lx-o.x,c.lz-o.z)>1.4) return; const side=c.px-o.x, dist=c.pz-o.z; if(dist<1.5) return; const all=[...(TW.foes||[]),...(TW.allies||[]),Player]; if(Game.mira&&Game.mira.vis) all.push(Game.mira);
+  const pick=twCamPick(o.x,o.z,side,dist,all.filter(q=>q&&q!==o&&!q.hide&&!q.gone&&!q.hidden&&Math.hypot(q.x-o.x,q.z-o.z)>.6)); if(pick[0]!==side||pick[1]!==dist){ c.px=o.x+pick[0]; c.pz=o.z+pick[1]; } }
 function twFaceFix(who){ if(who!=='caotan'&&who!=='omar') return; const c=Cam.cine; if(!c||!Game.script) return; const o=TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide)||TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden); if(!o) return;
   if(Math.hypot(c.lx-o.x,c.lz-o.z)>1.7) return; const sc=o.scale||1, head=o.y+2.15*sc, need=5*sc; let ux=c.px-o.x, uz=c.pz-o.z; const d=Math.hypot(ux,uz)||1; if(d>need*1.5) return; ux/=d; uz/=d; const D=Math.max(d,need);
   c.px=o.x+ux*D; c.pz=o.z+uz*D; c.py=head-.3; c.lx=o.x; c.lz=o.z; c.ly=head-.55; }
-(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say') twFaceFix(d.who); last=d; }catch(e){ console.error('face',e); } return r; }; })();
+(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'){ twSpeakerClear(d.who); twFaceFix(d.who); } last=d; }catch(e){ console.error('face',e); } return r; }; })();
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2, mx=(cx+ox)/2, mz=(cz+oz)/2, gy=P.y;
   // a crane shot down from the eclipse onto the two of them
@@ -12332,7 +12415,7 @@ function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letter
   const cage=Game.actors&&Game.actors.find(a=>a.kind==='cage'); if(mi){ cineSet(mi.x+1.4,mi.y+1.4,mi.z+3.4,mi.x,mi.y+1.2,mi.z); yield d5Say('intro',5,'angry'); }
   twClearAllies(); twDuoStart(cx,cz,ox,oz); const D=TW.fight; D.noAttack=true; Game.state='cut'; D.miraHold=1;
   for(const T of TW.foes){ T.inv=true; } yield wait(.3); Sound.sfx('charge'); Sound.sfx('drone');
-  cineSet(P.x-2,P.y+.6,P.z+5,P.x,P.y+1.8,P.z-2); TW.foes.forEach(T=>{ T.cast=2; T.fire=2; }); yield wait(.8);
+  cineSet(mx,gy+2.2,mz+13.5,mx,gy+2.9,mz); /* both of them, whole, charging (on film the old low shot showed the hem of Omar's coat) */ TW.foes.forEach(T=>{ T.cast=2; T.fire=2; }); yield wait(.8);
   // time stops. a red line crosses the screen. someone is standing next to Shayan.
   zwStart(); Sound.sfx('secret'); JC.flash=.5; yield wait(.6); twAddAlly('ali'); const A=TW.allies[TW.allies.length-1]; A.x=P.x+1.6; A.z=P.z+.8; A.y=groundY(A.x,A.z); A.hold=1; A.face=-1;
   FX.burst(A.x,A.y+1,A.z,40,0xb0182a,5,.35); cineSet(A.x+.6,A.y+.5,A.z+3.2,A.x,A.y+1.5,A.z); yield wait(.5); yield d5Say('intro',6);
@@ -12340,10 +12423,11 @@ function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letter
   if(mi){ const cx2=cage?cage.x:mi.x, cz2=cage?cage.z:mi.z; aliGhost(A.x,A.y,A.z); A.x=cx2+1.2; A.z=cz2+.6; Sound.sfx('dash'); cineSet(cx2+.8,groundY(cx2,cz2)+1.6,cz2+4,cx2,groundY(cx2,cz2)+1.2,cz2); yield wait(.25);
     for(let i=0;i<5;i++){ twTinyJC(cx2,groundY(cx2,cz2)+1.2,cz2,160); Sound.sfx('swing'); yield wait(.06); } JC.flash=.4; if(cage) cage.open=1; Sound.sfx('shatter'); FX.burst(cx2,groundY(cx2,cz2)+1,cz2,30,0xb0a080,4,.4,false);
     yield d5Say('intro',7); zwEnd(); yield d5Say('intro',8,'happy'); aliGhost(A.x,A.y,A.z); A.x=P.x+1.6; A.z=P.z+.8; Sound.sfx('dash'); } else zwEnd();
-  d5MiraOn(); D.miraHold=1; cineSet((P.x+A.x)/2,P.y+1.1,P.z+4.2,(P.x+A.x)/2,P.y+1.4,P.z); yield d5Say('intro',9,'surprised'); yield d5Say('intro',10);
+  d5MiraOn(); D.miraHold=1; { /* she steps out beside them, clear of Ali (probed in the playtest rig: she stood 0.4 behind him and spoke her lines from inside his coat) */ const m3=Game.mira; if(m3&&Math.hypot(m3.x-A.x,m3.z-A.z)<1.6){ const q=twClampXZ(P.x+3.4,P.z-.5,.8); m3.x=q.x; m3.z=q.z; m3.y=groundY(q.x,q.z); m3.f=-1; if(TW.d5mira){ TW.d5mira.tx=q.x; TW.d5mira.tz=q.z; } } }
+  cineSet((P.x+A.x)/2,P.y+1.1,P.z+4.2,(P.x+A.x)/2,P.y+1.4,P.z); yield d5Say('intro',9,'surprised'); yield d5Say('intro',10);
   d5Face('caotan',-1); yield d5Say('intro',11,'surprised'); d5Face('omar',1); yield d5Say('intro',12,'sad');
   // the line-up: a low wide shot, both sides
-  cineSet(P.x+.5,P.y+.5,P.z+4.5,mx,gy+1.8,mz); yield d5Say('intro',13); yield d5Say('intro',14,'angry'); if(Game.mira){ const m2=Game.mira; cineSet(m2.x+1,m2.y+1.3,m2.z+3.4,m2.x,m2.y+1.2,m2.z); yield d5Say('intro',15,'happy'); }
+  cineSet(P.x+.5,P.y+.5,P.z+4.5,mx,gy+1.8,mz); yield d5Say('intro',13); yield d5Say('intro',14,'angry'); if(Game.mira){ twCamOn(Game.mira,3.4,1); /* Ali stood between her and the lens */ yield d5Say('intro',15,'happy'); }
   yield* twCoopChoice(); A.hold=0; A.face=null;
   Sound.play('boss'); yield* d5Title(1,{x:cx,z:cz},{x:ox,z:oz});
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); TW.foes.forEach(T=>{ T.inv=false; }); D.noAttack=true; D.director=1; Cam.cine=null; Game.letterTo=0; P.inv=1; Game.state='play'; D.miraHold=0; }
@@ -16231,26 +16315,28 @@ const NKS={
   card(c,t,p){ nkPx(c,0,0,384,216,'#000000'); c.textAlign='center'; c.fillStyle='rgba(255,255,255,'+Math.min(1,t*1.5)+')'; c.font='700 16px Georgia,serif'; c.fillText(p.a||'',192,104); c.font='italic 9px Georgia,serif'; c.fillStyle='rgba(216,180,106,'+Math.min(1,Math.max(0,t-.5)*1.5)+')'; c.fillText(p.b||'',192,124); c.textAlign='left'; },
   black(c){ nkPx(c,0,0,384,216,'#000000'); } };
 // ---------- drawing it over the game ----------
-(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); if(!NK.on) return; try{ if(!NK.cv){ NK.cv=document.createElement('canvas'); NK.cv.width=384; NK.cv.height=216; NK.c=NK.cv.getContext('2d'); } const c=NK.c, dt=1/60; NK.t+=dt; NK.shake=Math.max(0,NK.shake-dt*4); NK.flash=Math.max(0,NK.flash-dt*3);
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); if(!NK.on) return; try{ if(!NK.cv){ NK.cv=document.createElement('canvas'); NK.cv.width=384; NK.cv.height=216; NK.c=NK.cv.getContext('2d'); } const c=NK.c, paused=Game.state==='paused', dt=paused?0:1/60; NK.t+=dt; NK.shake=Math.max(0,NK.shake-dt*4); NK.flash=Math.max(0,NK.flash-dt*3);
       c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.textAlign='left'; c.fillStyle='#000'; c.fillRect(0,0,384,216); { /* the film's own camera: zoom about a point of the scene */ const z=Math.max(.2,NK.p.zoom||1), zx=NK.p.zx==null?192:NK.p.zx, zy=NK.p.zy==null?108:NK.p.zy, hx=192/z, hy=108/z, cx=Math.max(hx,Math.min(384-hx,zx)), cy=Math.max(hy,Math.min(216-hy,zy)); c.translate(192,108); c.scale(z,z); c.translate(-cx,-cy); } const f=NKS[NK.scene]||NKS.black; f(c,NK.t,NK.p); c.restore();
       if(NK.bars){ nkPx(c,0,0,384,14,'#000000'); nkPx(c,0,202,384,14,'#000000'); }
       D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.imageSmoothingEnabled=false; const sx=NK.shake>0?(Math.random()-.5)*NK.shake*18:0, sy=NK.shake>0?(Math.random()-.5)*NK.shake*18:0; D.fillStyle='#000'; D.fillRect(0,0,UW,UH); D.drawImage(NK.cv,sx,sy,UW,UH);
       if(NK.flash>0){ D.fillStyle='rgba(255,255,255,'+Math.min(1,NK.flash)+')'; D.fillRect(0,0,UW,UH); } if(NK.fade>0){ D.fillStyle='rgba(0,0,0,'+Math.min(1,NK.fade)+')'; D.fillRect(0,0,UW,UH); }
-      const F=NK.fp; if(F&&NK.scene==='fpv'&&!F.done){ D.textAlign='center'; D.font=`800 ${IS_TOUCH()?22:24}px ${FB}`; D.lineWidth=5; D.strokeStyle='#08040a'; const a=.75+.25*Math.sin(NK.t*8), G6=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[6]):K('attack'), G7=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[7]):K('block'), tx=G6+':  LEFT          '+G7+':  RIGHT'; D.globalAlpha=a; D.strokeText(tx,UW/2,UH-64); D.fillStyle='#ffffff'; D.fillText(tx,UW/2,UH-64); D.globalAlpha=1;
+      const F=NK.fp; if(F&&NK.scene==='fpv'&&!F.done){ D.textAlign='center'; D.font=`800 ${IS_TOUCH()?22:24}px ${FB}`; D.lineWidth=5; D.strokeStyle='#08040a'; const a=.75+.25*Math.sin(NK.t*8), G6=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[6]):K('attack'), G7=nkPadOn()?((PAD_GLYPH[PAD.glyph]||PAD_GLYPH.xb)[7]):K('block'), tx=IS_TOUCH()&&!nkPadOn()?'TAP LEFT SIDE          TAP RIGHT SIDE':G6+':  LEFT          '+G7+':  RIGHT'; D.globalAlpha=a; D.strokeText(tx,UW/2,UH-64); D.fillStyle='#ffffff'; D.fillText(tx,UW/2,UH-64); D.globalAlpha=1;
         const w=320, x=UW/2-w/2, y=UH-44; D.fillStyle='rgba(0,0,0,.6)'; D.fillRect(x-2,y-2,w+4,14); D.fillStyle='#a8141e'; D.fillRect(x,y,w*Math.min(1,F.n/F.need),10); D.textAlign='left'; }
       const S=NK.sub; if(S){ S.t+=dt; if(S.t>S.dur) NK.sub=null; else { const al=Math.min(1,S.t*6,(S.dur-S.t)*4); D.globalAlpha=al; D.textAlign='center'; D.font=`700 22px ${FB}`; const tx=(NAMES[S.who]?NAMES[S.who]+':  ':'')+S.text, w=D.measureText(tx).width+28; D.fillStyle='rgba(8,8,16,.82)'; D.fillRect(UW/2-w/2,UH*.16-22,w,34); D.fillStyle='#f0e8d8'; D.fillText(tx,UW/2,UH*.16+2); D.globalAlpha=1; D.textAlign='left'; } }
-      D.restore(); if(Game.dlg) drawDialog(); }catch(e){ console.error('nk draw',e); } }; })();
+      D.restore(); if(Game.dlg) drawDialog(); if(paused){ try{ drawPause(); }catch(e){} } /* the base UI drew its pause screen under the film */ }catch(e){ console.error('nk draw',e); } }; })();
 function nkPadOn(){ try{ return typeof PAD!=='undefined'&&PAD.mode!=='kbm'&&!!twPadGet(); }catch(e){ return false; } }
+// touch: a tap on the left half is the left fist, on the right half the right fist (the on-screen buttons are hidden in cutscenes)
+try{ ui.addEventListener('pointerdown',e=>{ try{ const F=NK.fp; if(!NK.on||NK.scene!=='fpv'||!F||F.done||e.pointerType==='mouse') return; const r=ui.getBoundingClientRect(); F.tap=(e.clientX-r.left)<r.width/2?-1:1; e.preventDefault(); e.stopImmediatePropagation(); }catch(err){} },true); }catch(e){}
 // ---------- the playable beat ----------
 function* nkPunchOut(){ const F=NK.fp={n:0,need:28,l:9,r:9,st:0,hitT:9,side:1,done:0,idle:0}; const lines=[[3,"Wait. WAIT. Who ARE you?!"],[7,"I didn't even WRITE the game! I just PLAY it!"],[11,"I have WORK tomorrow!"],[15,"Is this about the mech? You can HAVE the mech!"],[19,"...ow."],[23,"...save... file..."]];
   hit.attack=false; hit.block=false;
-  while(F.n<F.need){ F.l+=1/60; F.r+=1/60; F.hitT+=1/60; F.idle+=1/60; let s=0; const pad=nkPadOn(); if(pad){ /* a controller: LT is the left fist, RT the right (read straight from the triggers, whatever they are bound to) */ let bl=false, br=false; try{ const gp=twPadGet(), b=gp&&gp.buttons; bl=!!(b&&b[6]&&(b[6].pressed||b[6].value>.4)); br=!!(b&&b[7]&&(b[7].pressed||b[7].value>.4)); }catch(e){} if(bl&&!F.pl&&F.l>.14) s=-1; else if(br&&!F.pr&&F.r>.14) s=1; F.pl=bl; F.pr=br; consume('attack'); consume('block'); } else if(consume('attack')&&F.l>.14) s=-1; else if(consume('block')&&F.r>.14) s=1; hit.confirm=false;
+  while(F.n<F.need){ F.l+=1/60; F.r+=1/60; F.hitT+=1/60; F.idle+=1/60; let s=0; const pad=nkPadOn(); if(F.tap){ if(F.tap<0&&F.l>.14) s=-1; else if(F.tap>0&&F.r>.14) s=1; F.tap=0; } if(pad){ /* a controller: LT is the left fist, RT the right (read straight from the triggers, whatever they are bound to) */ let bl=false, br=false; try{ const gp=twPadGet(), b=gp&&gp.buttons; bl=!!(b&&b[6]&&(b[6].pressed||b[6].value>.4)); br=!!(b&&b[7]&&(b[7].pressed||b[7].value>.4)); }catch(e){} if(bl&&!F.pl&&F.l>.14) s=-1; else if(br&&!F.pr&&F.r>.14) s=1; F.pl=bl; F.pr=br; consume('attack'); consume('block'); } else if(!s){ if(consume('attack')&&F.l>.14) s=-1; else if(consume('block')&&F.r>.14) s=1; } hit.confirm=false;
     if(s){ if(s<0) F.l=0; else F.r=0; F.n++; F.side=s; F.hitT=0; F.idle=0; F.st=Math.min(6,Math.floor(F.n/4)); NK.shake=Math.min(1,.35+F.st*.08); Sound.sfx(F.n%3?'hit':'slam'); if(F.st>=2&&F.n%2===0) Sound.sfx('gore'); const L=lines.find(q=>q[0]===F.n); if(L) nkSub('nathanirl',L[1],1.8); try{ const DR=F.drops||(F.drops=[]), nd=4+F.n*1.4; for(let k=0;k<nd;k++) DR.push({x:192+rnd(-22,22),y:96+rnd(-20,26),vx:-s*rnd(20,260)+rnd(-90,90),vy:rnd(-300,-30),r:1+Math.floor(Math.random()*(2+F.st*.6)),k:k%2}); if(F.n>=6&&F.n%2===0){ const LS=F.lens||(F.lens=[]), b=[], d=[], r=8+F.st*4; for(let k=0;k<8;k++){ const a=rnd(0,6.28), q=rnd(0,r); b.push([Math.cos(a)*q,Math.sin(a)*q,rnd(.2,.55)*r]); } for(let k=0;k<3;k++) d.push([rnd(-r*.6,r*.6),rnd(20,90),rnd(14,40)]); LS.push({x:rnd(30,354),y:rnd(20,180),b,d,t:0}); if(LS.length>16) LS.shift(); } }catch(e){} }
     yield wait(0); }
   F.done=1; yield wait(.5); }
 // ---------- the film ----------
 function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCine(); }catch(e){} NK.on=1; NK.fade=0; NK.bars=1; NK.fp=null; Game.letterTo=0; P.inv=999; Cam.cine=Cam.cine||null;
-  nkScene('field',{zoom:2.3,zx:218,zy:152}); yield wait(.8);
+  nkScene('field',{zoom:2.3,zx:218,zy:152}); try{ NP1.hint=null; nbRemove(); Game.arena=null; Cam.zoom=1; }catch(e){ console.error('nk cleanup',e); } /* the fight is over for good: without this his HP bar stayed on screen, over the end screen too (seen in the playtest rig) */ yield wait(.8);
   yield say('nathanraw',"...Do it, then. Finish the arc. At least make it MEAN something.");
   yield say('ali',"It doesn't.");
   yield say('nathanraw',"...What?");
@@ -16324,15 +16410,24 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   yield say('shayan',"Fair. You're on creep. Don't feed.");
   yield say('nathanraw',"I have never fed anyone in my life. I only take.");
   yield wait(.8); yield tween(NK,{fade:1},1.6); nkScene('card',{a:'ENDING: THE REPLACEMENT',b:'Somewhere, a samurai walks on. He does not play StarCraft.'}); NK.fade=0; yield wait(4.2); yield tween(NK,{fade:1},1.2);
-  Game.aliOld=0; Game.ending=3; Game.fade=1; Game.fadeTo=1; NK.on=0; NK.fade=0; Game.state='end'; Game.endT=0; Game.script=null; }
+  Game.aliOld=0; Game.ending=7; Game.fade=1; Game.fadeTo=1; NK.on=0; NK.fade=0; Game.state='end'; Game.endT=0; Game.script=null; }
 // the choice: after phase III on Ali's road, before the finale
 (function(){ const nf=nbFinale; nbFinale=function*(){ let kill=false; try{ kill=ALI()&&typeof NP1!=='undefined'&&(NP1.ph||1)>=3; }catch(e){}
     if(kill){ Game.letterTo=1; try{ if(NB) cineSet(NB.x-2.5,NB.y+1.2,NB.z+7,NB.x,NB.y+1,NB.z); }catch(e){} yield wait(.6);
       yield say('nathanraw',"...It's over. The pig's gone. The arc's gone. I've got nothing left to burn.");
       yield say('ali',"Hm.");
-      const c=yield choose([{t:"Save him. (Sheathe the sword.)",aff:0},{t:"Kill him. (He asked for an ending.)",aff:0}]);
+      const c=yield choose([{t:"Sheathe the sword. Save him.",aff:0},{t:"He asked for an ending. Kill him.",aff:0}]); /* spoken aloud by the hero when picked: no stage directions in brackets */
       if(c===1){ yield* nkEnding(); return; } }
     yield* nf.apply(this,arguments); }; })();
+
+// the Kill ending's own end screen (ending 7)
+(function(){ const de=drawEnd; drawEnd=function(){ if(Game.ending!==7) return de();
+  Game.endT+=1/60; const a=Math.min(1,Game.endT/2); D.fillStyle='#070102'; D.fillRect(0,0,UW,UH);
+  for(const [x,y,b] of STARS2){ D.fillStyle=`rgba(255,120,110,${(.2+.4*b)*a})`; D.fillRect(x,y,2,2); } D.fillStyle=`rgba(210,40,30,${a})`; D.beginPath(); D.arc(UW/2,150,46,0,7); D.fill(); D.fillStyle=`rgba(120,0,0,${a*.6})`; D.beginPath(); D.arc(UW/2+10,160,12,0,7); D.fill(); D.beginPath(); D.arc(UW/2-14,138,8,0,7); D.fill();
+  D.globalAlpha=a; const mins=Math.floor(Game.time/60), secs=Math.floor(Game.time%60);
+  cText([['Secret Ending',`italic 500 22px ${FB}`,'#b89088',260],['The Replacement',`900 50px ${FD}`,'#ff8a7a',318],["Nathans at the start  2   ·   Nathans now  1   ·   Dailies done  yes",`700 21px ${FB}`,'#ff9a8a',380],
+    [`Time  ${mins}:${String(secs).padStart(2,'0')}    ·    Falls  ${Game.deaths}`,`500 20px ${FB}`,'#cfc6b0',414],['Thank you for playing The Moonsinger\'s Bell.',`italic 500 22px ${FB}`,'#e9e2cf',480]]);
+  if(Game.endT>3){ D.globalAlpha=.6+.4*Math.sin(performance.now()/300); cText([[IS_TOUCH()?'Tap to return to the title':'Click or press E to return to the title',`700 22px ${FB}`,'#fff4d6',560]]); } D.globalAlpha=1; }; })();
 
 // ----- 60_coop.js -----
 // =====================================================================
@@ -19478,7 +19573,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.76 (Nov 26): Kojima's last line (\"The catgirl was MINE\") now shows him; the camera used to look over his head at an empty wall. No boss mechanics changed.";
+const DBG_PATCH="v1.77 (Nov 26): a second, closer pass. The Kill ending now works on touch (tap the left or right half), pauses properly, and has its own end screen (The Replacement). Cutscenes: a speaker is never hidden behind someone else, Mira steps clear of Ali in the duo intro, the twins are shown whole while they charge, allies stand to the sides. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -19968,7 +20063,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.76';
+const GAME_VERSION='v1.77';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

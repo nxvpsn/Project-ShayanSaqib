@@ -323,10 +323,15 @@ function d5Face(who,side,dist){ const o=TW.foes.find(T=>T.who===who&&!T.gone)||T
   cineSet(o.x+side*.9,o.y+h-.3,o.z+d,o.x,o.y+h-.55,o.z); return true; }
 // Every line a twin speaks: if the shot is ON him (the cine camera looks at his spot) and it is a close one, it is re-aimed at
 // his face from far enough to hold his head and shoulders. One rule for every script instead of fixing fifty hand-set shots.
+// Every spoken line: if the shot is ON the speaker and somebody stands between the lens and them, the camera swings to the
+// first clear side (same heights, same subject). Seen on film: Mira delivering a line from behind Ali.
+function twSpeakerClear(who){ const c=Cam.cine; if(!c||!Game.script||!who) return; let o=null; if(who==='mira'){ const m=Game.mira; o=m&&m.vis?m:null; } else if(who===HERO()) o=Player; else o=TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden)||TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide);
+  if(!o||Math.hypot(c.lx-o.x,c.lz-o.z)>1.4) return; const side=c.px-o.x, dist=c.pz-o.z; if(dist<1.5) return; const all=[...(TW.foes||[]),...(TW.allies||[]),Player]; if(Game.mira&&Game.mira.vis) all.push(Game.mira);
+  const pick=twCamPick(o.x,o.z,side,dist,all.filter(q=>q&&q!==o&&!q.hide&&!q.gone&&!q.hidden&&Math.hypot(q.x-o.x,q.z-o.z)>.6)); if(pick[0]!==side||pick[1]!==dist){ c.px=o.x+pick[0]; c.pz=o.z+pick[1]; } }
 function twFaceFix(who){ if(who!=='caotan'&&who!=='omar') return; const c=Cam.cine; if(!c||!Game.script) return; const o=TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide)||TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden); if(!o) return;
   if(Math.hypot(c.lx-o.x,c.lz-o.z)>1.7) return; const sc=o.scale||1, head=o.y+2.15*sc, need=5*sc; let ux=c.px-o.x, uz=c.pz-o.z; const d=Math.hypot(ux,uz)||1; if(d>need*1.5) return; ux/=d; uz/=d; const D=Math.max(d,need);
   c.px=o.x+ux*D; c.pz=o.z+uz*D; c.py=head-.3; c.lx=o.x; c.lz=o.z; c.ly=head-.55; }
-(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say') twFaceFix(d.who); last=d; }catch(e){ console.error('face',e); } return r; }; })();
+(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'){ twSpeakerClear(d.who); twFaceFix(d.who); } last=d; }catch(e){ console.error('face',e); } return r; }; })();
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2, mx=(cx+ox)/2, mz=(cz+oz)/2, gy=P.y;
   // a crane shot down from the eclipse onto the two of them
@@ -337,7 +342,7 @@ function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letter
   const cage=Game.actors&&Game.actors.find(a=>a.kind==='cage'); if(mi){ cineSet(mi.x+1.4,mi.y+1.4,mi.z+3.4,mi.x,mi.y+1.2,mi.z); yield d5Say('intro',5,'angry'); }
   twClearAllies(); twDuoStart(cx,cz,ox,oz); const D=TW.fight; D.noAttack=true; Game.state='cut'; D.miraHold=1;
   for(const T of TW.foes){ T.inv=true; } yield wait(.3); Sound.sfx('charge'); Sound.sfx('drone');
-  cineSet(P.x-2,P.y+.6,P.z+5,P.x,P.y+1.8,P.z-2); TW.foes.forEach(T=>{ T.cast=2; T.fire=2; }); yield wait(.8);
+  cineSet(mx,gy+2.2,mz+13.5,mx,gy+2.9,mz); /* both of them, whole, charging (on film the old low shot showed the hem of Omar's coat) */ TW.foes.forEach(T=>{ T.cast=2; T.fire=2; }); yield wait(.8);
   // time stops. a red line crosses the screen. someone is standing next to Shayan.
   zwStart(); Sound.sfx('secret'); JC.flash=.5; yield wait(.6); twAddAlly('ali'); const A=TW.allies[TW.allies.length-1]; A.x=P.x+1.6; A.z=P.z+.8; A.y=groundY(A.x,A.z); A.hold=1; A.face=-1;
   FX.burst(A.x,A.y+1,A.z,40,0xb0182a,5,.35); cineSet(A.x+.6,A.y+.5,A.z+3.2,A.x,A.y+1.5,A.z); yield wait(.5); yield d5Say('intro',6);
@@ -345,10 +350,11 @@ function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letter
   if(mi){ const cx2=cage?cage.x:mi.x, cz2=cage?cage.z:mi.z; aliGhost(A.x,A.y,A.z); A.x=cx2+1.2; A.z=cz2+.6; Sound.sfx('dash'); cineSet(cx2+.8,groundY(cx2,cz2)+1.6,cz2+4,cx2,groundY(cx2,cz2)+1.2,cz2); yield wait(.25);
     for(let i=0;i<5;i++){ twTinyJC(cx2,groundY(cx2,cz2)+1.2,cz2,160); Sound.sfx('swing'); yield wait(.06); } JC.flash=.4; if(cage) cage.open=1; Sound.sfx('shatter'); FX.burst(cx2,groundY(cx2,cz2)+1,cz2,30,0xb0a080,4,.4,false);
     yield d5Say('intro',7); zwEnd(); yield d5Say('intro',8,'happy'); aliGhost(A.x,A.y,A.z); A.x=P.x+1.6; A.z=P.z+.8; Sound.sfx('dash'); } else zwEnd();
-  d5MiraOn(); D.miraHold=1; cineSet((P.x+A.x)/2,P.y+1.1,P.z+4.2,(P.x+A.x)/2,P.y+1.4,P.z); yield d5Say('intro',9,'surprised'); yield d5Say('intro',10);
+  d5MiraOn(); D.miraHold=1; { /* she steps out beside them, clear of Ali (probed in the playtest rig: she stood 0.4 behind him and spoke her lines from inside his coat) */ const m3=Game.mira; if(m3&&Math.hypot(m3.x-A.x,m3.z-A.z)<1.6){ const q=twClampXZ(P.x+3.4,P.z-.5,.8); m3.x=q.x; m3.z=q.z; m3.y=groundY(q.x,q.z); m3.f=-1; if(TW.d5mira){ TW.d5mira.tx=q.x; TW.d5mira.tz=q.z; } } }
+  cineSet((P.x+A.x)/2,P.y+1.1,P.z+4.2,(P.x+A.x)/2,P.y+1.4,P.z); yield d5Say('intro',9,'surprised'); yield d5Say('intro',10);
   d5Face('caotan',-1); yield d5Say('intro',11,'surprised'); d5Face('omar',1); yield d5Say('intro',12,'sad');
   // the line-up: a low wide shot, both sides
-  cineSet(P.x+.5,P.y+.5,P.z+4.5,mx,gy+1.8,mz); yield d5Say('intro',13); yield d5Say('intro',14,'angry'); if(Game.mira){ const m2=Game.mira; cineSet(m2.x+1,m2.y+1.3,m2.z+3.4,m2.x,m2.y+1.2,m2.z); yield d5Say('intro',15,'happy'); }
+  cineSet(P.x+.5,P.y+.5,P.z+4.5,mx,gy+1.8,mz); yield d5Say('intro',13); yield d5Say('intro',14,'angry'); if(Game.mira){ twCamOn(Game.mira,3.4,1); /* Ali stood between her and the lens */ yield d5Say('intro',15,'happy'); }
   yield* twCoopChoice(); A.hold=0; A.face=null;
   Sound.play('boss'); yield* d5Title(1,{x:cx,z:cz},{x:ox,z:oz});
   yield cineTo([P.x,P.y+8.2,P.z+15],[P.x,P.y,P.z],.7); TW.foes.forEach(T=>{ T.inv=false; }); D.noAttack=true; D.director=1; Cam.cine=null; Game.letterTo=0; P.inv=1; Game.state='play'; D.miraHold=0; }
