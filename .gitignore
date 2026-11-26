@@ -1,2 +1,4 @@
 __pycache__/
 dev/.cdn_cache/
+audio/v_new/
+dev/.tts/
