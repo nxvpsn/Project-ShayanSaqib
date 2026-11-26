@@ -9,6 +9,7 @@ Details for everything here: `dev/docs/ARCHITECTURE.md` (grep it, never read it 
 - Search with `grep -rn PAT dev/ext dev/game.js --exclude=02_shsprite.js`. Grep ARCHITECTURE.md for the file or system row you need.
 - Don't re-read a file you just edited, re-run passing tests, or explore code the request doesn't touch.
 - No subagents. The Node harness covers logic; `preview_cast.js` renders sprites to a PNG; the owner checks visuals live.
+- **Playtest rig `dev/play.js`** (ARCHITECTURE §7): probes (numbers from the real game in a headless browser: free of the screenshot rule, use them for cameras, visibility, damage, leftovers) and film strips/shots (images: the screenshot rule below applies).
 - **Screenshots (`dev/shot.js`, headless Playwright on the real game) only when the owner says "use screenshot method"**, and even then only if it is worth it for the task (a visual change where a still would catch the bug). If missing the bug and fixing it in a later prompt would cost fewer tokens, ask "are you sure?" first. Never unasked. At most 4 shots a push; looking at a shot costs ~1.5k tokens.
 
 ## Where things are

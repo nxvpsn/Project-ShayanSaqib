@@ -483,12 +483,16 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
   d5Bark('omarLC',7); for(let k=0;k<3;k++){ const p=twRandIn(3), a=rnd(0,6.28); twMiniHole(p.x,p.z,{r:.85,pull:4.4,range:6.5,dur:12.5,eat:1,dmg:4,vx:Math.cos(a)*1.3,vz:Math.sin(a)*1.3,grab:1}); }
   for(let t=0;t<12;t+=.9){ const P=Player; O.cast=.4; for(const s of [-.3,0,.3]) twAimBolt(O,'scythe',O.x,O.y+1.2,O.z,11,s,{col:0x8a3aff,dmg:2,life:3}); Sound.sfx('swing'); if(Math.floor(t/.9)%3===2) d5Getsuga(O,Math.atan2(P.z-O.z,P.x-O.x),{warn:.6,sp:14}); yield .9; }
   // D) the sky gate (a cutscene), then the climb
-  S.stop=1; F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
+  S.stop=1; d5StopAttacks(S); F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
   /* the climb: nothing hurts you on the way up (the rising void is gone: its disc read as an unexplained marker on the tree and its hits as damage from nowhere; before that he sniped from off screen) */ BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); for(const h of TW.hz.slice()) if(h&&h.hole){ try{ h.kill&&h.kill(); }catch(e){} h.kill=null; h.upd=()=>false; }
   twBark('omar',"Climb, little heroes. I will wait. I have all of eternity, and a very comfortable void.",true);
   for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(P.inv<.5) P.inv=.5; if(t>6&&t%7<.1) twBark('omar',["Still climbing? The void is getting bored.","Take your time. I am only ending the world."][Math.floor(t/7)%2],false); yield .1; }
   S.cam=null; F.pend=()=>d5PlatformCine(F,C,O); while(!S.done) yield .1; }
 
+// Everything still in the air when the limit cut's attack part ends is removed (seen in the playtest rig: Caotan's beam
+// froze during the tree cutscene, because hazards pause in a script, and then finished its sweep across the climb).
+// The tombstones stay: the cutscene throws them into the sky.
+function d5StopAttacks(S){ const keep=[]; try{ for(const T of (S.tombs||[])) if(T&&T.g&&T.g.userData&&T.g.userData.tw){ T.g.userData.tw=0; keep.push(T.g); } twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); }catch(e){ console.error('d5 stop',e); } keep.forEach(g=>{ g.userData.tw=1; }); }
 function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
   // he rises to eye level with where the platform will be; the void opens over him
   cineSet(c.x,gy+.8,c.z+9,O.x,O.y+2,O.z); twAnim(O,{hy:H+1.6,x:c.x},2.2,twEIO); yield cineTo([c.x+3,gy+2,c.z+13],[O.x,gy+H,O.z],2.2,twEIO);

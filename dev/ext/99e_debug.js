@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.70 (Nov 11): Omar redrawn (cowl, coat, feathered wings, a real scythe; horns in phase II, a bitten-moon halo and a starry void face in phase III). His phase III transition is rebuilt: chains pull the real moon out of the sky and he bites it apart. No boss mechanics changed.";
-const DBG_NEW=[];
+const DBG_PATCH="v1.71 (Nov 26): fixes found by filming the game. Duo: every attack still in the air is cleared before the tree is cut (Caotan's beam used to pause in the cutscene and finish its sweep across the climb). Omar's moon-eating shot reframed: all of him, the sky's moon behind his head. Nathan: long tips wrap, one OPEN label.";
+const DBG_NEW=['duo:omarlc','nathan:buster'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)
