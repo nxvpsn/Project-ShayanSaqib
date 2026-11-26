@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.74 (Nov 26): the Kill ending is grimmer. The silhouette scene is now a red night under a blood moon (eleven blows, black flecks, runs on the glass, a spreading pool, an aftermath shot), and the first-person beating has spray on every hit, a pool under his head and blood that lands on your view and runs. No boss mechanics changed.";
+const DBG_PATCH="v1.75 (Nov 26): duo, Omar's sky-gate cutscene: he now rises on screen under the black hole (his sprite stayed on the ground while the camera watched an empty sky), and Shayan's and Mira's reaction lines show them. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];

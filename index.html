@@ -12439,7 +12439,7 @@ function d5OmarLCClean(F){ const S=F.d5; if(!S) return; S.stop=1; (S.tombs||[]).
 function* d5OmarLCIntro(F,C,O,retry){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), B=twBounds(); F.d5lc='omar'; F.lc=1; F.director=0; F.busy=1; F.miraHold=1;
   twLCPrep(C); twLCPrep(O); C.down=O.down=0; C.inv=O.inv=true; const oz=Math.max(B.z0+1.5,c.z-8.5); Object.assign(O,{x:c.x,z:oz,lockF:1,f:1,hy:1.3}); Object.assign(C,{x:c.x-5,z:c.z-3,lockF:0});
   if(!retry){ Game.letterTo=1; cineSet(c.x,gy+.6,c.z+2,c.x,gy+2,oz); yield wait(.4);
-    yield d5Say('omarLC',0,'angry'); Sound.sfx('void'); Sound.sfx('drone'); grade.uniforms.tint.value.set(.82,.74,1.05); twAnim(O,{hy:6},2.2,twEIO);
+    yield d5Say('omarLC',0,'angry'); Sound.sfx('void'); Sound.sfx('drone'); grade.uniforms.tint.value.set(.82,.74,1.05); d5Lift(O); twAnim(O,{hy:6},2.2,twEIO);
     yield cineTo([c.x+2,gy+1.2,c.z+6],[c.x,gy+6,oz],2.2,twEIO); cineSet(C.x+1,gy+1.6,C.z+3,C.x,gy+1.6,C.z); yield d5Say('omarLC',1,'happy');
     cineSet(O.x+1.2,gy+6.4,O.z+4,O.x,gy+7,O.z); yield d5Say('omarLC',2,'sad'); cineSet(P.x+1,P.y+.5,P.z+3,P.x,P.y+2.4,P.z-2); yield d5Say('omarLC',3,'surprised'); if(A) yield d5Say('omarLC',4);
     twCutin('omar','KUROI KAIMON','Limit Break  ·  The Black Gate','#3a0a6a',2.2); impactFrame([[2,2],[1,2]]); shake(.8); yield wait(1.6); }
@@ -12498,14 +12498,16 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
 // froze during the tree cutscene, because hazards pause in a script, and then finished its sweep across the climb).
 // The tombstones stay: the cutscene throws them into the sky.
 function d5StopAttacks(S){ const keep=[]; try{ for(const T of (S.tombs||[])) if(T&&T.g&&T.g.userData&&T.g.userData.tw){ T.g.userData.tw=0; keep.push(T.g); } twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); }catch(e){ console.error('d5 stop',e); } keep.forEach(g=>{ g.userData.tw=1; }); }
+// while a script runs, a twin's height follows his hover (the fight's own update is paused then: on film he "rose" off screen while his sprite stayed on the ground and the camera watched an empty sky)
+function d5Lift(O){ if(O._lift) return; O._lift=1; Game.fxUpd.push(()=>{ if(!Game.script||!TW.fight){ O._lift=0; return false; } try{ O.y=groundY(O.x,O.z)+(O.hy||0); }catch(e){} return true; }); }
 function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
   // he rises to eye level with where the platform will be; the void opens over him
-  cineSet(c.x,gy+.8,c.z+9,O.x,O.y+2,O.z); twAnim(O,{hy:H+1.6,x:c.x},2.2,twEIO); yield cineTo([c.x+3,gy+2,c.z+13],[O.x,gy+H,O.z],2.2,twEIO);
+  d5Lift(O); cineSet(c.x,gy+.8,c.z+9,O.x,O.y+2,O.z); twAnim(O,{hy:H+1.6,x:c.x},2.2,twEIO); yield cineTo([c.x+3,gy+2,c.z+13],[O.x,gy+H,O.z],2.2,twEIO);
   yield d5Say('omarLC',8,'angry'); S.sky=d5SkyHole(O.x,gy+H+9,O.z); Sound.sfx('void'); Sound.sfx('skyopen'); shake(1.2); impactFrame([[1,2],[3,2]]); FX.flash=.6; grade.uniforms.flashCol.value.set(.6,.3,1);
   for(const T of S.tombs) if(!T.dead){ const t0=T; twAnim(t0.g.position,{y:gy+H+6,x:O.x,z:O.z},1.6,twEIn2); t0.g.rotation.x=1; }
   yield cineTo([c.x,gy+.6,c.z+7],[O.x,gy+H+7,O.z],1.8,twEIO); S.tombs.forEach(d5TombBreak);
-  cineSet(P.x+1.2,P.y+.6,P.z+3,P.x,P.y+3,P.z-3); yield d5Say('omarLC',9,'surprised');
-  if(mi){ cineSet(mi.x+1,mi.y+.8,mi.z+3,mi.x,mi.y+2.4,mi.z-2); yield d5Say('omarLC',10,'surprised'); }
+  /* the standard talking shots (seen on film: the old ones aimed over their heads, two lines spoken to an empty sky) */ twCamP(6.2,1.2); yield d5Say('omarLC',9,'surprised');
+  if(mi){ cineSet(mi.x+1,mi.y+1.8,mi.z+6,mi.x,mi.y+1.05,mi.z); yield d5Say('omarLC',10,'surprised'); }
   // Ali: a path up
   const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; cineSet(A.x+1.2,A.y+.7,A.z+3,A.x,A.y+1.8,A.z); yield wait(.3); yield d5Say('omarLC',11); }
   // THE TREE IS CUT INTO BEING. Nothing of it exists until a cut is made: every piece (a step's tears, a trunk blade) is
@@ -19476,7 +19478,7 @@ ui.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0)
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.74 (Nov 26): the Kill ending is grimmer. The silhouette scene is now a red night under a blood moon (eleven blows, black flecks, runs on the glass, a spreading pool, an aftermath shot), and the first-person beating has spray on every hit, a pool under his head and blood that lands on your view and runs. No boss mechanics changed.";
+const DBG_PATCH="v1.75 (Nov 26): duo, Omar's sky-gate cutscene: he now rises on screen under the black hole (his sprite stayed on the ground while the camera watched an empty sky), and Shayan's and Mira's reaction lines show them. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
@@ -19966,7 +19968,7 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.74';
+const GAME_VERSION='v1.75';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 
