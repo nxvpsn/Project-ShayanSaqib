@@ -26,7 +26,7 @@ function np1Clear(){ NP1.cur=null; for(const o of NP1.objs){ try{ o.kill&&o.kill
   const P=Player; if(P&&NP1.seq){ P.cineFly=false; P.cineAnim=null; P.inv=Math.min(P.inv,1); } NP1.seq=null; NP1.cam=null; NP1.lunge=0; NP1.pdPending=0; NP1.pdDone=0; NP1.alt=null; np1PdLook(false); if(typeof TPS!=='undefined') TPS.fast=null; if(typeof NBS!=='undefined') NBS.fixRow=null; if(NB){ NB.stunned=0; NB.hov=1.4; if(NB.mesh) NB.mesh.visible=true; } Game.letterTo=0; }
 function np1Obj(o){ NP1.objs.push(o); return o; }
 function np1Hint(key,text){ if(NP1.seen[key]) return; NP1.seen[key]=1; NP1.hint={text,t:0,dur:2.6}; }
-function np1Dir(){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz)||1; return [dx/d,dz/d,d]; }
+function np1Dir(){ const P=Player, dx=P.x-NB.x, dz=P.z-NB.z, d=Math.hypot(dx,dz); if(d<.05) return [0,1,0]; /* standing on the same spot: a direction is still needed (the cutscenes stage the two apart along it; with none, every shot pointed straight down. Seen in the rig) */ return [dx/d,dz/d,d]; }
 // a glint: a bright star that pops and fades (red = parry/dodge, blue = grab, white = cinematic)
 function np1Glint(x,y,z,col,s){ if(col===0xff2a3a||col===0xc0001c){ NP1.redEnd=Game.time+NP1_TELL+.12; NP1.tellT=Game.time; } /* a red strike is on its way: the first press after this tell is the parry (strict) */ const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:col,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); g.userData.temp=1; scene.add(g);
   const st=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); st.userData.temp=1; scene.add(st); const k={t:0}; s=s||3;
@@ -330,7 +330,8 @@ function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*NP1_ROAM.l
   Game.dmgNums.push({x:NB.x,y:NB.y+4.2,z:NB.z,n:'ASSAULT BOOST',t:0,col:'#9ff8ff'}); }
 function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
   NB.stunned=1; NB.dsh=null; NB.hov=.7; Game.letterTo=0; Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[3,2]]);
-  twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'His blade is spent',t:0};
+  { let ph=1; try{ ph=typeof npPh==='function'?npPh():1; }catch(e){} /* v1.85: this also ends phase III, where it still announced "Phase I cleared" and the warm-up taunt right before the finale (seen in the rig) */
+    if(ph>=3) Game.banner={name:'Phase III cleared',sub:'His blade is spent',t:0}; else { twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'His blade is spent',t:0}; } }
   // Ali's road ends here: a beat on the broken Nathan, then the finale (nbFinale: the last cut, the mended moon, his memories, the ending)
   NB.over=1; /* 59n's Overdrive is Shayan's phase IV, not this road's */ try{ tpsCursorFree(); }catch(e){}
   NB.pend=function*(){ yield wait(1.8); NB.alive=false; NB.inv=true; nbClear(); np1Clear(); NB.stunned=0; NB.hov=1.2; yield* nbFinale(); }; nbPend(); }

@@ -53,6 +53,12 @@ s = patch(s, "cineSet(st.x+.5,4.5,st.z+7,st.x,1.2,st.z-2); yield walkP(st.x,st.z
 s = patch(s, "cineSet(N.x+4,N.y+.6,10,N.x+.3,N.y+1,0);", "cineSet(N.x+4,N.y-.9,10,N.x+.3,N.y-.5,0);")
 s = patch(s, "cineSet(N.x+2.6,N.y+1.4,7,N.x+.4,N.y+1.6,0);", "cineSet(N.x+2.6,N.y+.3,7,N.x+.4,N.y+.5,0);")
 s = patch(s, "cineSet(N.x+3,N.y+.8,8,N.x+.3,N.y+1.2,0);", "cineSet(N.x+3,N.y-.5,8,N.x+.3,N.y-.1,0);")
+# v1.85: the phase II transition opened on a shot aimed over the baby's head (the old wolf's height)
+s = patch(s, "cineSet(Player.x,1.4,Player.z+6,B.x,3.5,B.z); B.anim='howl'; Sound.stop();", "kjIntroCam(0); B.anim='howl'; Sound.stop();", 2)
+# v1.85: "Impossible!" played on the leftover Getsuga shot (a cage on a hill, no Kojima in frame)
+s = patch(s, "B.anim='winded'; yield wait(.8);\n    yield say('grimmaw',\"Impossible!\",'angry');", "B.anim='winded'; yield wait(.4); kjIntroCam(0); yield wait(.4);\n    yield say('grimmaw',\"Impossible!\",'angry');", 1)
+# v1.85: hold on the baby before the pan, and pan to a wider view of the windows (it ended on a frame of flat red)
+s = patch(s, "yield cineTo([B.x,2,B.z+8],[B.x,8,B.z-6],2.2);", "yield wait(.9); yield cineTo([B.x,3.2,B.z+19],[B.x,5.6,B.z-6],2.2);", 2)
 # v1.84: Shayan's finisher on Kojima raises a dark crescent moon and leaves it in the sky. When a twin is about to betray
 # you in that same field, it read as Omar's eclipse turning up before his own Bankai (owner: "it shouldn't be there"), so
 # on those routes the finisher skips it and holds on Kojima instead of panning up to it.

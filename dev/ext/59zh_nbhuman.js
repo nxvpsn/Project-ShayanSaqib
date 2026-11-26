@@ -65,3 +65,10 @@ function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; nathanV2Paint(c,cx,by,f
 function npxInRav(x,z){ for(const R of NPX.rav){ const rx=x-R.x0, rz=z-R.z0, al=rx*R.ux+rz*R.uz, sp=-rx*R.uz+rz*R.ux; if(al>0&&al<R.len&&Math.abs(sp)<R.half+.4) return {R,sp}; } return null; }
 (function(){ const fe=npxFallEnd; npxFallEnd=function(){ const had=!!NPX.fall, r=fe.apply(this,arguments); try{ if(had){ NPX.safeT=Game.time+1.5; if(typeof Game!=='undefined'&&Game.fxUpd) Game.fxUpd.push(()=>{ try{ const P=Player; if(Game.state==='play'&&!P.cineFly){ for(let i=0;i<8;i++){ const q=npxInRav(P.x,P.z); if(!q) break; const sg=q.sp>=0?1:-1, out=q.R.half+1.2-Math.abs(q.sp); P.x+=-q.R.uz*sg*out; P.z+=q.R.ux*sg*out; } P.y=groundY(P.x,P.z); } }catch(e){} return false; }); } }catch(e){ console.error('rav clear',e); } return r; }; })();
 (function(){ const ru=npxRavUpd; npxRavUpd=function(dt){ if(NPX.safeT>Game.time&&!NPX.fall){ const P=Player, og=P.onGround; P.onGround=false; try{ return ru.apply(this,arguments); } finally{ P.onGround=og; } } return ru.apply(this,arguments); }; })();
+// Nathan on foot is 2.2 tall and stands on the ground, but the finale's talking shots were set for the mech (aimed 2.6 to 3 up):
+// his head sat under the text box for every line of the Save ending (seen in the rig). Any line he speaks while he is on foot
+// and the shot is on him is re-aimed at his head and shoulders.
+(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments);
+  try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'&&(d.who==='nathan'||d.who==='nathanraw')&&typeof NB!=='undefined'&&NB&&NB.mesh&&nbhOn()&&Cam.cine){ const c=Cam.cine, gy=groundY(NB.x,NB.z);
+      if(Math.hypot(c.lx-NB.x,c.lz-NB.z)<2.2&&Math.hypot(c.px-NB.x,c.pz-NB.z)<14&&NB.y-gy<1.2){ const sd=c.px<NB.x?-1:1; c.px=NB.x+sd*2.6; c.pz=NB.z+6.6; c.py=gy+2.0; c.lx=NB.x; c.lz=NB.z; c.ly=gy+1.5; } }
+    last=d; }catch(e){ console.error('nbh cam',e); } return r; }; })();

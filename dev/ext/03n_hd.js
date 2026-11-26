@@ -334,3 +334,70 @@ function drawAliKidV2(c,cx,by,f,s){ const K=2, o=hdBegin(c,cx,by,K); if(!o) retu
     if(i%5===3){ cSeg(p,-3,-17-hop,-18,-8-hop,2,'#0c0a10'); cSeg(p,-3,-19-hop,-16,-12-hop,1,'#3a3048'); p(-5,-19-hop,3,3,'#d8b46a'); }
   }catch(e){ console.error('kid v2',e); } finally{ hdEnd(c); } }
 drawAliKid=drawAliKidV2;
+
+// ================= HE'S DAY OLD KOJIMA (48 px per unit, about 105 px tall) =================
+// The same baby (03k): a head far too big, a side part with a baby curl, round glasses, a magnificent moustache, a tailored
+// suit over a diaper, a giant gold fountain pen. Same anims and flags (redEye, ap, flash); `s._eyes` stays in the old units.
+function drawKojimaV2(c,cx,by,f,s){ const K=1.5, o=hdBegin(c,cx,by,K); if(!o) return drawKojimaCast(c,cx,by,f,s);
+  try{ const X=o[0], Y=o[1], p=SH(c,X,Y,f), R=Math.round, t=s.t||0, a=s.anim||'idle', fl=s.flash>0, tk=cTalk('grimmaw'), E=(dx,dy,rx,ry,col)=>ell(c,X+dx*f,Y+dy,rx,ry,col);
+    const C=cFlash({suit:'#24263a',suitD:'#181a28',suitX:'#10121c',suitH:'#3a3e58',suitL:'#50557a',shirt:'#f2eee6',shirtS:'#cfc8bc',tie:'#c8202e',tieD:'#8a1420',tieH:'#e84a56',skin:'#f0c4a0',skinD:'#d8a07c',skinX:'#bc8460',skinH:'#ffe0c8',skinL:'#fff0e2',hair:'#14121a',hairH:'#34303e',hairL:'#565068',
+      mus:'#2a1a14',musH:'#4a3024',musL:'#6a4634',frame:'#101014',frameH:'#3a3a48',lens:'#cfe6ff',lensD:'#9ab8d8',gold:'#e0b040',goldD:'#a07a20',goldH:'#fff0a0',nib:'#2a2a30',diaper:'#f6f2ea',diaperS:'#d0cabe',shoe:'#121016',blush:'#f4a0a0'},fl);
+    const P0=cPose('idle',t,0);
+    if(a==='charge'||a==='run'){ Object.assign(P0,cPose('run',t*(a==='charge'?1.3:1.1),0)); P0.lean=a==='charge'?4:2; }
+    else if(a==='leapPrep'){ P0.b=4; P0.lean=2; P0.F=[[-5,0],[5,0]]; }
+    else if(a==='winded'){ P0.b=3; P0.lean=3; P0.F=[[-4,0],[4,0]]; P0.ua[0]=.6; P0.el[0]=.8; }
+    else if(a==='howl'){ P0.lean=-2; P0.ua=[-2.6,-2.4]; P0.el=[.3,.3]; P0.F=[[-4,0],[4,0]]; }
+    else if(a==='windup'){ P0.b=1; P0.lean=-2; P0.F=[[-5,0],[4,0]]; }
+    else if(a==='slash'){ P0.b=1; P0.lean=Math.round(-2+(s.ap!=null?s.ap:1)*4); P0.F=[[-5,0],[5,0]]; }
+    else if(tk){ P0.ua[0]=-.8+Math.sin(t*3)*.4; P0.el[0]=1.4; }
+    const ang=a==='windup'||a==='leapPrep'?-2.25:a==='slash'?(s.ap!=null?-2.25+s.ap*3.3:.9):a==='charge'?.12:a==='winded'?1.35:a==='howl'?-1.6:1.22;
+    const sa=Math.PI/2-ang; P0.ua[1]=sa*.55; P0.el[1]=sa*.35; const P=hdPose(P0,K);
+    const D={hip:18,torso:23,thigh:9,shin:9,uarm:10,farm:9,sep:6,ssep:13,neck:0}, J=cRig(D,P), hy=J.hy, sx=J.sx, sy=J.sy;
+    // far arm, stubby legs, polished shoes, the diaper under the jacket
+    { const A=J.A[0]; cArm(p,A,7,C.suitX,C.suitD,C.skinD,C.skinX); p(R(A.ex)-3,R(A.ey)-3,6,6,C.skinD); p(R(A.kx)-3,R(A.ky)+1,6,1,C.shirtS); }
+    const leg=(L,n)=>{ cSeg(p,L.x,L.y,L.kx,L.ky,9,n?C.suit:C.suitD,n?C.suitH:C.suit); cSeg(p,L.kx,L.ky,L.ex,L.ey-3,8,n?C.suit:C.suitD,n?C.suitH:C.suit); if(n) cSeg(p,L.x+2,L.y+2,L.kx+2,L.ky,1,C.suitL); const x=R(L.ex), y=R(L.ey);
+      p(x-5,y-6,9,2,n?C.suitD:C.suitX); p(x-5,y-5,14,5,C.shoe); p(x,y-5,6,1,'#5a5a66'); p(x+6,y-4,2,2,'#3a3a44'); p(x-5,y,15,1,'#000000'); };
+    leg(J.L[0],0); leg(J.L[1],1); p(J.hx-12,hy-5,24,8,C.diaper); p(J.hx-12,hy+2,24,1,C.diaperS); p(J.hx-12,hy-5,3,8,C.diaperS); p(J.hx+7,hy-3,5,3,'#9fd0ff'); p(J.hx+8,hy-3,2,1,'#ffffff'); p(J.hx-5,hy-1,1,3,C.diaperS); p(J.hx+1,hy-1,1,3,C.diaperS);
+    // the suit: a round little jacket with lapels, pinstripes, a pocket square, gold buttons and a lapel pin; shirt and tie
+    cPoly(p,[[sx-16,sy],[sx+16,sy],[J.hx+15,hy],[J.hx-15,hy]],C.suit); cPoly(p,[[sx+8,sy],[sx+16,sy],[J.hx+15,hy],[J.hx+7,hy]],C.suitD); cPoly(p,[[sx-16,sy],[sx-12,sy],[J.hx-12,hy-2],[J.hx-15,hy-2]],C.suitH);
+    for(const q of [-9,-5,5,11]) cSeg(p,sx+q,sy+3,J.hx+q*.95,hy-2,1,q>0?C.suitX:C.suitH); p(J.hx-15,hy-1,30,1,C.suitX);
+    cPoly(p,[[sx-5,sy],[sx+8,sy],[sx+2,sy+15]],C.shirt); cPoly(p,[[sx+4,sy],[sx+8,sy],[sx+2,sy+15]],C.shirtS); cPoly(p,[[sx-9,sy],[sx-5,sy],[sx+1,sy+15],[sx-7,sy+9]],C.suitH); cPoly(p,[[sx+8,sy],[sx+12,sy],[sx+10,sy+9],[sx+3,sy+15]],C.suitX);
+    p(sx,sy+2,4,13,C.tie); p(sx,sy+2,1,13,C.tieH); p(sx-1,sy+1,6,3,C.tieD); p(sx+1,sy+14,2,2,C.tie); p(sx-11,sy+5,3,3,C.gold); p(sx-11,sy+5,1,1,C.goldH); p(sx+9,sy+7,5,2,C.shirt); p(sx+10,sy+6,2,1,C.shirt); p(J.hx+2,hy-7,2,2,C.gold); p(J.hx+2,hy-12,2,2,C.gold);
+    // the head
+    const hx=R(J.headX)+3, hc=R(J.headY)-29+(a==='winded'?4:0), bl=cBlink(t,.6), laugh=a==='howl', mo=laugh?4:tk===2?2:a==='slash'||a==='charge'?1:0;
+    E(hx-1,hc+2,36,34,C.skinD); E(hx,hc,34,33,C.skin); E(hx+6,hc+24,20,6,C.skinD); E(hx-10,hc-12,12,9,C.skinH); E(hx-13,hc-15,5,3,C.skinL); E(hx-33,hc+2,5,7,C.skinD); E(hx-32,hc+2,3,4,C.skin); p(hx-34,hc+1,2,3,C.skinX);
+    E(hx-3,hc-22,30,12,C.hair); p(hx-32,hc-21,9,21,C.hair); p(hx-32,hc-2,6,4,C.hair); cPoly(p,[[hx-21,hc-33],[hx+24,hc-30],[hx+30,hc-15],[hx+12,hc-21],[hx-9,hc-19]],C.hair);
+    p(hx-9,hc-31,21,2,C.hairH); p(hx-4,hc-28,14,1,C.hairL); cSeg(p,hx-16,hc-29,hx-2,hc-22,1,C.hairH); cSeg(p,hx+10,hc-27,hx+24,hc-19,1,C.hairH); p(hx-30,hc-16,1,12,C.hairH); p(hx+3,hc-21,1,4,C.skinD);
+    p(hx+1,hc-41,3,8,C.hair); p(hx+4,hc-42,6,3,C.hair); p(hx+9,hc-41,3,5,C.hair); p(hx+6,hc-37,4,2,C.hair); p(hx+5,hc-42,4,1,C.hairH); /* the baby curl */
+    const gt=a==='winded'?3:0, ex1=hx+4, ex2=hx+22, ey=hc-1, red=!!s.redEye; s._eyes=[[ex1/K,ey/K],[ex2/K,(ey+gt)/K]];
+    for(const [x0,y0] of [[ex1,ey],[ex2,ey+gt]]){ E(x0,y0,9,8,C.frame); E(x0,y0,7,6,red?'#ff2a3a':C.lens); E(x0+1,y0+2,6,3,red?'#9a0a18':C.lensD);
+      if(red){ p(x0-2,y0-2,5,5,'#3a0006'); p(x0-1,y0-2,2,2,'#ffd0d0'); } else if(bl||laugh){ p(x0-4,y0,8,2,C.frame); p(x0-4,y0+2,2,1,C.frame); p(x0+2,y0+2,2,1,C.frame); } else { p(x0-2,y0-2,4,5,'#14121a'); p(x0-1,y0-2,2,2,'#ffffff'); p(x0+1,y0+2,1,1,'#5a6a8a'); }
+      p(x0-5,y0-5,3,1,'#ffffff'); p(x0-6,y0-4,1,2,'#ffffff'); p(x0-7,y0-7,6,1,C.frameH); }
+    p(ex1+8,ey-2,7,2,C.frame); p(ex1-13,ey-2,5,2,C.frame); if(a!=='winded'){ p(ex1-5,ey-12,9,3,C.hair); p(ex2-5,ey-13,9,3,C.hair); p(ex1+3,ey-13,2,1,C.hair); } else { p(ex1-5,ey-10,9,3,C.hair); p(ex2-3,ey-8,9,3,C.hair); }
+    E(hx+14,hc+8,3,3,C.skinD); p(hx+12,hc+4,2,5,C.skinH); E(hx-8,hc+10,5,3,C.blush); E(hx+30,hc+10,3,3,C.blush);
+    E(hx+7,hc+15,12,5,C.mus); E(hx+23,hc+15,10,5,C.mus); p(hx+13,hc+12,4,5,C.mus); p(hx-7,hc+13,5,3,C.mus); p(hx-9,hc+10,3,4,C.mus); p(hx-8,hc+8,2,2,C.mus); p(hx+32,hc+13,4,3,C.mus); p(hx+35,hc+10,3,4,C.mus); p(hx+36,hc+8,2,2,C.mus);
+    p(hx+1,hc+12,10,1,C.musH); p(hx+18,hc+12,9,1,C.musH); p(hx+3,hc+14,6,1,C.musL); p(hx+20,hc+14,5,1,C.musL);
+    if(mo){ const mh=R(mo*1.5)+2; p(hx+9,hc+20,12,mh,'#5a1a24'); p(hx+10,hc+20,10,2,'#ffffff'); if(mo>1) p(hx+12,hc+19+mh-2,6,2,'#c86a6a'); } else { p(hx+10,hc+21,9,1,'#9a5a44'); p(hx+12,hc+23,5,1,C.skinD); }
+    if(a==='winded'&&Math.sin(t*5)>0){ p(hx-21,hc-9+R((t*12)%9),3,5,'#9fd8ff'); p(hx+36,hc-12+R((t*9)%9),3,5,'#9fd8ff'); }
+    // near arm and the giant gold fountain pen
+    const A=J.A[1], L=81, ca=Math.cos(ang), sn=Math.sin(ang), ex=A.ex+ca*L, ey2=A.ey+sn*L;
+    cSeg(p,A.ex-ca*12,A.ey-sn*12,ex-ca*13,ey2-sn*13,7,C.goldD,C.gold); cSeg(p,A.ex+sn*1.5-ca*10,A.ey-ca*1.5-sn*10,ex-ca*16+sn*1.5,ey2-sn*16-ca*1.5,1,C.goldH);
+    cSeg(p,A.ex-ca*12,A.ey-sn*12,A.ex-ca*9,A.ey-sn*9,7,C.goldD); for(const k of [44,48]) cSeg(p,A.ex+ca*k,A.ey+sn*k,A.ex+ca*(k+1),A.ey+sn*(k+1),7,C.goldD);
+    cSeg(p,ex-ca*14,ey2-sn*14,ex-ca*5,ey2-sn*5,5,C.nib); cSeg(p,ex-ca*6,ey2-sn*6,ex,ey2,3,C.nib); cSeg(p,ex-ca*12,ey2-sn*12,ex-ca*2,ey2-sn*2,1,'#8a8e9c'); p(R(ex)-1,R(ey2)-1,3,3,'#c8ccd8');
+    const bx=A.ex+ca*30, byy=A.ey+sn*30; p(R(bx)-5,R(byy)-5,10,10,C.goldH); p(R(bx)-4,R(byy)-4,8,8,C.gold); p(R(bx)-3,R(byy)-3,6,6,C.tie); p(R(bx)-2,R(byy)-2,2,2,C.tieH);
+    if(a==='slash'&&s.ap!=null&&s.ap<.9) for(let i=1;i<14;i++){ const a0=ang-i*.08, a1=a0-.09, r=72; cSeg(p,A.ex+Math.cos(a0)*r,A.ey+Math.sin(a0)*r,A.ex+Math.cos(a1)*r,A.ey+Math.sin(a1)*r,i<5?6:i<9?4:3,'rgba(255,230,150,'+(.75-i*.05).toFixed(2)+')'); }
+    cArm(p,A,7,C.suitD,C.suit,C.skin,C.skinD); p(R(A.x)-5,R(A.y)-4,10,6,C.suit); p(R(A.x)-4,R(A.y)-4,6,1,C.suitH); p(R(A.ex)-3,R(A.ey)-3,7,7,C.skin); p(R(A.ex)+1,R(A.ey)-3,3,3,C.skinH); { const mx=R(A.kx+(A.ex-A.kx)*.6), my=R(A.ky+(A.ey-A.ky)*.6); p(mx-3,my-1,7,2,C.shirt); p(mx-1,my,2,1,C.gold); }
+  }catch(e){ console.error('kojima v2',e); } finally{ hdEnd(c); } }
+drawGrimmawCast=drawKojimaV2; drawGrimmawHD=drawKojimaV2;
+
+// ================= THE BABIES (64 px per unit): the hundred of Ali's ending =================
+function drawBabyV2(c,cx,by,f,s){ const K=2, o=hdBegin(c,cx,by,K); if(!o) return drawBabyCast(c,cx,by,f,s);
+  try{ const X=o[0], Y=o[1], p=SH(c,X,Y,f), E=(x,y,rx,ry,col)=>ell(c,X+x*f,Y+y,rx,ry,col), i=s.i||0, sk=['#e8b48a','#d89a70','#c8865e','#f0c8a0'][i%4], skS=cShade(sk,-.18), skH=cShade(sk,.2), hair=i%3===0?'#f0d070':'#1a1210', hairH=cShade(hair,.25), ears=i%2===0, band=['#9fd8ff','#ffb0d0','#c8f0a0','#ffe680'][i%4];
+    E(0,-8,10,8,'#d8d2c4'); E(0,-10,10,6,'#f4f0e8'); E(-3,-12,5,2,'#ffffff'); p(-8,-12,16,2,band); p(-8,-11,16,1,cShade(band,-.2)); p(-2,-13,4,4,band); p(-1,-12,2,2,'#ffffff'); p(-6,-5,3,1,'#d8d2c4'); p(2,-4,4,1,'#d8d2c4');
+    p(-12,-22,4,8,sk); p(8,-22,4,8,sk); p(-12,-24,4,2,skS); p(8,-24,4,2,skS); p(-12,-22,1,7,skH); p(8,-22,1,7,skH); p(-13,-25,2,2,sk); p(11,-25,2,2,sk);
+    E(0,-26,10,10,skS); E(-1,-28,9,9,sk); E(-4,-31,3,2,skH); p(-8,-38,18,6,hair); p(-9,-35,3,5,hair); p(-6,-38,8,1,hairH); if(i%5===0){ p(0,-42,4,6,hair); p(1,-43,2,1,hairH); }
+    if(ears){ p(-8,-44,6,8,hair); p(6,-44,6,8,hair); p(-7,-45,3,1,hair); p(7,-45,3,1,hair); p(-6,-42,2,4,'#f0a0b0'); p(8,-42,2,4,'#f0a0b0'); }
+    p(-5,-31,4,4,'#1a1210'); p(3,-31,4,4,'#1a1210'); p(-5,-31,2,2,'#ffffff'); p(3,-31,2,2,'#ffffff'); p(-2,-28,1,1,'#5a4a6a'); p(6,-28,1,1,'#5a4a6a');
+    if(i%7===0){ p(-1,-23,5,3,'#ff6a7a'); p(0,-23,3,1,'#ffffff'); } else { p(0,-22,4,1,'#a05040'); p(-1,-23,1,1,'#a05040'); p(4,-23,1,1,'#a05040'); } p(-8,-25,4,2,'#f6a0b0'); p(8,-25,3,2,'#f6a0b0'); if(i%9===0){ p(-10,-27,2,2,'#ff9ab0'); p(1,-20,2,3,'#9fd8ff'); }
+  }catch(e){ console.error('baby v2',e); } finally{ hdEnd(c); } }
+drawBaby=drawBabyV2;
