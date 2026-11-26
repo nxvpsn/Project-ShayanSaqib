@@ -9,7 +9,11 @@ Details for everything here: `dev/docs/ARCHITECTURE.md` (grep it, never read it 
 - Search with `grep -rn PAT dev/ext dev/game.js --exclude=02_shsprite.js`. Grep ARCHITECTURE.md for the file or system row you need.
 - Don't re-read a file you just edited, re-run passing tests, or explore code the request doesn't touch.
 - No subagents. The Node harness covers logic; `preview_cast.js` renders sprites to a PNG; the owner checks visuals live.
-- **Playtest rig `dev/play.js`** (ARCHITECTURE §7): probes (numbers from the real game in a headless browser: free of the screenshot rule, use them for cameras, visibility, damage, leftovers) and film strips/shots (images: the screenshot rule below applies).
+- **Playtest rig `dev/play.js`** (the real game in a headless browser, driven by a scenario file; ARCHITECTURE §7). The owner asked (Nov 26 2026) for it to be offered as a testing option even when usage matters, because it is cheap:
+  - **Probes** (`g.probe`: numbers read out of the running game, text only, a few hundred tokens): cameras, what is visible when, damage sources, leftovers, stuck states, timings.
+  - **Film strips** (`g.strip` / `g.film`: 12-20 frames of a cutscene or attack tiled into one image, ~2.5k tokens to look at) and single shots (`g.shot`, ~1.5k).
+  - **Suggest it, don't assume it:** when checking a fix or a change in the rig would be more efficient than the owner finding the problem on the live site and reporting it back, say so in one line (what you would probe or film, roughly what it costs) and use it once the owner agrees. Don't suggest it for logic-only changes (the Node harness covers those) or where only the owner can judge: real-GPU colours (the rig renders in software), feel, fairness of timings, audio.
+  - After using it, the report says what was checked in the rig and asks the owner to verify on the live site what the rig can't show.
 - **Screenshots (`dev/shot.js`, headless Playwright on the real game) only when the owner says "use screenshot method"**, and even then only if it is worth it for the task (a visual change where a still would catch the bug). If missing the bug and fixing it in a later prompt would cost fewer tokens, ask "are you sure?" first. Never unasked. At most 4 shots a push; looking at a shot costs ~1.5k tokens.
 
 ## Where things are

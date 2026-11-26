@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.71 (Nov 26): fixes found by filming the game. Duo: every attack still in the air is cleared before the tree is cut (Caotan's beam used to pause in the cutscene and finish its sweep across the climb). Omar's moon-eating shot reframed: all of him, the sky's moon behind his head. Nathan: long tips wrap, one OPEN label.";
-const DBG_NEW=['duo:omarlc','nathan:buster'];
+const DBG_PATCH="v1.72 (Nov 26): after Nathan's phase III on Ali's road you choose SAVE (the old ending) or KILL (a new ending film with a first-person beating: attack = left fist, block = right fist, LT/RT on a pad). Cutscene fixes from filming them: Kojima's crimson moon reveal, the twins' face shots, allies out of the lens, Hikari into Hamza's mouth, Nathan's arrival, Omar's title pan. No boss mechanics changed.";
+const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗'],['paul','Paul ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

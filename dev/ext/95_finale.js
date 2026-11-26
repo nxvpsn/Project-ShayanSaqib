@@ -15,7 +15,7 @@ function* twPaulIntro(){ const P=Player; yield fadeOut(); pfStart(); TWS.paulTri
   const Pa=PF.paul; Pa.x=PF_C.x; Pa.z=PF_C.z-1; P.hidden=false; Game.fade=1; cineSet(PF_C.x,14,PF_C.z+28,PF_C.x,0,PF_C.z); yield fadeIn(); Sound.sfx('drone'); Sound.play('requiem');
   const orb=twOrbit({x:PF_C.x,y:0,z:PF_C.z},24,9,-.6,.6,6,1); yield wait(1.4);
   yield say('paul',"Welcome to the Crunch. Population: everyone I ever wrote."); orb.dead=1;
-  const shot=(id,d)=>{ const m=pfMem(id); cineSet(m.x+.8,(m.y||0)+2.4,m.z+(d||7),m.x,(m.y||0)+1.4,m.z); };
+  const shot=(id,d)=>{ const m=pfMem(id), tall=id==='caotan'||id==='omar', h=tall?2.5:1.4; /* the twins are twice the others' height: the standard shot showed their legs */ cineSet(m.x+.8,(m.y||0)+h+1,m.z+(d||7)+(tall?3.5:0),m.x,(m.y||0)+h,m.z); };
   shot('grimmaw',9); yield say('grimmaw',"Where... is this? Why is the floor made of numbers?");
   shot('nathan',10); yield say('nathan',"My sensors can't read this place. It's like the whole universe was made in a single HTML file.");
   shot('caotan',8); yield say('caotan',"Is this a new route? Is it a DATING route?!",'happy');

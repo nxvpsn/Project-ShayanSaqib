@@ -46,7 +46,7 @@ function twUpdateAlly(A,dt,play){ const P=Player; A.t+=dt; A.flash=Math.max(0,A.
     else { tx=o.x+Math.cos(da)*4.5; tz=o.z+Math.sin(da)*3.5; }
     // don't crowd the player
     const pd=Math.hypot(tx-P.x,tz-P.z); if(pd<2.2){ tx+=(tx-P.x)/(pd||1)*2; tz+=(tz-P.z)/(pd||1)*2; } }
-  else { const side=A.who==='caotan'?-1:A.who==='omar'?1:0; tx=P.x-Math.cos(P.ang||0)*3+side*1.6; tz=P.z+1.4+side*.4; }
+  else { const side=A.who==='caotan'?-1:A.who==='omar'?1:0; const cut=!!(Game.script&&Cam.cine); /* in a cutscene they stand BEHIND you and wider: their normal slot is between you and the camera, and a tall ally's coat filled the foreground of every shot (seen in the playtest rig) */ tx=P.x-Math.cos(P.ang||0)*(cut?0:3)+side*(cut?2.3:1.6); tz=P.z+(cut?-1.3:1.4)+side*.4; }
   // dodge incoming projectiles by side-stepping
   if(play&&A.who!=='ali') for(const b of BOLTS){ if(b.dead||b.friendly) continue; const d=Math.hypot(b.x-A.x,b.z-A.z); if(d<2.6){ const sx=-b.vz, sz=b.vx, sl=Math.hypot(sx,sz)||1; tx=A.x+sx/sl*2.4; tz=A.z+sz/sl*2.4; break; } }
   const c=twClampXZ(tx,tz,.8); tx=c.x; tz=c.z; const dx=tx-A.x, dz=tz-A.z, d=Math.hypot(dx,dz), spd=A.who==='ali'?5.4:A.who==='omar'?4.6:3.8;

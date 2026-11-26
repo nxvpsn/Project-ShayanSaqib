@@ -38,6 +38,9 @@ s = patch(s, """as if too embarrassed to look at the others.");
 # 3) the twins react when Ali bisects Hamza
 s = patch(s, """yield say('ali',"...GG.");""", """yield say('ali',"...GG."); if(TW.allies.length) yield* twAllyReactHamza();""")
 # 4) allies bow out before Nathan's finale
+# Nathan's arrival: his talking shots stand back when he is the big 8-direction mech of Ali's road (seen in the playtest rig: at 6-8 units he was a blurry wall of pixels behind the text box)
+s = patch(s, "cineSet(ax-4,2.6,az+8,ax,2.8,az); Sound.play('requiem');", "nbTalkCam(0); Sound.play('requiem');")
+s = patch(s, "cineSet(ax-3,2.2,az+6,ax,3,az);", "nbTalkCam(1);", 2)
 s = patch(s, "function* nbFinale(){ const P=Player, mi=Game.mira;", "function* nbFinale(){ const P=Player, mi=Game.mira; twAllyLeave();")
 
 # ---- combat rework hooks (round 2) ----

@@ -10,7 +10,7 @@
 // scenario.js:  module.exports=async function(g){ await g.warp('sh_omar'); await g.ev("..."); await g.run(2);
 //                 const rows=await g.probe("({m:FX.flash,cam:[camera.position.x,camera.position.y]})",3,.25);
 //                 await g.strip('moon',9,.5); await g.shot('end'); };
-// g.ev(js) g.run(sec) g.until(cond,maxSec) g.probe(js,sec,every) g.shot(name) g.strip(name,n,every,{cols,cell}) g.warp(id)
+// g.ev(js) g.run(sec) g.until(cond,maxSec) g.probe(js,sec,every) g.shot(name) g.strip(name,n,every,{cols,cell}) g.film(name,{until,every,max,min}) g.warp(id)
 // g.log(...) ; dialogue is clicked through automatically while running (g.auto=false stops that).
 const fs=require('fs'), path=require('path'), http=require('http'), cp=require('child_process');
 const args=process.argv.slice(2), opt=(k,d)=>{ const i=args.indexOf('--'+k); return i>=0?args[i+1]:d; };
@@ -55,7 +55,26 @@ for i,im in enumerate(ims):
     im=im.resize((cw,ch),Image.LANCZOS); d=ImageDraw.Draw(im); d.rectangle([0,0,8+7*len(lab[i]),14],fill=(0,0,0)); d.text((3,2),lab[i],fill=(255,255,0))
     S.paste(im,((i%cols)*(cw+2),(i//cols)*(ch+2)))
 S.save(out)`,JSON.stringify(tmp),JSON.stringify(lab),String(cols),String(cw),f]); tmp.forEach(t=>fs.unlinkSync(t)); console.log('strip',f,lab.join(' | ')); return f; };
-  g.warp=async id=>{ await g.ev("Game.state='cut'; newGame();"); await g.run(.35); await g.ev("Game.script=null; Game.dlg=null; twUnlockAll(true);"); await g.ev(`run(function*(){ yield* twWarp('${id}'); })`);
+  // film: watch a stretch of the game and keep a frame whenever the picture has changed (new dialogue line, camera moved,
+  // or `every` seconds passed); ends when `until` is true (checked after `min` seconds) or after `max` seconds. Tiles of 12.
+  g.film=async(name,o)=>{ o=o||{}; fs.mkdirSync(OUT,{recursive:true}); const every=o.every||1.5, max=o.max||90, per=o.per||12, files=[], lab=[]; let sig='', since=99, t=0, part=0; const outs=[];
+    const SIG="(function(){ const c=camera.position, q=Cam.cine; return [Math.round(c.x/2.5),Math.round(c.y/2.5),Math.round(c.z/2.5),q?Math.round(q.lx/3)+','+Math.round(q.ly/3)+','+Math.round(q.lz/3):'',Game.state,Game.card?1:0,(typeof L!=='undefined'&&L&&(L.id||L.key))||'',Game.fadeTo>.5?1:0].join('|'); })()", gap=o.gap||.5;
+    const flush=async()=>{ if(!files.length) return; const f=path.join(OUT,name+(part?'_'+part:'')+'.png'); part++; await g.tile(files.splice(0),lab.splice(0),f,o.cols||4,o.cell||480); outs.push(f); };
+    for(;t<max;t+=.25){ const s=await g.ev(SIG); if((s!==sig&&since>=gap)||since>=every){ const f=path.join(OUT,`.${name}-${files.length}-${part}.png`); const gt=await frame(f); const d=await g.ev("(function(){ const d=Game.dlg; if(!d) return Game.script?'':'[play]'; let w='',t=''; for(const k in d){ const v=d[k]; if(typeof v==='string'){ if(v.length>t.length) t=v; else if(!w&&v.length<14) w=v; } } return w+': '+t.slice(0,40); })()"); files.push(f); lab.push('t='+gt.toFixed(1)+(d?' '+d:'')); sig=s; since=0; if(files.length>=per) await flush(); }
+      await g.run(.25); since+=.25; if(o.until&&t>=(o.min||1)&&await g.ev(o.until)) break; }
+    await flush(); console.log('film',name,'game s',t.toFixed(1),'->',outs.join(' ')); return outs; };
+  g.tile=async(files,lab,f,cols,cw)=>{ cp.execFileSync('python3',['-c',`
+import sys,json
+from PIL import Image,ImageDraw
+fs=json.loads(sys.argv[1]); lab=json.loads(sys.argv[2]); cols=int(sys.argv[3]); cw=int(sys.argv[4]); out=sys.argv[5]
+ims=[Image.open(f).convert('RGB') for f in fs]; ch=int(cw*ims[0].height/ims[0].width); rows=(len(ims)+cols-1)//cols
+S=Image.new('RGB',(cols*cw+(cols-1)*2,rows*ch+(rows-1)*2),(255,0,255))
+for i,im in enumerate(ims):
+    im=im.resize((cw,ch),Image.LANCZOS); d=ImageDraw.Draw(im); d.rectangle([0,0,min(cw,8+6*len(lab[i])),13],fill=(0,0,0)); d.text((3,1),lab[i],fill=(255,255,0))
+    S.paste(im,((i%cols)*(cw+2),(i//cols)*(ch+2)))
+S.save(out)`,JSON.stringify(files),JSON.stringify(lab),String(cols),String(cw),f]); files.forEach(t=>{ try{ fs.unlinkSync(t); }catch(e){} }); };
+  g.warp=async(id,film)=>{ await g.ev("Game.state='cut'; newGame();"); await g.run(.35); await g.ev("Game.script=null; Game.dlg=null; twUnlockAll(true);"); await g.ev(`run(function*(){ yield* twWarp('${id}'); })`);
+    if(film){ await g.film(film,{until:"Game.state==='play'&&!Game.script",every:2.5,max:400,min:1,per:20,cols:5,cell:384}); await g.ev("try{ NBS.ok=true; ALS.ok=true; }catch(e){}"); return true; }
     const ok=await g.until(id==='al_nathan'?"Game.state==='play'&&!Game.script&&!!NB&&NB.alive&&!NB.inv":"Game.state==='play'&&!Game.script",600); if(!ok) console.log('warp did not settle (state '+(await g.ev('Game.state'))+')'); await g.ev("try{ NBS.ok=true; ALS.ok=true; }catch(e){}"); return ok; };
   await g.ev("try{ Sound.unlock&&Sound.unlock(); if(Sound.muted===false&&Sound.toggleMute) Sound.toggleMute(); }catch(e){}");
   await g.ev("try{ Voice.play=()=>{}; Voice.bark=()=>{}; Voice.stop=()=>{}; Voice.prewarm=()=>{}; Object.defineProperty(Voice,'speaking',{get:()=>false,configurable:true}); Sound.play=()=>{}; }catch(e){ console.error('stub',e); }");

@@ -60,7 +60,7 @@ function twZeldaFrame(){ const Z=TWT.zc; if(!Z) return; Z.t+=1/60; const t=Z.t; 
   if(Z.bottom){ D.font=`italic 500 20px ${FB}`; D.fillStyle='#cfc4dc'; D.fillText(Z.bottom,UW/2+px*1.3,cy+52); }
   D.restore(); }
 // the camera drifts past the boss while the title shows
-function* twZeldaPan(T,dur){ const gy=groundY(T.x,T.z); cineSet(T.x-3.2,gy+1.5,T.z+8.5,T.x-1.2,gy+1.9,T.z); yield cineTo([T.x+3.2,gy+1.9,T.z+7.6],[T.x+1.2,gy+2.1,T.z],dur,t=>t); }
+function* twZeldaPan(T,dur){ const gy=Math.max(groundY(T.x,T.z),(+T.y||0)-1.3); /* follows a boss who is hovering high (seen in the playtest rig: Omar at 3.2 after eating the moon, the title pan showed his hem) */ cineSet(T.x-3.2,gy+1.5,T.z+8.5,T.x-1.2,gy+1.9,T.z); yield cineTo([T.x+3.2,gy+1.9,T.z+7.6],[T.x+1.2,gy+2.1,T.z],dur,t=>t); }
 // Omar's bar extends from empty when a phase starts (T.zBar = start time)
 (function(){ const bf=twBarFor; twBarFor=function(T,x,y,w,big){ if(!T||!T.zBar) return bf.apply(this,arguments); const g=Math.min(1,(performance.now()-T.zBar)/950), e=1-Math.pow(1-g,3);
     if(g>=1){ T.zBar=0; return bf.apply(this,arguments); }

@@ -22,14 +22,14 @@ hzgPhase2=function*(){ const G=TW.giant, P=Player, C=hzgAlly('caotan'), O=hzgAll
   if(C&&O){ C.x=G.x-5; C.z=G.z+2.5; O.x=G.x+5; O.z=G.z+2.5; hzGl(C.x-1,gy+1.5,C.z+3.4,C.x,gy+1.6,C.z);
     yield say('caotan',"He's down! Senpai, watch this! HIKARI-CHAN... FINAL BODY PILLOW SLAM!!",'angry');
     // the pillow spins across the field in slow motion... and he catches it in his teeth
-    const pil=new THREE.Mesh(new THREE.BoxGeometry(.6,1.9,.3),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0,sh:0,on:1};
-    Game.fxUpd.push(()=>{ if(!fl.on){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,G.x-.3,u)+rnd(-1,1)*fl.sh,lerp(gy+1.6,gy+2.7,u)+Math.sin(u*Math.PI)*3+rnd(-1,1)*fl.sh,lerp(C.z,G.z+.9,u)); pil.rotation.z=u*14+fl.sh*Math.sin(Game.time*40)*1.2; pil.rotation.x=u*5; if(u<1&&Math.random()<.5) FX.spawn(pil.position.x,pil.position.y,pil.position.z,0,.5,0,.4,0xffd0ec,.2,0,true); return true; });
+    G.faceF=C.x<G.x?-1:1; const M=()=>hzgMouthPt(G); /* he turns to the throw, and the pillow goes INTO his mouth (it used to land on the middle of his back: the old target was his centre) */ const pil=new THREE.Mesh(new THREE.BoxGeometry(.6,1.9,.3),new THREE.MeshLambertMaterial({color:0xffb0d8})); pil.userData.tw=1; scene.add(pil); const fl={u:0,sh:0,on:1};
+    Game.fxUpd.push(()=>{ if(!fl.on){ scene.remove(pil); return false; } const u=fl.u; pil.position.set(lerp(C.x,M().x,u)+rnd(-1,1)*fl.sh,lerp(gy+1.6,M().y,u)+Math.sin(u*Math.PI)*3+rnd(-1,1)*fl.sh,lerp(C.z,M().z,u)); pil.rotation.z=u*14+fl.sh*Math.sin(Game.time*40)*1.2; pil.rotation.x=u*5; if(u<1&&Math.random()<.5) FX.spawn(pil.position.x,pil.position.y,pil.position.z,0,.5,0,.4,0xffd0ec,.2,0,true); return true; });
     hzGl((C.x+G.x)/2,gy+3,G.z+12,(C.x+G.x)/2,gy+2.6,G.z); Sound.sfx('whoosh'); Game.slowT=Math.max(Game.slowT||0,.6); yield tween(fl,{u:1},1,t=>t*t*(3-2*t));
-    G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.8); FX.hitstop=.1; hzGl(G.x-1.5,gy+2.6,G.z+7,G.x-.3,gy+2.7,G.z);
+    G.mouth=1; Sound.sfx('chomp'); impactFrame([[1,2],[2,1]]); shake(.8); FX.hitstop=.1; hzGl(M().x+.4,M().y+.5,G.z+6.5,M().x,M().y,G.z);
     yield wait(.35); yield say('caotan',"...Hamza? Hamza, that's not food. That's my WIFE.",'surprised');
     // he shakes her like a dog with a toy: feathers, then red
-    fl.sh=.35; for(let i=0;i<7;i++){ Sound.sfx('chomp'); shake(.35); FX.burst(G.x-.3,gy+2.7,G.z+.9,14,0xffffff,5,.5,false); if(i>=2){ FX.burst(G.x-.3,gy+2.6,G.z+.9,18,i%2?0xb0101a:0x7a000c,6,.5,false); for(let k=0;k<6;k++) FX.spawn(G.x-.3+rnd(-.4,.4),gy+2.4,G.z+1,rnd(-2,2),rnd(-1,3),rnd(1,4),rnd(.5,1),0xb0101a,.3,14,false); } if(i===4){ impactFrame([[3,2],[1,1]]); FX.flash=.4; grade.uniforms.flashCol.value.set(.8,.05,.1); Sound.sfx('gore'); } yield wait(.16); }
-    fl.on=0; Game.pigDrip=1; G.mouth=.2; Sound.sfx('gore'); yield wait(.3);
+    fl.sh=.35; for(let i=0;i<7;i++){ Sound.sfx('chomp'); shake(.35); FX.burst(M().x,M().y,M().z,14,0xffffff,5,.5,false); if(i>=2){ FX.burst(M().x,M().y-.1,M().z,18,i%2?0xb0101a:0x7a000c,6,.5,false); for(let k=0;k<6;k++) FX.spawn(M().x+rnd(-.4,.4),M().y-.3,M().z+.1,rnd(-2,2),rnd(-1,3),rnd(1,4),rnd(.5,1),0xb0101a,.3,14,false); } if(i===4){ impactFrame([[3,2],[1,1]]); FX.flash=.4; grade.uniforms.flashCol.value.set(.8,.05,.1); Sound.sfx('gore'); } yield wait(.16); }
+    fl.on=0; G.faceF=0; Game.pigDrip=1; G.mouth=.2; Sound.sfx('gore'); yield wait(.3);
     hzGl(O.x+.8,gy+1.5,O.z+2.6,O.x,gy+1.7,O.z); yield say('omar',"...Caotan. The pillow is bleeding. Pillows do not bleed. What was IN that pillow?");
     hzGl(C.x-.8,gy+1.5,C.z+2.6,C.x,gy+1.6,C.z); yield say('caotan',"...Love.",'sad'); Sound.sfx('heartbeat'); yield wait(.4); yield say('caotan',"HIKARI-CHAAAAAN!!",'angry'); }
   // gulp. The pink takes him: he rises, swells, and the roar throws the twins back
@@ -83,3 +83,7 @@ const HZG_CHAT=[['hamza_stan_420','POG'],['caotan_official','report this stream'
 // Hamza's cutscene shots, re-posed for 2D sprites: every shot keeps what it looks at but sits on the gameplay side (+z) at the
 // fight camera's pitch, 8+ back: a billboard seen from low and close reads as a flat card
 function hzGl(px,py,pz,lx,ly,lz){ const ox=px-lx, oz=pz-lz, d=Math.max(8,Math.hypot(ox,oz)*1.25), x=lx+clamp(ox,-d*.45,d*.45), z=lz+Math.sqrt(Math.max(1,d*d-clamp(ox,-d*.45,d*.45)**2)); return twCineGlide(x,ly+d*.5,z,lx,ly,lz,4); }
+
+// the giant's mouth in the world (from drawGiantPigCast: the jaw is 62 px ahead of his centre and 44 px up, 16 px a unit, times his size)
+function hzgMouthPt(G){ const f=G.faceF||(Player.x>G.x?1:-1), k=(G.gs||.55)/16; return {x:G.x+f*62*k,y:(G.y||0)+44*k,z:G.z+.35}; }
+(function(){ const hd=hzgDraw; hzgDraw=function(){ const r=hd.apply(this,arguments); try{ const G=TW.giant, H=Game.hamza; if(G&&H&&G.faceF) H.f=G.faceF; }catch(e){} return r; }; })();

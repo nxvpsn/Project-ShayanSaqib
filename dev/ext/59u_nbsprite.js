@@ -40,3 +40,7 @@ TW_SFX.qbRoar=function(){ Sound.hiss(1400,.26,.3,'bandpass'); Sound.hiss(5200,.1
 // afterimages: a still of the current frame instead of the old art
 (function(){ const na=nbAfterimage; nbAfterimage=function(){ if(nbsOn()){ if(Game.time-NBS.lastGhost<.035) return; NBS.lastGhost=Game.time; } /* a thinner trail over the longer flights */ const r=na.apply(this,arguments); try{ if(nbsOn()&&NBS.cv&&NBG.length){ const g=NBG[NBG.length-1].m, cv=document.createElement('canvas'); cv.width=NBS.CW; cv.height=NBS.CH;
       cv.getContext('2d').drawImage(NBS.cv,0,0); const t=new THREE.CanvasTexture(cv); t.magFilter=t.minFilter=THREE.NearestFilter; t.generateMipmaps=false; g.material.map=t; g.material.needsUpdate=true; g.scale.x=1; } }catch(e){} return r; }; })();
+
+// Nathan's talking shot in his arrival cutscene (build.py patches the base script to call it): the old distances for the
+// small mech, a wide one for the big sprite of Ali's road.
+function nbTalkCam(side){ if(!NB) return; let big=false; try{ big=nbsOn(); }catch(e){} if(big) cineSet(NB.x-4.5,NB.y+.6,NB.z+16,NB.x,NB.y+1.5,NB.z); /* aimed low so he stands above the text box */ else if(side) cineSet(NB.x-3,2.2,NB.z+6,NB.x,3,NB.z); else cineSet(NB.x-4,2.6,NB.z+8,NB.x,2.8,NB.z); }

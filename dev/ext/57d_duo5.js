@@ -317,13 +317,23 @@ function* twDuo3Trans1(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   C.form=O.form=2; C.tint=0xffe8f4; }
 
 // ---------- the betrayal: the twins turn, time stops, Ali walks in and cuts Mira out of her cage ----------
+// A talking shot of a twin, on his FACE: the twins are tall and Omar hovers, so the old chest-height close-ups (2.6 away)
+// showed a coat hem or a pair of shoes (seen in the playtest rig). Works for the ally and for the foe.
+function d5Face(who,side,dist){ const o=TW.foes.find(T=>T.who===who&&!T.gone)||TW.allies.find(a=>a.who===who&&!a.gone); if(!o) return false; const sc=o.scale||1, h=2.15*sc, d=(dist||5)*sc; side=side||1; /* h = his eyes (measured on film); the shot looks half a unit below them so the face sits in the upper third, clear of the text box */
+  cineSet(o.x+side*.9,o.y+h-.3,o.z+d,o.x,o.y+h-.55,o.z); return true; }
+// Every line a twin speaks: if the shot is ON him (the cine camera looks at his spot) and it is a close one, it is re-aimed at
+// his face from far enough to hold his head and shoulders. One rule for every script instead of fixing fifty hand-set shots.
+function twFaceFix(who){ if(who!=='caotan'&&who!=='omar') return; const c=Cam.cine; if(!c||!Game.script) return; const o=TW.foes.find(T=>T.who===who&&!T.gone&&!T.hide)||TW.allies.find(a=>a.who===who&&!a.gone&&!a.hidden); if(!o) return;
+  if(Math.hypot(c.lx-o.x,c.lz-o.z)>1.7) return; const sc=o.scale||1, head=o.y+2.15*sc, need=5*sc; let ux=c.px-o.x, uz=c.pz-o.z; const d=Math.hypot(ux,uz)||1; if(d>need*1.5) return; ux/=d; uz/=d; const D=Math.max(d,need);
+  c.px=o.x+ux*D; c.pz=o.z+uz*D; c.py=head-.3; c.lx=o.x; c.lz=o.z; c.ly=head-.55; }
+(function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments); try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say') twFaceFix(d.who); last=d; }catch(e){ console.error('face',e); } return r; }; })();
 function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letterTo=1; P.inv=99; const C=TW.allies.find(a=>a.who==='caotan'), O=TW.allies.find(a=>a.who==='omar');
   const cx=C?C.x:P.x-2, cz=C?C.z:P.z-2, ox=O?O.x:P.x+2, oz=O?O.z:P.z-2, mx=(cx+ox)/2, mz=(cz+oz)/2, gy=P.y;
   // a crane shot down from the eclipse onto the two of them
   cineSet(mx,gy+11,mz+14,mx,gy+5,mz); yield cineTo([mx,gy+2.4,mz+7],[mx,gy+1.7,mz],2,twEIO);
-  yield d5Say('intro',0,'happy'); cineSet(ox+.8,gy+1.7,oz+2.8,ox,gy+1.8,oz); yield d5Say('intro',1);
+  yield d5Say('intro',0,'happy'); d5Face('omar',1); yield d5Say('intro',1);
   cineSet(P.x-1,P.y+1.2,P.z+3,P.x,P.y+1.4,P.z); yield d5Say('intro',2,'angry');
-  cineSet(cx-.8,gy+1.7,cz+2.6,cx,gy+1.7,cz); yield d5Say('intro',3,'happy'); cineSet(ox+.8,gy+1.4,oz+2.6,ox,gy+1.9,oz); yield d5Say('intro',4);
+  d5Face('caotan',-1); yield d5Say('intro',3,'happy'); d5Face('omar',1); yield d5Say('intro',4);
   const cage=Game.actors&&Game.actors.find(a=>a.kind==='cage'); if(mi){ cineSet(mi.x+1.4,mi.y+1.4,mi.z+3.4,mi.x,mi.y+1.2,mi.z); yield d5Say('intro',5,'angry'); }
   twClearAllies(); twDuoStart(cx,cz,ox,oz); const D=TW.fight; D.noAttack=true; Game.state='cut'; D.miraHold=1;
   for(const T of TW.foes){ T.inv=true; } yield wait(.3); Sound.sfx('charge'); Sound.sfx('drone');
@@ -336,7 +346,7 @@ function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letter
     for(let i=0;i<5;i++){ twTinyJC(cx2,groundY(cx2,cz2)+1.2,cz2,160); Sound.sfx('swing'); yield wait(.06); } JC.flash=.4; if(cage) cage.open=1; Sound.sfx('shatter'); FX.burst(cx2,groundY(cx2,cz2)+1,cz2,30,0xb0a080,4,.4,false);
     yield d5Say('intro',7); zwEnd(); yield d5Say('intro',8,'happy'); aliGhost(A.x,A.y,A.z); A.x=P.x+1.6; A.z=P.z+.8; Sound.sfx('dash'); } else zwEnd();
   d5MiraOn(); D.miraHold=1; cineSet((P.x+A.x)/2,P.y+1.1,P.z+4.2,(P.x+A.x)/2,P.y+1.4,P.z); yield d5Say('intro',9,'surprised'); yield d5Say('intro',10);
-  cineSet(cx-.6,gy+1.6,cz+2.4,cx,gy+1.6,cz); yield d5Say('intro',11,'surprised'); cineSet(ox+.6,gy+1.5,oz+2.4,ox,gy+1.8,oz); yield d5Say('intro',12,'sad');
+  d5Face('caotan',-1); yield d5Say('intro',11,'surprised'); d5Face('omar',1); yield d5Say('intro',12,'sad');
   // the line-up: a low wide shot, both sides
   cineSet(P.x+.5,P.y+.5,P.z+4.5,mx,gy+1.8,mz); yield d5Say('intro',13); yield d5Say('intro',14,'angry'); if(Game.mira){ const m2=Game.mira; cineSet(m2.x+1,m2.y+1.3,m2.z+3.4,m2.x,m2.y+1.2,m2.z); yield d5Say('intro',15,'happy'); }
   yield* twCoopChoice(); A.hold=0; A.face=null;

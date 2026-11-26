@@ -11,6 +11,9 @@ TW_SFX.splash=function(){ Sound.hiss(900,.5,.22,'bandpass'); Sound.hiss(2600,.35
 // his eyes in the world (from the cells drawKojimaCast recorded: offsets in sprite pixels, 28 px per unit)
 function kjEyeWorld(B){ const f=B.f||1, E=B._eyes||[[3,-90],[15,-90]], y0=B.y+(B.hover||0);
   return E.map(([dx,dy])=>({x:B.x+(dx+2)*f/28, y:y0-(dy-1)/28, z:B.z+.06})); }
+// Whoever fights beside you lands ahead of you and off to the sides when the arena changes (seen in the playtest rig: they
+// landed between you and the low cutscene camera, and an ally's back filled a third of the reveal).
+function kjAlliesAside(){ try{ const P=Player; let i=0; for(const A of (TW.allies||[])){ if(!A||A.gone) continue; const s=i%2?1:-1, k=Math.floor(i/2); i++; A.x=P.x+s*(3.6+k*1.5); A.z=P.z-4.5; A.y=groundY(A.x,A.z); A.vx=A.vz=0; A.f=-s; A.hold=1; A._kjHold=1; } /* held there until the cutscene is over: left alone they walked straight back to their slot behind you, 2 units from the lens */ Game.fxUpd.push(()=>{ if(Game.script){ /* the fairy pig hovers off to the far side too (he drifted across the lens and over Kojima) */ const H=Game.hamza; if(H&&H.mode==='follow'){ H.x=P.x+4.4; H.z=P.z-5.2; } return true; } for(const A of (TW.allies||[])) if(A&&A._kjHold){ A._kjHold=0; A.hold=0; } return false; }); }catch(e){ console.error('kj allies',e); } }
 function* kjToLake(){ const B=Game.boss; if(!B){ enterArena('lake',2); return; }
   B.redEye=1; Sound.sfx('heartbeat'); const eyes=kjEyeWorld(B), gl=[];
   try{ for(const e of eyes){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff1a2a,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0})); s.position.set(e.x,e.y,e.z); s.scale.set(.1,.1,1); s.userData.temp=1; scene.add(s); gl.push(s); } }catch(e){}
@@ -22,7 +25,7 @@ function* kjToLake(){ const B=Game.boss; if(!B){ enterArena('lake',2); return; }
   KJT={mode:'iris',t:-.15}; yield cineTo([e.x,e.y,e.z+1.6],[e.x,e.y,e.z],1.0,t=>t*t*t); /* the iris is full before the camera gets near his pupil pixels (they blew up into a block that hung on screen) */
   Sound.sfx('drone'); shake(.3); yield wait(.5);
   // the pupil opens on the blood lake
-  glow.done=1; B.redEye=0; grade.uniforms.red.value=0; enterArena('lake',2); cineSet(60,1.2,70,60,10,20); Game.fade=0;
+  glow.done=1; B.redEye=0; grade.uniforms.red.value=0; enterArena('lake',2); kjAlliesAside(); cineSet(60,1.2,70,60,10,20); Game.fade=0;
   const m=L.moon?L.moon.position:{x:60,y:14,z:-110}; KJT={mode:'reveal',t:0,wx:m.x,wy:m.y,wz:m.z}; Sound.sfx('crossboom'); yield wait(1.1); KJT=null; }
 function* kjToFlowers(){ const B=Game.boss, P=Player;
   if(B){ cineSet(B.x+.5,2.4,B.z+9,B.x,1.6,B.z); B.anim='leapPrep'; yield wait(.35); const y0=B.y; yield tween(B,{y:y0+1.4},.28,t=>1-(1-t)*(1-t)); B.anim='slash'; yield tween(B,{y:y0},.12,t=>t*t); }
@@ -36,9 +39,9 @@ function kjDrawIris(k){ const cx=UW/2, cy=UH/2, R=Math.hypot(UW,UH)*.62*(1-Math.
   D.save(); D.beginPath(); D.arc(cx,cy,Math.max(1,R),0,7); D.fillStyle='#ff2a3a'; D.fill();
   for(let i=0;i<48;i++){ const a=i/48*6.283, w=.03; D.beginPath(); D.moveTo(cx+Math.cos(a)*pr,cy+Math.sin(a)*pr); D.lineTo(cx+Math.cos(a-w)*R*.97,cy+Math.sin(a-w)*R*.97); D.lineTo(cx+Math.cos(a+w)*R*.97,cy+Math.sin(a+w)*R*.97); D.closePath(); D.fillStyle=i%2?'#a00a1c':'#ff6a6a'; D.fill(); }
   D.lineWidth=Math.max(2,R*.05); D.strokeStyle='#4a0008'; D.beginPath(); D.arc(cx,cy,Math.max(1,R),0,7); D.stroke();
-  D.beginPath(); D.arc(cx,cy,Math.max(1,pr),0,7); D.fillStyle='#14000a'; D.fill(); D.fillStyle='rgba(255,220,220,.8)'; D.beginPath(); D.arc(cx-pr*.35,cy-pr*.35,Math.max(1,pr*.12),0,7); D.fill(); D.restore(); }
+  D.beginPath(); D.arc(cx,cy,Math.max(1,pr),0,7); D.fillStyle='#14000a'; D.fill(); D.fillStyle='rgba(255,220,220,'+(.8*Math.max(0,1-k*k*1.4)).toFixed(3)+')'; /* the glint fades as the pupil swallows the screen: full size it hung at the top edge like a second moon */ D.beginPath(); D.arc(cx-pr*.35,cy-pr*.35,Math.max(1,pr*.12),0,7); D.fill(); D.restore(); }
 function kjDrawReveal(k){ const q=toScreen(KJT.wx,KJT.wy,KJT.wz), cx=q[0], cy=q[1], R=Math.hypot(UW,UH)*1.1*(1-Math.pow(1-k,2.5));
-  D.save(); D.beginPath(); D.rect(0,0,UW,UH); D.arc(cx,cy,Math.max(1,R),0,7,true); D.fillStyle='#14000a'; D.fill('evenodd');
+  D.save(); D.beginPath(); D.rect(0,0,UW,UH); D.moveTo(cx+Math.max(1,R),cy); /* a new subpath: without it the path ran a line from the screen's corner to the circle and the even-odd fill painted a dark wedge across the reveal */ D.arc(cx,cy,Math.max(1,R),0,Math.PI*2,true); D.closePath(); D.fillStyle='#14000a'; D.fill('evenodd');
   D.lineWidth=Math.max(3,26*(1-k)); D.strokeStyle='#ff2a3a'; D.beginPath(); D.arc(cx,cy,Math.max(1,R),0,7); D.stroke(); D.restore(); }
 function kjDrawSplash(){ const T=KJT, k=Math.min(1,T.t/1.25), R=Math.hypot(UW,UH)*1.15*(1-Math.pow(1-k,2.2)); if(!T.snap) return;
   if(!T.work){ T.work=document.createElement('canvas'); T.work.width=T.snap.width; T.work.height=T.snap.height; T.drops=[]; T.spk=[]; for(let i=0;i<36;i++) T.spk.push(.75+Math.random()*.55);

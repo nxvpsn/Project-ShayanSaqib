@@ -281,5 +281,11 @@ function twEndFight(keepFoes){ TW.fight=null; twClearHz(); if(!keepFoes) twClear
 })();
 // ---------- cutscene framing: medium shots, never cramped ----------
 function twCamT(T,dist,side){ dist=dist||7.5; side=side==null?1.2:side; const y=T.y!=null?T.y:groundY(T.x,T.z); cineSet(T.x+side,y+2.2,T.z+dist,T.x,y+1.6,T.z); }
-function twCamP(dist,side){ const P=Player; dist=dist||6.2; side=side==null?1:side; cineSet(P.x+side,P.y+1.8,P.z+dist,P.x,P.y+1.05,P.z); }
+// the hero's talking shot. If a foe or an ally stands in the line between the lens and the hero (seen in the playtest rig:
+// Omar's coat hanging across Shayan's reaction shots), the camera swings round to the first clear side.
+function twCamP(dist,side){ const P=Player; dist=dist||6.2; side=side==null?1:side; const s1=side||1; let pick=[side,dist];
+  try{ const obs=[...(TW.foes||[]),...(TW.allies||[])].filter(o=>o&&!o.hide&&!o.gone&&!o.hidden&&Math.hypot(o.x-P.x,o.z-P.z)>.9);
+    const blocked=(sx,d)=>obs.some(o=>{ const ax=P.x+sx, az=P.z+d, vx=P.x-ax, vz=P.z-az, L2=vx*vx+vz*vz||1, t=Math.max(0,Math.min(1,((o.x-ax)*vx+(o.z-az)*vz)/L2)); return Math.hypot(o.x-(ax+vx*t),o.z-(az+vz*t))<1.25*(o.scale||1); });
+    for(const c of [[side,dist],[-s1,dist],[s1*3.4,dist*.9],[-s1*3.4,dist*.9],[s1*5.5,dist*.6],[-s1*5.5,dist*.6]]) if(!blocked(c[0],c[1])){ pick=c; break; } }catch(e){}
+  cineSet(P.x+pick[0],P.y+1.8,P.z+pick[1],P.x,P.y+1.05,P.z); }
 function twCam2(a,b,dist,side){ dist=dist||10.5; side=side||0; const mx=(a.x+b.x)/2, mz=(a.z+b.z)/2, my=((a.y!=null?a.y:0)+(b.y!=null?b.y:0))/2; cineSet(mx+side,my+2.4,mz+dist,mx,my+1.4,mz); }
