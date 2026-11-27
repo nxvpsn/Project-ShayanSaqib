@@ -16450,11 +16450,11 @@ function nbhDraw(){ if(!NBH.cv) nbhInit(); const P=Player, c=NBH.c, r=nbsRow();
   try{ if(NB.mat.color.getHex()===0xffb4b0) NB.mat.color.setHex(0xffffff); }catch(e){} /* phase III tints the mech pink: the pilot keeps his own colours */
   try{ const gy=groundY(NB.x,NB.z); if(NP1.alt==null&&NB.y-gy<1) NB.mesh.position.y=gy; if(NB.sh) NB.sh.scale.set(.5,.5,1); }catch(e){} /* feet on the ground, no hover bob */
   if(NB.stunned){ NB.mesh.position.x+=rnd(-.03,.03); }
-  const idle=r===0&&!NB.stunned, key=NBH.f+','+r+(NBS.fixRow!=null?'f':'')+','+(NB.stunned?1:0)+','+(idle||r>=13?Math.floor(NBS.clock*10):0)+','+(NB.flash>0?1:0); if(key===NBH.key) return; NBH.key=key;
-  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-3,NBH.f,nbhPose(r,NB.stunned,NBS.fixRow!=null),!idle,NB.flash>0);
+  const OV=NBH.over||null; /* a cutscene's own pose (59zk): {id,pose,blade,gun,face,anim} */ if(OV&&OV.f) NBH.f=OV.f; const idle=(r===0&&!NB.stunned)||(OV&&OV.anim), key=(OV?OV.id+'|':'')+NBH.f+','+r+(NBS.fixRow!=null?'f':'')+','+(NB.stunned?1:0)+','+(idle||r>=13?Math.floor(NBS.clock*10):0)+','+(NB.flash>0?1:0); if(key===NBH.key) return; NBH.key=key;
+  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-3,NBH.f,OV||nbhPose(r,NB.stunned,NBS.fixRow!=null),OV?!OV.anim:!idle,NB.flash>0);
   if(NB.flash>0){ c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(0,0,NBH.W,NBH.H); c.globalCompositeOperation='source-over'; }
   NBH.tex.needsUpdate=true; }
-function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; nathanV2Paint(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still});
+function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; nathanV2Paint(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still,face:S.face});
   const J=out.J; if(!J) return; const p=SH(c,cx,by,f), g=J.A[0], h=J.A[1], R=Math.round;
   if(S.gun){ const gx=R(g.ex), gyy=R(g.ey); if(S.aim){ p(gx,gyy-3,11,3,'#20222e'); p(gx,gyy-3,11,1,'#3a3e50'); p(gx,gyy,3,5,'#20222e'); p(gx+3,gyy,2,2,'#14161e'); p(gx+9,gyy-4,2,1,'#ffd27a'); if(fire){ p(gx+11,gyy-5,6,6,'#fff2c0'); p(gx+17,gyy-4,5,4,'#ffb04a'); p(gx+12,gyy-3,4,2,'#ffffff'); } } else { p(gx-2,gyy,3,9,'#20222e'); p(gx-2,gyy,6,3,'#20222e'); p(gx-2,gyy,6,1,'#3a3e50'); } }
   if(S.blade!=null){ const hx=h.ex, hy=h.ey, sa=Math.sin(S.blade), ca=Math.cos(S.blade), L=29; p(R(hx)-2,R(hy)-2,5,5,'#c8d4e0'); p(R(hx)-1,R(hy)-1,3,3,'#eef4fa');
@@ -16492,7 +16492,7 @@ function npxInRav(x,z){ for(const R of NPX.rav){ const rx=x-R.x0, rz=z-R.z0, al=
 // his head sat under the text box for every line of the Save ending (seen in the rig). Any line he speaks while he is on foot
 // and the shot is on him is re-aimed at his head and shoulders.
 (function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments);
-  try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'&&(d.who==='nathan'||d.who==='nathanraw')&&typeof NB!=='undefined'&&NB&&NB.mesh&&nbhOn()&&Cam.cine){ const c=Cam.cine, gy=groundY(NB.x,NB.z);
+  try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'&&(d.who==='nathan'||d.who==='nathanraw')&&typeof NB!=='undefined'&&NB&&NB.mesh&&nbhOn()&&Cam.cine&&!NKL.on){ const c=Cam.cine, gy=groundY(NB.x,NB.z);
       if(Math.hypot(c.lx-NB.x,c.lz-NB.z)<2.2&&Math.hypot(c.px-NB.x,c.pz-NB.z)<14&&NB.y-gy<1.2){ const sd=c.px<NB.x?-1:1; c.px=NB.x+sd*2.6; c.pz=NB.z+6.6; c.py=gy+2.0; c.lx=NB.x; c.lz=NB.z; c.ly=gy+1.5; } }
     last=d; }catch(e){ console.error('nbh cam',e); } return r; }; })();
 
@@ -16684,7 +16684,7 @@ NAMES.nathanirl='Nathan (Real Life)';
 function nkPx(c,x,y,w,h,col){ const q=NK.S||1; c.fillStyle=col; c.fillRect(Math.round(x*q)/q,Math.round(y*q)/q,Math.max(0,Math.round(w*q)/q),Math.max(0,Math.round(h*q)/q)); }
 function nkRnd(i,k){ const s=Math.sin(i*127.1+k*311.7)*43758.5453; return s-Math.floor(s); }
 function nkStars(c,n,ox,oy,seed,col){ for(let i=0;i<n;i++){ const x=((nkRnd(i,seed)*384+ox)%384+384)%384, y=((nkRnd(i,seed+7)*216+oy)%216+216)%216; const big=nkRnd(i,seed+3)<.12, r=big?.9:.34+nkRnd(i,seed+5)*.33; nkPx(c,x,y,r,r,col||(i%5?'#cfd8ff':'#ffffff')); if(big){ nkPx(c,x-.7,y+.3,2.3,.34,'rgba(255,255,255,.55)'); nkPx(c,x+.3,y-.7,.34,2.3,'rgba(255,255,255,.55)'); } } }
-function nkScene(id,p){ NK.scene=id; NK.t=0; NK.p=Object.assign({zoom:1,zx:192,zy:108,adash:0,adip:0,bnc:0,chr:0,chx:0,gx:0,gy:0,psi:0,rsq:0,arm:0,black:0,cr:0,eyes:0,foot:0,kd:0,kw:0,leap:0,ns:1,pool:0,pulse:0,star:0,swing:0,thud:0,u:0,up:0,z:0,rx:150,ry:150},p||{}); /* v1.87: EVERY value a tween moves starts as a number. Several did not (up, star, ry, ns...), so their tweens were NaN and the pose snapped at the end: the kick, the launch and the lift had no animation at all */ /* the camera always has numbers: a tween from an unset zoom was NaN and blanked the frame */ NK.sub=null; }
+function nkScene(id,p){ NK.scene=id; NK.t=0; NK.p=Object.assign({zoom:1,zx:192,zy:108,adash:0,adip:0,bnc:0,chr:0,chx:0,crk:0,dug:0,drop:0,fill:0,fl:0,hv:0,pat:0,roll:0,sq:0,gbn:0,gsq:0,gx:0,gy:0,psi:0,rsq:0,arm:0,black:0,cr:0,eyes:0,foot:0,kd:0,kw:0,leap:0,ns:1,pool:0,pulse:0,star:0,swing:0,thud:0,u:0,up:0,z:0,rx:150,ry:150},p||{}); /* v1.87: EVERY value a tween moves starts as a number. Several did not (up, star, ry, ns...), so their tweens were NaN and the pose snapped at the end: the kick, the launch and the lift had no animation at all */ /* the camera always has numbers: a tween from an unset zoom was NaN and blanked the frame */ NK.sub=null; }
 function nkSub(who,text,dur){ NK.sub={who,text,t:0,dur:dur||2.2}; }
 // ---------- the cast, drawn small and simple so every pose is possible ----------
 // o: kind 'gn' game Nathan (jacket, scarf) | 'rn' real Nathan (hoodie, headset) ; f facing ; sc scale ; rot radians ; sil silhouette colour ;
@@ -16724,7 +16724,7 @@ const NKG={cv:null}, NKA={cv:null};
 function nkGuy(c,x,y,o){ o=o||{}; try{ if(!NKG.cv) NKG.cv=mkCanvas(150,130); const [gcv,gc]=NKG.cv; gc.setTransform(1,0,0,1,0,0); gc.clearRect(0,0,150,130);
     const rn=o.kind==='rn'||o.hood, A=o.arms||'down', w=o.walk?Math.sin(o.walk):0, kk=o.kick?2.4:1, pose={b:o.sit?6:0,lean:0,F:o.sit?[[7,0],[9,0]]:[[-2+w*3*kk,-Math.max(0,w)*1.5*kk*kk],[2-w*3*kk,-Math.max(0,-w)*1.5*kk*kk]],hd:0,hx:0};
     if(A==='up'){ pose.ua=[-2.7,2.7]; pose.el=[-.3,.3]; } else if(A==='fwd'){ pose.ua=[.2,1.45]; pose.el=[.3,.15]; } else if(A==='guard'){ pose.ua=[1.2,1.5]; pose.el=[1.7,1.6]; } else { pose.ua=[.12,-.1]; pose.el=[.25,.3]; }
-    nathanV2Paint(gc,75,118,1,{t:NK.t,still:1,irl:rn,pose,face:o.face&&o.face!=='calm'?o.face:undefined,nohead:o.nohead,noset:!(o.kind==='rn'||o.headset),sil:o.sil,scarf:rn?0:1,jacket:1});
+    nathanV2Paint(gc,75,118,1,{t:NK.t,still:1,irl:rn,pose,face:o.face&&o.face!=='calm'?o.face:undefined,nohead:o.nohead,noset:!(o.kind==='rn'||o.headset),sil:o.sil,scarf:rn?0:1,jacket:0});
     const sc=(o.sc||1)*.66; c.save(); if(o.alpha!=null) c.globalAlpha=o.alpha; c.imageSmoothingEnabled=false; c.translate(x,y); c.scale((o.f||1)*sc*(o.sx||1),sc*(o.sy||1)); if(o.rot) c.rotate(o.rot); c.drawImage(gcv,-75,-118); c.restore(); }catch(e){ console.error('nk guy',e); nkGuyOld(c,x,y,o); } }
 function nkAli(c,x,y,o){ o=o||{}; if(!(ALS.ok&&ALS.img)) return nkAliOld(c,x,y,o);
   try{ const P=o.pose||'stand', a=o.arm||0, sc=(o.sc||1)*.75; let row=0, col=2, rot=o.rot||0, dy=0;
@@ -16981,11 +16981,6 @@ function nkRoofBg(c,t){ const R=(x,y,w,h,col)=>nkPx(c,x,y,w,h,col); { const g=c.
 function nkMirrorBg(c,t){ const R=(x,y,w,h,col)=>nkPx(c,x,y,w,h,col); R(0,0,384,216,'#3a3448'); for(let i=0;i<16;i++) for(let j=0;j<9;j++){ R(i*24+.6,j*24+.6,22.8,22.8,(i+j)%2?'#423c52':'#3e384e'); R(i*24+.6,j*24+.6,22.8,.7,'rgba(255,255,255,.06)'); }
   R(106,16,172,184,'#8a6a38'); R(110,20,164,176,'#c8a060'); R(110,20,164,1.4,'#e8c888'); R(110,20,1.4,176,'#e8c888'); R(272,20,2,176,'#8a6a38'); R(116,26,152,164,'#6a5230'); { const g=c.createLinearGradient(118,28,266,188); g.addColorStop(0,'#a8c8dc'); g.addColorStop(1,'#6a94b0'); c.fillStyle=g; c.fillRect(118,28,148,160); }
   nkPoly(c,[[130,28],[150,28],[122,188],[118,188],[118,140]],'rgba(255,255,255,.12)'); nkPoly(c,[[170,28],[178,28],[140,188],[132,188]],'rgba(255,255,255,.08)'); nkPoly(c,[[230,28],[266,28],[266,60]],'rgba(255,255,255,.07)'); for(let i=0;i<6;i++) R(122+nkRnd(i,5)*140,32+nkRnd(i,6)*150,1,1,'rgba(255,255,255,.3)'); }
-// the rolled-up rug (with what is in it): a roll with a spiral end, rope ties, a fringe, two boots out of one end
-function nkRug(c,x,y,w,h,boots){ const R=(a,b,d,e,col)=>nkPx(c,a,b,d,e,col); nkEll(c,x+w/2,y+h+1,w*.52,2,'rgba(0,0,0,.35)'); R(x,y,w,h,'#8a3a4a'); R(x,y,w,h*.22,'#b0606e'); R(x,y+h*.22,w,h*.14,'#9a4a5a'); R(x,y+h*.78,w,h*.22,'#5e2230');
-  for(let i=0;i<Math.floor(w/9);i++){ R(x+4+i*9,y+h*.36,5,.7,'#6a2a3a'); R(x+7+i*9,y+h*.58,4,.7,'#a85a6a'); } for(const k of [.2,.5,.8]){ R(x+w*k,y-.6,2,h+1.2,'#c8b890'); R(x+w*k,y-.6,.7,h+1.2,'#e8dcb8'); R(x+w*k-.6,y+h*.4,3.2,1.6,'#a89868'); }
-  nkEll(c,x,y+h/2,h*.3,h/2,'#6a2a3a'); nkEll(c,x,y+h/2,h*.2,h*.34,'#a85a6a'); nkEll(c,x,y+h/2,h*.1,h*.18,'#5e2230'); for(let i=0;i<6;i++) R(x+w,y+1+i*(h-2)/6,2.4,.7,'#d8c8a0');
-  if(boots){ R(x+w-2,y+h*.16,10,h*.28,'#14141c'); R(x+w+6,y+h*.1,3,h*.34,'#22222c'); R(x+w-2,y+h*.56,10,h*.28,'#14141c'); R(x+w+6,y+h*.5,3,h*.34,'#22222c'); R(x+w-2,y+h*.16,10,.7,'#3a3a48'); } }
 // The body on the floor, in silhouette: on his back, head to the left (a profile: brow, nose, lips, chin, the mop of hair,
 // the headset cup), one knee up. p.gone + p.crT: the head is in pieces (shards that fly, turn and come to rest, a neck that
 // ends, a splash across the boards), all of it only shapes.
@@ -17003,6 +16998,51 @@ function nkSilBody(c,t,p,sh,K){ const P=(pts)=>nkPoly(c,pts.map(q=>[q[0],q[1]+sh
     if(big&&i%2===0){ c.moveTo(-r,r*.5); c.lineTo(-r*.9,-r*.4); c.lineTo(-r*.3,-r*1.1); c.lineTo(0,-r*.4); c.lineTo(r*.5,-r*1.2); c.lineTo(r*.8,-r*.3); c.lineTo(r,r*.6); } /* a piece with hair on it */ else { c.moveTo(-r,r*.3); c.lineTo(-r*.2,-r); c.lineTo(r,-r*.2); c.lineTo(r*.4,r*.9); } c.closePath(); c.fill(); c.restore(); }
   for(let i=0;i<46;i++){ const q=-Math.PI*(.05+nkRnd(i,221)*.9), v=120+nkRnd(i,222)*260, x=218+Math.cos(q)*v*e, y=168+Math.sin(q)*v*e+360*e*e/2; if(y<177&&e<1.6) nkPx(c,x,y,.9+nkRnd(i,223)*1.3,1.2+nkRnd(i,223)*2.4,K); } /* and what was in it */
   for(let i=0;i<7;i++){ const x=124+nkRnd(i,231)*120, y0=28+nkRnd(i,232)*66, d0=.12+nkRnd(i,233)*.25; if(e<d0) continue; const r=2.2+nkRnd(i,234)*3.4, len=Math.min(16+nkRnd(i,235)*44,(e-d0)*(7+nkRnd(i,236)*9)); nkEll(c,x,y0,r,r*.85,K); for(let k=0;k<5;k++){ const qq=nkRnd(i*5+k,237)*6.28; nkEll(c,x+Math.cos(qq)*r*1.5,y0+Math.sin(qq)*r*1.3,r*.32,r*.3,K); } nkPx(c,x-.6,y0,1.2,len,K); nkEll(c,x,y0+len,1.3,1.6,K); } } /* it reaches the window */
+// ---------- what was left of him (v1.90: "have more blood splattered everywhere") ----------
+// Three zones the montage cleans one at a time: the floor, the wall, the desk. cl = {floor,wall,desk}, each 0..1 = how far the
+// wipe has travelled left to right; everything left of it is gone.
+function nkGore(c,t,cl){ cl=cl||{}; const BL='#8a0c16', BLL='#a8141e', BLD='#5e060e', zone=(z,x0,x1)=>x0+(x1-x0)*Math.max(0,Math.min(1,cl[z]||0)), R=(x,y,w,h,col)=>nkPx(c,x,y,w,h,col);
+  { /* the wall: a burst low down behind where his head was, three arcs thrown up it by a fist coming back, a hand dragged down it; every drop that can run has run */
+    const lim=zone('wall',-4,388), D=(x,y,r,len)=>{ if(x<lim||y>143) return; nkEll(c,x,y,r,r*.9,BL); if(len>0){ const l=Math.min(len,145-y); R(x-r*.3,y,Math.max(.6,r*.6),l,BL); nkEll(c,x,y+l,r*.45,r*.6,BL); } };
+    for(let i=0;i<40;i++){ const a=-Math.PI*nkRnd(i,221), r=4+nkRnd(i,222)*40; D(250+Math.cos(a)*r*1.5,140+Math.sin(a)*r*.95,1+nkRnd(i,223)*3.2,nkRnd(i,224)<.55?4+nkRnd(i,225)*22:0); }
+    if(250>=lim){ nkEll(c,250,136,18,8,BLD); nkEll(c,246,134,12,5.5,BL); for(let i=0;i<8;i++) R(236+i*4,136,1.5,4+nkRnd(i,226)*5,BL); }
+    for(const A of [[76,124,200,26,34,1],[214,118,372,34,26,2],[236,100,296,10,10,3],[30,132,96,96,12,4]]){ for(let i=0;i<18;i++){ const u=i/17, x=A[0]+(A[2]-A[0])*u+(nkRnd(i,230+A[5])-.5)*5, y=A[1]+(A[3]-A[1])*u-Math.sin(u*Math.PI)*A[4]+(nkRnd(i,240+A[5])-.5)*5; D(x,y,.8+nkRnd(i,250+A[5])*2.2,nkRnd(i,260+A[5])<.6?3+nkRnd(i,270+A[5])*18:0); } }
+    if(88>=lim){ nkEll(c,88,96,5,4,BL); for(let i=0;i<4;i++){ R(83.4+i*2.6,84-(i===1||i===2?3:0),1.7,9,BL); R(83.4+i*2.6,100,1.5,20+nkRnd(i,227)*14,'rgba(138,12,22,.75)'); } R(80,95,2,4,BL); } }
+  { /* the desk, the monitor, the tower: spots, a pool on the top that has gone over the edge */
+    const lim=zone('desk',90,236), S=(x,y,r,len)=>{ if(x<lim) return; nkEll(c,x,y,r,r*.8,BLL); if(len) R(x-.4,y,.9,len,BL); };
+    for(let i=0;i<30;i++){ const x=98+nkRnd(i,231)*128, y=60+nkRnd(i,232)*86; if(y<150) S(x,y,.7+nkRnd(i,233)*1.9,nkRnd(i,234)<.45?3+nkRnd(i,235)*9:0); }
+    if(176>=lim){ nkEll(c,190,112.4,16,1.8,BL); R(183,113,1.3,17,BL); R(197,113,1.1,9,BL); nkEll(c,183.6,131,1,1.6,BL); nkEll(c,140,70,6,3,'rgba(138,12,22,.8)',.4); R(138,72,1.2,26,'rgba(138,12,22,.8)'); } }
+  { /* the floor: the pool where the head was, long thin streaks cast out of it, drops to every corner, a man's sandals walking away */
+    const lim=zone('floor',20,372), E=(x,y,rx,ry,col,rot)=>{ if(x+rx<=lim) return; if(x-rx>=lim){ nkEll(c,x,y,rx,ry,col,rot); return; } c.save(); c.beginPath(); c.rect(lim,140,400,90); c.clip(); nkEll(c,x,y,rx,ry,col,rot); c.restore(); };
+    E(124,172,38,12,BLD); E(120,170,31,9,BL); E(152,179,22,6,BL); E(96,178,17,5,BL); E(112,168,12,3,BLL); E(250,160,22,5,BLD); E(248,159,15,3.2,BL);
+    for(let i=0;i<22;i++){ const a=nkRnd(i,201)*6.283, r=36+nkRnd(i,202)*150, x=124+Math.cos(a)*r, y=172+Math.sin(a)*r*.2; if(y>152&&y<203&&x>14&&x<376) E(x,y,5+nkRnd(i,203)*18,.9+nkRnd(i,204)*1.5,i%3?BL:BLL,Math.sin(a)*.1); }
+    for(let i=0;i<110;i++){ const x=18+nkRnd(i,205)*350, y=153+nkRnd(i,206)*49; E(x,y,.8+nkRnd(i,207)*2.4,.5+nkRnd(i,208)*.9,i%2?BL:BLL); }
+    for(let i=0;i<8;i++){ const x=160+i*17, y=190+(i%2)*5, al=.85-i*.09; E(x,y,3.2,1.3,'rgba(138,12,22,'+al+')'); E(x+4.6,y,1.4,1,'rgba(138,12,22,'+al+')'); }
+    if(lim>24){ for(let i=0;i<10;i++){ const x=22+nkRnd(i,209)*(lim-30); R(x,154+nkRnd(i,210)*46,Math.min(lim-x,10+nkRnd(i,211)*22),.6,'rgba(255,255,255,.07)'); } } } }
+// the rug with him in it: rolled, a lump where the shoulders are, his sneakers out of one end, a stain coming through at the other.
+// o: boots, ropes 0..3, sq (a squeeze as a rope goes on), spin (the pattern travels as it rolls)
+function nkBundle(c,x,y,w,h,o){ o=o||{}; const R=(a,b,d,e,col)=>nkPx(c,a,b,d,e,col), sq=o.sq||0; y+=sq*1.2; h*=1-sq*.12; nkEll(c,x+w/2,y+h+1,w*.54,2.2,'rgba(0,0,0,.35)');
+  if(o.boots){ R(x+w-1,y+h*.14,7,h*.32,'#2a3a5a'); R(x+w-1,y+h*.54,7,h*.32,'#22304c'); for(const k of [.08,.5]){ R(x+w+5,y+h*k,8,h*.4,'#e8e8f0'); R(x+w+5,y+h*k,8,1,'#ffffff'); R(x+w+11.6,y+h*k,1.6,h*.4,'#b8bcc4'); R(x+w+6.4,y+h*k+h*.14,3,.8,'#b02a3a'); } }
+  nkEll(c,x+w*.6,y+h*.5,w*.22,h*.62,'#8a3a4a'); nkEll(c,x+w*.6,y+h*.3,w*.2,h*.36,'#b0606e'); R(x,y,w,h,'#8a3a4a'); R(x,y,w,h*.22,'#b0606e'); R(x,y+h*.22,w,h*.14,'#9a4a5a'); R(x,y+h*.78,w,h*.22,'#5e2230');
+  for(let i=0;i<Math.floor(w/9);i++){ const xs=x+((i*9+(o.spin||0)*13)%w+w)%w; R(xs,y+1,1.6,h-2,'rgba(255,220,180,.13)'); R(xs+3,y+h*.4,.8,h*.3,'rgba(60,10,20,.25)'); }
+  nkEll(c,x,y+h/2,2.8,h/2,'#6a2a38'); nkEll(c,x,y+h/2,1.6,h/3.2,'#9a4a5a'); nkEll(c,x,y+h/2,.6,h/7,'#5e2230'); nkEll(c,x+5,y+h*.62,6,h*.36,'rgba(94,6,14,.8)'); R(x+2,y+h-.5,1,2.5+Math.sin(x)*.5,'#8a0c16');
+  for(let i=0;i<(o.ropes||0);i++){ const xr=x+w*(.2+i*.3); R(xr,y-.7,2.2,h+1.4,'#c8a060'); R(xr,y-.7,.7,h+1.4,'#e8c888'); R(xr-1,y-1.8,4.2,2,'#c8a060'); R(xr+2.6,y-3,.8,2.4,'#c8a060'); } }
+// his avatar comes through the ceiling (v1.90: it used to be a white flash and a body on the floor). p.crk: the plaster cracks and sheds
+// dust first; p.brk: when the roof gave (chunks and a cloud from the hole); p.gcy/p.grot: the body's centre and tumble on the way down.
+function nkBreach(c,t,p){ const R=(x,y,w,h,col)=>nkPx(c,x,y,w,h,col);
+  if(p.crk&&!p.hole){ const k=Math.min(1,p.crk); for(const q of [[270,0,264,9],[264,9,256,12],[264,9,270,17],[270,0,281,7],[281,7,279,15],[281,7,292,10],[258,0,250,6]]) nkLine(c,q[0],q[1],q[0]+(q[2]-q[0])*k,q[1]+(q[3]-q[1])*k,.8,'#0e0a14'); for(let i=0;i<22;i++){ const u=(nkRnd(i,31)+t*(.5+nkRnd(i,32)*.6))%1; R(244+nkRnd(i,33)*52,u*150,.7,1.2+u*2,'rgba(220,210,200,'+(.7*(1-u)*k)+')'); } nkEll(c,270,2,20*k,3*k,'rgba(255,170,90,'+(.3*k)+')'); }
+  if(!p.hole) return;
+  const cy=p.gcy==null?171:p.gcy, rot=p.grot==null?-1.5:p.grot, cx=263+(171-cy)*.03, fall=p.gcy!=null&&p.gimp==null, bn=p.gbn||0, ft=(a,y)=>[cx-Math.sin(a)*13,y+Math.cos(a)*13];
+  if(fall){ /* the streak he trails, still glowing from the way in, and where he was a frame or two ago */ const g=c.createLinearGradient(0,0,0,Math.max(1,cy)); g.addColorStop(0,'rgba(255,150,60,0)'); g.addColorStop(1,'rgba(255,214,150,.75)'); c.fillStyle=g; c.beginPath(); c.moveTo(cx-2,0); c.lineTo(cx+2,0); c.lineTo(cx+8,cy); c.lineTo(cx-8,cy); c.closePath(); c.fill(); nkEll(c,cx,cy,15,17,'rgba(255,170,80,.28)');
+    for(let k=1;k<=3;k++){ const y2=cy-k*16, a2=rot+k*.5, q=ft(a2,y2); if(y2>-10) nkGuy(c,q[0],q[1],{kind:'gn',rot:a2,face:'shock',arms:'up',f:1,alpha:.3-k*.07}); } }
+  { const q=ft(rot,cy-bn); nkGuy(c,q[0],q[1],{kind:'gn',rot,face:p.gimp==null?'shock':'ko',arms:p.gimp==null||t-p.gimp<.3?'up':'down',f:1,kick:fall,walk:fall?t*30:0,sx:1+(p.gsq||0)*.16,sy:1-(p.gsq||0)*.3}); }
+  if(p.brk!=null){ const tau=t-p.brk; if(tau>=0&&tau<1.6){ for(let i=0;i<26;i++){ const x0=234+nkRnd(i,35)*70, vx=(nkRnd(i,36)-.5)*130, vy=30+nkRnd(i,37)*170, x=x0+vx*tau, y=4+vy*tau+170*tau*tau, w=2.5+nkRnd(i,38)*6, h=2+nkRnd(i,39)*4; if(y<158+nkRnd(i,40)*20){ c.save(); c.translate(x,y); c.rotate(tau*(4+nkRnd(i,41)*9)*(i%2?1:-1)); R(-w/2,-h/2,w,h,i%3?'#5a5058':'#7a6a5a'); R(-w/2,-h/2,w,.8,'rgba(255,255,255,.2)'); c.restore(); if(i%5===0) nkLine(c,x-4,y+2,x+5,y-3,1,'#5a4030'); } }
+      const u=Math.min(1,tau/1.1), e=1-(1-u)*(1-u); for(let i=0;i<9;i++) nkEll(c,246+i*6.5+(nkRnd(i,42)-.5)*20*e,8+nkRnd(i,43)*10+e*(8+nkRnd(i,44)*22),7+e*13*nkRnd(i,45)+e*5,5+e*8,'rgba(206,198,204,'+(.55*(1-u))+')'); } } }
+// a body meets the floorboards: a flat ring of dust, splinters, short hard lines out of the point (t0 = when), and the boards it split
+function nkLandFx(c,t,t0,cx,cy){ const u=(t-t0)/.55; if(u>=0&&u<1){ const e=1-(1-u)*(1-u); c.strokeStyle='rgba(214,204,220,'+(.7*(1-u))+')'; c.lineWidth=2.2*(1-u)+.4; c.beginPath(); c.ellipse(cx,cy+2,14+e*64,3+e*11,0,0,7); c.stroke(); for(let i=0;i<10;i++){ const sd=i%2?1:-1, bx=cx+sd*(18+nkRnd(i,63)*44*e+e*14), by=cy+3-nkRnd(i,64)*5; nkEll(c,bx,by-e*4,3+e*5*nkRnd(i,65),2+e*3,'rgba(200,190,208,'+(.5*(1-u))+')'); }
+        for(let i=0;i<12;i++){ const q=-Math.PI*(.08+nkRnd(i,66)*.84), v=60+nkRnd(i,67)*90, x=cx+Math.cos(q)*v*u, y=cy+Math.sin(q)*v*u+150*u*u; nkPx(c,x,y,1.6+nkRnd(i,68)*1.6,1+nkRnd(i,69),i%3?'#5a4648':'#8a7478'); }
+        if(u<.22){ for(let i=0;i<11;i++){ const q=-Math.PI*(i+.5)/11, r0=20+u*40, r1=r0+10+nkRnd(i,70)*16; nkLine(c,cx+Math.cos(q)*r0*1.5,cy+Math.sin(q)*r0*.8,cx+Math.cos(q)*r1*1.5,cy+Math.sin(q)*r1*.8,1.2,'rgba(255,255,255,'+(.9-u*3)+')'); } } } }
+function nkCracks(c,cx,cy,sd){ for(let i=0;i<9;i++){ const q=nkRnd(i,61+sd)*6.283, r=10+nkRnd(i,62+sd)*22, x1=cx+Math.cos(q)*r*1.5, y1=cy+Math.sin(q)*r*.34; nkLine(c,cx+Math.cos(q)*4,cy+Math.sin(q)*1.4,x1,y1,.9,'#140e12'); nkLine(c,x1,y1,x1+Math.cos(q+.7)*6,y1+Math.sin(q+.7)*2,.6,'#140e12'); } }
 const NKS={
   // the field: he is on his knees; the kick sends him up
   field(c,t,p){ const cam=(p.cam||0)*150; nkFieldBg(c,t,cam);
@@ -17044,8 +17084,8 @@ const NKS={
     if(p.hit){ c.fillStyle='#0a0c1c'; c.beginPath(); c.moveTo(196,84); c.lineTo(210,74); c.lineTo(226,88); c.lineTo(216,100); c.lineTo(200,98); c.closePath(); c.fill(); for(let i=0;i<22;i++){ const a=nkRnd(i,31)*6.28, v=20+nkRnd(i,32)*70, q=Math.min(1.6,t); nkPx(c,210+Math.cos(a)*v*q,90+Math.sin(a)*v*q*.7+q*q*38,3+nkRnd(i,33)*4,3,i%2?'#5a2a2a':'#7a6a5a'); } const d=Math.min(1,t/1.2); c.fillStyle='rgba(200,200,210,'+(.5*(1-d))+')'; c.beginPath(); c.arc(210,88,10+d*46,0,7); c.fill(); }
     else { const u=p.u||0, x=384-u*176, y=-20+u*108; nkComet(c,x,y,x+84,y-52,6); } },
   // his room. He is playing the game.
-  room(c,t,p){ nkRoom(c,t,{hole:p.hole,screen:(c2,x,y,w,h)=>nkTitleScreen(c2,x,y,w,h,t),dark:p.dark}); if(p.hole) nkGuy(c,276,172,{kind:'gn',rot:-1.5,face:'ko',f:1});
-    if(p.imp!=null){ /* where he lands: the boards split under him and stay split */ const cx=150, cy=180; for(let i=0;i<9;i++){ const q=nkRnd(i,61)*6.283, r=10+nkRnd(i,62)*22, x1=cx+Math.cos(q)*r*1.5, y1=cy+Math.sin(q)*r*.34; nkLine(c,cx+Math.cos(q)*4,cy+Math.sin(q)*1.4,x1,y1,.9,'#140e12'); nkLine(c,x1,y1,x1+Math.cos(q+.7)*6,y1+Math.sin(q+.7)*2,.6,'#140e12'); } }
+  room(c,t,p){ nkRoom(c,t,{hole:p.hole,clean:p.norub,screen:(c2,x,y,w,h)=>nkTitleScreen(c2,x,y,w,h,t),dark:p.dark}); nkBreach(c,t,p);
+    if(p.imp!=null) nkCracks(c,150,180,0); if(p.gimp!=null) nkCracks(c,266,176,9);
     if(p.chair!==0){ /* his chair: shoved back and tipped over when he is pulled out of it */ c.save(); c.translate(150+(p.chx||0),150); c.rotate(p.chr||0); nkPx(c,-12,-30,26,4,'#22222c'); nkPx(c,-14,-54,5,28,'#22222c'); nkPx(c,-14,-54,1.2,28,'#34343e'); nkPx(c,-1,-26,3,24,'#22222c'); nkPx(c,-12,-2,26,3,'#22222c'); nkPx(c,-12,-30,26,1,'#34343e'); c.restore(); }
     const kin=()=>{ /* while he is held he hangs from the collar Ali has hold of: g = that point, psi = which way his feet point from it */ if(!p.held) return [p.rx==null?150:p.rx,p.ry==null?150:p.ry,p.rrot||0]; const j=p.trem?Math.sin(t*61)*.5*p.trem:0, gx=(p.gx||0)+j, gy=(p.gy||0)+(p.trem?Math.cos(t*47)*.4*p.trem:0), ps=p.psi||0; return [gx+Math.cos(ps)*26,gy+Math.sin(ps)*26,ps-Math.PI/2,gx,gy]; };
     if(p.rn!==0){ const k=kin(), bn=p.bnc||0; if(p.held===2&&p.ghost){ for(const g of p.ghost){ nkGuy(c,g[0],g[1],{kind:'rn',f:1,sit:0,face:'shock',arms:'up',rot:g[2],alpha:g[3]}); } }
@@ -17053,9 +17093,7 @@ const NKS={
     if(p.ali){ const k=kin(), f=p.af||-1; if(p.adash>0){ for(let i=3;i>0;i--) nkAli(c,p.ax+i*15*p.adash,p.ay,{f,pose:'reach',alpha:.34-i*.08}); nkPx(c,p.ax+8,p.ay-30,60*p.adash,1,'rgba(255,255,255,.5)'); nkPx(c,p.ax+12,p.ay-18,48*p.adash,1,'rgba(255,255,255,.35)'); }
       nkAli(c,p.ax,p.ay+(p.adip||0),{f,pose:p.apose||'stand',arm:p.aarm||0,hand:p.held?[(k[3]-p.ax)/(f*.75),(k[4]-p.ay-(p.adip||0))/.75]:null});
       if(p.skT!=null){ const u=(t-p.skT)/.4; if(u>=0&&u<1){ for(let i=0;i<5;i++) nkEll(c,p.ax+6+i*5+u*10*(i+1)*.4,p.ay-1-u*4*(i%2+1),2.2+u*3,1.4+u*1.6,'rgba(190,180,200,'+(.5*(1-u))+')'); } } }
-    if(p.imp!=null){ /* the landing: a flat ring of dust along the boards, splinters, short hard lines out of the point */ const u=(t-p.imp)/.55, cx=150, cy=180; if(u>=0&&u<1){ const e=1-(1-u)*(1-u); c.strokeStyle='rgba(214,204,220,'+(.7*(1-u))+')'; c.lineWidth=2.2*(1-u)+.4; c.beginPath(); c.ellipse(cx,cy+2,14+e*64,3+e*11,0,0,7); c.stroke(); for(let i=0;i<10;i++){ const sd=i%2?1:-1, bx=cx+sd*(18+nkRnd(i,63)*44*e+e*14), by=cy+3-nkRnd(i,64)*5; nkEll(c,bx,by-e*4,3+e*5*nkRnd(i,65),2+e*3,'rgba(200,190,208,'+(.5*(1-u))+')'); }
-        for(let i=0;i<12;i++){ const q=-Math.PI*(.08+nkRnd(i,66)*.84), v=60+nkRnd(i,67)*90, x=cx+Math.cos(q)*v*u, y=cy+Math.sin(q)*v*u+150*u*u; nkPx(c,x,y,1.6+nkRnd(i,68)*1.6,1+nkRnd(i,69),i%3?'#5a4648':'#8a7478'); }
-        if(u<.22){ for(let i=0;i<11;i++){ const q=-Math.PI*(i+.5)/11, r0=20+u*40, r1=r0+10+nkRnd(i,70)*16; nkLine(c,cx+Math.cos(q)*r0*1.5,cy+Math.sin(q)*r0*.8,cx+Math.cos(q)*r1*1.5,cy+Math.sin(q)*r1*.8,1.2,'rgba(255,255,255,'+(.9-u*3)+')'); } } } } },
+    if(p.imp!=null) nkLandFx(c,t,p.imp,150,180); if(p.gimp!=null) nkLandFx(c,t,p.gimp,266,176); },
   // first person. Two fists, one face.
   fpv(c,t,p){ const F=NK.fp||{n:0,l:0,r:0,st:0,hitT:9}, st=F.st, hq=F.hitT-.045, hk=hq>=0&&hq<.22?Math.pow(1-hq/.22,2):0 /* the head takes the punch when the fist arrives, and swings back */, jx=-(F.side||1)*13*hk, jy=3*hk; nkFloor(c,0,0,384,216,27,1);
     if(F.n>3){ const pr=Math.min(1,(F.n-3)/24); c.fillStyle='#5a060e'; c.beginPath(); c.ellipse(192,150,40+pr*170,20+pr*80,0,0,7); c.fill(); c.fillStyle='#7a0c16'; c.beginPath(); c.ellipse(186,146,30+pr*130,14+pr*60,0,0,7); c.fill(); } /* the pool under his head */ for(let i=0;i<F.n*4;i++){ const a=nkRnd(i,41)*6.28, r=50+nkRnd(i,42)*150; nkPx(c,192+Math.cos(a)*r,100+Math.sin(a)*r*.7,3+nkRnd(i,43)*11,2+nkRnd(i,44)*6,i%3?'#7a0c16':'#a8141e'); }
@@ -17088,13 +17126,31 @@ const NKS={
     const v=c.createRadialGradient(214,120,50,214,120,230); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,'+(.75+.15*pu)+')'); c.fillStyle=v; c.fillRect(0,0,384,216); if(p.pulse>0){ nkPx(c,0,0,384,216,'rgba(160,0,0,'+(p.pulse*.35)+')'); }
     if(p.black) nkPx(c,0,0,384,216,'rgba(0,0,0,'+p.black+')'); },
   // he wakes up
-  wake(c,t,p){ nkRoom(c,t,{hole:1,morning:1,screen:(c2,x,y,w,h)=>nkTitleScreen(c2,x,y,w,h,t)}); nkGuy(c,170,178,{kind:'rn',rot:-1.5708,arms:'down',nohead:1}); c.fillStyle='#8a0c16'; c.beginPath(); c.ellipse(124,170,20,9,0,0,7); c.fill(); for(let i=0;i<14;i++){ const a=nkRnd(i,51)*6.28, r=14+nkRnd(i,52)*22; nkPx(c,124+Math.cos(a)*r,170+Math.sin(a)*r*.45,2+nkRnd(i,53)*5,2,i%2?'#8a0c16':'#a8141e'); } nkPx(c,112,166,10,4,'#a8141e');
+  wake(c,t,p){ nkRoom(c,t,{hole:1,morning:1,screen:(c2,x,y,w,h)=>nkTitleScreen(c2,x,y,w,h,t)}); nkGore(c,t,{}); nkGuy(c,170,178,{kind:'rn',rot:-1.5708,arms:'down',nohead:1}); nkEll(c,128,177,7,5,'#5e060e'); nkEll(c,127,176,4,3,'#a8141e');
     const up=p.up||0; nkGuy(c,276,172,{kind:'gn',rot:-1.5*(1-up),face:p.gface||'ko',f:-1,arms:p.garms||'down',sit:up>.9}); if(p.scream){ for(let i=0;i<8;i++){ const a=i/8*6.28+t*3; nkPx(c,270+Math.cos(a)*(26+Math.sin(t*20)*3),128+Math.sin(a)*(22+Math.sin(t*20)*3),4,2,'#ffffff'); } } },
   // the montage: five small jobs
-  mont(c,t,p){ const k=p.k||0, q=(t*1.2)%1, sw=Math.sin(t*9);
-    if(k===0){ nkRoom(c,t,{hole:1,morning:1,clean:0,screen:(c2,x,y,w,h)=>nkPx(c2,x,y,w,h,'#060810')}); c.fillStyle='rgba(138,12,22,'+(.8-(p.u||0)*.8)+')'; c.beginPath(); c.ellipse(124,170,20,9,0,0,7); c.fill(); const mx=150+sw*26; nkGuy(c,mx+18,178,{kind:'gn',f:-1,arms:'fwd',walk:t*9}); nkPx(c,mx-14,150,2,28,'#c8a060'); nkPx(c,mx-22,176,16,5,'#e8e8f0'); nkPx(c,60,160,14,18,'#5a8ac8'); nkPx(c,58,158,18,3,'#8ab0e8'); }
-    else if(k===1){ nkRoom(c,t,{hole:1,morning:1,clean:1,screen:(c2,x,y,w,h)=>nkPx(c2,x,y,w,h,'#060810')}); const x=300-(t*40)%220; nkRug(c,x+16,164,74,14,1); nkGuy(c,x,178,{kind:'gn',f:-1,arms:'fwd',walk:t*10,face:'shock'}); }
-    else if(k===2){ nkYardBg(c,t); c.fillStyle='#2a2018'; c.beginPath(); c.ellipse(200,186,46,12,0,0,7); c.fill(); c.fillStyle='#3e3024'; c.beginPath(); c.ellipse(120,180,30,14,0,3.14,6.28); c.fill(); const dg=Math.max(0,sw); nkGuy(c,238,184,{kind:'gn',f:-1,arms:'fwd'}); c.save(); c.translate(216,166); c.rotate(-.5-dg*.7); nkPx(c,-22,0,24,2,'#c8a060'); nkPx(c,-30,-3,9,8,'#b8bcc4'); c.restore(); if(dg>.8) for(let i=0;i<5;i++) nkPx(c,150+i*8,160-i*5-q*10,3,3,'#3e3024'); nkRug(c,176,174,50,10,0); }
+  mont(c,t,p){ const k=p.k||0, q=(t*1.2)%1, sw=Math.sin(t*9), off=(c2,x,y,w,h)=>nkPx(c2,x,y,w,h,'#060810'), R=(x,y,w,h,col)=>nkPx(c,x,y,w,h,col);
+    if(k==='wrap'){ /* the rug out from under the desk, him along its far edge; the edge goes over him, three heaves roll it to the near edge, three ropes */
+      nkRoom(c,t,{hole:1,morning:1,clean:0,screen:off}); nkGore(c,t,{}); const fl=p.fl||0, roll=p.roll||0, X0=112, X1=198, YF=166, YN=197, by=YF+3+roll*(YN-YF-9), hv=p.hv||0;
+      nkEll(c,(X0+X1)/2,YN+1,(X1-X0)*.56,2.4,'rgba(0,0,0,.3)'); if(by<YN-3){ nkPoly(c,[[X0+5,by],[X1-5,by],[X1+2,YN],[X0-2,YN]],'#8a3a4a'); nkPoly(c,[[X0+9,by+1],[X1-9,by+1],[X1-3,YN-2.6],[X0+3,YN-2.6]],'#9a4a5a'); for(let i=1;i<6;i++){ const yy=by+(YN-by)*i/6; R(X0+6-i*.6,yy,X1-X0-12+i*1.2,.6,'rgba(94,34,48,.6)'); } nkPoly(c,[[X0+26,by+2],[X1-26,by+2],[X1-22,YN-4],[X0+22,YN-4]],'rgba(176,96,110,.28)'); for(let i=0;i<22;i++) R(X0-1+i*4,YN,1.2,2.4,'#c8a060'); }
+      nkGuy(c,(X0+X1)/2-6,by-2-hv*1.5,{kind:'gn',f:1,arms:fl<.05?'down':hv>.4?'fwd':'guard',face:fl<.05?'shock':'calm'});
+      if(fl<1){ nkGuy(c,X1+7,YF+5,{kind:'rn',rot:-1.5708,arms:'down',nohead:1}); nkEll(c,X1-33,YF+5,4,3,'#5e060e'); if(fl>0){ const lift=Math.sin(fl*Math.PI)*9, y1=YF-2+fl*15; nkPoly(c,[[X0+5,YF-1],[X1-5,YF-1],[X1-4,y1-lift],[X0+4,y1-lift]],'#5e2230'); nkPoly(c,[[X0+4,y1-lift-1.4],[X1-4,y1-lift-1.4],[X1-4,y1-lift],[X0+4,y1-lift]],'#b0606e'); } }
+      else nkBundle(c,X0+3,by-8-hv*2.5,X1-X0-6,14,{boots:1,ropes:p.ropes||0,sq:p.sq||0,spin:roll*4}); }
+    else if(k==='drag'){ nkRoom(c,t,{hole:1,morning:1,clean:0,screen:off}); nkGore(c,t,{}); const x=300-(t*40)%230; R(x+92,172,Math.max(0,300-x),5,'rgba(138,12,22,.42)'); R(x+92,173.4,Math.max(0,300-x),1.4,'rgba(94,6,14,.5)'); nkBundle(c,x+18,164+Math.abs(sw)*.8,74,13,{boots:1,ropes:3}); nkLine(c,x+8,160,x+19,170,1,'#c8a060'); nkGuy(c,x,178,{kind:'gn',f:-1,arms:'fwd',walk:t*10,face:'shock'}); }
+    else if(k==='mop'||k==='wall'||k==='desk'){ const u=p.u||0, cl=k==='mop'?{floor:u}:k==='wall'?{floor:1,wall:u}:{floor:1,wall:1,desk:u}; nkRoom(c,t,{hole:1,morning:1,clean:0,screen:off}); nkGore(c,t,cl);
+      if(k==='mop'){ const lim=20+352*u, gx=lim-22; R(60,160,14,18,'#5a8ac8'); R(58,158,18,3,'#8ab0e8'); R(60,161,14,5,'#a8303e'); nkGuy(c,gx,186,{kind:'gn',f:1,arms:'fwd',walk:t*10}); nkLine(c,gx+8,164,lim+3+sw*4,189,1.6,'#c8a060'); R(lim-6+sw*4,187.6,16,4.6,'#e8d0d4'); R(lim-6+sw*4,190.6,16,1.6,'#c06a78'); for(let i=0;i<4;i++) nkEll(c,lim+6+sw*4+i*3,186-((t*30+i*7)%9),1.2,1.2,'rgba(255,255,255,.35)'); }
+      else if(k==='wall'){ const lim=-4+392*u, gx=Math.max(14,lim-18), hy=74+Math.sin(t*11)*34; nkGuy(c,gx,151,{kind:'gn',f:1,arms:'up'}); nkLine(c,gx+7,128,lim+2,hy,2,'#3a4466'); R(lim-2,hy-4,9,8,'#e8d86a'); R(lim-2,hy-4,9,2,'#f6ee9a'); for(let i=0;i<7;i++) nkEll(c,lim-6-nkRnd(i,81)*22,hy-20+nkRnd(i,82)*44+((t*14+i*5)%12),1.6+nkRnd(i,83)*1.6,1.6+nkRnd(i,83)*1.6,'rgba(255,255,255,.4)'); for(let i=0;i<5;i++) R(lim-8-i*7,40+nkRnd(i,84)*60,.8,10+((t*40+i*17)%40),'rgba(255,170,180,.35)'); }
+      else { const lim=90+146*u, gx=lim-20, hy=88+Math.sin(t*12)*22; nkGuy(c,gx,151,{kind:'gn',f:1,arms:'fwd'}); nkLine(c,gx+8,128,lim+1,hy,2,'#3a4466'); R(lim-2,hy-3,8,6,'#e8e8f0'); R(lim-2,hy+1,8,2,'#d0808c'); R(gx-9,118,4,9,'#6ac8e8'); R(gx-8,115,3,3,'#e8e8f0'); if(sw>.5) for(let i=0;i<4;i++) R(gx-5+i*2.4,113-i*1.2,1,1,'rgba(255,255,255,.7)'); } }
+    else if(k==='dig'){ /* the yard: he digs, the rug goes in boots last, the earth goes back on top and is patted flat */
+      nkYardBg(c,t); const dug=p.dug||0, drop=p.drop||0, fill=p.fill||0, pat=p.pat||0, HX=196, HY=186, pile=(dug-fill*.92);
+      nkEll(c,112,183,10+pile*26,3+pile*3,'rgba(0,0,0,.3)'); c.fillStyle='#3e3024'; c.beginPath(); c.ellipse(112,182,8+pile*26,2+pile*15,0,Math.PI,Math.PI*2); c.fill(); c.fillStyle='#4e3e30'; c.beginPath(); c.ellipse(108,182,5+pile*16,1+pile*10,0,Math.PI,Math.PI*2); c.fill();
+      if(dug>0){ nkEll(c,HX,HY,48*Math.min(1,dug*1.6),12.5*Math.min(1,dug*1.6),'#2a2018'); nkEll(c,HX,HY+1,44*Math.min(1,dug*1.6),10*Math.min(1,dug*1.6),'#120c08'); nkEll(c,HX,HY+3,38*dug,7*dug,'#080504'); }
+      { const bx=160, y0=166, yy=y0+drop*drop*22, rot=drop*.16; c.save(); c.beginPath(); c.rect(0,0,384,HY); c.ellipse(HX,HY,46,11.5,0,0,7); c.clip(); c.translate(bx+37,yy+6.5); c.rotate(rot); nkBundle(c,-37,-6.5,74,13,{boots:1,ropes:3}); c.restore(); if(drop>.6){ c.save(); c.beginPath(); c.ellipse(HX,HY+1,44,10,0,0,7); c.clip(); R(HX-50,HY-12,100,26,'rgba(8,5,4,'+(.5*(drop-.6)/.4)+')'); c.restore(); } }
+      if(p.thudT!=null){ const u2=(t-p.thudT)/.5; if(u2>=0&&u2<1) for(let i=0;i<9;i++) nkEll(c,HX-40+i*10,HY-4-u2*10-nkRnd(i,91)*6,3+u2*5,2+u2*3,'rgba(120,100,84,'+(.5*(1-u2))+')'); }
+      if(fill>0){ c.save(); c.beginPath(); c.ellipse(HX,HY,48,12.5,0,0,7); c.clip(); R(HX-50,HY+13-fill*27,100,30,'#3e3024'); R(HX-50,HY+13-fill*27,100,1.6,'#4e3e30'); c.restore(); if(fill>.85){ const m=(fill-.85)/.15, h=(9-pat*3.5)*m; c.fillStyle='#3e3024'; c.beginPath(); c.ellipse(HX,HY-6,46+pat*3,h+1,0,Math.PI,Math.PI*2); c.fill(); c.fillStyle='#4e3e30'; c.beginPath(); c.ellipse(HX-6,HY-6,30,h*.6+.5,0,Math.PI,Math.PI*2); c.fill(); nkEll(c,HX,HY-5.6,46+pat*3,5.4,'#3e3024'); for(let i=0;i<8;i++) R(HX-38+nkRnd(i,92)*76,HY-8+nkRnd(i,93)*6,2,1,'#2a2018'); } }
+      const ph=fill>0?2:drop>0?1:0, dg=Math.max(0,sw), gx=246; nkGuy(c,gx,186,{kind:'gn',f:-1,arms:ph===1?'guard':'fwd',face:ph===1?'shock':'calm'});
+      if(ph===0||(ph===2&&fill<.85)){ c.save(); c.translate(gx-22,168); c.rotate(-.5-dg*.7); R(-22,0,24,2,'#c8a060'); R(-30,-3,9,8,'#b8bcc4'); R(-30,-3,9,1.4,'#e0e4ea'); c.restore(); if(dg>.75) for(let i=0;i<6;i++){ const uu=(q+i*.12)%1; if(ph===0) R(HX-10-uu*70,HY-10-Math.sin(uu*Math.PI)*34+i,3,3,'#3e3024'); else R(124+uu*66,176-Math.sin(uu*Math.PI)*30+i,3,3,'#3e3024'); } }
+      else if(ph===2){ const py=HY-22+pat*14; R(gx-36,py,3,24-pat*4,'#c8a060'); R(gx-41,py+22-pat*4,13,5,'#b8bcc4'); if(pat>.7) for(let i=0;i<6;i++) nkEll(c,HX-30+i*12,HY-10,3,1.6,'rgba(120,100,84,.5)'); } }
     else if(k===3){ nkRoofBg(c,t); nkPx(c,150,106,90,60,'#2a6ad8'); nkPx(c,150,106,90,4,'#4a8af0'); for(let i=0;i<4;i++){ nkPx(c,142+i*26,100+(i%2)*4,22,8,'#b8bcc4'); nkPx(c,142+i*26,164-(i%2)*4,22,8,'#b8bcc4'); } nkGuy(c,262,170,{kind:'gn',f:-1,arms:sw>0?'up':'fwd'}); nkPx(c,238,140+(sw>0?-12:4),14,6,'#b8bcc4'); }
     else { nkMirrorBg(c,t); c.save(); c.beginPath(); c.rect(118,28,148,160); c.clip(); nkGuy(c,192,236,{kind:'gn',hood:1,headset:1,sc:3,arms:sw>.2?'up':'down',face:sw>.2?'calm':'shock'}); c.restore(); } },
   // some time later
@@ -17135,6 +17191,93 @@ function* nkRoomThrow(){ const p=NK.p, so=t=>1-(1-t)*(1-t), ss=t=>t*t*(3-2*t);
   { const x0=p.gx, y0=p.gy, x1=148, y1=178, T=.1; let u=0; while(u<1){ u=Math.min(1,u+1/60/T); const e=u*u; p.ghost=[]; for(let k=1;k<=3;k++){ const ue=Math.max(0,u-k*.16), ee=ue*ue, ps=-.3*Math.sin(ue*Math.PI); p.ghost.push([x0+(x1-x0)*ee+Math.cos(ps)*26,y0+(y1-y0)*ee+Math.sin(ps)*26,ps-Math.PI/2,.3-k*.07]); } p.gx=x0+(x1-x0)*e; p.gy=y0+(y1-y0)*e; p.psi=-.3*Math.sin(u*Math.PI); p.adip=2.5+u*3; p.zy=124+18*e; yield wait(0); } }
   /* the floor */ p.held=0; p.ghost=null; p.rx=174; p.ry=179; p.rrot=-1.5708; p.rkick=0; p.rface='ko'; p.rarms='up'; p.rsq=1; p.imp=NK.t; Sound.sfx('slam'); Sound.sfx('crash'); try{ Sound.sfx('crossboom'); }catch(e){} NK.shake=1; NK.flash=.45; p.zy=142; yield wait(.1);
   yield tween(p,{rsq:-.25,bnc:7},.1,so); yield tween(p,{rsq:.3,bnc:0},.11,t=>t*t); NK.shake=.35; Sound.sfx('step'); p.rarms='down'; yield tween(p,{rsq:0},.1); p.apose='stand'; yield tween(p,{adip:0},.25,ss); yield wait(.55); }
+// the roof: plaster cracks and sheds dust while something comes down on the house, then he is through it and in the floor
+function* nkRoofFall(){ const p=NK.p, so=t=>1-(1-t)*(1-t), ss=t=>t*t*(3-2*t);
+  Sound.sfx('howl'); try{ Sound.sfx('drone'); }catch(e){} yield tween(p,{zoom:1.3,zx:236,zy:92},.45,ss); NK.shake=.2; yield tween(p,{crk:1},.5); p.rf=1; p.rarms='up'; p.rface='shock'; NK.shake=.35; yield wait(.12);
+  /* through */ Sound.sfx('crash'); Sound.sfx('crossboom'); NK.shake=1; NK.flash=.55; p.hole=1; p.norub=1; p.brk=NK.t; p.gcy=-16; p.grot=-1.5-7.2;
+  { const T=.24, y0=-16, y1=171; let u=0; while(u<1){ u=Math.min(1,u+1/60/T); p.gcy=y0+(y1-y0)*(u*(.55+.45*u)); p.grot=-1.5-7.2*(1-u); p.zy=92+26*u*u; yield wait(0); } }
+  /* the floor */ p.gcy=171; p.grot=-1.5; p.gimp=NK.t; p.gsq=1; p.norub=0; Sound.sfx('slam'); Sound.sfx('hit'); NK.shake=1; NK.flash=.4; yield wait(.09);
+  yield tween(p,{gsq:-.25,gbn:9},.1,so); yield tween(p,{gsq:.3,gbn:0},.12,t=>t*t); NK.shake=.3; Sound.sfx('step'); yield tween(p,{gsq:0},.1); yield tween(p,{zoom:1,zx:192,zy:108},.5,ss); yield wait(.7); }
+function* nkField2D(){ nkScene('field',{zoom:2.3,zx:218,zy:152}); yield wait(.8);
+  yield say('nathanraw',"...Do it, then. Finish the arc. At least make it MEAN something.");
+  yield say('ali',"It doesn't.");
+  yield say('nathanraw',"...What?");
+  yield say('ali',"Mean something. Hold still.");
+  yield tween(NK.p,{zoom:1.5,zx:214,zy:150},.3,t=>t*t); Sound.sfx('charge'); yield tween(NK.p,{kw:1},.42,t=>t*(2-t)); yield wait(.08); Sound.sfx('dash'); yield tween(NK.p,{kd:1},.08,t=>t*t);
+  NK.p.kick=1; NK.p.fold=1; NK.p.hitT=NK.t; Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.sfx('hit'); NK.shake=1; NK.flash=.7; yield wait(.22); /* the frame it lands is held */
+  NK.p.fold=0; NK.p.zoom=1; NK.p.zx=192; NK.p.zy=108; Sound.sfx('quickboost'); NK.shake=.5; yield tween(NK.p,{up:1},.5,t=>t*t); NK.p.star=0; Sound.sfx('secret'); yield tween(NK.p,{star:1},.2); yield tween(NK.p,{star:0},.3); yield wait(.25); NK.p.kdone=1; yield wait(.3);
+  yield say('ali',"Too low.");
+  yield tween(NK.p,{cr:1},.28,t=>t*(2-t)); Sound.sfx('dash'); Sound.sfx('quickboost'); NK.shake=.5; NK.p.hitT=NK.t; Game.fxUpd.push(()=>{ if(NK.scene!=='field') return false; NK.p.cam=Math.min(1,(NK.p.leap||0)*1.4); return true; }); yield tween(NK.p,{leap:1},.55,t=>t*t); NK.flash=.5; /* he crouches, and goes after him: the ground rings again, the camera follows him up */ }
+// ---------- the first minute happens in the game itself (v1.90) ----------
+// The owner: "when it cuts to the kill ending it's not seamless... the first parts need to be on model with the characters and
+// environments of the boss fight". So the talk, the kick and Ali's leap are no longer the film's painted field: they are played in the
+// fight's own arena with the fight's own sprites and camera (Nathan on foot via NBH.over, Ali via three extra frames below). The film
+// only takes over once the screen is nothing but sky, behind a white flash.
+const NKL={on:0};
+const NKL_POSE={ spent:{pose:{F:[[-8,0],[6,0]],b:6,lean:5,ua:[.25,.3],el:[.1,.15],hd:6,hx:2},blade:null,gun:0,anim:1},
+  look:{pose:{F:[[-8,0],[6,0]],b:5,lean:2,ua:[.25,.3],el:[.1,.15],hd:-2,hx:0},blade:null,gun:0,face:'shock',anim:1},
+  fold:{pose:{F:[[2,-4],[7,-6]],b:-5,lean:10,ua:[1.3,1.5],el:[.5,.6],hd:6,hx:5},blade:null,gun:0,face:'shock'},
+  fly:{pose:{F:[[-5,-2],[6,-6]],b:-6,lean:-2,ua:[-2.6,2.7],el:[-.3,.3],hd:-2,hx:0},blade:null,gun:0,face:'shock'} };
+function nklPose(id){ const o=NKL_POSE[id]; NBH.over=o?Object.assign({id,f:-1},o):null; NBH.key=''; }
+// Ali's extra frames: sword away, the wind-up, the kick (a leg painted over the stance, as in the film), the crouch, the leap
+function nklLeg(c,x0,y0,x1,y1,w,col){ const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0))); c.fillStyle=col; for(let i=0;i<=n;i++){ const u=i/n; c.fillRect(Math.round(x0+(x1-x0)*u-w/2),Math.round(y0+(y1-y0)*u-w/2),w,w); } }
+(function(){ const da=drawAliHD; drawAliHD=function(c,cx,by,f,s){ const a=s&&s.anim; if(!(NKL.on&&typeof a==='string'&&a.slice(0,2)==='nk'&&ALS.ok&&ALS.img)) return da.apply(this,arguments);
+    try{ const fx=NKL.af>0?1:-1, side=fx>0?2:6, k=NKL.k||0;
+      if(a==='nkWind') alPaint(c,cx,by,0,side,{rot:-fx*.2*k,dx:-fx*3*k});
+      else if(a==='nkCrouch') alPaint(c,cx,by,9+side,0,{dy:Math.round(k*2)});
+      else if(a==='nkLeap') alPaint(c,cx,by,1+side,1,{});
+      else if(a==='nkKick'){ const rot=-fx*(.3+.2*k); alPaint(c,cx,by,0,side,{rot}); c.save(); c.translate(Math.round(cx),Math.round(by-1)); c.rotate(rot); const X=v=>fx*v, hx=3, hy=-21, tx=30, ty=-25-k*13, kx=17, ky=(hy+ty)/2-3;
+        nklLeg(c,X(hx),hy,X(kx),ky,8,'#1b1d28'); nklLeg(c,X(kx),ky,X(tx-3),ty,6,'#1b1d28'); nklLeg(c,X(hx+1),hy-4,X(kx),ky-4,1,'#33384a'); nklLeg(c,X(kx+2),ky,X(tx-4),ty,4,'#6a6f7c'); nklLeg(c,X(kx+3),ky-2,X(tx-5),ty-2,1,'#9aa0ac');
+        c.fillStyle='#c8a070'; c.fillRect(Math.round(X(tx)-4),Math.round(ty-5),8,9); c.fillStyle='#8a6a40'; c.fillRect(Math.round(X(tx)+(fx>0?3:-4)),Math.round(ty-5),1,9); c.restore(); }
+      else alPaint(c,cx,by,0,side,{}); /* nkIdle: the sword is away */
+    }catch(e){ console.error('nk ali frame',e); return da.apply(this,arguments); } }; })();
+function* nkFieldLive(){ const P=Player, S=NKL, so=t=>1-(1-t)*(1-t), ss=t=>t*t*(3-2*t);
+  const gy=groundY(NB.x,NB.z), nx=NB.x, nz=NB.z; Object.assign(S,{on:1,k:0,af:1,ax:P.x,ay:P.y,az:P.z,anim:null,nx,ny:gy,nz,nx0:nx,nz0:nz,nrot:0,follow:0,gy,nvis:1});
+  Game.letterTo=1; Game.letter=1; Game.banner=null; try{ NP1.hint=null; NB.hov=0; NB.stunned=0; NBS.fixRow=null; }catch(e){} P.scripted={x:0,z:0}; P.cineFly=false; P.cineAnim=null; P.atk=null; P.charge=0;
+  Game.fxUpd.push(dt=>{ if(!S.on||!NB) return false; /* every frame: both of them are exactly where the scene says, whatever the fight's own code wants */
+    try{ P.x=S.ax; P.y=S.ay; P.z=S.az; P.vx=P.vy=P.vz=0; P.f=S.af; P.ang=S.af>0?0:Math.PI; P.onGround=!P.cineFly; if(S.anim) P.anim=S.anim; P.hurt=0;
+      NB.x=S.nx; NB.y=S.ny; NB.z=S.nz; NB.mesh.visible=!!S.nvis; NB.mesh.position.set(S.nx,S.ny,S.nz); NB.mesh.rotation.z=S.nrot; if(NB.sh){ NB.sh.position.set(S.nx,S.gy+.03,S.nz); NB.sh.visible=S.nvis&&S.ny-S.gy<2.5; } if(NB.glow) NB.glow.visible=false;
+      if(S.follow===1&&Cam.cine){ const c=Cam.cine, q=Math.min(1,dt*10); c.lx+=(S.nx-c.lx)*q; c.ly+=(Math.max(S.gy+1.3,S.ny)-c.ly)*q; c.lz+=(S.nz-c.lz)*q; } else if(S.follow===2&&Cam.cine){ const c=Cam.cine; c.ly+=(Math.max(S.gy+1.2,S.ay*.92)-c.ly)*Math.min(1,dt*9); }
+      if(S.ny-S.gy>.6||!S.nvis){ /* the fight's cyan disc under him does not stay behind on the grass */ for(const o of scene.children){ const m=o.material, cl=m&&m.color; if(o.visible&&o.userData&&o.userData.temp&&cl&&cl.r<.4&&cl.g>.85&&cl.b>.85&&o.position.y<S.gy+.3&&Math.hypot(o.position.x-S.nx0,o.position.z-S.nz0)<3) o.visible=false; } }
+    }catch(e){ console.error('nk live',e); } return true; });
+  /* Ali walks to his mark, two steps to Nathan's left, while the shot settles into a two-shot; Nathan's blade gutters out and he drops to a knee */
+  const mx=nx-1.15, markX=nx-2.3, far=Math.hypot(P.x-markX,P.z-nz)>7; if(far){ S.ax=markX; S.az=nz+.1; S.ay=groundY(markX,nz); } else { S.anim='run'; S.af=markX>=S.ax?1:-1; }
+  nklPose('spent'); try{ FX.burst(nx-.6,gy+1.2,nz,26,0x3ff4ff,3,.2,true); Sound.sfx('blip'); }catch(e){}
+  yield cineTo([mx,gy+1.45,nz+6.4],[mx,gy+1.2,nz],.6,ss); if(!far){ const d=Math.hypot(S.ax-markX,S.az-nz-.1); if(d>.15) yield tween(S,{ax:markX,az:nz+.1,ay:groundY(markX,nz)},Math.min(.9,.18+d*.16)); } S.af=1; S.anim=null; yield wait(.3);
+  yield cineTo([nx+.9,gy+1.25,nz+3.9],[nx-.1,gy+1.05,nz],.45,ss);
+  yield say('nathanraw',"...Do it, then. Finish the arc. At least make it MEAN something.");
+  yield cineTo([markX-.8,gy+1.35,nz+3.7],[markX+.15,gy+1.25,nz],.4,ss); S.anim='nkIdle'; try{ Sound.sfx('step'); }catch(e){} yield wait(.15);
+  yield say('ali',"It doesn't.");
+  nklPose('look'); yield cineTo([nx+.9,gy+1.25,nz+3.9],[nx-.1,gy+1.05,nz],.3,ss);
+  yield say('nathanraw',"...What?");
+  yield cineTo([mx,gy+1.3,nz+5.6],[mx,gy+1.15,nz],.4,ss);
+  yield say('ali',"Mean something. Hold still.");
+  /* the kick: he sinks back, crosses the gap in five frames, and the frame it lands is held */
+  yield cineTo([mx-.2,gy+1.0,nz+6.2],[mx+.1,gy+1.25,nz],.3,t=>t*t); Sound.sfx('charge'); S.anim='nkWind'; yield tween(S,{k:1,ax:markX-.4},.42,t=>t*(2-t)); yield wait(.08);
+  Sound.sfx('dash'); S.anim='nkKick'; S.k=0; { const x0=S.ax, x1=nx-1.05; for(let i=1;i<=5;i++){ try{ twAliGhost(S.ax,S.ay,S.az); }catch(e){} S.ax=x0+(x1-x0)*(i/5); S.k=i/5; yield wait(0); } }
+  nklPose('fold'); S.nx=nx+.18; S.ny=gy+.25; Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.sfx('hit'); shake(1); FX.flash=.5; try{ grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[2,2],[1,2]]); FX.hitstop=.2; FX.burst(nx-.35,gy+1.15,nz+.05,46,0xffffff,7,.22,true); }catch(e){} yield wait(.24);
+  /* gone: straight up and away over the ridge, turning, the camera tipping after him until he is a point of light */
+  nklPose('fly'); Sound.sfx('quickboost'); shake(.6); try{ FX.burst(nx,gy+.15,nz,70,0xd8dcf0,8,.3); }catch(e){} cineSet(mx-.6,gy+.75,nz+6.4,mx+.3,gy+1.3,nz); S.follow=1;
+  { const T=.62; let u=0, n=0; while(u<1){ u=Math.min(1,u+1/60/T); const e=u*u; S.ny=gy+.25+e*36; S.nx=nx+.18+e*9; S.nz=nz-e*48; S.nrot=-e*11; if(++n%3===0){ try{ nbAfterimage(S.nx,S.ny,S.nz); }catch(e2){} } yield wait(0); } }
+  S.nvis=0; S.follow=0; Sound.sfx('secret'); try{ for(let i=0;i<4;i++) FX.spawn(S.nx,S.ny,S.nz,(i<2?1:0)*(i%2?9:-9),(i>=2?1:0)*(i%2?9:-9),0,.45,0xffffff,.9,0,true); FX.burst(S.nx,S.ny,S.nz,10,0xffffff,2,.5,true); }catch(e){} yield wait(.75);
+  yield cineTo([S.ax+1.9,gy+1.25,nz+4.4],[S.ax+.1,gy+1.15,nz],.45,ss); S.anim='nkIdle';
+  yield say('ali',"Too low.");
+  /* he crouches and goes after him: the ground rings again, the camera goes up with him, and the sky is where the film takes over */
+  S.k=0; S.anim='nkCrouch'; yield tween(S,{k:1},.28,t=>t*(2-t)); Sound.sfx('dash'); Sound.sfx('quickboost'); shake(.6); try{ FX.burst(S.ax,gy+.15,S.az,80,0xd8dcf0,9,.3); FX.flash=.25; }catch(e){}
+  S.anim='nkLeap'; P.cineFly=true; P.cineAnim='nkLeap'; S.follow=2; { const T=.5, y0=S.ay; let u=0, n=0; while(u<1){ u=Math.min(1,u+1/60/T); S.ay=y0+u*u*58; if(++n%2===0){ try{ twAliGhost(S.ax,S.ay,S.az); }catch(e){} } if(u>.6){ FX.flash=Math.max(FX.flash,(u-.6)*2.4); try{ grade.uniforms.flashCol.value.set(1,1,1); }catch(e){} } yield wait(0); } }
+  S.on=0; NBH.over=null; P.cineFly=false; P.cineAnim=null; P.scripted=null; P.y=groundY(P.x,P.z); }
+// the cleanup, in the order a man alone would do it: wrap him, drag him, bury him, then the floor, the wall, the desk, the roof, the mirror
+function* nkMontage(){ const ss=t=>t*t*(3-2*t), so=t=>1-(1-t)*(1-t); let p;
+  nkScene('mont',{k:'wrap',zoom:2.2,zx:156,zy:170,fl:0,roll:0,hv:0,ropes:0,sq:0}); p=NK.p; yield wait(.9); Sound.sfx('swing'); yield tween(p,{fl:1},.4,ss); Sound.sfx('step'); yield wait(.25);
+  for(let i=0;i<3;i++){ Sound.sfx('swing'); yield tween(p,{hv:1},.1,so); yield tween(p,{roll:(i+1)/3,hv:0},.24,ss); Sound.sfx('step'); NK.shake=.12; yield wait(.12); }
+  for(let i=0;i<3;i++){ p.ropes=i+1; p.sq=1; Sound.sfx('hit'); yield tween(p,{sq:0},.16); yield wait(.08); } yield wait(.5);
+  nkScene('mont',{k:'drag',zoom:1.7,zx:236,zy:152}); yield tween(NK.p,{zx:120},2.6,t=>t);
+  nkScene('mont',{k:'dig',zoom:1.8,zx:190,zy:160,dug:0,drop:0,fill:0,pat:0}); p=NK.p; yield tween(p,{dug:1},1.7,t=>t); yield wait(.2); Sound.sfx('swing'); yield tween(p,{drop:1},.5,t=>t*t); p.thudT=NK.t; Sound.sfx('slam'); NK.shake=.4; yield wait(.6);
+  yield tween(p,{fill:1},1.6,t=>t); for(let i=0;i<2;i++){ yield tween(p,{pat:1},.1,t=>t*t); Sound.sfx('hit'); NK.shake=.2; yield tween(p,{pat:0},.2); } yield wait(.5);
+  nkScene('mont',{k:'mop',u:0,zoom:1.7,zx:120,zy:160}); yield tween(NK.p,{u:1,zx:262},2.2,t=>t);
+  nkScene('mont',{k:'wall',u:0,zoom:1.5,zx:130,zy:96}); yield tween(NK.p,{u:1,zx:256},2.2,t=>t);
+  nkScene('mont',{k:'desk',u:0,zoom:2.3,zx:140,zy:104}); yield tween(NK.p,{u:1,zx:180},1.6,t=>t);
+  nkScene('mont',{k:3,zoom:1.5,zx:220,zy:140}); yield wait(2.3); nkScene('mont',{k:4}); yield wait(1.4); }
 // ---------- the film looks after itself (v1.89) ----------
 // The owner's game froze on the last card. It could not be reproduced in the playtest rig (the real fight-to-ending path reaches the end
 // screen there), so the film no longer depends on anything outside it to finish: it runs on its own clock (NK.t, advanced where it is drawn),
@@ -17147,17 +17290,11 @@ function nkGuard(dt){ const P=Player; Game.timeScale=1; Game.slowT=0; /* slow mo
   return false; }
 (function(){ const od=Game.onDeath; Game.onDeath=function(){ if(NK.on){ Player.hp=Math.max(1,Player.hp||1); return; } return od.apply(this,arguments); }; })();
 // ---------- the film ----------
-function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCine(); }catch(e){} NK.on=1; NK.gen=Game.script; NK.lost=0; NK.fade=0; NK.bars=1; NK.fp=null; Game.letterTo=0; P.inv=999; Cam.cine=Cam.cine||null;
-  nkScene('field',{zoom:2.3,zx:218,zy:152}); try{ NP1.hint=null; nbRemove(); Game.arena=null; Cam.zoom=1; }catch(e){ console.error('nk cleanup',e); } /* the fight is over for good: without this his HP bar stayed on screen, over the end screen too (seen in the playtest rig) */ yield wait(.8);
-  yield say('nathanraw',"...Do it, then. Finish the arc. At least make it MEAN something.");
-  yield say('ali',"It doesn't.");
-  yield say('nathanraw',"...What?");
-  yield say('ali',"Mean something. Hold still.");
-  yield tween(NK.p,{zoom:1.5,zx:214,zy:150},.3,t=>t*t); Sound.sfx('charge'); yield tween(NK.p,{kw:1},.42,t=>t*(2-t)); yield wait(.08); Sound.sfx('dash'); yield tween(NK.p,{kd:1},.08,t=>t*t);
-  NK.p.kick=1; NK.p.fold=1; NK.p.hitT=NK.t; Sound.sfx('crossboom'); Sound.sfx('slam'); Sound.sfx('hit'); NK.shake=1; NK.flash=.7; yield wait(.22); /* the frame it lands is held */
-  NK.p.fold=0; NK.p.zoom=1; NK.p.zx=192; NK.p.zy=108; Sound.sfx('quickboost'); NK.shake=.5; yield tween(NK.p,{up:1},.5,t=>t*t); NK.p.star=0; Sound.sfx('secret'); yield tween(NK.p,{star:1},.2); yield tween(NK.p,{star:0},.3); yield wait(.25); NK.p.kdone=1; yield wait(.3);
-  yield say('ali',"Too low.");
-  yield tween(NK.p,{cr:1},.28,t=>t*(2-t)); Sound.sfx('dash'); Sound.sfx('quickboost'); NK.shake=.5; NK.p.hitT=NK.t; Game.fxUpd.push(()=>{ if(NK.scene!=='field') return false; NK.p.cam=Math.min(1,(NK.p.leap||0)*1.4); return true; }); yield tween(NK.p,{leap:1},.55,t=>t*t); NK.flash=.5; /* he crouches, and goes after him: the ground rings again, the camera follows him up */
+function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCine(); }catch(e){} NK.fp=null; P.inv=999; let live=false; try{ live=!!(NB&&NB.mesh&&nbhOn()&&ALS.ok); }catch(e){}
+  if(live){ try{ yield* nkFieldLive(); }catch(e){ console.error('nk live scene',e); try{ P.cineFly=false; P.cineAnim=null; P.scripted=null; }catch(e2){} }finally{ NKL.on=0; NBH.over=null; } }
+  NK.on=1; NK.gen=Game.script; NK.lost=0; NK.fade=0; NK.bars=1; Game.letterTo=0; Cam.cine=Cam.cine||null;
+  try{ NP1.hint=null; nbRemove(); Game.arena=null; Cam.zoom=1; FX.flash=0; }catch(e){ console.error('nk cleanup',e); } /* the fight is over for good: without this his HP bar stayed on screen, over the end screen too (seen in the playtest rig) */
+  if(!live){ /* no fight to play it in (he is not on foot, or Ali's sheet never loaded): the film's own painted field, as before v1.90 */ yield* nkField2D(); } else NK.flash=1;
   // space
   nkScene('space',{nx:120,ny:150}); Sound.sfx('drone'); yield tween(NK.p,{nx:190,ny:104},1.6,t=>1-(1-t)*(1-t)); yield tween(NK.p,{zoom:2.4,zx:190,zy:84},.5,t=>t*t*(3-2*t));
   yield say('nathanraw',"I'M IN SPACE! WITHOUT THE MECH! I NEED THE MECH FOR SPACE!");
@@ -17175,7 +17312,7 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   nkScene('room',{zoom:2.5,zx:160,zy:104}); NK.fade=1; yield tween(NK,{fade:0},.4); yield wait(.5);
   yield say('nathanirl',"Okay. Phase two. No hits this time. I have studied the gunkata.");
   yield say('nathanirl',"...Why did my guy just leave the screen?");
-  Sound.sfx('crash'); Sound.sfx('slam'); NK.shake=1; NK.flash=1; NK.p.zoom=1; NK.p.hole=1; NK.p.rf=1; NK.p.rface='shock'; NK.p.rarms='up'; yield wait(1.2);
+  yield* nkRoofFall();
   yield tween(NK.p,{zoom:2.6,zx:150,zy:122},.3); yield say('nathanirl',"MY ROOF! That's... that's a guy. That's MY guy. That's literally my character.");
   NK.p.ali=1; NK.p.ax=268; NK.p.ay=-10; NK.p.af=-1; Sound.sfx('drone'); yield tween(NK.p,{zoom:1.7,zx:262,zy:70},.4); Game.fxUpd.push(()=>{ if(NK.scene!=='room'||NK.p.ay>=150) return false; NK.p.zy=Math.max(70,NK.p.ay-34); return true; }); yield tween(NK.p,{ay:150},2.2,t=>t); yield tween(NK.p,{zoom:2.6,zx:266,zy:126},.5,t=>t*t*(3-2*t)); Sound.sfx('step'); yield wait(.5);
   yield tween(NK.p,{zoom:1.35,zx:210,zy:120},.5,t=>t*t*(3-2*t)); yield say('nathanirl',"...And that's the samurai. From the route I didn't pick.");
@@ -17207,7 +17344,7 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   yield say('nathanraw',"...I am going to need a mop.");
   // the montage
   try{ Sound.play('ending'); }catch(e){} nkScene('card',{a:'CLEANUP MONTAGE',b:'(four hours, one mop)'}); yield wait(1.5);
-  nkScene('mont',{k:0,u:0,zoom:1.9,zx:140,zy:150}); yield tween(NK.p,{u:1},2.4); nkScene('mont',{k:1,zoom:1.7,zx:230,zy:150}); yield tween(NK.p,{zx:130},2.3,t=>t); nkScene('mont',{k:2,zoom:1.8,zx:200,zy:160}); yield wait(2.6); nkScene('mont',{k:3,zoom:1.5,zx:220,zy:140}); yield wait(2.3); nkScene('mont',{k:4}); yield wait(1.4);
+  yield* nkMontage();
   yield say('nathanraw',"Hi, Mom. It is I. Your son. The regular one. I enjoy... rent.");
   yield wait(.6); nkScene('card',{a:'THREE WEEKS LATER',b:''}); yield wait(1.9);
   // the replacement
@@ -20328,7 +20465,7 @@ const LG={n:0,last:'',t:-1e9};
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.89';
+const GAME_VERSION='v1.90';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 

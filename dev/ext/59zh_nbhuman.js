@@ -27,11 +27,11 @@ function nbhDraw(){ if(!NBH.cv) nbhInit(); const P=Player, c=NBH.c, r=nbsRow();
   try{ if(NB.mat.color.getHex()===0xffb4b0) NB.mat.color.setHex(0xffffff); }catch(e){} /* phase III tints the mech pink: the pilot keeps his own colours */
   try{ const gy=groundY(NB.x,NB.z); if(NP1.alt==null&&NB.y-gy<1) NB.mesh.position.y=gy; if(NB.sh) NB.sh.scale.set(.5,.5,1); }catch(e){} /* feet on the ground, no hover bob */
   if(NB.stunned){ NB.mesh.position.x+=rnd(-.03,.03); }
-  const idle=r===0&&!NB.stunned, key=NBH.f+','+r+(NBS.fixRow!=null?'f':'')+','+(NB.stunned?1:0)+','+(idle||r>=13?Math.floor(NBS.clock*10):0)+','+(NB.flash>0?1:0); if(key===NBH.key) return; NBH.key=key;
-  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-3,NBH.f,nbhPose(r,NB.stunned,NBS.fixRow!=null),!idle,NB.flash>0);
+  const OV=NBH.over||null; /* a cutscene's own pose (59zk): {id,pose,blade,gun,face,anim} */ if(OV&&OV.f) NBH.f=OV.f; const idle=(r===0&&!NB.stunned)||(OV&&OV.anim), key=(OV?OV.id+'|':'')+NBH.f+','+r+(NBS.fixRow!=null?'f':'')+','+(NB.stunned?1:0)+','+(idle||r>=13?Math.floor(NBS.clock*10):0)+','+(NB.flash>0?1:0); if(key===NBH.key) return; NBH.key=key;
+  c.clearRect(0,0,NBH.W,NBH.H); nbhPaint(c,NBH.W/2,NBH.H-3,NBH.f,OV||nbhPose(r,NB.stunned,NBS.fixRow!=null),OV?!OV.anim:!idle,NB.flash>0);
   if(NB.flash>0){ c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(0,0,NBH.W,NBH.H); c.globalCompositeOperation='source-over'; }
   NBH.tex.needsUpdate=true; }
-function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; nathanV2Paint(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still});
+function nbhPaint(c,cx,by,f,S,still,fire){ const out={}; nathanV2Paint(c,cx,by,f,{t:NBS.clock,jacket:0,scarf:1,pose:S.pose,out,still,face:S.face});
   const J=out.J; if(!J) return; const p=SH(c,cx,by,f), g=J.A[0], h=J.A[1], R=Math.round;
   if(S.gun){ const gx=R(g.ex), gyy=R(g.ey); if(S.aim){ p(gx,gyy-3,11,3,'#20222e'); p(gx,gyy-3,11,1,'#3a3e50'); p(gx,gyy,3,5,'#20222e'); p(gx+3,gyy,2,2,'#14161e'); p(gx+9,gyy-4,2,1,'#ffd27a'); if(fire){ p(gx+11,gyy-5,6,6,'#fff2c0'); p(gx+17,gyy-4,5,4,'#ffb04a'); p(gx+12,gyy-3,4,2,'#ffffff'); } } else { p(gx-2,gyy,3,9,'#20222e'); p(gx-2,gyy,6,3,'#20222e'); p(gx-2,gyy,6,1,'#3a3e50'); } }
   if(S.blade!=null){ const hx=h.ex, hy=h.ey, sa=Math.sin(S.blade), ca=Math.cos(S.blade), L=29; p(R(hx)-2,R(hy)-2,5,5,'#c8d4e0'); p(R(hx)-1,R(hy)-1,3,3,'#eef4fa');
@@ -69,6 +69,6 @@ function npxInRav(x,z){ for(const R of NPX.rav){ const rx=x-R.x0, rz=z-R.z0, al=
 // his head sat under the text box for every line of the Save ending (seen in the rig). Any line he speaks while he is on foot
 // and the shot is on him is re-aimed at his head and shoulders.
 (function(){ const us=updateScript; let last=null; updateScript=function(){ const r=us.apply(this,arguments);
-  try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'&&(d.who==='nathan'||d.who==='nathanraw')&&typeof NB!=='undefined'&&NB&&NB.mesh&&nbhOn()&&Cam.cine){ const c=Cam.cine, gy=groundY(NB.x,NB.z);
+  try{ const d=Game.dlg; if(d&&d!==last&&d.type==='say'&&(d.who==='nathan'||d.who==='nathanraw')&&typeof NB!=='undefined'&&NB&&NB.mesh&&nbhOn()&&Cam.cine&&!NKL.on){ const c=Cam.cine, gy=groundY(NB.x,NB.z);
       if(Math.hypot(c.lx-NB.x,c.lz-NB.z)<2.2&&Math.hypot(c.px-NB.x,c.pz-NB.z)<14&&NB.y-gy<1.2){ const sd=c.px<NB.x?-1:1; c.px=NB.x+sd*2.6; c.pz=NB.z+6.6; c.py=gy+2.0; c.lx=NB.x; c.lz=NB.z; c.ly=gy+1.5; } }
     last=d; }catch(e){ console.error('nbh cam',e); } return r; }; })();
