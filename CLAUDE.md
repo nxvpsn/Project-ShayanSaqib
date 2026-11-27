@@ -41,7 +41,7 @@ Test what you touch with its test (§7; menus also with `TOUCH=1`). One commit p
 - **Hands off:** Judgement Cut VFX, the black hole, Shayan's dash trail. (Grimmaw is now He's Day Old Kojima, id 'grimmaw': the easy tutorial boss, `40k_kojima.js`.)
 - **New dialogue** is voice-ready (literal speaker and text: `say('caotan',"…")`, never a variable) and voiced only when the owner asks.
 - **Menus** are phone-first (text >= 16 CSS px, taps >= 44 CSS px) and must work on desktop and `TOUCH=1`.
-- **Per-frame code:** one exception freezes the game. Wrap new per-frame hooks in `try{ … }catch(e){ console.error('name',e); }` and guard computed sizes (`Math.max(0,…)`).
+- **Per-frame code:** one exception used to freeze the game; since v1.89 `99y_loopguard.js` keeps the loop alive and prints `frame error` at the bottom of the screen (in the rig it shows under page errors as `frame …`), but a hook that throws every frame still breaks whatever it was doing. Wrap new per-frame hooks in `try{ … }catch(e){ console.error('name',e); }` and guard computed sizes (`Math.max(0,…)`).
 - Cutscenes are generators yielding `say`/`choose`/`wait`/`tween`/`cineTo`; fight patterns yield plain numbers (seconds). Anything a cutscene puts on screen is cleared in `twClearCine()` (`85_progress.js`).
 - Wrap base functions by reassigning the global: `(function(){ const f=foo; foo=function(){ …; return f.apply(this,arguments); }; })();`. Function declarations hoist across the script, `const`/`let` don't.
 - No `//` comments inside one-line functions (use `/* */`). `pkill -f`/`pgrep -f` match their own command line.

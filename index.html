@@ -16684,7 +16684,7 @@ NAMES.nathanirl='Nathan (Real Life)';
 function nkPx(c,x,y,w,h,col){ const q=NK.S||1; c.fillStyle=col; c.fillRect(Math.round(x*q)/q,Math.round(y*q)/q,Math.max(0,Math.round(w*q)/q),Math.max(0,Math.round(h*q)/q)); }
 function nkRnd(i,k){ const s=Math.sin(i*127.1+k*311.7)*43758.5453; return s-Math.floor(s); }
 function nkStars(c,n,ox,oy,seed,col){ for(let i=0;i<n;i++){ const x=((nkRnd(i,seed)*384+ox)%384+384)%384, y=((nkRnd(i,seed+7)*216+oy)%216+216)%216; const big=nkRnd(i,seed+3)<.12, r=big?.9:.34+nkRnd(i,seed+5)*.33; nkPx(c,x,y,r,r,col||(i%5?'#cfd8ff':'#ffffff')); if(big){ nkPx(c,x-.7,y+.3,2.3,.34,'rgba(255,255,255,.55)'); nkPx(c,x+.3,y-.7,.34,2.3,'rgba(255,255,255,.55)'); } } }
-function nkScene(id,p){ NK.scene=id; NK.t=0; NK.p=Object.assign({zoom:1,zx:192,zy:108,arm:0,black:0,cr:0,eyes:0,foot:0,kd:0,kw:0,leap:0,ns:1,pool:0,pulse:0,star:0,swing:0,thud:0,u:0,up:0,z:0,rx:150,ry:150},p||{}); /* v1.87: EVERY value a tween moves starts as a number. Several did not (up, star, ry, ns...), so their tweens were NaN and the pose snapped at the end: the kick, the launch and the lift had no animation at all */ /* the camera always has numbers: a tween from an unset zoom was NaN and blanked the frame */ NK.sub=null; }
+function nkScene(id,p){ NK.scene=id; NK.t=0; NK.p=Object.assign({zoom:1,zx:192,zy:108,adash:0,adip:0,bnc:0,chr:0,chx:0,gx:0,gy:0,psi:0,rsq:0,arm:0,black:0,cr:0,eyes:0,foot:0,kd:0,kw:0,leap:0,ns:1,pool:0,pulse:0,star:0,swing:0,thud:0,u:0,up:0,z:0,rx:150,ry:150},p||{}); /* v1.87: EVERY value a tween moves starts as a number. Several did not (up, star, ry, ns...), so their tweens were NaN and the pose snapped at the end: the kick, the launch and the lift had no animation at all */ /* the camera always has numbers: a tween from an unset zoom was NaN and blanked the frame */ NK.sub=null; }
 function nkSub(who,text,dur){ NK.sub={who,text,t:0,dur:dur||2.2}; }
 // ---------- the cast, drawn small and simple so every pose is possible ----------
 // o: kind 'gn' game Nathan (jacket, scarf) | 'rn' real Nathan (hoodie, headset) ; f facing ; sc scale ; rot radians ; sil silhouette colour ;
@@ -16722,10 +16722,10 @@ function nkAliOld(c,x,y,o){ o=o||{}; const sil=o.sil, K=(col)=>sil||col, sc=o.sc
 // reach, a Front Flip frame for the flying kick, the crouch for kneeling). The old block figures stay as the fallback.
 const NKG={cv:null}, NKA={cv:null};
 function nkGuy(c,x,y,o){ o=o||{}; try{ if(!NKG.cv) NKG.cv=mkCanvas(150,130); const [gcv,gc]=NKG.cv; gc.setTransform(1,0,0,1,0,0); gc.clearRect(0,0,150,130);
-    const rn=o.kind==='rn'||o.hood, A=o.arms||'down', w=o.walk?Math.sin(o.walk):0, pose={b:o.sit?6:0,lean:0,F:o.sit?[[7,0],[9,0]]:[[-2+w*3,-Math.max(0,w)*1.5],[2-w*3,-Math.max(0,-w)*1.5]],hd:0,hx:0};
+    const rn=o.kind==='rn'||o.hood, A=o.arms||'down', w=o.walk?Math.sin(o.walk):0, kk=o.kick?2.4:1, pose={b:o.sit?6:0,lean:0,F:o.sit?[[7,0],[9,0]]:[[-2+w*3*kk,-Math.max(0,w)*1.5*kk*kk],[2-w*3*kk,-Math.max(0,-w)*1.5*kk*kk]],hd:0,hx:0};
     if(A==='up'){ pose.ua=[-2.7,2.7]; pose.el=[-.3,.3]; } else if(A==='fwd'){ pose.ua=[.2,1.45]; pose.el=[.3,.15]; } else if(A==='guard'){ pose.ua=[1.2,1.5]; pose.el=[1.7,1.6]; } else { pose.ua=[.12,-.1]; pose.el=[.25,.3]; }
     nathanV2Paint(gc,75,118,1,{t:NK.t,still:1,irl:rn,pose,face:o.face&&o.face!=='calm'?o.face:undefined,nohead:o.nohead,noset:!(o.kind==='rn'||o.headset),sil:o.sil,scarf:rn?0:1,jacket:1});
-    const sc=(o.sc||1)*.66; c.save(); c.imageSmoothingEnabled=false; c.translate(x,y); c.scale((o.f||1)*sc,sc); if(o.rot) c.rotate(o.rot); c.drawImage(gcv,-75,-118); c.restore(); }catch(e){ console.error('nk guy',e); nkGuyOld(c,x,y,o); } }
+    const sc=(o.sc||1)*.66; c.save(); if(o.alpha!=null) c.globalAlpha=o.alpha; c.imageSmoothingEnabled=false; c.translate(x,y); c.scale((o.f||1)*sc*(o.sx||1),sc*(o.sy||1)); if(o.rot) c.rotate(o.rot); c.drawImage(gcv,-75,-118); c.restore(); }catch(e){ console.error('nk guy',e); nkGuyOld(c,x,y,o); } }
 function nkAli(c,x,y,o){ o=o||{}; if(!(ALS.ok&&ALS.img)) return nkAliOld(c,x,y,o);
   try{ const P=o.pose||'stand', a=o.arm||0, sc=(o.sc||1)*.75; let row=0, col=2, rot=o.rot||0, dy=0;
     if(P==='kick'){ rot-=.3+.22*a; } else if(P==='fly'){ row=3; col=1; } else if(P==='reach'){ row=18; col=2; } else if(P==='throw'){ row=18; col=2; rot+=.32; } else if(P==='crouch'){ row=11; col=0; } else if(P==='spin'){ col=((o.dir||0)%8+8)%8; }
@@ -16867,43 +16867,63 @@ function nkFloor(c,x,y,w,h,ph,top){ nkPx(c,x,y,w,h,'#3a2e30'); const n=Math.ceil
   if(top){ const v=c.createRadialGradient(x+w/2,y+h/2,40,x+w/2,y+h/2,250); v.addColorStop(0,'rgba(255,230,210,.07)'); v.addColorStop(1,'rgba(0,0,0,.45)'); c.fillStyle=v; c.fillRect(x,y,w,h); } }
 // real-life Nathan's face from above him. st 0..6 is how far the beating has gone.
 function nkFace(c,t,F){ const st=F.st||0, hit=F.hitT<.3, P=(pts,col)=>nkPoly(c,pts,col), E=(x,y,rx,ry,col,rot)=>nkEll(c,x,y,rx,ry,col,rot), Ln=(a,b,d,e,w,col)=>nkLine(c,a,b,d,e,w,col), R=(x,y,w,h,col)=>nkPx(c,x,y,w,h,col);
-  const SK='#d49868', SKS='#c08454', SKD='#a06a42', SKH='#e4ac7c', HR='#16141e', HRH='#34304a', BL='#a8141e', BLD='#7a0c16', BLH='#d0283a';
+  const SK='#deb088', SKS='#c8946c', SKD='#a87650', SKH='#ecc6a0', HR='#1a1412', HRH='#3b2d26', BL='#a8141e', BLD='#7a0c16', BLH='#d0283a';
   // the hoodie: shoulders, a collar of hood, folds, the two strings
   P([[-90,132],[-84,62],[-56,42],[-20,34],[20,34],[56,42],[84,62],[90,132]],'#6a7684'); P([[-90,132],[-84,62],[-56,42],[-46,46],[-66,70],[-70,132]],'#7c8896'); P([[90,132],[84,62],[56,42],[46,46],[66,70],[70,132]],'#4c5662');
   P([[-38,38],[-22,20],[22,20],[38,38],[26,54],[0,60],[-26,54]],'#4c5662'); P([[-30,38],[-18,24],[18,24],[30,38],[20,49],[0,54],[-20,49]],'#3a424c');
   for(const q of [[-62,74,-44,126],[-32,62,-26,118],[32,64,38,118],[60,76,46,126],[-12,62,-10,122]]) Ln(q[0],q[1],q[2],q[3],1.3,'rgba(34,42,52,.5)'); Ln(-70,70,-58,60,1.2,'rgba(255,255,255,.14)');
   R(-9.6,42,3.2,44,'#d8dde4'); R(6.4,42,3.2,42,'#d8dde4'); R(-10.2,84,4.4,5,'#9aa2ae'); R(5.8,82,4.4,5,'#9aa2ae'); R(-8.6,42,.8,44,'#ffffff');
   // neck, ears
-  P([[-17,16],[17,16],[19,40],[0,46],[-19,40]],'#b87a50'); P([[-17,16],[17,16],[14,27],[-14,27]],SKD);
-  E(-45,-10,6.5,11,SK); E(45,-10,6.5,11,SKS); E(-45,-9,3,6.5,SKD); E(45,-9,3,6.5,SKD);
-  // the head: a jaw that narrows to the chin, lit from the left
-  P([[-44,-54],[44,-54],[45.5,-4],[39,17],[23,31],[-23,31],[-39,17],[-45.5,-4]],SK);
-  P([[28,-54],[44,-54],[45.5,-4],[39,17],[23,31],[13,31],[31,10],[35,-12]],SKS); P([[-44,-54],[-37,-54],[-39,-6],[-31,13],[-39,17],[-45.5,-4]],SKH);
-  E(0,27,19,3.4,SKS); E(-24,2,9,6,'rgba(228,150,120,.5)'); E(24,2,9,6,'rgba(196,120,96,.45)');
-  // hair: a mop in spikes, strands picked out
-  P([[-53,-38],[-56,-64],[-42,-85],[-24,-80],[-15,-93],[5,-86],[22,-95],[35,-80],[49,-78],[56,-58],[53,-38],[45,-34],[41,-51],[25,-45],[11,-54],[-6,-43],[-22,-53],[-38,-45],[-45,-33]],HR);
-  for(const q of [[-37,-77,-27,-58],[-11,-85,-5,-62],[14,-87,16,-64],[34,-76,30,-57],[-47,-60,-45,-44],[46,-66,47,-48],[-22,-70,-18,-58]]) Ln(q[0],q[1],q[2],q[3],1.5,HRH); Ln(-2,-80,2,-66,1,'#544e70'); Ln(24,-84,24,-72,1,'#544e70');
-  // headset: a band, two padded cups, a mic on a boom
-  P([[-60,-58],[-52,-82],[52,-82],[60,-58],[54,-58],[48,-76],[-48,-76],[-54,-58]],'#22242c'); Ln(-46,-80,46,-80,1.2,'#4a4e5c');
+  P([[-17,16],[17,16],[19,40],[0,46],[-19,40]],'#c08c64'); P([[-17,20],[17,20],[13,34],[-13,34]],SKD);
+  c.save(); c.translate(0,-4); /* the head sits a little higher than the old one: this face is longer below the nose */
+  E(-47,-8,6.5,11,SK); E(47,-8,6.5,11,SKS); E(-47,-7,3,6.5,SKD); E(47,-7,3,6.5,SKD);
+  // the head (v1.89, redrawn after the owner's reference): a round face, full cheeks, a soft jaw, lit from the left
+  const head=()=>{ c.beginPath(); c.moveTo(-45,-56); c.bezierCurveTo(-52,-18,-50,12,-31,28); c.quadraticCurveTo(0,52,31,28); c.bezierCurveTo(50,12,52,-18,45,-56); c.closePath(); };
+  c.fillStyle=SK; head(); c.fill(); c.save(); head(); c.clip(); E(44,-6,14,48,SKS); E(-46,-10,8,38,SKH); E(0,44,30,7,SKS); c.restore();
+  E(-28,3,11.5,7.5,'rgba(236,150,124,.42)'); E(28,3,11.5,7.5,'rgba(206,126,102,.42)');
+  // brows: mostly under the fringe; knotted once it starts
+  for(const sd of [-1,1]){ c.strokeStyle=HR; c.lineWidth=3.4; c.lineCap='round'; c.beginPath(); c.moveTo(sd*33,-25); c.quadraticCurveTo(sd*21,-29.5,sd*9,st?-21.5:-25.5); c.stroke(); }
+  // eyes: narrow, squinting over raised cheeks; they squeeze shut on a hit and swell shut one at a time
+  for(const sd of [-1,1]){ const x=sd*21, y=-14, shut=sd<0?st>=3:st>=5; c.lineCap='round';
+    if(shut){ E(x,y,14,9.5,'#7a3a6a'); E(x,y-1,11.5,6.6,'#5a2a5a'); E(x+sd*2,y-3,6,3,'#8a4a7a'); c.strokeStyle=HR; c.lineWidth=1.9; c.beginPath(); c.moveTo(x-10,y+1); c.quadraticCurveTo(x,y+4.5,x+10,y+1); c.stroke(); Ln(x-7,y+6,x+7,y+6,.8,'#3a1a3a'); }
+    else if(hit){ c.strokeStyle=HR; c.lineWidth=2.3; c.lineJoin='round'; c.beginPath(); c.moveTo(x+sd*11,y-4.5); c.lineTo(x-sd*9,y); c.lineTo(x+sd*11,y+4.5); c.stroke(); Ln(x+sd*5,y-7.5,x-sd*8,y-4,.9,SKD); Ln(x+sd*5,y+7.5,x-sd*8,y+4,.9,SKD); }
+    else { const lens=()=>{ c.beginPath(); c.moveTo(x-12,y+1); c.quadraticCurveTo(x,y-8.5,x+12,y+1); c.quadraticCurveTo(x,y+5.5,x-12,y+1); c.closePath(); };
+      c.fillStyle='#f2e8e0'; lens(); c.fill(); c.save(); lens(); c.clip(); E(x,y-.4,4.7,4.7,'#2c1a10'); E(x,y-.4,2.2,2.2,'#0a0608'); E(x-1.7,y-2.2,1.1,1.1,'#ffffff'); R(x-13,y-8,26,3.6,'rgba(50,26,18,.5)'); if(st>=1){ Ln(x-10,y+1,x-6,y,.5,'#c84a4a'); Ln(x+10,y,x+6,y+1,.5,'#c84a4a'); } c.restore();
+      c.strokeStyle=HR; c.lineWidth=2.1; c.beginPath(); c.moveTo(x-12.6,y+1.3); c.quadraticCurveTo(x,y-8.9,x+12.6,y+1.3); c.stroke();
+      c.strokeStyle='#8a5a40'; c.lineWidth=.8; c.beginPath(); c.moveTo(x-11,y+1.8); c.quadraticCurveTo(x,y+5.9,x+11,y+1.8); c.stroke();
+      c.strokeStyle=SKD; c.lineWidth=1; c.beginPath(); c.moveTo(x-11,y-5.5); c.quadraticCurveTo(x,y-12.5,x+11,y-5.5); c.stroke();
+      c.strokeStyle='rgba(150,96,70,.7)'; c.lineWidth=1.1; c.beginPath(); c.moveTo(x-10,y+7.5); c.quadraticCurveTo(x,y+11,x+10,y+7); c.stroke(); } }
+  // nose: broad, a round tip, wide wings
+  P([[1,-12],[4,-12],[8.5,1],[3.5,3]],'rgba(160,104,74,.42)'); E(0,5,8.6,6,SK); E(-8.8,6.6,4.4,3.8,SK); E(8.8,6.6,4.4,3.8,SKS); E(-1.6,3,4,2.6,SKH); E(0,11.6,9.5,1.5,'rgba(120,70,50,.35)');
+  E(-4.8,8.7,2.6,1.6,'#5a2e1e'); E(4.8,8.7,2.6,1.6,'#5a2e1e');
+  for(const sd of [-1,1]){ c.strokeStyle=SKD; c.lineWidth=1; c.beginPath(); c.moveTo(sd*11,2.5); c.quadraticCurveTo(sd*14.8,8,sd*9,10.8); c.stroke(); c.strokeStyle='rgba(150,92,66,.75)'; c.lineWidth=1.3; c.beginPath(); c.moveTo(sd*13.5,7); c.quadraticCurveTo(sd*25,13,sd*26,27); c.stroke(); }
+  // stubble: a shadow over the lip and on the chin
+  E(0,13.2,17,2.6,'rgba(40,30,30,.16)'); for(let i=0;i<44;i++){ const x=(nkRnd(i,91)*2-1)*18, y=11.8+nkRnd(i,92)*3; if(Math.abs(x)>7||y>12.6) R(x,y,.7,1,'rgba(30,22,22,.4)'); }
+  E(0,37,14,3.6,'rgba(40,30,30,.13)'); for(let i=0;i<56;i++){ const x=(nkRnd(i,93)*2-1)*17, y=34.2+nkRnd(i,94)*5.4; if(y<40-Math.abs(x)*.24) R(x,y,.7,1,'rgba(30,22,22,.38)'); }
+  if(st>=1){ R(-6.3,9.6,3,7,BL); R(-6.3,9.6,.9,7,BLH); R(3.4,9.6,2.4,5.5,BL); }
+  if(st>=2){ E(-30,5,11,7.5,'rgba(126,62,102,.78)'); E(29,1,10,7.5,'rgba(126,62,102,.78)'); E(-30,4,6,4,'rgba(96,40,84,.7)'); E(29,0,5.5,4,'rgba(96,40,84,.7)'); }
+  // mouth: a wide grimace, the whole top row of teeth showing; it drops open on a hit
+  { const mh=F.hitT<.4?1.32:1, mw=21, y0=15.5, y1=y0+13.5*mh, DK='#34121a';
+    const mouth=()=>{ c.beginPath(); c.moveTo(-mw,y0+2); c.quadraticCurveTo(-mw*.5,y0-1.8,0,y0+.6); c.quadraticCurveTo(mw*.5,y0-1.8,mw,y0+2); c.quadraticCurveTo(mw+1.6,(y0+y1)/2,mw-4,y1-2); c.quadraticCurveTo(0,y1+3.6,-mw+4,y1-2); c.quadraticCurveTo(-mw-1.6,(y0+y1)/2,-mw,y0+2); c.closePath(); };
+    E(0,y1+1.6,13,3.6,'#c98672'); E(-3,y1+1,6,1.2,'#dca08a'); c.fillStyle=DK; mouth(); c.fill(); c.save(); mouth(); c.clip();
+    R(-mw,y0-2,mw*2,4,'#c4686a'); { const ed=[-21,-16.8,-12,-6.4,0,6.4,12,16.8,21], ln=[5.6,6.6,7.4,8.4,8.4,7.4,6.6,5.6]; for(let i=0;i<8;i++){ const x0=ed[i]+.35, w=ed[i+1]-ed[i]-.7; R(x0,y0+1,w,ln[i],'#f4efe6'); R(x0,y0+1+ln[i]-1.2,w,1.2,'#d6ccbe'); R(x0,y0+1,w,.9,'#e2c8c0'); } }
+    for(let i=-3;i<4;i++){ R(i*4.3-1.9,y1-5.2,3.8,4.4,'#e6ded2'); R(i*4.3-1.9,y1-5.2,3.8,.9,'#c8beb0'); } R(-mw,y1-1.2,mw*2,3,'#b85a60');
+    if(st>=4){ R(.3,y0+.6,5.8,9.4,DK); R(-12,y0+.6,5.2,8.6,DK); R(2.4,y1-5.4,4,5,DK); E(0,y1-3,mw,5.5,'rgba(168,20,30,.5)'); R(-21,y0+3,42,2.2,'rgba(168,20,30,.45)'); }
+    c.restore(); c.strokeStyle='#8a4a3c'; c.lineWidth=1.5; mouth(); c.stroke();
+    if(st>=3){ R(-6.3,y1+2,3,2+st*1.6,BL); E(-4.8,y1+4+st*1.6,1.9,2.1,BL); }
+    if(st>=4){ P([[-17,y1-2],[-9,y1-1],[-11,y1+9],[-16,y1+6]],BL); R(-21.6,y1-3,5,12,BL); R(-21.6,y1-3,1.4,12,BLH); E(-19,y1+10,3,3.4,BL); } }
+  if(st>=6){ c.save(); head(); c.clip(); R(-54,-58,108,112,'rgba(140,10,20,.4)'); P([[-36,14],[-20,17],[-21,21],[-36,19]],BLD); c.restore(); }
+  // hair: a heavy mop, the fringe down to the brows in loose points, strands picked out from the crown
+  { const HP=[[-55,-4],[-59,-34],[-62,-60],[-53,-82],[-36,-92],[-12,-95],[10,-95],[34,-92],[53,-82],[62,-60],[59,-34],[55,-4],[49,-13],[48,-29],[42,-23],[36,-33],[29,-22.5],[21,-31],[13,-21],[5,-30],[-3,-20],[-11,-29],[-19,-21],[-27,-31],[-35,-23],[-42,-33],[-48,-27],[-49,-13]];
+    P([[-60,-48],[-70,-56],[-61,-62]],HR); P([[60,-42],[71,-47],[62,-56]],HR); P([[-57,-22],[-66,-20],[-58,-30]],HR); P([[58,-18],[66,-13],[59,-27]],HR); P(HP,HR);
+    for(const q of HP.slice(13,27)){ if(q[1]>-26){ c.strokeStyle=HRH; c.lineWidth=1.5; c.lineCap='round'; c.beginPath(); c.moveTo(q[0]*.3-6,-88); c.quadraticCurveTo(q[0]*.95-4,-62,q[0],q[1]-3.5); c.stroke(); } else { c.strokeStyle='#54402f'; c.lineWidth=.9; c.beginPath(); c.moveTo(q[0]*.4-4,-86); c.quadraticCurveTo(q[0]*1.05,-60,q[0],q[1]-4); c.stroke(); } }
+    for(const q of [[-52,-70,-57,-30],[52,-70,57,-28],[-44,-80,-51,-46],[44,-80,52,-44]]){ c.strokeStyle=HRH; c.lineWidth=1.3; c.beginPath(); c.moveTo(q[0],q[1]); c.quadraticCurveTo(q[2]*1.06,(q[1]+q[3])/2,q[2],q[3]); c.stroke(); } }
+  // headset: a band over the mop, two padded cups, a mic on a boom
+  P([[-62,-56],[-56,-86],[-40,-99],[40,-99],[56,-86],[62,-56],[56,-56],[51,-83],[38,-93],[-38,-93],[-51,-83],[-56,-56]],'#22242c'); Ln(-38,-97,38,-97,1.2,'#4a4e5c'); P([[-26,-93],[-20,-101],[-13,-93]],HR); P([[14,-93],[22,-102],[27,-93]],HR);
   for(const sd of [-1,1]){ P([[sd*50,-50],[sd*66,-46],[sd*68,-8],[sd*50,-4]],'#22242c'); P([[sd*52,-46],[sd*57,-45],[sd*58,-10],[sd*52,-8]],'#3c404c'); P([[sd*62,-44],[sd*66,-43],[sd*67,-12],[sd*62,-11]],'#14161c'); }
-  R(-64.5,-32,2.6,7,'#5aff8a'); R(-64.5,-32,2.6,2,'#c8ffd8'); Ln(-60,-6,-34,22,2.6,'#22242c'); E(-31,24,5.5,3.6,'#22242c',.7); E(-32,23,2.4,1.4,'#4a4e5c',.7);
-  // brows: up in fear, then knotted
-  { const y=st?-33:-39, k=st?4:-2; P([[-35,y+1],[-10,y+k],[-10,y+k+5],[-35,y+6]],HR); P([[35,y+1],[10,y+k],[10,y+k+5],[35,y+6]],HR); }
-  // eyes: wide, then swollen shut one at a time
-  for(const sd of [-1,1]){ const x=sd*21, shut=sd<0?st>=3:st>=5;
-    if(shut){ E(x,-17,14,10,'#7a3a6a'); E(x,-18,11.5,7,'#5a2a5a'); E(x+sd*2,-20,6,3,'#8a4a7a'); P([[x-11,-17],[x+11,-17],[x+9,-14.4],[x-9,-14.4]],HR); Ln(x-8,-12.5,x+8,-12.5,.8,'#3a1a3a'); }
-    else { const dx=hit?-sd*2.2:0, r=hit?4.2:5.2; E(x,-17,11.5,8.4,'#ffffff'); E(x,-10.4,11,2,'rgba(170,110,90,.35)'); E(x+dx,-17,r,r,'#5a3418'); E(x+dx,-17,r*.5,r*.5,'#0c0810'); E(x+dx-r*.36,-19,r*.26,r*.26,'#ffffff'); c.save(); c.beginPath(); c.ellipse(x,-17,11.5,8.4,0,0,7); c.clip(); R(x-12,-27,24,4.2,'rgba(60,30,20,.55)'); c.restore();
-      c.strokeStyle=HR; c.lineWidth=1.7; c.beginPath(); c.ellipse(x,-17,11.8,8.6,0,Math.PI,Math.PI*2); c.stroke(); if(st>=1){ Ln(x-9,-13,x-5,-12,.5,'#c84a4a'); Ln(x+8,-20,x+4,-18,.5,'#c84a4a'); } } }
-  // nose
-  P([[-4,-12],[3.5,-12],[8,6],[0,10],[-8,6]],SKS); P([[-2.4,-12],[0,-12],[1,5],[-4,6]],SKH); E(-4.2,6.4,2.2,1.5,'#6a3a24'); E(4.2,6.4,2.2,1.5,'#6a3a24');
-  if(st>=1){ R(-5.6,8,3,9+st*3,BL); R(-5.6,8,.9,9+st*3,BLH); R(2.6,8,2.4,5+st*2,BL); E(-4.1,17+st*3,1.9,2.2,BL); }
-  if(st>=2){ E(-30,4,11,7.5,'rgba(126,62,102,.78)'); E(29,0,10,7.5,'rgba(126,62,102,.78)'); E(-30,3,6,4,'rgba(96,40,84,.7)'); E(29,-1,5.5,4,'rgba(96,40,84,.7)'); }
-  // mouth
-  { const mo=F.hitT<.4||st>=4; if(mo){ E(0,20,15.5,7.6,'#3a1418'); c.save(); c.beginPath(); c.ellipse(0,20,15.5,7.6,0,0,7); c.clip(); R(-13,12.6,26,4.4,'#f2ece8'); for(let i=-2;i<=2;i++) R(i*4.6-.3,12.6,.6,4.4,'#b8b0a8'); R(-11,24.4,22,3.4,'#e4dcd4'); E(0,23.6,7.4,2.6,'#b84a5a'); if(st>=4){ R(-2.6,12.6,4.8,4.6,'#3a1418'); R(6.6,24.4,4.4,3.4,'#3a1418'); E(0,22,15,5,'rgba(168,20,30,.45)'); } c.restore(); c.strokeStyle='#8a4a3a'; c.lineWidth=1.4; c.beginPath(); c.ellipse(0,20,15.5,7.6,0,0,7); c.stroke(); }
-    else { P([[-13,18],[0,17],[13,18],[0,20.6]],'#7a3e2e'); E(0,23.4,8,1.6,SKS); } }
-  if(st>=4){ P([[-14,25],[-6,25],[-8,37],[-13,34]],BL); R(-20.6,27,5,13,BL); R(-20.6,27,1.4,13,BLH); E(-18,41,3,3.4,BL); }
-  if(st>=5){ P([[-41,-50],[-21,-49],[-22,-45],[-41,-45]],BL); R(-44.6,-46,4.4,32,BL); R(-44.6,-46,1.2,32,BLH); P([[19,9],[38,11],[36,16],[20,15]],BLD); }
-  if(st>=6){ c.save(); c.beginPath(); c.moveTo(-44,-54); for(const q of [[44,-54],[45.5,-4],[39,17],[23,31],[-23,31],[-39,17],[-45.5,-4]]) c.lineTo(q[0],q[1]); c.closePath(); c.clip(); R(-46,-56,92,90,'rgba(140,10,20,.4)'); P([[-30,-41],[30,-40],[28,-34],[-30,-35]],BLD); P([[4,-10],[34,-9],[33,-4],[4,-5]],BLD); c.restore(); }
+  R(-64.5,-32,2.6,7,'#5aff8a'); R(-64.5,-32,2.6,2,'#c8ffd8'); Ln(-60,-6,-36,24,2.6,'#22242c'); E(-33,26,5.5,3.6,'#22242c',.7); E(-34,25,2.4,1.4,'#4a4e5c',.7);
+  if(st>=5){ R(-41,-24,4.4,34,BL); R(-41,-24,1.2,34,BLH); E(-38.8,11,2.6,3,BL); P([[20,10],[39,12],[37,17],[21,16]],BLD); }
+  c.restore();
   // his hands, up, palms open, until he can no longer hold them there
   if(st<5){ const hu=Math.sin(t*9)*2; for(const sd of [-1,1]){ const x=sd*86, y=54+sd*hu; P([[x-13,y+12],[x+13,y+12],[x+15,y+74],[x-15,y+74]],sd<0?'#7c8896':'#5a6470'); R(x-14,y+10,28,5,sd<0?'#58626e':'#3a424c');
       P([[x-11,y-10],[x+11,y-10],[x+12,y+12],[x-12,y+12]],sd<0?SKH:SK); for(let i=0;i<4;i++){ const fx=x-10.4+i*5.4; P([[fx,y-24-(i===1||i===2?4:0)],[fx+4.4,y-24-(i===1||i===2?4:0)],[fx+4.6,y-9],[fx-.2,y-9]],sd<0?SKH:SK); R(fx+4.4,y-22,.6,13,SKD); R(fx+.6,y-15,3,.5,SKD); }
@@ -17025,12 +17045,21 @@ const NKS={
     else { const u=p.u||0, x=384-u*176, y=-20+u*108; nkComet(c,x,y,x+84,y-52,6); } },
   // his room. He is playing the game.
   room(c,t,p){ nkRoom(c,t,{hole:p.hole,screen:(c2,x,y,w,h)=>nkTitleScreen(c2,x,y,w,h,t),dark:p.dark}); if(p.hole) nkGuy(c,276,172,{kind:'gn',rot:-1.5,face:'ko',f:1});
-    if(p.rn!==0){ const rx=p.rx==null?150:p.rx, ry=p.ry==null?150:p.ry; if(p.chair!==0){ nkPx(c,138,120,26,4,'#22222c'); nkPx(c,136,96,5,28,'#22222c'); nkPx(c,149,124,3,24,'#22222c'); nkPx(c,138,148,26,3,'#22222c'); } nkGuy(c,rx,ry,{kind:'rn',f:p.rf||1,sit:p.rsit!==0,face:p.rface||'calm',arms:p.rarms||'fwd',rot:p.rrot||0}); }
-    if(p.ali){ nkAli(c,p.ax,p.ay,{f:p.af||-1,pose:p.apose||'stand',arm:p.aarm||0}); } },
+    if(p.imp!=null){ /* where he lands: the boards split under him and stay split */ const cx=150, cy=180; for(let i=0;i<9;i++){ const q=nkRnd(i,61)*6.283, r=10+nkRnd(i,62)*22, x1=cx+Math.cos(q)*r*1.5, y1=cy+Math.sin(q)*r*.34; nkLine(c,cx+Math.cos(q)*4,cy+Math.sin(q)*1.4,x1,y1,.9,'#140e12'); nkLine(c,x1,y1,x1+Math.cos(q+.7)*6,y1+Math.sin(q+.7)*2,.6,'#140e12'); } }
+    if(p.chair!==0){ /* his chair: shoved back and tipped over when he is pulled out of it */ c.save(); c.translate(150+(p.chx||0),150); c.rotate(p.chr||0); nkPx(c,-12,-30,26,4,'#22222c'); nkPx(c,-14,-54,5,28,'#22222c'); nkPx(c,-14,-54,1.2,28,'#34343e'); nkPx(c,-1,-26,3,24,'#22222c'); nkPx(c,-12,-2,26,3,'#22222c'); nkPx(c,-12,-30,26,1,'#34343e'); c.restore(); }
+    const kin=()=>{ /* while he is held he hangs from the collar Ali has hold of: g = that point, psi = which way his feet point from it */ if(!p.held) return [p.rx==null?150:p.rx,p.ry==null?150:p.ry,p.rrot||0]; const j=p.trem?Math.sin(t*61)*.5*p.trem:0, gx=(p.gx||0)+j, gy=(p.gy||0)+(p.trem?Math.cos(t*47)*.4*p.trem:0), ps=p.psi||0; return [gx+Math.cos(ps)*26,gy+Math.sin(ps)*26,ps-Math.PI/2,gx,gy]; };
+    if(p.rn!==0){ const k=kin(), bn=p.bnc||0; if(p.held===2&&p.ghost){ for(const g of p.ghost){ nkGuy(c,g[0],g[1],{kind:'rn',f:1,sit:0,face:'shock',arms:'up',rot:g[2],alpha:g[3]}); } }
+      nkGuy(c,k[0],k[1]-bn,{kind:'rn',f:p.rf||1,sit:p.rsit!==0,face:p.rface||'calm',arms:p.rarms||'fwd',rot:k[2],walk:p.rkick?t*26:0,kick:p.rkick,sx:1+(p.rsq||0)*.16,sy:1-(p.rsq||0)*.3}); }
+    if(p.ali){ const k=kin(), f=p.af||-1; if(p.adash>0){ for(let i=3;i>0;i--) nkAli(c,p.ax+i*15*p.adash,p.ay,{f,pose:'reach',alpha:.34-i*.08}); nkPx(c,p.ax+8,p.ay-30,60*p.adash,1,'rgba(255,255,255,.5)'); nkPx(c,p.ax+12,p.ay-18,48*p.adash,1,'rgba(255,255,255,.35)'); }
+      nkAli(c,p.ax,p.ay+(p.adip||0),{f,pose:p.apose||'stand',arm:p.aarm||0,hand:p.held?[(k[3]-p.ax)/(f*.75),(k[4]-p.ay-(p.adip||0))/.75]:null});
+      if(p.skT!=null){ const u=(t-p.skT)/.4; if(u>=0&&u<1){ for(let i=0;i<5;i++) nkEll(c,p.ax+6+i*5+u*10*(i+1)*.4,p.ay-1-u*4*(i%2+1),2.2+u*3,1.4+u*1.6,'rgba(190,180,200,'+(.5*(1-u))+')'); } } }
+    if(p.imp!=null){ /* the landing: a flat ring of dust along the boards, splinters, short hard lines out of the point */ const u=(t-p.imp)/.55, cx=150, cy=180; if(u>=0&&u<1){ const e=1-(1-u)*(1-u); c.strokeStyle='rgba(214,204,220,'+(.7*(1-u))+')'; c.lineWidth=2.2*(1-u)+.4; c.beginPath(); c.ellipse(cx,cy+2,14+e*64,3+e*11,0,0,7); c.stroke(); for(let i=0;i<10;i++){ const sd=i%2?1:-1, bx=cx+sd*(18+nkRnd(i,63)*44*e+e*14), by=cy+3-nkRnd(i,64)*5; nkEll(c,bx,by-e*4,3+e*5*nkRnd(i,65),2+e*3,'rgba(200,190,208,'+(.5*(1-u))+')'); }
+        for(let i=0;i<12;i++){ const q=-Math.PI*(.08+nkRnd(i,66)*.84), v=60+nkRnd(i,67)*90, x=cx+Math.cos(q)*v*u, y=cy+Math.sin(q)*v*u+150*u*u; nkPx(c,x,y,1.6+nkRnd(i,68)*1.6,1+nkRnd(i,69),i%3?'#5a4648':'#8a7478'); }
+        if(u<.22){ for(let i=0;i<11;i++){ const q=-Math.PI*(i+.5)/11, r0=20+u*40, r1=r0+10+nkRnd(i,70)*16; nkLine(c,cx+Math.cos(q)*r0*1.5,cy+Math.sin(q)*r0*.8,cx+Math.cos(q)*r1*1.5,cy+Math.sin(q)*r1*.8,1.2,'rgba(255,255,255,'+(.9-u*3)+')'); } } } } },
   // first person. Two fists, one face.
   fpv(c,t,p){ const F=NK.fp||{n:0,l:0,r:0,st:0,hitT:9}, st=F.st, hq=F.hitT-.045, hk=hq>=0&&hq<.22?Math.pow(1-hq/.22,2):0 /* the head takes the punch when the fist arrives, and swings back */, jx=-(F.side||1)*13*hk, jy=3*hk; nkFloor(c,0,0,384,216,27,1);
     if(F.n>3){ const pr=Math.min(1,(F.n-3)/24); c.fillStyle='#5a060e'; c.beginPath(); c.ellipse(192,150,40+pr*170,20+pr*80,0,0,7); c.fill(); c.fillStyle='#7a0c16'; c.beginPath(); c.ellipse(186,146,30+pr*130,14+pr*60,0,0,7); c.fill(); } /* the pool under his head */ for(let i=0;i<F.n*4;i++){ const a=nkRnd(i,41)*6.28, r=50+nkRnd(i,42)*150; nkPx(c,192+Math.cos(a)*r,100+Math.sin(a)*r*.7,3+nkRnd(i,43)*11,2+nkRnd(i,44)*6,i%3?'#7a0c16':'#a8141e'); }
-    c.save(); c.translate(192+jx,96+jy); c.rotate((F.side||1)*.15*hk+Math.sin(t*1.3)*.01); c.scale(1+.07*hk,1-.05*hk);
+    c.save(); c.translate(192+jx,100+jy); c.rotate((F.side||1)*.15*hk+Math.sin(t*1.3)*.01); c.scale(1+.07*hk,1-.05*hk);
     nkFace(c,t,F); c.restore();
     /* the fists (v1.87: they used to appear on his face and slide back). A punch is thrown: 3 frames out with a smear behind it,
        4 frames buried in his face (squashed, a burst of lines where it lands), then it comes back; the other fist cocks back as this one goes */
@@ -17075,7 +17104,7 @@ const NKS={
   card(c,t,p){ nkPx(c,0,0,384,216,'#000000'); c.textAlign='center'; c.fillStyle='rgba(255,255,255,'+Math.min(1,t*1.5)+')'; c.font='700 16px Georgia,serif'; c.fillText(p.a||'',192,104); c.font='italic 9px Georgia,serif'; c.fillStyle='rgba(216,180,106,'+Math.min(1,Math.max(0,t-.5)*1.5)+')'; c.fillText(p.b||'',192,124); c.textAlign='left'; },
   black(c){ nkPx(c,0,0,384,216,'#000000'); } };
 // ---------- drawing it over the game ----------
-(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); if(!NK.on) return; try{ if(!NK.cv){ NK.cv=document.createElement('canvas'); NK.cv.width=384*NK.S; NK.cv.height=216*NK.S; NK.c=NK.cv.getContext('2d'); } const c=NK.c, paused=Game.state==='paused', dt=paused?0:1/60; NK.t+=dt; NK.shake=Math.max(0,NK.shake-dt*4); NK.flash=Math.max(0,NK.flash-dt*3);
+(function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); if(!NK.on) return; try{ if(!NK.cv){ NK.cv=document.createElement('canvas'); NK.cv.width=384*NK.S; NK.cv.height=216*NK.S; NK.c=NK.cv.getContext('2d'); } const c=NK.c, paused=Game.state==='paused', dt=paused?0:1/60; NK.t+=dt; if(!paused&&nkGuard(dt)) return; NK.shake=Math.max(0,NK.shake-dt*4); NK.flash=Math.max(0,NK.flash-dt*3);
       c.save(); c.setTransform(NK.S,0,0,NK.S,0,0); c.imageSmoothingEnabled=false; c.globalAlpha=1; c.textAlign='left'; c.fillStyle='#000'; c.fillRect(0,0,384,216); c.save(); { /* the film's own camera: zoom about a point of the scene */ const z=Math.max(.2,NK.p.zoom||1), zx=NK.p.zx==null?192:NK.p.zx, zy=NK.p.zy==null?108:NK.p.zy, hx=192/z, hy=108/z, cx=Math.max(hx,Math.min(384-hx,zx)), cy=Math.max(hy,Math.min(216-hy,zy)); c.translate(192,108); c.scale(z,z); c.translate(-cx,-cy); } const f=NKS[NK.scene]||NKS.black; f(c,NK.t,NK.p); c.restore();
       if(NK.bars){ nkPx(c,0,0,384,14,'#000000'); nkPx(c,0,202,384,14,'#000000'); } c.restore();
       D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.imageSmoothingEnabled=true; try{ D.imageSmoothingQuality='high'; }catch(e){} const sx=NK.shake>0?(Math.random()-.5)*NK.shake*18:0, sy=NK.shake>0?(Math.random()-.5)*NK.shake*18:0; D.fillStyle='#000'; D.fillRect(0,0,UW,UH); D.drawImage(NK.cv,sx,sy,UW,UH);
@@ -17094,8 +17123,31 @@ function* nkPunchOut(){ const F=NK.fp={n:0,need:28,l:9,r:9,st:0,hitT:9,side:1,do
     if(s){ if(s<0) F.l=0; else F.r=0; F.n++; F.side=s; F.hitT=0; F.idle=0; F.st=Math.min(6,Math.floor(F.n/4)); NK.shake=Math.min(1,.35+F.st*.08); Sound.sfx(F.n%3?'hit':'slam'); if(F.st>=2&&F.n%2===0) Sound.sfx('gore'); const L=lines.find(q=>q[0]===F.n); if(L) nkSub('nathanirl',L[1],1.8); try{ const DR=F.drops||(F.drops=[]), nd=4+F.n*1.4; for(let k=0;k<nd;k++) DR.push({x:192+rnd(-22,22),y:96+rnd(-20,26),vx:-s*rnd(20,260)+rnd(-90,90),vy:rnd(-300,-30),r:1+Math.floor(Math.random()*(2+F.st*.6)),k:k%2}); if(F.n>=6&&F.n%2===0){ const LS=F.lens||(F.lens=[]), b=[], d=[], r=8+F.st*4; for(let k=0;k<8;k++){ const a=rnd(0,6.28), q=rnd(0,r); b.push([Math.cos(a)*q,Math.sin(a)*q,rnd(.2,.55)*r]); } for(let k=0;k<3;k++) d.push([rnd(-r*.6,r*.6),rnd(20,90),rnd(14,40)]); LS.push({x:rnd(30,354),y:rnd(20,180),b,d,t:0}); if(LS.length>16) LS.shift(); } }catch(e){} }
     yield wait(0); }
   F.done=1; yield wait(.5); }
+// Ali crosses the room, takes him by the collar, lifts him out of the chair, presses him overhead and puts him through the floor (v1.89:
+// it used to be a reach and a teleport to the floor). While p.held is set the room scene hangs him from (gx,gy), feet towards psi.
+function* nkRoomThrow(){ const p=NK.p, so=t=>1-(1-t)*(1-t), ss=t=>t*t*(3-2*t);
+  yield tween(p,{zoom:1.6,zx:190,zy:130},.2); Sound.sfx('dash'); p.apose='reach'; p.adash=1; yield tween(p,{ax:178},.14); p.skT=NK.t; yield tween(p,{adash:0},.1);
+  /* the grab: a hand on his collar, one held frame */ p.held=1; p.gx=152; p.gy=128; p.psi=Math.PI/2; p.rface='shock'; p.rarms='up'; Sound.sfx('hit'); NK.shake=.45; yield tween(p,{zoom:2,zx:166,zy:128},.12,so); yield wait(.16);
+  /* out of the chair, feet off the floor; the chair goes over backwards */ p.rsit=0; p.rkick=1; Sound.sfx('swing'); Game.fxUpd.push(dt=>{ if(NK.scene!=='room'||(p.chr||0)<=-1.5) return false; p.chx=Math.max(-30,(p.chx||0)-(dt||1/60)*90); p.chr=Math.max(-1.5708,(p.chr||0)-(dt||1/60)*5.2); if(p.chr<=-1.5708){ p.chr=-1.5708; Sound.sfx('step'); return false; } return true; });
+  yield tween(p,{gx:160,gy:106,psi:Math.PI/2+.22},.2,so); yield tween(p,{gy:109,psi:Math.PI/2-.06},.12,ss); p.trem=1; p.rarms='guard'; yield tween(p,{zoom:2.3,zx:166,zy:120},.5,ss);
+  /* the press: up over his hat, flat on his back in the air */ p.trem=0; p.rarms='up'; Sound.sfx('swing'); yield tween(p,{zoom:1.7,zx:168,zy:124},.12); yield tween(p,{gx:163,gy:92,psi:-.12,adip:-1.5},.2,so); yield tween(p,{psi:0,gy:94},.08); p.trem=1.4; yield wait(.3);
+  /* the wind-up, then down */ yield tween(p,{gy:90,adip:2.5,psi:.1},.12,so); p.trem=0; p.apose='throw'; p.held=2; p.ghost=[]; Sound.sfx('swing'); Sound.sfx('dash');
+  { const x0=p.gx, y0=p.gy, x1=148, y1=178, T=.1; let u=0; while(u<1){ u=Math.min(1,u+1/60/T); const e=u*u; p.ghost=[]; for(let k=1;k<=3;k++){ const ue=Math.max(0,u-k*.16), ee=ue*ue, ps=-.3*Math.sin(ue*Math.PI); p.ghost.push([x0+(x1-x0)*ee+Math.cos(ps)*26,y0+(y1-y0)*ee+Math.sin(ps)*26,ps-Math.PI/2,.3-k*.07]); } p.gx=x0+(x1-x0)*e; p.gy=y0+(y1-y0)*e; p.psi=-.3*Math.sin(u*Math.PI); p.adip=2.5+u*3; p.zy=124+18*e; yield wait(0); } }
+  /* the floor */ p.held=0; p.ghost=null; p.rx=174; p.ry=179; p.rrot=-1.5708; p.rkick=0; p.rface='ko'; p.rarms='up'; p.rsq=1; p.imp=NK.t; Sound.sfx('slam'); Sound.sfx('crash'); try{ Sound.sfx('crossboom'); }catch(e){} NK.shake=1; NK.flash=.45; p.zy=142; yield wait(.1);
+  yield tween(p,{rsq:-.25,bnc:7},.1,so); yield tween(p,{rsq:.3,bnc:0},.11,t=>t*t); NK.shake=.35; Sound.sfx('step'); p.rarms='down'; yield tween(p,{rsq:0},.1); p.apose='stand'; yield tween(p,{adip:0},.25,ss); yield wait(.55); }
+// ---------- the film looks after itself (v1.89) ----------
+// The owner's game froze on the last card. It could not be reproduced in the playtest rig (the real fight-to-ending path reaches the end
+// screen there), so the film no longer depends on anything outside it to finish: it runs on its own clock (NK.t, advanced where it is drawn),
+// and each frame it makes sure nothing can stall the script under it. The last card ends itself even if the script never comes back.
+function nkFinish(){ Player.inv=1; Game.aliOld=0; Game.ending=7; Game.fade=1; Game.fadeTo=1; NK.on=0; NK.fade=0; NK.gen=null; Game.state='end'; Game.endT=0; Game.script=null; Game.wait=null; Game.dlg=null; }
+function nkGuard(dt){ const P=Player; Game.timeScale=1; Game.slowT=0; /* slow motion or a time stop left over from the fight would hold every wait and tween */ if(!(P.inv>30)) P.inv=30;
+  if(Game.state==='dead'){ Game.state='cut'; P.hp=Math.max(1,P.hp||1); } /* nothing in the world may end the run while the film plays */
+  if(NK.scene==='card'&&NK.p.fin&&NK.t>6.4){ nkFinish(); return true; } /* 4.2s held + 1.2s of fade, and a second of grace */
+  if(NK.gen&&Game.script!==NK.gen){ NK.lost=(NK.lost||0)+dt; if(NK.lost>1.5){ console.error('nk: the film lost its script in scene',NK.scene); nkFinish(); return true; } } else NK.lost=0;
+  return false; }
+(function(){ const od=Game.onDeath; Game.onDeath=function(){ if(NK.on){ Player.hp=Math.max(1,Player.hp||1); return; } return od.apply(this,arguments); }; })();
 // ---------- the film ----------
-function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCine(); }catch(e){} NK.on=1; NK.fade=0; NK.bars=1; NK.fp=null; Game.letterTo=0; P.inv=999; Cam.cine=Cam.cine||null;
+function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCine(); }catch(e){} NK.on=1; NK.gen=Game.script; NK.lost=0; NK.fade=0; NK.bars=1; NK.fp=null; Game.letterTo=0; P.inv=999; Cam.cine=Cam.cine||null;
   nkScene('field',{zoom:2.3,zx:218,zy:152}); try{ NP1.hint=null; nbRemove(); Game.arena=null; Cam.zoom=1; }catch(e){ console.error('nk cleanup',e); } /* the fight is over for good: without this his HP bar stayed on screen, over the end screen too (seen in the playtest rig) */ yield wait(.8);
   yield say('nathanraw',"...Do it, then. Finish the arc. At least make it MEAN something.");
   yield say('ali',"It doesn't.");
@@ -17129,8 +17181,7 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   yield tween(NK.p,{zoom:1.35,zx:210,zy:120},.5,t=>t*t*(3-2*t)); yield say('nathanirl',"...And that's the samurai. From the route I didn't pick.");
   yield tween(NK.p,{zoom:2.8,zx:268,zy:122},.25); yield say('ali',"You were holding the controller."); yield tween(NK.p,{zoom:2.6,zx:150,zy:122},.25);
   yield say('nathanirl',"It's a keyboard. Listen. It's a GAME. He's not REAL. I'm real. You can't just");
-  yield tween(NK.p,{zoom:1.6,zx:190,zy:130},.2); Sound.sfx('dash'); NK.p.chair=0; yield tween(NK.p,{ax:176},.18); NK.p.apose='reach'; NK.p.rsit=0; NK.shake=.5; Sound.sfx('hit'); yield tween(NK.p,{ry:118},.25,t=>1-(1-t)*(1-t)); yield wait(.35);
-  Sound.sfx('swing'); NK.p.rrot=-1.5708; yield tween(NK.p,{rx:206,ry:176},.16,t=>t*t); Sound.sfx('slam'); NK.shake=1; NK.flash=.6; NK.p.rface='ko'; NK.p.rarms='down'; NK.p.apose='stand'; yield wait(.7);
+  yield* nkRoomThrow();
   yield tween(NK.p,{zoom:2.6,zx:182,zy:136},.5,t=>t*t*(3-2*t)); yield say('ali',"Ten seconds. I'll count slow.");
   // first person
   nkScene('fpv',{}); NK.bars=0; NK.flash=.4; yield* nkPunchOut(); NK.bars=1;
@@ -17172,8 +17223,8 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   yield say('nathanraw',"...Skill issue.");
   yield say('shayan',"Fair. You're on creep. Don't feed.");
   yield say('nathanraw',"I have never fed anyone in my life. I only take.");
-  yield wait(.8); yield tween(NK,{fade:1},1.6); nkScene('card',{a:'ENDING: THE REPLACEMENT',b:'Somewhere, a samurai walks on. He does not play StarCraft.'}); NK.fade=0; yield wait(4.2); yield tween(NK,{fade:1},1.2);
-  Game.aliOld=0; Game.ending=7; Game.fade=1; Game.fadeTo=1; NK.on=0; NK.fade=0; Game.state='end'; Game.endT=0; Game.script=null; }
+  yield wait(.8); yield tween(NK,{fade:1},1.6); nkScene('card',{a:'ENDING: THE REPLACEMENT',b:'Somewhere, a samurai walks on. He does not play StarCraft.',fin:1}); NK.fade=0; yield wait(4.2); yield tween(NK,{fade:1},1.2);
+  nkFinish(); }
 // the choice: after phase III on Ali's road, before the finale
 (function(){ const nf=nbFinale; nbFinale=function*(){ let kill=false; try{ kill=ALI()&&typeof NP1!=='undefined'&&(NP1.ph||1)>=3; }catch(e){}
     if(kill){ Game.letterTo=1; try{ if(NB) cineSet(NB.x-2.5,NB.y+1.2,NB.z+7,NB.x,NB.y+1,NB.z); }catch(e){} yield wait(.6);
@@ -20260,12 +20311,24 @@ addEventListener('click',e=>{ if(performance.now()<MOB.ghost){ e.preventDefault(
     const on=!!TLM.open; if(MOB.hub!==on){ MOB.hub=on; document.body.classList.toggle('hubopen',on); }
     const chs=!!(Game.dlg&&Game.dlg.type==='choice'&&IS_TOUCH()); if(MOB.chs!==chs){ MOB.chs=chs; document.body.classList.toggle('mobchoice',chs); } }catch(e){} }; })();
 
+// ----- 99y_loopguard.js -----
+// =====================================================================
+// THE FRAME LOOP'S SAFETY NET (v1.89). The base loop re-arms itself on its last line, so one exception anywhere in a frame ended
+// the game for good: a frozen picture (the owner hit this on the Kill ending's last card). Now a frame that throws is logged,
+// the UI is still drawn (so a cutscene's film and dialogue keep going), and the next frame is asked for all the same.
+// A line at the bottom of the screen names the error for a few seconds so it can be reported.
+// =====================================================================
+const LG={n:0,last:'',t:-1e9};
+(function(){ const lp=loop; loop=function(){ try{ return lp.apply(this,arguments); }catch(e){ LG.n++; LG.last=String((e&&e.stack)||e).split('\n').slice(0,2).join(' ').slice(0,180); LG.t=performance.now(); try{ console.error('frame',e); }catch(e2){}
+      try{ drawUI(); }catch(e2){} try{ clearHits(); }catch(e2){} requestAnimationFrame(loop); } }; })();
+(function(){ const du=drawUI; drawUI=function(){ const r=du.apply(this,arguments); try{ if(LG.n&&performance.now()-LG.t<8000){ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.globalAlpha=.8; D.font='500 12px monospace'; D.textAlign='left'; D.fillStyle='#000'; D.fillRect(0,UH-18,Math.min(UW,D.measureText(LG.last).width+90),18); D.fillStyle='#ff9a8a'; D.fillText('frame error ('+LG.n+'): '+LG.last,6,UH-5); D.restore(); } }catch(e){} return r; }; })();
+
 // ----- 99z_version.js -----
 // =====================================================================
 // THE BUILD'S VERSION, bottom right on every screen (so the owner can tell which build the live site is serving).
 // Bump GAME_VERSION when asked.
 // =====================================================================
-const GAME_VERSION='v1.88';
+const GAME_VERSION='v1.89';
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ D.save(); D.setTransform(RW/UW,0,0,RH/UH,0,0); D.font=`700 13px ${FB}`; D.textAlign='right'; D.textBaseline='alphabetic';
       D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; D.strokeText(GAME_VERSION,UW-8,UH-7); D.fillStyle='rgba(255,255,255,.6)'; D.fillText(GAME_VERSION,UW-8,UH-7); D.restore(); }catch(e){} }; })();
 
