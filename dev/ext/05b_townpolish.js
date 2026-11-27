@@ -55,7 +55,7 @@ function tpHouse(G,x,z,w,d,h,seed){ const hu=Math.ceil(h), fz=z+d+.1, rh=d*.55;
   const sx=x+w*.75, sy=h+rh+.85, sz=z+d*.4; G.anim.push(()=>{ if(Math.random()<.12) FX.spawn(sx+rnd(-.1,.1),sy,sz+rnd(-.1,.1),rnd(-.2,.3),rnd(.6,1.1),0,rnd(1.6,2.4),Math.random()<.5?0xb8b0a8:0x8a8480,rnd(.25,.4),-.15,false); }); }
 // strings of paper lanterns between the lamp posts (each string belongs to the post it starts at: smash it and it falls)
 (function(){ const vb=LEVELDEF.village; LEVELDEF.village=function(){ const G=vb.apply(this,arguments); try{ tpLanternStrings(G); }catch(e){ console.error('lantern strings',e); } return G; }; })();
-function tpLanternStrings(G){ const posts=[[7,10],[15.5,10.2],[24.5,10.2],[33,10]], cols=[0xff6a5a,0xffc04a,0xff8ab0,0x8ad0ff], cord=new THREE.MeshBasicMaterial({color:0x2a2420});
+function tpLanternStrings(G){ const posts=G.lanternPosts||[[7,10],[15.5,10.2],[24.5,10.2],[33,10]], cols=[0xff6a5a,0xffc04a,0xff8ab0,0x8ad0ff], cord=new THREE.MeshBasicMaterial({color:0x2a2420});
   for(let i=0;i<posts.length-1;i++){ const [x0,z0]=posts[i], [x1,z1]=posts[i+1], p=(G.destr||[]).find(q=>q.kind==='lantern'&&Math.abs(q.cx-(x0+.25))<.6&&Math.abs(q.cz-z0)<.5); const n0=G.root.children.length, N=10;
     for(let k=0;k<=N*3;k++){ const u=k/(N*3), x=lerp(x0+.5,x1+.5,u), z=lerp(z0,z1,u), y=2.3-Math.sin(u*Math.PI)*.55; const c=new THREE.Mesh(new THREE.BoxGeometry(.06,.03,.03),cord); c.position.set(x,y,z); G.root.add(c); }
     for(let k=1;k<N;k++){ const u=k/N, x=lerp(x0+.5,x1+.5,u), z=lerp(z0,z1,u), y=2.3-Math.sin(u*Math.PI)*.55, col=cols[(k+i)%cols.length];

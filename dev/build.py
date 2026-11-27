@@ -218,6 +218,17 @@ s = patch(s, "P.vy=ALI()?0:Math.max(P.vy,-1.3);", "P.vy=ALI()?0:Math.max(P.vy,-.
 # Shayan's double jump always peaks at the same height (shDJumpV in 06b_shayan), whenever it is pressed
 s = patch(s, "else if(P.jumps>0){ P.vy=ALI()?10.5:7.4;", "else if(P.jumps>0){ P.vy=ALI()?10.5:(typeof shDJumpV==='function'?shDJumpV():7.4);")
 s = patch(s, "const aw=full?vw:document.body.clientWidth-32, ah=full?vh:document.body.clientHeight-(getComputedStyle(hint).display==='none'?16:hint.offsetHeight+24);", "const aw=vw, ah=vh;")
+# the bigger Lanternbrook (05a_bigtown): the few cutscenes that used absolute spots in the old square move with it (+20,+3); the
+# epilogue's "little house on the west end" is the cottage at x 2-8
+s = patch(s, "const lx=20, lz=14.6; P.hidden=false;", "const lx=40, lz=17.6; P.hidden=false;")
+s = patch(s, "Game.darken=.65; cineSet(16,3.4,24,16,3,8);", "Game.darken=.65; cineSet(5,3.4,23,5,3,8);")
+s = patch(s, "resetPlayer({x:19,z:15},true); P.hidden=false; P.f=1; Game.mira={x:20.6,y:groundY(20.6,15),z:15,", "resetPlayer({x:39,z:18},true); P.hidden=false; P.f=1; Game.mira={x:40.6,y:groundY(40.6,18),z:18,")
+s = patch(s, "s.x=14.2+col*1.25; s.z=16.9+row*1.1;", "s.x=34.2+col*1.25; s.z=19.9+row*1.1;")
+s = patch(s, "cineSet(19.6,6.5,27,19.6,-.4,15.6)", "cineSet(39.6,6.5,30,39.6,-.4,18.6)", 2)
+s = patch(s, "cineSet(20,4.4,27,20,1.4,15)", "cineSet(40,4.4,30,40,1.4,18)")
+s = patch(s, "cineTo([20,9,34],[20,4,0]", "cineTo([40,9,37],[40,4,3]")
+# training bots (98_tutorial): a mob flagged `bot` is drawn as the straw dummy, not as a soldier
+s = patch(s, "for(const m of MOBS){ m.spr.draw((c,cx,by)=>m.type==='elder'?drawVillagerHD(", "for(const m of MOBS){ m.spr.draw((c,cx,by)=>m.bot?drawDummyHD(c,cx,by,m):m.type==='elder'?drawVillagerHD(")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")
 
 # harness copy of the main script (voices stripped)

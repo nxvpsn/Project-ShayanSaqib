@@ -32,7 +32,7 @@ CAST = {  # id: (voice, speed, pitch, extra filter)
   'villagerm': ('am_eric', 1.0, 1.0, None), 'trainer': ('am_puck', 1.08, 1.08, None), 'villagerf': ('af_sarah', 1.0, 1.0, None), 'paul': ('am_liam', .95, .9, 'lowpass=f=6000'),
   'operator': ('af_nicole', .95, 1.0, 'highpass=f=200,lowpass=f=7500,chorus=0.6:0.9:50|60:0.4|0.32:0.25|0.4:2|1.3,aecho=0.8:0.6:45:0.25'),  # Aire, Nathan's operator (calm, synthetic)
   '': ('bf_emma', .95, 1.0, None)}
-FIXES = [('HEHE!', 'Hee hee!'), ('Itadakimasu.', 'Ee-tah-dah-kee-mahss.'), ('GG fucking EZ.', 'G. G. Fucking. E. Z.'), ('Getsuga Tenshou', 'Get-sue-gah. Ten-show'),
+FIXES = [('TUTORIAL.EXE', 'Tutorial dot E X E'), ('HEHE!', 'Hee hee!'), ('Itadakimasu.', 'Ee-tah-dah-kee-mahss.'), ('GG fucking EZ.', 'G. G. Fucking. E. Z.'), ('Getsuga Tenshou', 'Get-sue-gah. Ten-show'),
   ('Getsuga... Jujishou', 'Get-sue-gah. Joo-jee-show'), ('Getsuga... TENSHOU', 'Get-sue-gah. TEN-SHOW'), ('GETSUGA', 'GET-SUE-GAH'), ('TENSHOU', 'TEN-SHOW'), ('Jujishou', 'Joo-jee-show'), ('...', ', '),
   ('Za Warudo', 'Zah Wah-roo-doh'), ('Judgement Cut', 'Judgement. Cut'), ('GG', 'G. G.'), ('Shayan Saqib', 'Shayaan Saakib'), ('Shayan', 'Shayaan'),
   ('Yoshi-P', 'Yoshi P'), ('HTML', 'H T M L'), ('AFK', 'A F K'), ('DPS', 'D P S'), ('Uwu', 'Oo-woo'), ('uwu', 'oo-woo'), ('Ara ara', 'Ah-rah ah-rah'),
