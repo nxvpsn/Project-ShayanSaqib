@@ -142,6 +142,11 @@ function twMake(who,x,z,o){ const T=Object.assign({who,x,z,y:groundY(x,z)+1.3,hy
 function twFoeAlive(){ return TW.foes.filter(T=>T.hp>0&&!T.gone); }
 // Ali's sprite has room for his drawn katana (96px, like the player's), with the player's shadow size
 function twAliSpr(){ const s=new Sprite3D(96,96); s.shadow.geometry=new THREE.PlaneGeometry(.88,.44); return s; }
+// The ally Ali's afterimage. The base aliGhost() paints whoever the PLAYER is, so on Shayan's road every blink of the ally
+// left a Shayan-shaped ghost (reported in the duo fight: "each slash has a Shayan flash").
+function twAliGhost(x,y,z){ try{ const A=(TW.allies||[]).find(a=>a.who==='ali'&&!a.gone), s=twAliSpr(); s.draw((c,cx,by)=>drawAliHD(c,cx,by,A?A.f:1,{t:A?A.t:0,anim:'dash'}),false); s.mesh.scale.setScalar(s._shS||1);
+    s.mesh.material.color.setHex(0x40142a); s.mesh.material.transparent=true; s.mesh.material.opacity=.6; s.place(x,y,z,y); s.shadow.visible=false;
+    const k={t:0}; Game.fxUpd.push(dt=>{ k.t+=dt; s.mesh.material.opacity=Math.max(0,.6-k.t*2.5); if(k.t>.25){ s.dispose(); return false; } return true; }); }catch(e){ console.error('ali ghost',e); } }
 function twSprOf(o){ if(!o.spr||SPRITES.indexOf(o.spr)<0) o.spr=o.who==='ali'?twAliSpr():new Sprite3D(128,128,28); return o.spr; }
 function twRemoveFoe(T){ if(T.spr) T.spr.dispose(); T.spr=null; T.gone=1; const i=TW.foes.indexOf(T); if(i>=0) TW.foes.splice(i,1); }
 function twClearFoes(){ TW.foes.slice().forEach(twRemoveFoe); TW.foes=[]; }

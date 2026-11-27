@@ -11,7 +11,7 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.86 (Nov 27): the voices are Kokoro again (the Chatterbox clips are gone); the 53 lines that only had a Chatterbox clip are voiced with Kokoro. No boss mechanics changed.";
+const DBG_PATCH="v1.87 (Nov 27): the Kill ending is animated (the kick, the grab and throw, thrown punches, a real head in the silhouette that breaks on the last hit) and its two game screens are detailed; Ali's drill power-up is a full beat with a new line; the duo's tree-cutting no longer flashes Shayan; 35 voice lines that were spelled out letter by letter are re-recorded. No boss mechanics changed.";
 const DBG_NEW=[];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗']];

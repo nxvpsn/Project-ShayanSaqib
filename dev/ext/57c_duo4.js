@@ -59,7 +59,7 @@ twAliRevive=function*(F){ const P=Player, A=twAliAI(), gy=groundY(P.x,P.z), sat=
   if(!A){ P.hp=P.maxHp; P.inv=1; return; }
   Game.letterTo=.4; P.cineFly=true; P.cineAnim='hurt'; P.vx=P.vz=P.vy=0; P.y=gy; A.hold=1; A.down=0; A.hp=A.maxHp; grade.uniforms.sat.value=.25; Sound.sfx('drone');
   try{ cineSet(P.x+2.6,gy+2.4,P.z+8,P.x,gy+.9,P.z); yield wait(.4);
-    aliGhost(A.x,A.y,A.z); A.x=P.x-1.3; A.z=P.z+.35; A.face=1; FX.burst(A.x,A.y+1,A.z,30,0xb0182a,5,.35); Sound.sfx('dash'); twBark('ali',B[0][1],true); yield wait(1.4);
+    twAliGhost(A.x,A.y,A.z); A.x=P.x-1.3; A.z=P.z+.35; A.face=1; FX.burst(A.x,A.y+1,A.z,30,0xb0182a,5,.35); Sound.sfx('dash'); twBark('ali',B[0][1],true); yield wait(1.4);
     Sound.sfx('secret'); JC.flash=.35; for(let i=0;i<6;i++){ twTinyJC(P.x,P.y+1,P.z,180+i*20); FX.cut(P.x,P.y+1,P.z); Sound.sfx(i%2?'swing':'hit'); yield wait(.06); }
     P.hp=P.maxHp; P.cineAnim='idle'; FX.ring(P.x,gy+.1,P.z,'#8affb0',3,.5); FX.burst(P.x,gy+1,P.z,40,0x8affb0,5,.3); Sound.sfx('heart'); FX.flash=.4; grade.uniforms.flashCol.value.set(.5,1,.6);
     Game.dmgNums.push({x:P.x,y:P.y+2.8,z:P.z,n:'ALI: GET UP',t:0,big:true,col:'#8affb0'}); twBark('shayan',B[1][1],true); yield wait(1.1);

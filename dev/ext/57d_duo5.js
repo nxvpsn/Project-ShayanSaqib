@@ -71,7 +71,7 @@ const D5={
     ['shayan',"Did you just carve a TREE out of SWORD SLASHES?!"],['ali',"Climb, blacksmith. Don't touch the sharp parts. They're all sharp parts."],
     ['omar',"You climbed. Cute. You still cannot reach me."],['ali',"He's right. Use your drill."],
     ['shayan',"My drill?! Against THAT?!"],['ali',"Your gauge is full. I may have cut it full."],
-    ['ali',"Za Warudo. Let me give you a hand."],['ali',"There. Now it's sharp."],
+    ['ali',"Your drill is blunt, blacksmith. Borrow my edge."],['ali',"There. Now it's sharp."],
     ['shayan',"DRILL! DRILL! DRIIIILL!"],['omar',"No. NO! You cannot drill a VOID!"],['shayan',"WATCH ME!"],
     ['omar',"My beautiful nothing..."],['caotan',"OMAR! INCOMING!"],['omar',"Catch me, brother!"],['caotan',"...No."],
     ['shayan',"We did it! We drilled a hole into a hole!"],['ali',"Don't say it like that."],['mira',"I'm writing that down!"],
@@ -300,7 +300,7 @@ function* twDuo3Trans1(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   // the charge: a tracking shot low behind Shayan, Ali blinking ahead in red afterimages
   P.cineFly=true; P.cineAnim='dash'; Sound.sfx('dash'); const p0={x:P.x,z:P.z}, tgt={x:C.x+.9,z:C.z+.9};
   for(let t=0;t<.75;t+=dt){ const u=twEIO(t/.75); P.x=lerp(p0.x,tgt.x,u); P.z=lerp(p0.z,tgt.z,u); P.y=groundY(P.x,P.z); cineSet(P.x-1.4,P.y+.8,P.z+3.2,P.x+.6,P.y+1.2,P.z-3);
-    if(A&&Math.floor(t/.22)!==Math.floor((t-dt)/.22)){ aliGhost(A.x,A.y,A.z); const u2=Math.min(1,(t+dt)/.66); A.x=lerp(c.x+3,O.x-.9,u2); A.z=lerp(c.z+5.2,O.z+.9,u2); Sound.sfx('dash'); FX.burst(A.x,A.y+1,A.z,12,0xb0182a,3,.3); }
+    if(A&&Math.floor(t/.22)!==Math.floor((t-dt)/.22)){ twAliGhost(A.x,A.y,A.z); const u2=Math.min(1,(t+dt)/.66); A.x=lerp(c.x+3,O.x-.9,u2); A.z=lerp(c.z+5.2,O.z+.9,u2); Sound.sfx('dash'); FX.burst(A.x,A.y+1,A.z,12,0xb0182a,3,.3); }
     if(Math.random()<.8) FX.spawn(P.x,P.y+.2,P.z,rnd(-1,1),rnd(.5,1.5),2,.4,0xd8c0c8,.25,0,false); yield wait(dt*.5); }
   // blocked: Hikari-chan takes Shayan's sword, Omar's scythe takes Ali's (freeze frame, then the shockwave)
   const H=twHikari((P.x+C.x)/2,(P.z+C.z)/2+.1,1); P.cineAnim='charge'; O.scythe=1; O.swing=1; impactFrame([[1,3],[2,2],[3,1]]); Sound.sfx('block'); Sound.sfx('clash'); shake(.9); FX.flash=.5; grade.uniforms.flashCol.value.set(1,1,1); FX.hitstop=.25;
@@ -361,9 +361,9 @@ function* twTwinsTurn(){ const P=Player, mi=Game.mira; Sound.stop(); Game.letter
   zwStart(); Sound.sfx('secret'); JC.flash=.5; yield wait(.6); twAddAlly('ali'); const A=TW.allies[TW.allies.length-1]; A.x=P.x+1.6; A.z=P.z+.8; A.y=groundY(A.x,A.z); A.hold=1; A.face=-1;
   FX.burst(A.x,A.y+1,A.z,40,0xb0182a,5,.35); cineSet(A.x+.6,A.y+.5,A.z+3.2,A.x,A.y+1.5,A.z); yield wait(.5); yield d5Say('intro',6);
   // he cuts the cage open without looking at it
-  if(mi){ const cx2=cage?cage.x:mi.x, cz2=cage?cage.z:mi.z; aliGhost(A.x,A.y,A.z); A.x=cx2+1.2; A.z=cz2+.6; Sound.sfx('dash'); cineSet(cx2+.8,groundY(cx2,cz2)+1.6,cz2+4,cx2,groundY(cx2,cz2)+1.2,cz2); yield wait(.25);
+  if(mi){ const cx2=cage?cage.x:mi.x, cz2=cage?cage.z:mi.z; twAliGhost(A.x,A.y,A.z); A.x=cx2+1.2; A.z=cz2+.6; Sound.sfx('dash'); cineSet(cx2+.8,groundY(cx2,cz2)+1.6,cz2+4,cx2,groundY(cx2,cz2)+1.2,cz2); yield wait(.25);
     for(let i=0;i<5;i++){ twTinyJC(cx2,groundY(cx2,cz2)+1.2,cz2,160); Sound.sfx('swing'); yield wait(.06); } JC.flash=.4; if(cage) cage.open=1; Sound.sfx('shatter'); FX.burst(cx2,groundY(cx2,cz2)+1,cz2,30,0xb0a080,4,.4,false);
-    yield d5Say('intro',7); zwEnd(); yield d5Say('intro',8,'happy'); aliGhost(A.x,A.y,A.z); A.x=P.x+1.6; A.z=P.z+.8; Sound.sfx('dash'); } else zwEnd();
+    yield d5Say('intro',7); zwEnd(); yield d5Say('intro',8,'happy'); twAliGhost(A.x,A.y,A.z); A.x=P.x+1.6; A.z=P.z+.8; Sound.sfx('dash'); } else zwEnd();
   d5MiraOn(); D.miraHold=1; { /* she steps out beside them, clear of Ali (probed in the playtest rig: she stood 0.4 behind him and spoke her lines from inside his coat) */ const m3=Game.mira; if(m3&&Math.hypot(m3.x-A.x,m3.z-A.z)<1.6){ const q=twClampXZ(P.x+3.4,P.z-.5,.8); m3.x=q.x; m3.z=q.z; m3.y=groundY(q.x,q.z); m3.f=-1; if(TW.d5mira){ TW.d5mira.tx=q.x; TW.d5mira.tz=q.z; } } }
   cineSet((P.x+A.x)/2,P.y+1.1,P.z+4.2,(P.x+A.x)/2,P.y+1.4,P.z); yield d5Say('intro',9,'surprised'); yield d5Say('intro',10);
   d5Face('caotan',-1); yield d5Say('intro',11,'surprised'); d5Face('omar',1); yield d5Say('intro',12,'sad');
@@ -516,7 +516,7 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
   S.stop=1; d5StopAttacks(S); F.pend=()=>d5SkyCine(F,C,O); while(!S.climb) yield .1;
   /* the climb: nothing hurts you on the way up (the rising void is gone: its disc read as an unexplained marker on the tree and its hits as damage from nowhere; before that he sniped from off screen) */ BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); for(const h of TW.hz.slice()) if(h&&h.hole){ try{ h.kill&&h.kill(); }catch(e){} h.kill=null; h.upd=()=>false; }
   twBark('omar',"Climb, little heroes. I will wait. I have all of eternity, and a very comfortable void.",true);
-  for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(P.inv<.5) P.inv=.5; if(t>6&&t%7<.1) twBark('omar',["Still climbing? The void is getting bored.","Take your time. I am only ending the world."][Math.floor(t/7)%2],false); yield .1; }
+  for(let t=0;!d5OnPlatform(S);t+=.1){ const P=Player; if(P.inv<.5) P.inv=.5; P.noBlink=Game.time+.4; /* protected for the whole climb, without the hit-blink (he flashed the entire way up) */ if(t>6&&t%7<.1) twBark('omar',["Still climbing? The void is getting bored.","Take your time. I am only ending the world."][Math.floor(t/7)%2],false); yield .1; }
   S.cam=null; F.pend=()=>d5PlatformCine(F,C,O); while(!S.done) yield .1; }
 
 // Everything still in the air when the limit cut's attack part ends is removed (seen in the playtest rig: Caotan's beam
@@ -525,7 +525,7 @@ function* d5OmarLCPlay(F,C,O){ const c=F.center, B=twBounds(), H=D5T.H, S=F.d5={
 function d5StopAttacks(S){ const keep=[]; try{ for(const T of (S.tombs||[])) if(T&&T.g&&T.g.userData&&T.g.userData.tw){ T.g.userData.tw=0; keep.push(T.g); } twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); }catch(e){ console.error('d5 stop',e); } keep.forEach(g=>{ g.userData.tw=1; }); }
 // while a script runs, a twin's height follows his hover (the fight's own update is paused then: on film he "rose" off screen while his sprite stayed on the ground and the camera watched an empty sky)
 function d5Lift(O){ if(O._lift) return; O._lift=1; Game.fxUpd.push(()=>{ if(!Game.script||!TW.fight){ O._lift=0; return false; } try{ O.y=groundY(O.x,O.z)+(O.hy||0); }catch(e){} return true; }); }
-function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0;
+function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY(c.x,c.z), H=D5T.H, S=F.d5, mi=Game.mira; F.miraHold=1; twCamFree(); Game.letterTo=.7; P.vx=P.vz=0; P.inv=99; /* a short invulnerability makes the hero's sprite blink: he flickered through the whole scene */
   // he rises to eye level with where the platform will be; the void opens over him
   d5Lift(O); cineSet(c.x,gy+.8,c.z+9,O.x,O.y+2,O.z); twAnim(O,{hy:H+1.6,x:c.x},2.2,twEIO); yield cineTo([c.x+3,gy+2,c.z+13],[O.x,gy+H,O.z],2.2,twEIO);
   yield d5Say('omarLC',8,'angry'); S.sky=d5SkyHole(O.x,gy+H+9,O.z); Sound.sfx('void'); Sound.sfx('skyopen'); shake(1.2); impactFrame([[1,2],[3,2]]); FX.flash=.6; grade.uniforms.flashCol.value.set(.6,.3,1);
@@ -534,7 +534,7 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   /* the standard talking shots (seen on film: the old ones aimed over their heads, two lines spoken to an empty sky) */ twCamP(6.2,1.2); yield d5Say('omarLC',9,'surprised');
   if(mi){ cineSet(mi.x+1,mi.y+1.8,mi.z+6,mi.x,mi.y+1.05,mi.z); yield d5Say('omarLC',10,'surprised'); }
   // Ali: a path up
-  const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; twCamOn(A,4.2,1.2,1.5,1.25); /* on film the old low shot showed the top of his hat at the bottom edge and Caotan in front */ yield wait(.3); yield d5Say('omarLC',11); }
+  const tx=c.x, tz=Math.min(c.z+1,twBounds().z1-5); if(A){ A.hold=1; twAliGhost(A.x,A.y,A.z); A.x=tx-.5; A.z=tz+3.2; A.face=1; twCamOn(A,4.2,1.2,1.5,1.25); /* on film the old low shot showed the top of his hat at the bottom edge and Caotan in front */ yield wait(.3); yield d5Say('omarLC',11); }
   // THE TREE IS CUT INTO BEING. Nothing of it exists until a cut is made: every piece (a step's tears, a trunk blade) is
   // one Judgement Cut that draws itself along its length with a white-hot tip and then stays open. Bottom to top, Ali
   // blinking from cut to cut, one steady wide shot from the front rising with the work (no orbit).
@@ -542,14 +542,14 @@ function* d5SkyCine(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=groundY
   for(const m of all){ m.visible=false; setK(m,0); }
   const tc={u:0}, cam2=dgCam(()=>{ const u=tc.u; return [tx+2.5,gy+5+u*6.5,tz+27,tx,gy+1.5+u*H*.6,tz]; },3);
   yield wait(.5); Sound.sfx('secret');
-  const cut=(m)=>{ m.visible=true; const a=m.userData.at||[tx,gy,tz], K={t:0}; Sound.sfx(Math.random()<.5?'swing':'hit'); aliGhost(a[0]+rnd(-.6,.6),a[1],a[2]+rnd(-.6,.6)); FX.burst(a[0],a[1]+.2,a[2],8,0xff2a3a,4,.25); FX.spark(a[0],a[1]+.3,a[2]); shake(.1);
+  const cut=(m)=>{ m.visible=true; const a=m.userData.at||[tx,gy,tz], K={t:0}; Sound.sfx(Math.random()<.5?'swing':'hit'); twAliGhost(a[0]+rnd(-.6,.6),a[1],a[2]+rnd(-.6,.6)); FX.burst(a[0],a[1]+.2,a[2],8,0xff2a3a,4,.25); FX.spark(a[0],a[1]+.3,a[2]); shake(.1);
     Game.fxUpd.push(dt=>{ K.t+=dt||1/60; const k=Math.min(1,K.t/.16); setK(m,k); d5TearTick(S.tree||{}); return k<1&&!!S.tree; }); };
   for(let i=0;i<n;i++){ cut(all[i]); tc.u=i/n; if(i%2) yield wait(i>n-6?.12:.07); }
   yield wait(.25); for(const m of all) setK(m,1);
   // the reveal: the whole tree standing, from its foot
   tc.u=1; cam2.want=()=>[tx+6,gy+3,tz+24,tx,gy+H*.52,tz]; cam2.k=3; JC.flash=.7; FX.flash=.5; grade.uniforms.flashCol.value.set(1,.4,.45); impactFrame([[2,1],[1,2],[3,1]]); shake(.8); Sound.sfx('crossboom');
   yield wait(.6); yield d5Say('omarLC',12,'surprised'); yield d5Say('omarLC',13); cam2.dead=1;
-  if(A){ A.hold=0; A.face=null; } TW._mantle=1; S.climb=1; Game.letterTo=0; P.inv=1; F.miraHold=0; Cam.cine=null;
+  if(A){ A.hold=0; A.face=null; } TW._mantle=1; S.climb=1; Game.letterTo=0; P.inv=1; F.miraHold=0; Cam.cine=null; P.noBlink=Game.time+1.2;
   twBig('CLIMB THE TREE',{size:50,col:'#ff8a9a',y:UH*.24,dur:2,sub:'Run into each step to climb it'});
   // the climb uses the fight's own camera (the same framing as the rest of the fight: it follows you up). A step or the
   // platform between the camera and you fades so the near steps never hide you on the far ones.
@@ -560,7 +560,7 @@ function d5TreeFade(T,P,dt,reset){ if(!T) return; d5TearTick(T); for(const m of 
     if(m.userData.slash){ if(mt.uniforms&&mt.uniforms.op){ mt._v=v; mt.uniforms.op.value=v; } else mt.opacity=v*(.88+.12*Math.sin(Game.time*9+m.position.x*3)); } else { mt.transparent=v<.99; mt.opacity=v; mt.depthWrite=v>=.99; } } }
 
 function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree, H=T.H; F.miraHold=1; Game.letterTo=.5; P.vx=P.vz=0;
-  if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
+  if(A){ A.hold=1; twAliGhost(A.x,A.y,A.z); A.x=T.ix0+1.1; A.z=T.iz0+.6; A.y=H; A.face=-1; }
   // eye level: Omar across the gap, the void above him
   cineSet(P.x-1.2,H+1.8,P.z+4,O.x,O.y+3,O.z); yield wait(.4); cineSet(O.x+1.4,O.y+1.6,O.z+5,O.x,O.y+2,O.z); yield d5Say('omarLC',14);
   { /* a two-shot of Shayan and Ali, framed above the text box (on film: two heads at the bottom edge) */ const mx2=A?(P.x+A.x)/2:P.x, mz2=A?(P.z+A.z)/2:P.z; cineSet(mx2+1.4,H+1.9,mz2+5.6,mx2,H+.95,mz2); } if(A) yield d5Say('omarLC',15); yield d5Say('omarLC',16,'surprised'); if(A) yield d5Say('omarLC',17);
@@ -569,21 +569,37 @@ function* d5PlatformCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5, T=S.tree,
   twBig(K('special')+'  ·  HEAVENLY DRILL',{size:52,col:'#ffb04a',y:UH*.24,dur:3,sub:'Your gauge is full'}); }
 // the drill on the platform: it flies, time stops, Ali turns it into a whirling Judgement Cut, then you mash it through the void
 (function(){ const sa=specialAttack; specialAttack=function*(){ const F=d5F(); if(F&&F.drillReady&&F.d5){ yield* d5Drill(F); return; } yield* sa(); }; })();
-function d5DrillRig(d){ const g=new THREE.Group(); for(let i=0;i<6;i++){ const a=i*Math.PI/3; for(const [col,w,len] of [[0xff2a3a,.5,4.2],[0xffffff,.18,4.2]]){ const b=beamMesh(col,w); b.position.set(Math.cos(a)*1.4,-1.6,Math.sin(a)*1.4); b.lookAt(Math.cos(a+1.2)*1.4,-4,Math.sin(a+1.2)*1.4); b.scale.set(1,1,len); g.add(b); } }
-  d.g.add(g); const R={g,dead:0}; Game.fxUpd.push(dt=>{ if(R.dead||d.dead){ d.g.remove(g); return false; } g.rotation.y+=dt*16; return true; });
+function d5DrillRig(d,hidden){ const g=new THREE.Group(); for(let i=0;i<6;i++){ const a=i*Math.PI/3; for(const [col,w,len] of [[0xff2a3a,.5,4.2],[0xffffff,.18,4.2]]){ const b=beamMesh(col,w); b.position.set(Math.cos(a)*1.4,-1.6,Math.sin(a)*1.4); b.lookAt(Math.cos(a+1.2)*1.4,-4,Math.sin(a+1.2)*1.4); b.scale.set(1,1,len); g.add(b); } }
+  if(hidden) g.children.forEach(m=>{ m.visible=false; }); d.g.add(g); const R={g,dead:0,show(n){ g.children.forEach((m,i)=>{ if(i<n*2) m.visible=true; }); }}; /* hidden: the blades appear one per cut (R.show) */ Game.fxUpd.push(dt=>{ if(R.dead||d.dead){ d.g.remove(g); return false; } g.rotation.y+=dt*16; return true; });
   twGash({life:60,rev:.1,fade:.2,w:16,sparks:30,alive:()=>!R.dead&&!d.dead,pts:()=>{ const pts=[], t=performance.now()/1000, base=d.g.position, dir=d.dir.clone().normalize(), up=Math.abs(dir.y)>.9?new THREE.Vector3(1,0,0):new THREE.Vector3(0,1,0), u=new THREE.Vector3().crossVectors(dir,up).normalize(), v=new THREE.Vector3().crossVectors(dir,u);
     for(let i=0;i<10;i++){ const a=t*14+i*.7, r=1.5*d.s, q=base.clone().addScaledVector(dir,i*.45*d.s).addScaledVector(u,Math.cos(a)*r).addScaledVector(v,Math.sin(a)*r), s=toScreen(q.x,q.y,q.z); if(s[2]>=1) return null; pts.push([s[0],s[1]]); } return pts; }});
   return R; }
-function* d5Drill(F){ const P=Player, A=twAliAny(), S=F.d5, O=F.O, C=F.C, sky=S.sky, H=S.tree.H; F.drillReady=0; P.sp=0; P.inv=99; P.cineFly=true; P.cineAnim='charge'; Game.letterTo=.5; F.miraHold=1; Sound.sfx('djump');
+function* d5Drill(F){ const P=Player, A=twAliAny(), S=F.d5, O=F.O, C=F.C, sky=S.sky, H=S.tree.H; F.drillReady=0; TW.big=null; /* the 'gauge is full' prompt hung over the cutscene */ P.sp=0; P.inv=99; P.cineFly=true; P.cineAnim='charge'; Game.letterTo=.5; F.miraHold=1; Sound.sfx('djump');
   const d=S.drill=makeDrill(); d.x=P.x; d.y=P.y+3.2; d.z=P.z; d.s=.12; d.spin=12; d.fire=.6; d.dir.set(sky.x-d.x,sky.y-d.y,sky.z-d.z).normalize();
   cineSet(P.x+2.2,P.y+1.4,P.z+4.4,P.x,P.y+3,P.z); yield tween(d,{s:.95},.7,twEOut3); impactFrame([[2,2],[1,2]]); Sound.sfx('slam'); shake(.5);
   const p0={x:d.x,y:d.y,z:d.z}, fly=u=>{ d.x=lerp(p0.x,sky.x,u); d.y=lerp(p0.y,sky.y,u); d.z=lerp(p0.z,sky.z,u); };
   for(let t=0;t<.55;t+=1/60){ fly(t/1.7); cineSet(d.x+3,d.y+1.5,d.z+7,d.x,d.y,d.z); yield wait(1/60); }
-  // time stops; Ali gives it a hand
-  zwStart(); Sound.sfx('secret'); if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=d.x-1.8; A.z=d.z+.8; A.y=d.y-1.2; A.face=1; } cineSet(d.x+2.6,d.y+.6,d.z+5.4,d.x-.6,d.y,d.z); yield wait(.3);
+  // time stops; Ali lends the drill his edge (v1.87: the old beat was a line, twelve streaks and a flash). He gathers; then six
+  // cuts, each one welding a red blade onto the drill and swelling it; he lands past it, and when the sword clicks home the
+  // colour comes back and the drill catches.
+  zwStart(); Sound.sfx('secret'); const ay0=d.y-1.3, s0=d.s; if(A){ A.hold=1; twAliGhost(A.x,A.y,A.z); A.x=d.x-2.3; A.z=d.z+1.1; A.y=ay0; A.face=1; A.f=1; A.anim='idle'; }
+  cineSet(d.x+3.6,d.y+.9,d.z+7.4,d.x-.9,d.y-.3,d.z); yield wait(.35);
   if(A) yield d5Say('omarLC',18);
-  for(let i=0;i<12;i++){ const s=toScreen(d.x,d.y,d.z), a=rnd(0,Math.PI); if(s[2]<1) JC.lines.push({x0:s[0]-Math.cos(a)*380,y0:s[1]-Math.sin(a)*380,x1:s[0]+Math.cos(a)*380,y1:s[1]+Math.sin(a)*380,t:0,ttl:.6}); Sound.sfx(i%2?'swing':'hit'); yield wait(.05); }
-  JC.flash=.7; S.rig=d5DrillRig(d); d.spin=30; d.fire=1.2; yield wait(.3); if(A) yield d5Say('omarLC',19); zwEnd(); if(A){ aliGhost(A.x,A.y,A.z); A.x=S.tree.ix0+1.1; A.z=S.tree.iz0+.6; A.y=H; A.hold=0; A.face=null; }
+  const rig=S.rig=d5DrillRig(d,!!A); if(!A){ JC.flash=.7; d.spin=30; d.fire=1.2; yield wait(.3); zwEnd(); }
+  else { A.anim='charge'; const ch={on:1}; Sound.sfx('charge');
+    Game.fxUpd.push(()=>{ if(!ch.on) return false; for(let i=0;i<4;i++){ const a=rnd(0,6.28), r=rnd(3.5,6.5), x=A.x+Math.cos(a)*r, y=A.y+1.2+rnd(-2.5,2.5), z=A.z+Math.sin(a)*r*.5; FX.spawn(x,y,z,(A.x-x)*3,(A.y+1.2-y)*3,(A.z-z)*3,.33,i%2?0xff2a3a:0xffffff,.3,0,true); } return true; });
+    for(let i=0;i<3;i++){ Sound.sfx('heartbeat'); shake(.15+i*.12); FX.burst(A.x,A.y+1.2,A.z,10+i*8,0xff2a3a,2+i,.25); FX.ring(A.x,A.y+.2,A.z,'#ff3a4a',2.6-i*.6,.3); yield cineTo([d.x+3.3-i*.25,d.y+.8,d.z+6.8-i*.5],[d.x-.9,d.y-.2,d.z],.3); }
+    ch.on=0; Sound.sfx('ready'); FX.flash=.35; grade.uniforms.flashCol.value.set(1,.3,.35); yield wait(.12);
+    for(let i=0;i<6;i++){ const a=i*1.047+.4, sa=a*1.9+.3, sc=toScreen(d.x,d.y,d.z);
+      twAliGhost(A.x,A.y,A.z); A.x=d.x+Math.cos(a)*2.4; A.z=d.z+Math.sin(a)*1.2+.4; A.y=ay0+Math.sin(a*2)*.7; A.f=A.x<d.x?1:-1; A.anim=i%2?'aliS2':'aliS1'; A.ap=.6;
+      if(sc[2]<1) JC.lines.push({x0:sc[0]-Math.cos(sa)*520,y0:sc[1]-Math.sin(sa)*520,x1:sc[0]+Math.cos(sa)*520,y1:sc[1]+Math.sin(sa)*520,t:0,ttl:.5});
+      rig.show(i+1); d.s=s0*(1+.07*(i+1)); d.spin=12+i*5; try{ if(Game.zwSave) grade.uniforms.sat.value=Game.zwSave.sat*(i+1)/7; }catch(e){} /* colour bleeds back into the frozen world with every cut, so each new red blade shows */ FX.burst(d.x,d.y,d.z,26,i%2?0xffffff:0xff2a3a,7+i,.3); FX.spark(d.x+rnd(-.5,.5),d.y+rnd(-.5,.5),d.z+.4); FX.ring(d.x,d.y,d.z,i%2?'#ffffff':'#ff3a4a',2.2+i*.4,.3);
+      Sound.sfx(i%2?'swing':'hit'); Sound.sfx('parry'); shake(.25+i*.08); JC.flash=Math.max(JC.flash||0,.25); yield wait(Math.max(.08,.18-i*.02)); }
+    twAliGhost(A.x,A.y,A.z); A.x=d.x+2.7; A.z=d.z+1.3; A.y=ay0; A.f=1; A.anim='idle'; A.ap=null; cineSet(d.x+5.4,d.y+.4,d.z+7.4,d.x+.9,d.y-.2,d.z); yield wait(.5);
+    Sound.sfx('block'); yield wait(.14); zwEnd(); impactFrame([[1,2],[3,2],[2,2]]); JC.flash=.8; FX.flash=.7; grade.uniforms.flashCol.value.set(1,.5,.4); Sound.sfx('crossboom'); Sound.sfx('slam'); shake(1.1);
+    d.spin=42; d.fire=1.6; for(let k=0;k<4;k++) FX.ring(d.x,d.y,d.z,k%2?'#ffffff':'#ff3a4a',3+k*2.2,.45+k*.08); for(let k=0;k<3;k++) FX.burst(d.x,d.y,d.z,50,[0xff2a3a,0xffffff,0xffb04a][k],10+k*4,.5);
+    yield tween(d,{s:s0*1.5},.25,twEOut3); yield wait(.25); yield d5Say('omarLC',19); d.spin=30;
+    twAliGhost(A.x,A.y,A.z); A.x=S.tree.ix0+1.1; A.z=S.tree.iz0+.6; A.y=H; A.hold=0; A.face=null; }
   for(let t=.55;t<1.7;t+=1/60){ fly(t/1.7); cineSet(d.x+3.4,d.y+1.6,d.z+8,d.x,d.y+1,d.z); yield wait(1/60); }
   // the mash: the drill bores into the void
   impactFrame([[1,3],[3,2]]); Sound.sfx('crossboom'); shake(1.2); FX.flash=.8; grade.uniforms.flashCol.value.set(1,.5,.3); sky.crack=1;
@@ -735,7 +751,7 @@ function* d5CollapseCine(F,C,O){ const P=Player, A=twAliAny(), S=F.d5c, H=S.hik,
   for(let t=0;t<.7;t+=1/60){ const u=twEIn2(t/1); V.x=lerp(p0.x,tgt.x,u); V.y=lerp(p0.y,tgt.y,u); V.z=lerp(p0.z,tgt.z,u); V.t+=1/60; V.set(.75-u*.25); cineSet(P.x-1.6,P.y+1.4,P.z+4.4,V.x,V.y,V.z); yield wait(1/60); }
   // time stops a step from his face
   zwStart(); Sound.sfx('secret'); cineSet(P.x+1.4,P.y+1.2,P.z+3.6,(P.x+V.x)/2,P.y+1.6,(P.z+V.z)/2); yield d5Say('caoLC',18,'surprised');
-  if(A){ A.hold=1; aliGhost(A.x,A.y,A.z); A.x=(P.x+V.x)/2+.6; A.z=(P.z+V.z)/2+.4; A.y=groundY(A.x,A.z); A.face=1; Sound.sfx('dash'); FX.burst(A.x,A.y+1,A.z,20,0xb0182a,4,.3); yield wait(.25); }
+  if(A){ A.hold=1; twAliGhost(A.x,A.y,A.z); A.x=(P.x+V.x)/2+.6; A.z=(P.z+V.z)/2+.4; A.y=groundY(A.x,A.z); A.face=1; Sound.sfx('dash'); FX.burst(A.x,A.y+1,A.z,20,0xb0182a,4,.3); yield wait(.25); }
   for(let i=0;i<6;i++){ const s=toScreen(V.x,V.y,V.z), a=i===0?Math.PI/2+.12:rnd(0,Math.PI); if(s[2]<1) JC.lines.push({x0:s[0]-Math.cos(a)*520,y0:s[1]-Math.sin(a)*520,x1:s[0]+Math.cos(a)*520,y1:s[1]+Math.sin(a)*520,t:0,ttl:.7}); Sound.sfx(i%2?'swing':'hit'); yield wait(.06); }
   JC.flash=.6; zwEnd(); impactFrame([[1,3],[3,2]]); Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,.4,.45);
   // two halves fly apart and fizzle
@@ -818,7 +834,7 @@ function* d5BurnEnd(F,C,O){ const P=Player, A=twAliAny(), mi=Game.mira, gy=groun
 twDuoEnding=function*(F,C,O){ const P=Player, A=twAliAny(), mi=Game.mira; if(!(F&&F.v5)) return;
   TW._wipe=1; try{ twEndFight(); } finally{ TW._wipe=0; } Game.arena=null; TW.d5mira=null;
   if(A){ A.hold=1; A.x=P.x+1.5; A.z=P.z+.4; A.y=groundY(A.x,A.z); A.face=-1; cineSet((P.x+A.x)/2,P.y+1.2,P.z+4.4,(P.x+A.x)/2,P.y+1.3,P.z); yield d5Say('ending',0); cineSet(P.x-.6,P.y+1.3,P.z+2.8,P.x,P.y+1.4,P.z); yield d5Say('ending',1,'surprised');
-    cineSet(A.x+.6,A.y+1.5,A.z+2.6,A.x,A.y+1.5,A.z); yield d5Say('ending',2); Sound.sfx('dash'); aliGhost(A.x,A.y,A.z); twClearAllies(); yield wait(.6); twCamP(5.6,.4); yield d5Say('ending',3,'surprised'); }
+    cineSet(A.x+.6,A.y+1.5,A.z+2.6,A.x,A.y+1.5,A.z); yield d5Say('ending',2); Sound.sfx('dash'); twAliGhost(A.x,A.y,A.z); twClearAllies(); yield wait(.6); twCamP(5.6,.4); yield d5Say('ending',3,'surprised'); }
   if(mi){ mi.vis=true; mi.x=P.x+1.2; mi.z=P.z+.3; mi.y=P.y; mi.f=-1; mi.anim='idle'; Sound.play('ending'); cineSet((P.x+mi.x)/2,P.y+1.2,P.z+4.2,(P.x+mi.x)/2,P.y+1.2,P.z);
     yield d5Say('ending',4,'happy'); yield d5Say('ending',5,'blush'); yield d5Say('ending',6,'happy'); yield d5Say('ending',7,'happy'); }
   Game.ending=5; yield cineTo([P.x,6,P.z+16],twMoonLook(),3); /* the last pan ends on the moon, not with it half off the left edge */ yield wait(.4);

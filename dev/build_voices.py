@@ -110,8 +110,14 @@ def scan(code):
         for s in re.findall(STR, m.group(1)): out.add(('paul', unesc(s)))
     return {(w, t) for (w, t) in out if w in CAST and re.search(r'[A-Za-z]', t)}
 
+# Interjections the phonemizer (espeak) has no word for are read out letter by letter ("Hm." came out "aitch em", "Tch" as
+# "tee see aitch"); an all-caps IT is read as the abbreviation. Each is swapped for a spelling it can pronounce. Found by
+# comparing every word's phonemes with its letters' names (Nov 27 2026); real abbreviations (HP, VR, CEO, RGB) stay spelled.
+WORDS = [(r'\bHm+\b', 'Hmm'), (r'\bhm+\b', 'hmm'), (r'\bHmph\b', 'Humf'), (r'\bGh\b', 'Guh'), (r'\bfr(?=[—-])', 'fruh'), (r'\bMm+\b', 'Hmm'), (r'\bTch\b', 'Tsk'),
+  (r'\bwh(?=\.\.\.)', 'wuh'), (r'\bShh+\b', 'Shush'), (r'\btw(?=[—-])', 'tuh'), (r'\bHnn+\b', 'Hunn'), (r"\bIT'S\b", "it's"), (r'\bIT\b', 'it')]
 def speak_text(who, text):
     t = text
+    for a, b in WORDS: t = re.sub(a, b, t)
     for a, b in FIXES: t = t.replace(a, b)
     return re.sub(r'\s+', ' ', t).strip(' ,') or text
 

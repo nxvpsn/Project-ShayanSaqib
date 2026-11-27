@@ -230,7 +230,7 @@ function* twDuo3Trans1(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   // the charge: a low tracking shot behind Shayan, Ali blinking ahead in red afterimages
   P.cineFly=true; P.cineAnim='dash'; Sound.sfx('dash'); const p0={x:P.x,z:P.z}, tgt={x:C.x+.9,z:C.z+.9};
   for(let t=0;t<.75;t+=dt){ const u=twEIO(t/.75); P.x=lerp(p0.x,tgt.x,u); P.z=lerp(p0.z,tgt.z,u); P.y=groundY(P.x,P.z); cineSet(P.x-1.4,P.y+1,P.z+3.4,P.x+.6,P.y+1.2,P.z-3);
-    if(A&&Math.floor(t/.22)!==Math.floor((t-dt)/.22)){ aliGhost(A.x,A.y,A.z); const u2=Math.min(1,(t+dt)/.66); A.x=lerp(c.x+3,O.x-.9,u2); A.z=lerp(c.z+5.2,O.z+.9,u2); Sound.sfx('dash'); FX.burst(A.x,A.y+1,A.z,12,0xb0182a,3,.3); }
+    if(A&&Math.floor(t/.22)!==Math.floor((t-dt)/.22)){ twAliGhost(A.x,A.y,A.z); const u2=Math.min(1,(t+dt)/.66); A.x=lerp(c.x+3,O.x-.9,u2); A.z=lerp(c.z+5.2,O.z+.9,u2); Sound.sfx('dash'); FX.burst(A.x,A.y+1,A.z,12,0xb0182a,3,.3); }
     if(Math.random()<.8) FX.spawn(P.x,P.y+.2,P.z,rnd(-1,1),rnd(.5,1.5),2,.4,0xd8c0c8,.25,0,false); yield wait(dt*.5); }
   // blocked: Hikari-chan takes Shayan's sword, Omar's scythe takes Ali's
   C.down=O.down=0; const H=twHikari((P.x+C.x)/2,(P.z+C.z)/2+.1,1); P.cineAnim='charge'; O.scythe=1; O.swing=1; impactFrame([[1,2],[2,2],[3,1]]); Sound.sfx('block'); Sound.sfx('clash'); shake(.9); FX.flash=.5; grade.uniforms.flashCol.value.set(1,1,1);
@@ -274,11 +274,11 @@ function* twDuo3Trans2(F,C,O){ const P=Player, A=twAliAny(), c=F.center, gy=grou
   yield say('shayan',"She's a PILLOW! She can't CONSENT, she's POLYESTER!",'angry');
   // Ali steps in front and takes the first glint on his blade
   const ex=H.x, ey=H.y+2.3, ez=H.z+.3;
-  if(A){ cineSet(P.x+2.4,P.y+1.4,P.z+3.6,P.x,P.y+1.5,P.z-1); aliGhost(A.x,A.y,A.z); A.x=P.x+.2; A.z=P.z-1; A.face=-1; Sound.sfx('dash'); yield say('ali',"Stay behind me.");
+  if(A){ cineSet(P.x+2.4,P.y+1.4,P.z+3.6,P.x,P.y+1.5,P.z-1); twAliGhost(A.x,A.y,A.z); A.x=P.x+.2; A.z=P.z-1; A.face=-1; Sound.sfx('dash'); yield say('ali',"Stay behind me.");
     Sound.sfx('ting'); FX.flash=.4; const bm=[beamMesh(0xff9ad8,.45),beamMesh(0xffffff,.18)]; bm.forEach(m=>{ m.userData.tw=1; scene.add(m); twBeamTo(m,ex,ey,ez,A.x,A.y+1.2,A.z,1); }); Sound.sfx('beam'); Sound.sfx('parry'); shake(.6);
     const sp=[]; for(const k of [-.5,.5]){ const a=Math.atan2(A.z-ez,A.x-ex)+k, m=beamMesh(0xffb0e0,.25); m.userData.tw=1; scene.add(m); twBeamTo(m,A.x,A.y+1.2,A.z,A.x+Math.cos(a)*14,A.y+1.2,A.z+Math.sin(a)*14,1); sp.push(m); }
     for(let i=0;i<5;i++) FX.spark(A.x,A.y+1.2,A.z); yield wait(.6); bm.concat(sp).forEach(m=>scene.remove(m));
-    yield say('ali',"Hm. Bright."); yield say('ali',"Your turn, blacksmith. Dash the moment her eyes flash."); aliGhost(A.x,A.y,A.z); A.x=P.x-1.8; A.z=P.z+.3; A.face=1; }
+    yield say('ali',"Hm. Bright."); yield say('ali',"Your turn, blacksmith. Dash the moment her eyes flash."); twAliGhost(A.x,A.y,A.z); A.x=P.x-1.8; A.z=P.z+.3; A.face=1; }
   // QTE: dash on each glint
   cineSet(P.x,gy+4.2,P.z+7.5,(P.x+C.x)/2,gy+1.8,(P.z+C.z)/2); twBig('DASH ON THE GLINT',{size:50,col:'#ffd0ec',y:UH*.28,dur:1.8,sub:IS_TOUCH()?'Tap the dash button the instant her eyes flash':K('dash')+' the instant her eyes flash'}); yield wait(1.6);
   let dodged=0; const N=5;
@@ -369,8 +369,8 @@ twDuoEnding=function*(F,C,O){ const P=Player, A=twAliAny(), mi=Game.mira, gy=gro
   yield say('caotan',"...That's kind of nice, actually.",'happy'); yield say('omar',"Do not ruin it.");
   if(A){ A.x=P.x+1.5; A.z=P.z+.4; A.face=-1; twCamP(6.5,.4); yield say('ali',"Blacksmith. Together. On three."); yield say('shayan',"On three? Okay. One, tw—"); yield say('ali',"Three.");
     // time stops; Ali kicks both twins into the sky
-    zwStart(); Sound.sfx('secret'); for(const T of [C,O]){ aliGhost(A.x,A.y,A.z); A.x=T.x+(T===C?-.8:.8); A.z=T.z+.3; FX.burst(A.x,A.y+1,A.z,20,0xb0182a,4,.3); Sound.sfx('dash'); Sound.sfx('punch'); FX.ring(T.x,groundY(T.x,T.z)+.1,T.z,'#ff3a4a',2.4,.4); T.down=0; twAnim(T,{hy:6},.5,twEOut3); yield wait(.22); }
-    cineSet(mx0,gy+1,mz0+9,mx0,gy+5.5,mz0); yield wait(.6); aliGhost(A.x,A.y,A.z); A.x=P.x+1.2; A.z=P.z-.3; }
+    zwStart(); Sound.sfx('secret'); for(const T of [C,O]){ twAliGhost(A.x,A.y,A.z); A.x=T.x+(T===C?-.8:.8); A.z=T.z+.3; FX.burst(A.x,A.y+1,A.z,20,0xb0182a,4,.3); Sound.sfx('dash'); Sound.sfx('punch'); FX.ring(T.x,groundY(T.x,T.z)+.1,T.z,'#ff3a4a',2.4,.4); T.down=0; twAnim(T,{hy:6},.5,twEOut3); yield wait(.22); }
+    cineSet(mx0,gy+1,mz0+9,mx0,gy+5.5,mz0); yield wait(.6); twAliGhost(A.x,A.y,A.z); A.x=P.x+1.2; A.z=P.z-.3; }
   P.ang=Math.atan2(((C.z+O.z)/2)-P.z,((C.x+O.x)/2)-P.x); P.f=Math.cos(P.ang)>0?1:-1; P.charge=2; cineSet(P.x-P.f*2.4,gy+1.3,P.z+3.4,P.x+P.f*1.2,gy+2.2,P.z); yield wait(.3);
   yield say('shayan',"GETSUGA...",'angry'); if(A) yield say('ali',"...TENSHOU.");
   if(A) zwEnd(); const mx=(C.x+O.x)/2, mz=(C.z+O.z)/2; cineSet(mx,gy+3,mz+11,mx,(C.y+O.y)/2+1,mz); Game.timeScale=.3; fireBeam(true,true); if(A) fireBeam(true,true,{ali:true}); P.charge=0; yield wait(.4); Game.timeScale=1;
@@ -379,7 +379,7 @@ twDuoEnding=function*(F,C,O){ const P=Player, A=twAliAny(), mi=Game.mira, gy=gro
   for(const T of [C,O]){ const w=T.who==='caotan'; for(let i=0;i<3;i++) FX.burst(T.x,T.y+1.4,T.z,60,w?0xffffff:0x1a0820,7+i*2,.5,w); if(w) twHeartBurst(T.x,T.z,40); } twRemoveFoe(C); twRemoveFoe(O); yield wait(1.6);
   yield say('',"The Gatekeeper Twins went out the way they came in: loudly, together, and arguing about whose fault it was.");
   TW._wipe=1; try{ twEndFight(); } finally{ TW._wipe=0; } Game.arena=null; if(A){ A.hold=0; A.face=null; }
-  if(A){ cineSet(A.x+.6,A.y+1.7,A.z+5.6,A.x,A.y+1.1,A.z); yield say('ali',"Not bad, blacksmith. Next time, it's you and me."); yield say('shayan',"Who ARE you?!"); yield say('ali',"Ali."); Sound.sfx('dash'); aliGhost(A.x,A.y,A.z); twClearAllies(); yield wait(.6); yield say('shayan',"...That's it? Just 'Ali'?"); }
+  if(A){ cineSet(A.x+.6,A.y+1.7,A.z+5.6,A.x,A.y+1.1,A.z); yield say('ali',"Not bad, blacksmith. Next time, it's you and me."); yield say('shayan',"Who ARE you?!"); yield say('ali',"Ali."); Sound.sfx('dash'); twAliGhost(A.x,A.y,A.z); twClearAllies(); yield wait(.6); yield say('shayan',"...That's it? Just 'Ali'?"); }
   if(mi){ mi.vis=true; mi.x=P.x+1.2; mi.z=P.z+.3; mi.y=P.y; mi.f=-1; mi.anim='idle'; twCamP(6,.6); Sound.play('ending');
     yield say('mira',"Shayan. Your pig is gone, your ex-enemies are gone, a mysterious rival just vanished, and I've been in a cage for most of the night.",'happy');
     yield say('mira',"...Best date ever?",'blush'); const ch=yield choose([{t:"Best date ever.",aff:2},{t:"Can the next one have fewer twins?",aff:1}]);
