@@ -451,7 +451,7 @@ function* nkEnding(){ const P=Player; Sound.stop(); try{ twClearCine&&twClearCin
   nkScene('house',{u:0}); yield wait(1.1); Sound.sfx('howl'); yield tween(NK.p,{u:1},.55,t=>t*t); nkScene('house',{hit:1}); Sound.sfx('crash'); Sound.sfx('crossboom'); NK.shake=1; NK.flash=.9; yield wait(1.6);
   // his room, one second earlier
   nkScene('room',{zoom:2.5,zx:160,zy:104}); NK.fade=1; yield tween(NK,{fade:0},.4); yield wait(.5);
-  yield say('nathanirl',"Okay. Phase three. No hits this time. I have studied the gunkata.");
+  yield say('nathanirl',"Okay. Phase two. No hits this time. I have studied the gunkata.");
   yield say('nathanirl',"...Why did my guy just leave the screen?");
   Sound.sfx('crash'); Sound.sfx('slam'); NK.shake=1; NK.flash=1; NK.p.zoom=1; NK.p.hole=1; NK.p.rf=1; NK.p.rface='shock'; NK.p.rarms='up'; yield wait(1.2);
   yield tween(NK.p,{zoom:2.6,zx:150,zy:122},.3); yield say('nathanirl',"MY ROOF! That's... that's a guy. That's MY guy. That's literally my character.");

@@ -331,7 +331,7 @@ function np1BigBoost(){ const P=Player, [dx,dz,d]=np1Dir(), tx=P.x-dx*NP1_ROAM.l
 function np1Down(){ const P=Player; NP1.done=1; NP1.hp=0; NP1.gen=null; NP1.stunT=0; NB.mesh.visible=true; if(!NP1.seq){ P.cineFly=false; P.cineAnim=null; } for(const o of NP1.objs){ try{ o.kill&&o.kill(); }catch(e){} } NP1.objs.length=0; try{ if(NBC) endNBClash(); }catch(e){}
   NB.stunned=1; NB.dsh=null; NB.hov=.7; Game.letterTo=0; Sound.sfx('crossboom'); shake(1); FX.flash=.6; grade.uniforms.flashCol.value.set(1,1,1); impactFrame([[1,2],[3,2]]);
   { let ph=1; try{ ph=typeof npPh==='function'?npPh():1; }catch(e){} /* v1.85: this also ends phase III, where it still announced "Phase I cleared" and the warm-up taunt right before the finale (seen in the rig) */
-    if(ph>=3) Game.banner={name:'Phase III cleared',sub:'His blade is spent',t:0}; else { twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'His blade is spent',t:0}; } }
+    if(ph>=3) Game.banner={name:'Phase II cleared',sub:'His blade is spent',t:0}; else { twBark('nathan',"Phase one... was the warm-up, wanderer.",true); Game.banner={name:'Phase I cleared',sub:'His blade is spent',t:0}; } }
   // Ali's road ends here: a beat on the broken Nathan, then the finale (nbFinale: the last cut, the mended moon, his memories, the ending)
   NB.over=1; /* 59n's Overdrive is Shayan's phase IV, not this road's */ try{ tpsCursorFree(); }catch(e){}
   NB.pend=function*(){ yield wait(1.8); NB.alive=false; NB.inv=true; nbClear(); np1Clear(); NB.stunned=0; NB.hov=1.2; yield* nbFinale(); }; nbPend(); }
@@ -422,7 +422,7 @@ function np1FcUpd(S,dt){ const P=Player, F=NP1_FC;
 (function(){ const du=drawUI; drawUI=function(){ du.apply(this,arguments); try{ if(!tpsFight()||!NP1.live||Game.letter>.5) return;
       const TT=IS_TOUCH(), bw=Math.min(UW*.6,560), bx=(UW-bw)/2, by=6, /* his bar: a thin line along the very top edge */ k=Math.max(0,NP1.hp/NP1.max), a=NP1.bar;
       D.save(); D.globalAlpha=a; D.fillStyle='rgba(10,18,28,.7)'; D.fillRect(bx,by,bw,4); D.fillStyle=NP1.done?'#ffd45a':NB&&NB.stunned?'#ffffff':'#3ff4ff'; D.fillRect(bx,by,bw*k,4);
-      D.font=`800 11px ${FB}`; D.textAlign='right'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; const nm='NATHAN'+((NP1.ph||1)>1?'  '+['','I','II','III'][NP1.ph]:''); D.strokeText(nm,bx-6,by+2); D.fillStyle=(NP1.ph||1)>=3?'#ffb4a8':'#bfefff'; D.fillText(nm,bx-6,by+2); D.restore();
+      D.font=`800 11px ${FB}`; D.textAlign='right'; D.textBaseline='middle'; D.lineWidth=3; D.strokeStyle='rgba(0,0,0,.6)'; const nm='NATHAN'+((NP1.ph||1)>1?'  '+['','I','II','II'][NP1.ph]:''); /* two phases since v1.88: the pilot (3 inside the code) reads II */ D.strokeText(nm,bx-6,by+2); D.fillStyle=(NP1.ph||1)>=3?'#ffb4a8':'#bfefff'; D.fillText(nm,bx-6,by+2); D.restore();
       const Fc=NP1.seq&&NP1.seq.k==='fc'?NP1.seq:null; if(Fc&&Fc.L){ const k2=Fc.t<NP1_FC.dash?1:Math.max(0,1-(Fc.t-NP1_FC.dash)/.2); if(k2>0){ const cx=UW/2, cy=UH*.5, R0=Math.hypot(UW,UH)*.55; D.save(); /* speed lines rushing in on the dash */
           for(const l of Fc.L){ const a=l.a+rnd(-.015,.015), r1=R0*l.r, r0=r1*(1-.55*Math.min(1,Fc.t*l.sp*9)); D.strokeStyle=`rgba(${l.w>3?'255,170,185':'255,255,255'},${.8*k2})`; D.lineWidth=l.w; D.beginPath(); D.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1); D.lineTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0); D.stroke(); }
           D.restore(); } }
