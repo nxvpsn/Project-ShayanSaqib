@@ -3,9 +3,9 @@
 // =====================================================================
 function twSetScr(name,fn){ SCR[name]=fn; SCR_BASE[name]=fn; SCRA[name]=fn; }
 function twWrapScr(name,pre){ for(const o of [SCR_BASE,SCRA]){ const orig=o[name]; if(!orig) continue; o[name]=function*(){ yield* pre(); yield* orig.call(this); }; } SCR[name]=(ALI()?SCRA:SCR_BASE)[name]; }
-const TW_GATE_LOCK={x0:2.3,x1:23.6,z0:4.4,z1:13.5};
+const TW_GATE_LOCK={x0:22.3,x1:43.6,z0:4.4,z1:13.5}; /* v1.94: only where it starts; 05a_bigrooms moves it with the player. Every mark in this file is 20 east of where it was (BR.tw.ox) */
 function twStartGate(){ twClearFoes(); const hp=ALI()?56:66;
-  const C=twMake('caotan',13.4,7.3,{hp,maxHp:hp,phases:1,title:'Caotan Cummaster',sub:'Gatekeeper (left)',dist:6.2}), O=twMake('omar',14.4,11.2,{hp,maxHp:hp,phases:1,title:'Omar the Edge',sub:'Gatekeeper (right)',dist:4.2,dir:-1});
+  const C=twMake('caotan',33.4,7.3,{hp,maxHp:hp,phases:1,title:'Caotan Cummaster',sub:'Gatekeeper (left)',dist:6.2}), O=twMake('omar',34.4,11.2,{hp,maxHp:hp,phases:1,title:'Omar the Edge',sub:'Gatekeeper (right)',dist:4.2,dir:-1});
   C.cd=1.1; O.cd=2.1;
   const F=TW.fight={kind:'gate',lock:TW_GATE_LOCK,noLC:true,
     pool(T){ const other=TW.foes.find(o=>o!==T); if(other&&!other.down&&other.gen) return []; return TWPOOL[T.who].gate; },
@@ -15,15 +15,15 @@ function twStartGate(){ twClearFoes(); const hp=ALI()?56:66;
         if(TW.foes.every(o=>o.down)&&!F.pend){ twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); F.pend=SCR.twinsDown; } } },
     respawn(){ twGateRestart(); }};
   Game.arena={lock:TW_GATE_LOCK}; Cam.zoom=1.08; Sound.play('battle'); }
-function twGateRestart(){ twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); TW.sentence=null; twStartGate(); resetPlayer({x:3.2,z:9},true); Player.hp=Player.maxHp; Player.ang=0; Player.f=1; Cam.cine=null; Cam.focus=null; Game.letterTo=0; Game.fade=1; Game.fadeTo=0; Game.state='play'; }
+function twGateRestart(){ twClearHz(); BOLTS.forEach(b=>{ if(!b.friendly) b.dead=1; }); TW.sentence=null; twStartGate(); resetPlayer({x:23.2,z:9},true); Player.hp=Player.maxHp; Player.ang=0; Player.f=1; Cam.cine=null; Cam.focus=null; Game.letterTo=0; Game.fade=1; Game.fadeTo=0; Game.state='play'; }
 restartTwins=function(){ BOLTS.forEach(b=>b.dead=1); Voice.stop(); Game.subtitle=null; twGateRestart(); };
 
-twSetScr('twinsGate',function*(){ const P=Player; yield fadeOut(); loadLevel('twins',{keepHP:1}); P.hp=P.maxHp; Game.fade=1; resetPlayer({x:3.2,z:9},true); P.ang=0; P.f=1; Game.flags.twinAlly=null; Game.flags.twinPact=0; Game.flags.twinBetrayDone=0; twClearAllies();
+twSetScr('twinsGate',function*(){ const P=Player; yield fadeOut(); loadLevel('twins',{keepHP:1}); P.hp=P.maxHp; Game.fade=1; resetPlayer({x:23.2,z:9},true); P.ang=0; P.f=1; Game.flags.twinAlly=null; Game.flags.twinPact=0; Game.flags.twinBetrayDone=0; twClearAllies();
   twStartGate(); const TWL=TW.foes; TWL.forEach(T=>{ T.y=groundY(T.x,T.z)+16; T.hy=16; T.noAttack=1; T.inv=true; }); TW.fight.frame=false; Game.state='cut'; Sound.stop();
-  Game.letterTo=1; cineSet(5,2.4,16,9,1.6,8.5); yield wait(.3); yield fadeIn(); Sound.sfx('drone');
-  yield cineTo([7,3.2,17],[13,2,8.5],2.2,t=>t*(2-t));
+  Game.letterTo=1; cineSet(33,12,42,33,5,8); /* v1.94: the shot opens on the whole court and comes down to him */ yield wait(.3); yield fadeIn(); Sound.sfx('drone');
+  yield cineTo([27,3.2,17],[33,2.6,8.5],3,t=>t*t*(3-2*t));
   yield say(HERO(),ALI()?"Kennel Keep. Smaller than I imagined. Everything is.":"The gate to Kennel Keep. Hang on, Mira. I'm almost there.");
-  Sound.sfx('howl'); shake(.5); cineSet(10,.8,15,14,5,9);
+  Sound.sfx('howl'); shake(.5); cineSet(30,.8,15,34,5,9);
   // the twins drop in, one at a time, with a lot of unnecessary posing
   const C=TWL[0], O=TWL[1];
   const ride=(T,side)=>{ const r={on:1}; Game.fxUpd.push(()=>{ if(!r.on) return false; const gy=groundY(T.x,T.z); cineSet(T.x+side,Math.max(gy+3,T.y*.55+2.4),T.z+9.5,T.x,T.y+1.6,T.z); return true; }); return r; };
@@ -41,14 +41,16 @@ twSetScr('twinsGate',function*(){ const P=Player; yield fadeOut(); loadLevel('tw
   if(Game.hamza) yield say('hamza',ALI()?"Oink oink! Ali, slice their projectiles right before they hit! Send them back!":"Oink oink! Shayan, swing at their projectiles! Send everything right back at them!",'happy');
   evaCard(['THE GATEKEEPER TWINS','CAOTAN & OMAR'],2,1); Sound.sfx('slam'); yield wait(2);
   Game.banner={name:'Caotan Cummaster & Omar the Edge',sub:ALI()?'The Gatekeeper Twins (outmatched)':'The Gatekeeper Twins',t:0};
-  yield cineTo([10,7.2,25],[10,1.2,9],1.1); TWL.forEach(T=>{ T.noAttack=0; T.inv=false; }); TW.fight.frame=true; Cam.cine=null; Game.letterTo=0; Game.state='play'; Sound.play('battle'); });
+  yield cineTo([30,7.2,25],[30,1.2,9],1.1); TWL.forEach(T=>{ T.noAttack=0; T.inv=false; }); TW.fight.frame=true; Cam.cine=null; Game.letterTo=0; Game.state='play'; Sound.play('battle'); });
 
 twSetScr('twinsDown',function*(){ const P=Player, C=TW.foes.find(T=>T.who==='caotan'), O=TW.foes.find(T=>T.who==='omar'), H=HERO(); Sound.stop(); Game.slowT=.8; Game.letterTo=1; TW.fight.frame=false; TW.fight.noBar=true; Cam.focus=null;
   [C,O].forEach(T=>{ T.down=1; T.inv=true; T.gen=null; T.hy=1.3; });
-  cineSet(P.x+3,2.6,P.z+7,15,2,9); yield cineTo([12.4,2.4,16],[14,1.2,9.2],1.4,t=>t*(2-t));
+  /* v1.94: the court is big now and they can fall anywhere in it, far apart: they drag themselves side by side where they are, and the shot goes to them (it used to go to the middle of the old room) */ const A=L.arena||TW_GATE_LOCK, M={x:clamp((C.x+O.x)/2,A.x0+4,A.x1-4),z:clamp((C.z+O.z)/2,A.z0+3.5,A.z1-3.5)};
+  cineSet(P.x+3,2.6,P.z+7,M.x,2,M.z); Game.fxUpd.push(dt=>{ let go=0; for(const [T,tx,tz] of [[C,M.x-.5,M.z-1.95],[O,M.x+.5,M.z+1.95]]){ const d=Math.hypot(tx-T.x,tz-T.z); if(d>.05){ const st=Math.min(d,dt*9); T.x+=(tx-T.x)/d*st; T.z+=(tz-T.z)/d*st; go=1; } } return !!go; });
+  yield cineTo([M.x-1.6,2.4,M.z+6.8],[M.x,1.2,M.z],1.4,t=>t*(2-t));
   yield say('caotan',ALI()?"How?! I didn't even get a single hit in!":"Impossible! I've been completely drained!");
   yield say('omar',ALI()?"I have been... out-edged.":"The edge... has been... dulled.");
-  twCamP(6.8,.5); yield walkP(Math.min(P.x+1.5,11),9.2,2);
+  twCamP(6.8,.5); if(Math.hypot(P.x-(M.x-3.4),P.z-M.z)>9){ /* too far to walk in a cutscene: he is already there when the shot comes back */ resetPlayer({x:M.x-5,z:M.z},true); } yield walkP(M.x-3.4,M.z,2);
   yield say(H,ALI()?"Rest now. One of you, anyway. I'm feeling generous.":"Okay. It's over. Stay down, both of you.");
   twCam2(C,O,10,-1);
   yield say('caotan',"W-wait! Don't kill me! Kill HIM!",'surprised');

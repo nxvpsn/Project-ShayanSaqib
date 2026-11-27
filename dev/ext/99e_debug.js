@@ -11,8 +11,8 @@
 // RULE FOR EVERY PATCH (see CLAUDE.md): replace DBG_PATCH and DBG_NEW with the mechanics that patch
 // touched, as 'boss:move' keys ('boss:*' tags a whole boss). Boss ids: caotan, omar, duo, hamza, nathan, mech.
 // =====================================================================
-const DBG_PATCH="v1.88 (Nov 27): Nathan on Ali's road is two phases. I: the mech (phase I's moves plus ringfall, lattice, mirage, buster, tackle); at 0 HP he fires Full Burst, and surviving it is the phase change. II: Nathan on foot, with Last Round at half.";
-const DBG_NEW=['nathan:*'];
+const DBG_PATCH="v1.94 (Nov 28): the Gatekeepers' Court and Day Old Keep are several times larger. The twins' moves and Kojima's phase I follow you through the room instead of filling a small one.";
+const DBG_NEW=['grimmaw:*'];
 const DBG={on:false,open:false,tab:'moves',mph:0,last:null,combo:null,pick:[],autoClose:true,boss:null,mode:'idle',move:null,rects:[],hov:null,ali:false,slow:false,blade:true,msg:null};
 const DBG_BOSSES=[['caotan','Caotan'],['omar','Omar'],['duo','Twins (duo)'],['hamza','Big Back Hamza'],['nathan','Nathan'],['mech','Cosmic Hamza'],['grimmaw','Kojima ↗']];
 // whose road each boss is on: Ali only fights Kojima and Nathan (his Nathan is the third-person phase I of 59v_nbp1.js)

@@ -59,7 +59,7 @@ function twWarpReset(ali){ const P=Player; Voice.stop(); if(Game.mech) exitMech(
   const aff=Math.max(Game.aff||0,6); Game.flags={metMira:1,bellMemory:1,twinsDone:0}; if(ali){ Game.flags.ali=1; Game.flags.moonCut=1; Object.assign(SCR,SCRA); } else Object.assign(SCR,SCR_BASE);
   Game.aff=aff; Game.aliOld=0; Game.aliHintT=0; Game.mira=null; if(mSprite) mSprite.show(false); Object.assign(P,{sp:0,counter:0,cineFly:false,cineAnim:null,hidden:false,scripted:null,atk:null,charge:0}); P.maxHp=12; P.hp=P.maxHp;
   newHamza(); Game.hamza.mode='follow'; Game.paulLock=false; }
-function* twWarpTwinsDown(){ yield fadeOut(); loadLevel('twins',{keepHP:1}); resetPlayer({x:9.5,z:9.2},true); twStartGate(); TW.fight.frame=false; TW.fight.noAttack=true;
+function* twWarpTwinsDown(){ yield fadeOut(); loadLevel('twins',{keepHP:1}); resetPlayer({x:29.5,z:9.2},true); twStartGate(); TW.fight.frame=false; TW.fight.noAttack=true;
   for(const T of TW.foes){ T.down=1; T.hp=0; T.inv=true; } Game.fade=1; yield fadeIn(); }
 function* twWarpFlowers(o){ o=o||{}; yield fadeOut(); const fl=Game.flags, aff=Game.aff; loadLevel('flowers',{keepHP:1}); Game.flags=fl; Game.aff=aff; const P=Player, z=L.zone||{x:58,z:60};
   resetPlayer({x:z.x,z:z.z+3},true); P.hp=P.maxHp; if(o.cage){ const cg=L.spots.mira; addActor('cage',cg.x,cg.z,cg.y!=null?cg.y:groundY(cg.x,cg.z)); }

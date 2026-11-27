@@ -229,6 +229,9 @@ s = patch(s, "cineSet(20,4.4,27,20,1.4,15)", "cineSet(40,4.4,30,40,1.4,18)")
 s = patch(s, "cineTo([20,9,34],[20,4,0]", "cineTo([40,9,37],[40,4,3]")
 # the longer Starfall Ridge (05a_bigmaps): a retry of the ambush starts at the arena's own west side, wherever the arena is
 s = patch(s, "else if(L.key==='meadow'&&Game.flags.ambush){ resetPlayer({x:57,z:11});", "else if(L.key==='meadow'&&Game.flags.ambush){ resetPlayer({x:(L.arena?L.arena.x0+7.7:57),z:11});")
+# the bigger Day Old Keep (05a_bigrooms): the scene opens from the far end of the hall, low over the runner, and travels up it to the throne
+s = patch(s, "cineSet(B.x+3.2,1.1,B.z+4.6,B.x,3.2,B.z);", "cineSet(B.x,1.3,B.z+30,B.x,3.4,B.z);", 2)
+s = patch(s, "yield cineTo([B.x-2.6,2.2,B.z+5.2],[B.x,2.8,B.z],2.2);", "yield cineTo([B.x-2.6,2.2,B.z+5.2],[B.x,2.8,B.z],3.4,t=>t*t*(3-2*t));", 2)
 # training bots (98_tutorial): a mob flagged `bot` is drawn as the straw dummy, not as a soldier
 s = patch(s, "for(const m of MOBS){ m.spr.draw((c,cx,by)=>m.type==='elder'?drawVillagerHD(", "for(const m of MOBS){ m.spr.draw((c,cx,by)=>m.bot?drawDummyHD(c,cx,by,m):m.type==='elder'?drawVillagerHD(")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")

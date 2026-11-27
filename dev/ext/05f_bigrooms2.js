@@ -1,0 +1,3 @@
+// The keep's decoration (05c) is written for the old 20x17 room. Everything it adds (root meshes, lights) is moved east with the
+// throne, so the chandeliers, the fire bowls and the film gear stay round the dais (see 05a_bigrooms).
+(function(){ const kb=LEVELDEF.keep; LEVELDEF.keep=function(){ const G=kb.apply(this,arguments); try{ if(G.kjBaseN!=null){ const ox=BR.kp.ox; for(let i=G.kjBaseN;i<G.root.children.length;i++) G.root.children[i].position.x+=ox; for(let i=G.kjBaseL;i<G.lightSrc.length;i++) G.lightSrc[i].x+=ox; G.kjBaseN=null; } }catch(e){ console.error('keep shift',e); } return G; }; })();
