@@ -227,6 +227,8 @@ s = patch(s, "s.x=14.2+col*1.25; s.z=16.9+row*1.1;", "s.x=34.2+col*1.25; s.z=19.
 s = patch(s, "cineSet(19.6,6.5,27,19.6,-.4,15.6)", "cineSet(39.6,6.5,30,39.6,-.4,18.6)", 2)
 s = patch(s, "cineSet(20,4.4,27,20,1.4,15)", "cineSet(40,4.4,30,40,1.4,18)")
 s = patch(s, "cineTo([20,9,34],[20,4,0]", "cineTo([40,9,37],[40,4,3]")
+# the longer Starfall Ridge (05a_bigmaps): a retry of the ambush starts at the arena's own west side, wherever the arena is
+s = patch(s, "else if(L.key==='meadow'&&Game.flags.ambush){ resetPlayer({x:57,z:11});", "else if(L.key==='meadow'&&Game.flags.ambush){ resetPlayer({x:(L.arena?L.arena.x0+7.7:57),z:11});")
 # training bots (98_tutorial): a mob flagged `bot` is drawn as the straw dummy, not as a soldier
 s = patch(s, "for(const m of MOBS){ m.spr.draw((c,cx,by)=>m.type==='elder'?drawVillagerHD(", "for(const m of MOBS){ m.spr.draw((c,cx,by)=>m.bot?drawDummyHD(c,cx,by,m):m.type==='elder'?drawVillagerHD(")
 s = patch(s, end, end + "\n<script>\n\"use strict\";\n" + ext + "</script>")

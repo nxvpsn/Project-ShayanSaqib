@@ -66,7 +66,7 @@ function tpLanternStrings(G){ const posts=G.lanternPosts||[[7,10],[15.5,10.2],[2
 // ---------- Starfall Ridge: darker tufts, ferns, mushrooms by the trees ----------
 (function(){ const st=scatterTufts; scatterTufts=function(G,n,kinds){ if(G&&G.biome==='meadow'&&Array.isArray(kinds)) kinds=kinds.map(k=>k.kind==='flower'?k:Object.assign({},k,{cols:(k.cols||[]).map(c=>cShade(c,-.38))})); return st.call(this,G,n,kinds,...[].slice.call(arguments,3)); }; })();
 (function(){ const mb=LEVELDEF.meadow; LEVELDEF.meadow=function(){ const G=mb.apply(this,arguments); try{ tpRidge(G); }catch(e){ console.error('ridge polish',e); } return G; }; })();
-function tpRidge(G){ scatterTufts(G,0,[{kind:'fern',cols:['#2a5a2a','#3a7036'],n:140,s:1.2},{kind:'tall',cols:['#25502a','#336a30'],n:160,s:1.35},{kind:'grass',cols:['#2f6228','#3e7a34','#4f8c40'],n:420,s:1}],[1,6,80,22]);
+function tpRidge(G){ scatterTufts(G,0,[{kind:'fern',cols:['#2a5a2a','#3a7036'],n:140,s:1.2},{kind:'tall',cols:['#25502a','#336a30'],n:160,s:1.35},{kind:'grass',cols:['#2f6228','#3e7a34','#4f8c40'],n:420,s:1}],[1,6,(G.w||82)-2,22]);
   const cap=new THREE.MeshLambertMaterial({color:0xd8443a}), stem=new THREE.MeshLambertMaterial({color:0xf0e6d0}), dot=new THREE.MeshBasicMaterial({color:0xffffff});
   for(const [x,z] of [[3.4,6.9],[7.6,7.1],[17.4,6.9],[21.6,7],[29.5,6.9],[45.4,6.8],[48.5,7.1]]){ for(let k=0;k<3;k++){ const mx=x+k*.22-.2, mz=z+(k%2)*.12, s=.7+hash(k,Math.round(x))*.5, gy=groundY(mx,mz);
       addBox(G,.06*s,.14*s,.06*s,stem,mx,gy,mz,false); addBox(G,.2*s,.08*s,.2*s,cap,mx,gy+.14*s,mz,false); addBox(G,.04,.02,.04,dot,mx-.04*s,gy+.22*s,mz,false); } } }
