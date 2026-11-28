@@ -17,8 +17,8 @@ LEVELDEF.twins=function(){ const ox=BR.tw.ox, W=BR.tw.W, D=BR.tw.D, G=newGrid(W,
   for(let z=5;z<D-1;z++) for(let x=2;x<W-2;x++) if((x+z)%7===0||((x===31||x===34)&&z%2)) G.T[z][x]='cobble'; for(let z=4;z<D-1;z++){ G.T[z][32]='cobble'; G.T[z][33]='cobble'; } /* an avenue up to the gate */
   buildTerrain(G,G.tx);
   const blueLamp=(lamp)=>{ lamp.material.emissive.setHex(0x8ac8ff); const ls=G.lightSrc[G.lightSrc.length-1]; ls.col=0x7ab4ff; ls.i=2; ls.r=8; };
-  const LP=[]; for(const z of [6,14,22,30,38]){ LP.push([2.6,z],[W-3.4,z]); } for(const x of [9,19,29,36.4,46,56]) LP.push([x,D-2.6]); for(const [x,z] of [[29,5],[36.4,5],[22,12.6],[43.4,12.6]]) LP.push([x,z]);
-  for(const [x,z] of LP){ blueLamp(addLantern(G,x,z)); G.B[Math.floor(z)][Math.floor(x)]=true; }
+  const LP=[]; for(const z of [6,14,22,30,38]){ LP.push([2.6,z],[W-3.4,z]); } for(const x of [9,19,29,36.4,46,56]) LP.push([x,D-2.6]); for(const [x,z] of [[28.6,4.7],[37.4,4.7]]) LP.push([x,z]);
+  for(const [x,z] of LP){ blueLamp(addLantern(G,x,z)); } /* thin posts along the walls: they block nothing (v1.95: no invisible squares to catch on in a fight) */
   /* two rows of broken columns down the sides, each with a lamp at its foot: they give the size of the place away */ for(const z of [10,20,30,40]) for(const x of [7,W-8]){ addPillar(G,x,z,z%20===0?4.4:3.2,z%20===0?0:1); G.B[z][Math.floor(x)]=true; G.lightSrc.push({x,y:2.2,z:z+.8,col:0x7ab4ff,i:1.5,r:8,flick:1}); }
   for(const x of [4,8,12,16,20,24,42,46,50,54,58,62]){ const y=3.4, m=new THREE.Mesh(new THREE.BoxGeometry(.36,.46,.36),new THREE.MeshLambertMaterial({color:0x1a2030,emissive:0x8ac8ff,emissiveIntensity:2.2})); m.position.set(x,y,4.25); G.root.add(m);
     const br=new THREE.Mesh(new THREE.BoxGeometry(.08,.5,.36),solidMat(0x2d2a30)); br.position.set(x,y+.45,4.12); G.root.add(br); G.lightSrc.push({x,y,z:4.6,col:0x7ab4ff,i:1.6,r:7,flick:1}); }
